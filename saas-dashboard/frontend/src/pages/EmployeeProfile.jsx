@@ -27,10 +27,10 @@ export default function EmployeeProfile() {
         const fetchData = async () => {
             try {
                 const [empRes, attRes, payRes, leaveRes] = await Promise.all([
-                    fetch(`http://localhost:5000/api/hr/employees/${id}`),
-                    fetch(`http://localhost:5000/api/hr/employees/${id}/attendance`),
-                    fetch(`http://localhost:5000/api/hr/payroll?employeeId=${id}`),
-                    fetch(`http://localhost:5000/api/hr/leaves?employeeId=${id}`)
+                    fetch(`/api/hr/employees/${id}`),
+                    fetch(`/api/hr/employees/${id}/attendance`),
+                    fetch(`/api/hr/payroll?employeeId=${id}`),
+                    fetch(`/api/hr/leaves?employeeId=${id}`)
                 ]);
 
                 if (!empRes.ok) throw new Error('Employee not found');
@@ -203,7 +203,7 @@ export default function EmployeeProfile() {
                                         todayAtt?.status === 'Late' || todayAtt?.status === 'Incomplete' ? "text-amber-600" :
                                             todayAtt?.status === 'Absent' ? "text-rose-600" : "text-gray-900"
                                 )}>
-                                    {todayAtt?.status ? (todayAtt.status === 'Present' ? t('hr.statusPresent') : todayAtt.status === 'Completed' ? t('hr.statusCompleted') : todayAtt.status === 'Late' ? t('hr.statusLate') : todayAtt.status === 'Incomplete' ? t('hr.statusIncomplete') : todayAtt.status === 'Absent' ? t('hr.statusAbsent') : todayAtt.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : todayAtt.status) : t('hr.notMarked')}
+                                    {todayAtt?.status ? (todayAtt.status === 'Present' ? t('hr.statusPresent') : todayAtt.status === 'Completed' ? t('hr.statusCompleted') : todayAtt.status === 'Late' ? t('hr.statusLate') : todayAtt.status === 'Incomplete' ? t('hr.statusIncomplete') : todayAtt.status === 'Absent' ? t('hr.statusAbsent') : todayAtt.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : todayAtt.status === 'Overtime' ? t('hr.overtime') : todayAtt.status === 'Not Marked' ? t('hr.notMarked') : todayAtt.status) : t('hr.notMarked')}
                                 </h4>
                                 <p className="text-sm font-semibold text-gray-500">{moment().format('dddd, MMM Do')}</p>
                             </div>
@@ -311,7 +311,7 @@ export default function EmployeeProfile() {
                                                             att.status === 'Late' || att.status === 'Incomplete' ? "bg-amber-50 text-amber-600" :
                                                                 "bg-gray-100 text-gray-600"
                                                 )}>
-                                                    {att.status ? (att.status === 'Present' ? t('hr.statusPresent') : att.status === 'Completed' ? t('hr.statusCompleted') : att.status === 'Late' ? t('hr.statusLate') : att.status === 'Incomplete' ? t('hr.statusIncomplete') : att.status === 'Absent' ? t('hr.statusAbsent') : att.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : att.status) : t('hr.notMarked')}
+                                                    {att.status ? (att.status === 'Present' ? t('hr.statusPresent') : att.status === 'Completed' ? t('hr.statusCompleted') : att.status === 'Late' ? t('hr.statusLate') : att.status === 'Incomplete' ? t('hr.statusIncomplete') : att.status === 'Absent' ? t('hr.statusAbsent') : att.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : att.status === 'Overtime' ? t('hr.overtime') : att.status === 'Not Marked' ? t('hr.notMarked') : att.status) : t('hr.notMarked')}
                                                 </span>
                                             </td>
                                         </tr>

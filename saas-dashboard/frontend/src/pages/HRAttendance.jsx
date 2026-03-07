@@ -190,7 +190,7 @@ export default function HRAttendance() {
 
                                     <td className="px-6 py-4 text-center">
                                         <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusStyle(att.status || 'Absent')}`}>
-                                            {att.status || 'Absent'}
+                                            {att.status ? (att.status === 'Present' ? t('hr.statusPresent') : att.status === 'Completed' ? t('hr.statusCompleted') : att.status === 'Late' ? t('hr.statusLate') : att.status === 'Incomplete' ? t('hr.statusIncomplete') : att.status === 'Absent' ? t('hr.statusAbsent') : att.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : att.status === 'Overtime' ? t('hr.overtime') : att.status === 'Not Marked' ? t('hr.notMarked') : att.status) : t('hr.statusAbsent')}
                                         </span>
                                     </td>
                                 </tr>
