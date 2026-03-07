@@ -9,6 +9,8 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
     const [acquisitionChannel, setAcquisitionChannel] = useState('Organic Search');
     const [status, setStatus] = useState('Active');
 
@@ -17,11 +19,15 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
             if (isEdit && initialData) {
                 setName(initialData.name);
                 setEmail(initialData.email);
+                setPhone(initialData.phone || '');
+                setAddress(initialData.address || '');
                 setAcquisitionChannel(initialData.acquisitionChannel || 'Organic Search');
                 setStatus(initialData.status || 'Active');
             } else {
                 setName('');
                 setEmail('');
+                setPhone('');
+                setAddress('');
                 setAcquisitionChannel('Organic Search');
                 setStatus('Active');
             }
@@ -32,7 +38,7 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit({ name, email, acquisitionChannel, status });
+        onSubmit({ name, email, phone, address, acquisitionChannel, status });
     };
 
     return (
@@ -67,7 +73,28 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
-                                disabled={isEdit} // Often don't want to change email easily or use it as ID
+                                disabled={isEdit}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number (*COD Required)</label>
+                            <input
+                                required
+                                type="tel"
+                                className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
+                                value={phone}
+                                onChange={e => setPhone(e.target.value)}
+                                placeholder="05XX XX XX XX"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address</label>
+                            <input
+                                type="text"
+                                className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
+                                value={address}
+                                onChange={e => setAddress(e.target.value)}
+                                placeholder="City, Region, exact street..."
                             />
                         </div>
                         <div>

@@ -36,6 +36,8 @@ const updateCustomer = async (req, res) => {
         if (customer) {
             customer.name = req.body.name || customer.name;
             customer.email = req.body.email || customer.email;
+            customer.phone = req.body.phone !== undefined ? req.body.phone : customer.phone;
+            customer.address = req.body.address !== undefined ? req.body.address : customer.address;
             customer.acquisitionChannel = req.body.acquisitionChannel || customer.acquisitionChannel;
             customer.status = req.body.status || customer.status;
 
@@ -91,15 +93,43 @@ const getCustomerMetrics = async (req, res) => {
         const newCustomers = await Customer.countDocuments({ isReturning: false });
         const returningCustomers = await Customer.countDocuments({ isReturning: true });
 
-        // Calculate acquisition breakdown
+        // Calculate acquisition breakdown & LTV per channel
         const customers = await Customer.find({});
         const acquisitionDistribution = {};
+        const ltvDistribution = {
+            whales: 0,
+            vip: 0,
+            regular: 0,
+            lowValue: 0
+        };
+
+        const segmentDistribution = {
+            'Whale': 0, 'VIP': 0, 'Repeat Buyer': 0, 'One-Time Buyer': 0, 'Dormant': 0
+        };
+
+        let totalLTV = 0;
+
         customers.forEach(c => {
+            // Channel Distribution
             if (!acquisitionDistribution[c.acquisitionChannel]) {
-                acquisitionDistribution[c.acquisitionChannel] = 0;
+                acquisitionDistribution[c.acquisitionChannel] = { count: 0, revenue: 0 };
             }
-            acquisitionDistribution[c.acquisitionChannel]++;
+            acquisitionDistribution[c.acquisitionChannel].count++;
+            acquisitionDistribution[c.acquisitionChannel].revenue += c.lifetimeValue;
+
+            // Segment Distribution
+            segmentDistribution[c.segment] = (segmentDistribution[c.segment] || 0) + 1;
+
+            // LTV Distribution
+            totalLTV += c.lifetimeValue;
+            if (c.lifetimeValue > 50000) ltvDistribution.whales++;
+            else if (c.lifetimeValue > 20000) ltvDistribution.vip++;
+            else if (c.lifetimeValue > 5000) ltvDistribution.regular++;
+            else if (c.lifetimeValue > 0) ltvDistribution.lowValue++;
         });
+
+        // Filter high risk
+        const highRiskCustomers = await Customer.countDocuments({ refusalRate: { $gte: 30 } });
 
         res.json({
             totalCustomers,
@@ -111,7 +141,11 @@ const getCustomerMetrics = async (req, res) => {
                 new: newCustomers,
                 returning: returningCustomers
             },
-            acquisitionDistribution
+            acquisitionDistribution,
+            ltvDistribution,
+            segmentDistribution,
+            highRiskCustomers,
+            averageLTV: totalCustomers > 0 ? (totalLTV / totalCustomers) : 0
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -147,7 +181,8 @@ const updateCustomerMetrics = async (customerId) => {
         let ltv = 0;
         let netProfit = 0;
         let refusals = 0;
-        let attemptedDeliveries = 0; // count both fulfilled and refused/returned for rate calc
+        let attemptedDeliveries = 0;
+        let deliveredCount = 0;
 
         orders.forEach(o => {
             if (['Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(o.status)) {
@@ -155,6 +190,7 @@ const updateCustomerMetrics = async (customerId) => {
                 ltv += (o.totalAmount || 0);
                 netProfit += (o.financials?.netProfit || 0);
                 attemptedDeliveries++;
+                if (['Delivered', 'Paid'].includes(o.status)) deliveredCount++;
             } else if (['Refused', 'Returned'].includes(o.status)) {
                 attemptedDeliveries++;
                 if (o.status === 'Refused') refusals++;
@@ -162,6 +198,7 @@ const updateCustomerMetrics = async (customerId) => {
         });
 
         customer.totalOrders = orders.length;
+        customer.deliveredOrders = deliveredCount;
         customer.lifetimeValue = ltv;
         customer.averageOrderValue = fulfilledCount > 0 ? ltv / fulfilledCount : 0;
         customer.netProfitGenerated = netProfit;
@@ -169,20 +206,42 @@ const updateCustomerMetrics = async (customerId) => {
         // Risk and Fraud Calculations
         customer.totalRefusals = refusals;
         customer.refusalRate = attemptedDeliveries > 0 ? (refusals / attemptedDeliveries) * 100 : 0;
+        customer.deliverySuccessRate = attemptedDeliveries > 0 ? (deliveredCount / attemptedDeliveries) * 100 : 0;
+
         customer.trustScore = Math.max(0, 100 - (customer.refusalRate || 0));
-        customer.isSuspicious = customer.refusalRate > 30; // Threshold logic
+        customer.fraudProbability = Math.min(100, customer.refusalRate * 1.5); // Derived heuristic
+
+        customer.isSuspicious = customer.refusalRate > 30;
+        customer.repeatedRefusalFlag = customer.totalRefusals >= 2;
+        customer.requiresDeliveryVerification = customer.refusalRate > 20 || customer.fraudProbability > 50;
 
         if (orders.length > 0) {
-            // Find most recent
             orders.sort((a, b) => b.createdAt - a.createdAt);
             customer.lastOrderDate = orders[0].createdAt;
+            customer.lastInteractionDate = orders[0].createdAt;
             customer.isReturning = orders.length > 1;
+
+            // Set Cohort Month (Month of first order)
+            const firstOrder = orders[orders.length - 1];
+            customer.cohortMonth = new Date(firstOrder.createdAt).toISOString().slice(0, 7); // e.g., "2024-03"
+
+            // Segmentation Logic
+            if (customer.lifetimeValue > 100000) customer.segment = 'Whale';
+            else if (customer.lifetimeValue > 50000 || customer.totalOrders > 5) customer.segment = 'VIP';
+            else if (customer.totalOrders > 1) customer.segment = 'Repeat Buyer';
+            else customer.segment = 'One-Time Buyer';
 
             // Simple Churn Risk Logic
             const daysSinceLastOrder = (Date.now() - customer.lastOrderDate.getTime()) / (1000 * 3600 * 24);
-            if (daysSinceLastOrder > 90) customer.status = 'Churned';
+            customer.churnRiskScore = Math.min(100, (daysSinceLastOrder / 90) * 100);
+
+            if (daysSinceLastOrder > 120) {
+                customer.status = 'Churned';
+                customer.segment = 'Dormant';
+            }
             else if (daysSinceLastOrder > 60) customer.status = 'At Risk';
             else customer.status = 'Active';
+
         } else {
             customer.status = 'Inactive';
         }

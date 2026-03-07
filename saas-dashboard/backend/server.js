@@ -8,12 +8,16 @@ const salesRoutes = require('./routes/sales');
 const inventoryRoutes = require('./routes/inventory');
 const customerRoutes = require('./routes/customerRoutes');
 const hrRoutes = require('./routes/hr');
-const projectRoutes = require('./routes/projects');
+const projectRoutes = require('./routes/project');
 const productionRoutes = require('./routes/production');
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
 const courierRoutes = require('./routes/couriers');
 const intelligenceRoutes = require('./routes/intelligenceRoutes');
+const manufacturingRoutes = require('./routes/manufacturing');
+const procurementRoutes = require('./routes/procurement');
+const supportRoutes = require('./routes/support');
 const { initJobs } = require('./cron/scheduler');
 
 dotenv.config();
@@ -39,6 +43,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/couriers', courierRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/manufacturing', manufacturingRoutes);
+app.use('/api/procurement', procurementRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/users', userRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

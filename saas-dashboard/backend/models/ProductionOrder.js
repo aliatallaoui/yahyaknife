@@ -8,12 +8,14 @@ const productionOrderSchema = new mongoose.Schema({
     quantityCompleted: { type: Number, default: 0 },
     status: {
         type: String,
-        enum: ['Planned', 'In Progress', 'Completed', 'Cancelled'],
+        enum: ['Planned', 'In Progress', 'Quality Check', 'Completed', 'Cancelled'],
         default: 'Planned'
     },
     startDate: { type: Date },
     completionDate: { type: Date },
     assignedManager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+    productionTeam: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }],
+    productionWarehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
     notes: { type: String }
 }, { timestamps: true });
 

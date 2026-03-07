@@ -9,21 +9,24 @@ export const ManufacturingProvider = ({ children }) => {
     const [materials, setMaterials] = useState([]);
     const [boms, setBoms] = useState([]);
     const [productionOrders, setProductionOrders] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const fetchManufacturingData = async () => {
         if (!token) return;
         setLoading(true);
         try {
-            const [matRes, bomRes, poRes] = await Promise.all([
+            const [matRes, bomRes, poRes, statRes] = await Promise.all([
                 fetch('/api/production/raw-materials', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/production/boms', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/production/production-orders', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/production/production-orders', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/production/analytics', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
-            if (matRes.ok) setMaterials(await matRes.json());
-            if (bomRes.ok) setBoms(await bomRes.json());
-            if (poRes.ok) setProductionOrders(await poRes.json());
+            if (matRes.ok) { const md = await matRes.json(); setMaterials(Array.isArray(md) ? md : []); }
+            if (bomRes.ok) { const bd = await bomRes.json(); setBoms(Array.isArray(bd) ? bd : []); }
+            if (poRes.ok) { const pd = await poRes.json(); setProductionOrders(Array.isArray(pd) ? pd : []); }
+            if (statRes.ok) { setAnalytics(await statRes.json()); }
         } catch (error) {
             console.error("Error fetching manufacturing data:", error);
         } finally {
@@ -148,6 +151,7 @@ export const ManufacturingProvider = ({ children }) => {
             materials,
             boms,
             productionOrders,
+            analytics,
             loading,
             createMaterial, updateMaterial, deleteMaterial,
             createBOM, updateBOM, deleteBOM,

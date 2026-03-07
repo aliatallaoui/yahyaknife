@@ -170,18 +170,25 @@ exports.updateProductionOrderStatus = async (req, res) => {
             return res.status(400).json({ error: 'Cannot update a completed production order' });
         }
 
+        const previousStatus = order.status;
         order.status = status;
 
-        if (status === 'Completed') {
+        if (status === 'Completed' && previousStatus !== 'Completed') {
             order.quantityCompleted = order.quantityPlanned;
             order.completionDate = new Date();
 
-            // 1. Deduct Raw Materials
+            // 1. Deduct Raw Materials (and remove from reserved)
             if (order.bom && order.bom.components) {
                 for (const comp of order.bom.components) {
                     const requiredAmount = comp.quantityRequired * order.quantityPlanned;
+                    // Only deduct reserve if it was previously In Progress or Quality Check
+                    const decReserve = ['In Progress', 'Quality Check'].includes(previousStatus) ? -requiredAmount : 0;
+
                     await RawMaterial.findByIdAndUpdate(comp.material, {
-                        $inc: { stockLevel: -requiredAmount }
+                        $inc: {
+                            stockLevel: -requiredAmount,
+                            reservedQuantity: decReserve
+                        }
                     });
                 }
             }
@@ -201,14 +208,62 @@ exports.updateProductionOrderStatus = async (req, res) => {
                     order.orderNumber
                 );
             }
-        } else if (status === 'In Progress' && !order.startDate) {
-            order.startDate = new Date();
+        }
+        else if (status === 'In Progress' && previousStatus === 'Planned') {
+            if (!order.startDate) order.startDate = new Date();
+
+            // Reserve materials
+            if (order.bom && order.bom.components) {
+                for (const comp of order.bom.components) {
+                    const requiredAmount = comp.quantityRequired * order.quantityPlanned;
+                    await RawMaterial.findByIdAndUpdate(comp.material, {
+                        $inc: { reservedQuantity: requiredAmount }
+                    });
+                }
+            }
+        }
+        else if (status === 'Cancelled' && ['In Progress', 'Quality Check'].includes(previousStatus)) {
+            // Un-reserve materials if canceled mid-production
+            if (order.bom && order.bom.components) {
+                for (const comp of order.bom.components) {
+                    const requiredAmount = comp.quantityRequired * order.quantityPlanned;
+                    await RawMaterial.findByIdAndUpdate(comp.material, {
+                        $inc: { reservedQuantity: -requiredAmount }
+                    });
+                }
+            }
         }
 
         await order.save();
-
         res.json(order);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+};
+
+exports.getProductionAnalytics = async (req, res) => {
+    try {
+        const allOrders = await ProductionOrder.find().populate('bom');
+        const completed = allOrders.filter(o => o.status === 'Completed');
+
+        const totalUnitsProduced = completed.reduce((sum, o) => sum + (o.quantityCompleted || 0), 0);
+        let totalCost = 0;
+
+        completed.forEach(o => {
+            if (o.bom && o.bom.totalEstimatedCost) {
+                totalCost += (o.bom.totalEstimatedCost * o.quantityCompleted);
+            }
+        });
+
+        res.json({
+            totalOrders: allOrders.length,
+            completedOrders: completed.length,
+            inProgressOrders: allOrders.filter(o => ['In Progress', 'Quality Check'].includes(o.status)).length,
+            totalUnitsProduced,
+            totalProductionCost: totalCost,
+            costPerUnit: totalUnitsProduced > 0 ? (totalCost / totalUnitsProduced) : 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };

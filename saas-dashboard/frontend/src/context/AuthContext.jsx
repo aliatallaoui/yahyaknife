@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
         const fetchUser = async () => {
             if (token) {
                 try {
-                    const response = await fetch('/api/auth/me', {
+                    const response = await fetch('http://localhost:5000/api/auth/me', {
                         headers: {
                             Authorization: `Bearer ${token}`
                         }
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = async (email, password) => {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -51,7 +51,9 @@ export const AuthProvider = ({ children }) => {
                 _id: data._id,
                 name: data.name,
                 email: data.email,
-                role: data.role
+                role: data.role,
+                permissions: data.permissions || [],
+                isActive: data.isActive
             });
             localStorage.setItem('token', data.token);
             return true;
@@ -61,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const register = async (name, email, password) => {
-        const response = await fetch('/api/auth/register', {
+        const response = await fetch('http://localhost:5000/api/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -77,7 +79,9 @@ export const AuthProvider = ({ children }) => {
                 _id: data._id,
                 name: data.name,
                 email: data.email,
-                role: data.role
+                role: data.role,
+                permissions: data.permissions || [],
+                isActive: data.isActive
             });
             localStorage.setItem('token', data.token);
             return true;

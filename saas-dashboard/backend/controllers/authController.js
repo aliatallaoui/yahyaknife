@@ -40,6 +40,8 @@ exports.registerUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                permissions: user.permissions,
+                isActive: user.isActive,
                 token: generateToken(user._id),
             });
         } else {
@@ -62,11 +64,17 @@ exports.loginUser = async (req, res) => {
         const user = await User.findOne({ email }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
+            if (!user.isActive) {
+                return res.status(401).json({ message: 'Account disabled. Contact Administrator.' });
+            }
+
             res.json({
                 _id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                permissions: user.permissions,
+                isActive: user.isActive,
                 token: generateToken(user._id),
             });
         } else {
@@ -89,7 +97,14 @@ exports.getMe = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json(user);
+        res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            permissions: user.permissions || [],
+            isActive: user.isActive
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });

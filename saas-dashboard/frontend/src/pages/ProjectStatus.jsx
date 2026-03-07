@@ -1,49 +1,54 @@
-import { useEffect, useState } from 'react';
-import { Briefcase, Activity, CheckSquare, Target, Clock, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import React, { useContext, useState } from 'react';
+import { ProjectContext } from '../context/ProjectContext';
+import { LayoutDashboard, CheckCircle2, Clock, AlertTriangle, Plus, Search, Filter, TrendingUp, Users } from 'lucide-react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import clsx from 'clsx';
 import moment from 'moment';
 
-const COLORS = ['#94A3B8', '#3B82F6', '#F59E0B', '#10B981'];
+const STATUS_COLORS = {
+    'Planned': 'bg-gray-100 text-gray-700 border-gray-200',
+    'Active': 'bg-blue-50 text-blue-700 border-blue-200',
+    'On Hold': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Completed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Cancelled': 'bg-rose-50 text-rose-700 border-rose-200'
+};
+
+const HEALTH_COLORS = {
+    'On Track': 'text-emerald-500 bg-emerald-50',
+    'At Risk': 'text-amber-500 bg-amber-50',
+    'Off Track': 'text-rose-500 bg-rose-50'
+};
 
 export default function ProjectStatus() {
-    const [metrics, setMetrics] = useState(null);
-    const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { projects, analytics, loading, createProject } = useContext(ProjectContext);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newProj, setNewProj] = useState({ name: '', description: '', department: 'General', deadline: '', linkedModule: 'None' });
 
-    useEffect(() => {
-        const fetchProjectData = async () => {
-            try {
-                const [metricsRes, projRes] = await Promise.all([
-                    fetch('http://localhost:5000/api/projects/metrics'),
-                    fetch('http://localhost:5000/api/projects/list')
-                ]);
-
-                setMetrics(await metricsRes.json());
-                setProjects(await projRes.json());
-            } catch (error) {
-                console.error("Error fetching project data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProjectData();
-    }, []);
+    const handleCreateProject = async (e) => {
+        e.preventDefault();
+        await createProject(newProj);
+        setIsModalOpen(false);
+        setNewProj({ name: '', description: '', department: 'General', deadline: '', linkedModule: 'None' });
+    };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin"></div>
+                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin"></div>
             </div>
         );
     }
 
-    const taskData = metrics?.taskStatusCount ? [
-        { name: 'To Do', value: metrics.taskStatusCount['To Do'] },
-        { name: 'In Progress', value: metrics.taskStatusCount['In Progress'] },
-        { name: 'In Review', value: metrics.taskStatusCount['In Review'] },
-        { name: 'Done', value: metrics.taskStatusCount['Done'] }
-    ] : [];
+    const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.projectId.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Formatting Task Distribution for Chart
+    const taskDistData = analytics?.taskStatusDistribution ? Object.keys(analytics.taskStatusDistribution).map(key => ({
+        name: key,
+        value: analytics.taskStatusDistribution[key]
+    })) : [];
+
+    const TASK_COLORS = ['#9ca3af', '#3b82f6', '#8b5cf6', '#ef4444', '#10b981'];
 
     return (
         <div className="flex flex-col gap-6">
@@ -51,137 +56,188 @@ export default function ProjectStatus() {
             {/* Header */}
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Project Status</h2>
-                    <p className="text-sm text-gray-500 mt-1">Track portfolio health, active initiatives, and task burndown.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Project Operations Master</h2>
+                    <p className="text-sm text-gray-500 mt-1">Enterprise portfolio tracking, milestone deadlines, and workforce allocation.</p>
                 </div>
-                <button className="px-5 py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-gray-800">New Project</button>
+                <div className="flex gap-3">
+                    <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm shadow-sm transition-colors hover:bg-gray-50 flex items-center gap-2">
+                        <Filter className="w-4 h-4" /> Reports
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(!isModalOpen)}
+                        className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-indigo-700 flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" /> New Project
+                    </button>
+                </div>
             </div>
 
-            {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <ProjectCard title="Active Projects" value={metrics?.portfolio?.activeProjects} icon={Activity} color="text-indigo-600" bg="bg-indigo-50" />
-                <ProjectCard title="Average Completion" value={`${metrics?.portfolio?.averageCompletion}%`} icon={CheckSquare} color="text-green-600" bg="bg-green-50" />
-                <ProjectCard title="Upcoming Milestones" value={metrics?.upcomingMilestones?.length} icon={Target} color="text-yellow-600" bg="bg-yellow-50" highlight={metrics?.upcomingMilestones?.length > 0} />
+            {/* KPI Row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <KPICard title="Active Projects" value={analytics?.activeProjects || 0} icon={LayoutDashboard} color="text-indigo-600" bg="bg-indigo-50" />
+                <KPICard title="Avg Completion" value={`${analytics?.averageCompletion || 0}%`} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
+                <KPICard title="Completed Year-to-Date" value={analytics?.completedProjects || 0} icon={CheckCircle2} color="text-teal-600" bg="bg-teal-50" />
+                <KPICard title="Overdue Tasks" value={analytics?.overdueTasks || 0} icon={AlertTriangle} color="text-rose-600" bg="bg-rose-50" alert={analytics?.overdueTasks > 0} />
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* Active Projects List */}
-                <div className="xl:col-span-2 flex flex-col gap-6">
-                    <h3 className="text-lg font-bold text-gray-900 px-1">Active Portfolio</h3>
-                    <div className="grid gap-4">
-                        {projects.map(proj => (
-                            <div key={proj._id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-blue-100 transition-colors group">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 text-lg mb-1">{proj.name}</h4>
-                                        <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                                            <span className="bg-gray-100 px-2 py-1 rounded-md">{proj.department}</span>
-                                            {proj.manager && <span>Lead: <span className="text-gray-900">{proj.manager.name}</span></span>}
+                {/* Global Task Workload Chart */}
+                <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[380px]">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-gray-400" /> Global Task Workload
+                    </h3>
+                    <div className="flex-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={taskDistData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 500 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
+                                <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                    {taskDistData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={TASK_COLORS[index % TASK_COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Project List (Master Overview) */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[380px]">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
+                        <h3 className="text-lg font-bold text-gray-900">Active Portfolio</h3>
+                        <div className="relative">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search projects..."
+                                className="bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 pl-9 pr-4 text-sm w-64"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 styled-scrollbar space-y-3">
+                        {filteredProjects.map(proj => (
+                            <div key={proj._id} className="group border border-gray-100 rounded-xl p-4 hover:bg-gray-50/50 hover:border-indigo-100 transition-all cursor-pointer">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm shrink-0 border border-indigo-100">
+                                            {proj.name.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-gray-900">{proj.name}</h4>
+                                                <span className={clsx("px-2 py-0.5 rounded-full text-[10px] font-bold border", STATUS_COLORS[proj.status])}>{proj.status}</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 font-medium">{proj.projectId} • {proj.department} • Link: {proj.linkedModule}</p>
                                         </div>
                                     </div>
-                                    <span className={clsx(
-                                        "px-3 py-1 rounded-full text-xs font-bold shrink-0",
-                                        proj.status === 'Completed' ? "bg-green-100 text-green-700" :
-                                            proj.status === 'Active' ? "bg-blue-100 text-blue-700" :
-                                                proj.status === 'On Hold' ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"
-                                    )}>
-                                        {proj.status}
-                                    </span>
-                                </div>
 
-                                <div className="mb-4">
-                                    <div className="flex justify-between text-sm font-semibold mb-1.5">
-                                        <span className="text-gray-700">Progress</span>
-                                        <span className="text-gray-900">{proj.completionPercentage}%</span>
-                                    </div>
-                                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                        <div
-                                            className={clsx("h-2 rounded-full transition-all duration-500", proj.completionPercentage === 100 ? "bg-green-500" : "bg-blue-600")}
-                                            style={{ width: `${proj.completionPercentage}%` }}
-                                        ></div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-bold text-gray-900">{proj.completionPercentage}%</div>
+                                        <div className={clsx("text-[10px] font-bold px-2 py-0.5 rounded mt-1", HEALTH_COLORS[proj.healthIndicator])}>
+                                            {proj.healthIndicator}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs text-gray-500 font-medium pt-3 border-t border-gray-50">
-                                    <div className="flex items-center gap-1">
+                                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-4">
+                                    <div
+                                        className={clsx("h-full rounded-full transition-all duration-500", proj.completionPercentage === 100 ? "bg-emerald-500" : "bg-indigo-500")}
+                                        style={{ width: `${proj.completionPercentage}%` }}>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600" title={`Owner: ${proj.owner?.name || 'Unassigned'}`}>
+                                            {proj.owner?.name?.charAt(0) || '?'}
+                                        </div>
+                                        <span className="text-xs text-gray-500">{proj.owner?.name || 'Unassigned Manager'}</span>
+                                    </div>
+                                    <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
                                         <Clock className="w-3.5 h-3.5" />
-                                        Deadline: {moment(proj.deadline).format('MMM D, YYYY')}
-                                    </div>
-                                    <div className="tabular-nums">
-                                        Budget: <span className="text-gray-900">${proj.spent.toLocaleString()} / ${proj.budget.toLocaleString()}</span>
-                                    </div>
+                                        Ends {moment(proj.deadline).format('MMM D, YYYY')}
+                                    </span>
                                 </div>
                             </div>
                         ))}
+                        {filteredProjects.length === 0 && (
+                            <div className="text-center p-8 text-gray-500 text-sm">No projects matched your search.</div>
+                        )}
                     </div>
-                </div>
-
-                {/* Side Panel: Tasks & Milestones */}
-                <div className="flex flex-col gap-6">
-
-                    {/* Task Breakdown */}
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Global Task Breakdown</h3>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={taskData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                                    <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
-                                        {taskData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Milestones */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[300px]">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-gray-400" /> Key Milestones
-                            </h3>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-0 styled-scrollbar">
-                            <div className="divide-y divide-gray-100">
-                                {metrics?.upcomingMilestones?.map(m => (
-                                    <div key={m._id} className="p-5 hover:bg-gray-50/50 transition-colors">
-                                        <div className="text-xs font-bold text-blue-600 mb-1">{m.projectId?.name || 'Unknown Project'}</div>
-                                        <h4 className="font-semibold text-gray-900 text-sm mb-2">{m.title}</h4>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className={clsx("font-medium", moment(m.dueDate).isBefore(moment()) ? "text-red-500" : "text-gray-500")}>
-                                                Due {moment(m.dueDate).fromNow()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                                {(!metrics?.upcomingMilestones || metrics.upcomingMilestones.length === 0) && (
-                                    <div className="p-8 text-center text-gray-500 text-sm">No upcoming milestones.</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
+
+            {/* New Project Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-900">Create New Project</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700">✕</button>
+                        </div>
+                        <form onSubmit={handleCreateProject} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Project Name</label>
+                                <input type="text" required value={newProj.name} onChange={e => setNewProj({ ...newProj, name: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder="e.g. Q4 Marketing Push" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Description</label>
+                                <textarea rows="3" value={newProj.description} onChange={e => setNewProj({ ...newProj, description: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder="Project goals..."></textarea>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
+                                    <select value={newProj.department} onChange={e => setNewProj({ ...newProj, department: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white">
+                                        <option value="General">General</option>
+                                        <option value="Manufacturing">Manufacturing</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Engineering">Engineering</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Linked Module</label>
+                                    <select value={newProj.linkedModule} onChange={e => setNewProj({ ...newProj, linkedModule: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white">
+                                        <option value="None">None</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="Manufacturing">Manufacturing</option>
+                                        <option value="Inventory">Inventory</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Deadline</label>
+                                <input type="date" required value={newProj.deadline} onChange={e => setNewProj({ ...newProj, deadline: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" />
+                            </div>
+
+                            <div className="pt-4 flex justify-end gap-3">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700">Create Project</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
 }
 
-function ProjectCard({ title, value, icon: Icon, color, bg, highlight }) {
+function KPICard({ title, value, icon: Icon, color, bg, alert }) {
     return (
-        <div className={clsx("p-6 rounded-2xl border shadow-sm flex items-center justify-between transition-colors", highlight ? "bg-yellow-50/30 border-yellow-100" : "bg-white border-gray-100")}>
-            <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500">{title}</p>
-                <h3 className="text-3xl font-black text-gray-900 tabular-nums tracking-tight leading-none">{value}</h3>
+        <div className={clsx("p-6 rounded-2xl border shadow-sm flex justify-between items-start transition-colors", alert ? "bg-rose-50/30 border-rose-100" : "bg-white border-gray-100")}>
+            <div>
+                <p className="text-sm font-medium text-gray-500 mb-2">{title}</p>
+                <h3 className="text-3xl font-black text-gray-900 tracking-tight leading-none">{value}</h3>
             </div>
-            <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0", bg, color)}>
-                <Icon className="w-7 h-7" />
+            <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", bg, color)}>
+                <Icon className="w-6 h-6" />
             </div>
         </div>
     );

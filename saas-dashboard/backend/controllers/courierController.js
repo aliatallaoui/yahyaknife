@@ -122,3 +122,25 @@ exports.recalculateCourierKPIs = async (courierId) => {
         console.error("Error recalculating courier KPIs:", error);
     }
 };
+
+// Helper: Synchronize Courier Cash Liability upon Order Delivery / Status Reversal
+exports.syncCourierCash = async (courierId, amountDelta) => {
+    try {
+        if (!courierId || amountDelta === 0) return;
+
+        const courier = await Courier.findById(courierId);
+        if (!courier) return;
+
+        // Use the pre-save hook to ensure pendingRemittance stays accurate
+        courier.cashCollected += amountDelta;
+
+        // Prevent negative collections artificially
+        if (courier.cashCollected < 0) {
+            courier.cashCollected = 0;
+        }
+
+        await courier.save();
+    } catch (error) {
+        console.error("Error syncing courier cash:", error);
+    }
+};

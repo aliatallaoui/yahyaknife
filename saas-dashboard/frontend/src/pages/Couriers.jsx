@@ -21,6 +21,9 @@ export default function Couriers() {
     const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
     const [dispatchToCourierId, setDispatchToCourierId] = useState('');
 
+    // Active Shipments Data
+    const [activeShipments, setActiveShipments] = useState([]);
+
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -42,12 +45,17 @@ export default function Couriers() {
         }
     };
 
-    const fetchPendingOrders = async () => {
+    const fetchOrdersData = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/sales/orders');
+            const res = await fetch('http://localhost:5000/api/sales/orders?limit=1000'); // temporary simple fetch all for dispatch
             const data = await res.json();
-            const dispatchable = data.filter(o => ['New', 'Confirmed', 'Preparing'].includes(o.status));
+            const ordersList = data.orders || data || [];
+
+            const dispatchable = ordersList.filter(o => ['New', 'Confirmed', 'Preparing'].includes(o.status));
             setPendingOrders(dispatchable);
+
+            const active = ordersList.filter(o => ['Ready for Pickup', 'Shipped', 'Out for Delivery'].includes(o.status));
+            setActiveShipments(active);
         } catch (error) {
             console.error(error);
         }
@@ -55,8 +63,24 @@ export default function Couriers() {
 
     useEffect(() => {
         fetchCouriers();
-        fetchPendingOrders();
+        fetchOrdersData();
     }, []);
+
+    const handleUpdateShipmentStatus = async (orderId, newStatus) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/sales/orders/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                fetchOrdersData();
+                fetchCouriers(); // Refresh courier KPIs and cash collected
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const handleOnboardSubmit = async (e) => {
         e.preventDefault();
@@ -114,7 +138,7 @@ export default function Couriers() {
             if (res.ok) {
                 setSelectedOrderIds(new Set());
                 setDispatchToCourierId('');
-                fetchPendingOrders();
+                fetchOrdersData();
                 alert("Orders successfully dispatched!");
             }
         } catch (error) {
@@ -145,6 +169,9 @@ export default function Couriers() {
                     <button onClick={() => setActiveTab('couriers')} className={`px-4 py-2 font-bold rounded-lg transition-all ${activeTab === 'couriers' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Couriers</button>
                     <button onClick={() => setActiveTab('dispatch')} className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'dispatch' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
                         <PackageOpen className="w-4 h-4" /> Dispatch Hub
+                    </button>
+                    <button onClick={() => setActiveTab('active')} className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}>
+                        <MapPin className="w-4 h-4" /> Active Shipments
                     </button>
                 </div>
             </div>
@@ -285,6 +312,86 @@ export default function Couriers() {
                             <Truck className="w-5 h-5" /> Dispatch Now
                         </button>
                     </div>
+                </div>
+            )}
+
+            {/* TAB: ACTIVE SHIPMENTS */}
+            {activeTab === 'active' && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="p-4 bg-gray-50 border-b border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900">Live Shipments Tracking</h2>
+                    </div>
+                    {activeShipments.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500 font-medium">No active shipments in transit.</div>
+                    ) : (
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-white">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order / Amount</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Courier</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-100">
+                                {activeShipments.map(shipment => {
+                                    const courierName = couriers.find(c => c._id === shipment.courier)?.name || 'Unknown';
+                                    return (
+                                        <tr key={shipment._id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="font-bold text-gray-900">{shipment.orderId}</div>
+                                                <div className="text-sm font-bold text-orange-600">{shipment.totalAmount.toLocaleString()} DZ</div>
+                                                <div className="text-xs text-gray-500 mt-1">{shipment.customer?.name} • {shipment.customer?.address || 'No Address'}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                                                        {courierName.charAt(0)}
+                                                    </div>
+                                                    <span className="font-bold text-sm text-gray-700">{courierName}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${shipment.status === 'Out for Delivery' ? 'bg-amber-100 text-amber-800' :
+                                                        shipment.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {shipment.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex justify-end gap-2">
+                                                    {shipment.status === 'Shipped' || shipment.status === 'Ready for Pickup' ? (
+                                                        <button
+                                                            onClick={() => handleUpdateShipmentStatus(shipment._id, 'Out for Delivery')}
+                                                            className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold rounded-md transition-colors"
+                                                        >
+                                                            Mark Out for Delivery
+                                                        </button>
+                                                    ) : shipment.status === 'Out for Delivery' ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleUpdateShipmentStatus(shipment._id, 'Delivered')}
+                                                                className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 font-bold rounded-md transition-colors"
+                                                            >
+                                                                Mark Delivered
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleUpdateShipmentStatus(shipment._id, 'Refused')}
+                                                                className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 font-bold rounded-md transition-colors"
+                                                            >
+                                                                Mark Refused
+                                                            </button>
+                                                        </>
+                                                    ) : null}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             )}
 

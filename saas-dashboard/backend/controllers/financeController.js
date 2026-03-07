@@ -2,6 +2,7 @@ const Expense = require('../models/Expense');
 const Revenue = require('../models/Revenue');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Payroll = require('../models/Payroll');
 
 // Get financial overview metrics (total revenue, total expenses, net profit, profit margin)
 exports.getFinancialOverview = async (req, res) => {
@@ -45,9 +46,16 @@ exports.getFinancialOverview = async (req, res) => {
             if (o._id === 'Paid') settledRevenue += o.grossSales;
         });
 
-        // 3. Consolidated P&L
+        // 3. Payroll Expenses
+        const payrollAgg = await Payroll.aggregate([
+            { $match: { status: 'Paid' } },
+            { $group: { _id: null, total: { $sum: '$finalPayableSalary' } } }
+        ]);
+        const totalPayroll = payrollAgg.length > 0 ? payrollAgg[0].total : 0;
+
+        // 4. Consolidated P&L
         const totalRevenue = manualRevenue + deliveredRevenue + settledRevenue; // Only count delivered/paid as actual recognized revenue
-        const totalOperatingExpenses = manualExpenses + totalGatewayFees;
+        const totalOperatingExpenses = manualExpenses + totalGatewayFees + totalPayroll;
         const totalExpenses = totalCOGS + totalOperatingExpenses;
 
         const netProfit = totalRevenue - totalExpenses;
@@ -62,6 +70,7 @@ exports.getFinancialOverview = async (req, res) => {
             },
             cogs: totalCOGS,
             operatingExpenses: totalOperatingExpenses,
+            payroll: totalPayroll,
             manualRevenue,
             manualExpenses,
             totalRecognizedRevenue: totalRevenue,

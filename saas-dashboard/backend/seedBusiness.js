@@ -86,7 +86,7 @@ const seedData = async () => {
         // 6. Orders (Linked to Customers and Variants)
         const orders = [];
         const channels = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website'];
-        const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+        const statuses = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 
         for (let i = 1; i <= 150; i++) {
             const date = new Date();

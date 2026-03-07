@@ -18,5 +18,6 @@ router.delete('/boms/:id', productionController.deleteBOM);
 router.get('/production-orders', productionController.getProductionOrders);
 router.post('/production-orders', productionController.createProductionOrder);
 router.put('/production-orders/:id/status', productionController.updateProductionOrderStatus);
+router.get('/analytics', productionController.getProductionAnalytics);
 
 module.exports = router;

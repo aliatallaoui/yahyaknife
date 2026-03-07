@@ -34,6 +34,9 @@ export default function ProductionFloor() {
                 </div>
             </div>
 
+            {/* Analytics Dashboard */}
+            <ProductionAnalytics />
+
             {/* Tabs */}
             <div className="flex gap-2 border-b border-gray-200 pb-px">
                 <TabButton
@@ -82,7 +85,34 @@ function TabButton({ active, onClick, icon: Icon, label }) {
     );
 }
 
-// --- SUB-PANELS (To be fully implemented) ---
+// --- SUB-PANELS ---
+
+function ProductionAnalytics() {
+    const { analytics } = useContext(ManufacturingContext);
+
+    if (!analytics) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500 font-bold">Total Units Yielded</p>
+                <h3 className="text-2xl font-black text-gray-900 mt-1">{analytics.totalUnitsProduced?.toLocaleString()}</h3>
+            </div>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500 font-bold">Currently In Production</p>
+                <h3 className="text-2xl font-black text-blue-600 mt-1">{analytics.inProgressOrders} Batches</h3>
+            </div>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500 font-bold">Avg. Cost Per Unit</p>
+                <h3 className="text-2xl font-black text-yellow-600 mt-1">{analytics.costPerUnit?.toFixed(2)} DZ</h3>
+            </div>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500 font-bold">Completed Batches</p>
+                <h3 className="text-2xl font-black text-green-600 mt-1">{analytics.completedOrders}/{analytics.totalOrders}</h3>
+            </div>
+        </div>
+    );
+}
 
 function MaterialsPanel() {
     const { materials, createMaterial, updateMaterial } = useContext(ManufacturingContext);
@@ -141,10 +171,15 @@ function MaterialsPanel() {
                             <td className="p-4 text-gray-500">{mat.category}</td>
                             <td className="p-4 text-gray-500">{mat.unitOfMeasure}</td>
                             <td className="p-4 text-gray-900">${mat.costPerUnit?.toFixed(2)}</td>
-                            <td className="p-4 font-bold">
-                                <span className={clsx("px-2 py-0.5 rounded", mat.stockLevel <= mat.minimumStockLevel ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>
-                                    {mat.stockLevel}
+                            <td className="p-4 font-bold flex flex-col gap-1">
+                                <span className={clsx("px-2 py-0.5 rounded w-fit", mat.stockLevel <= mat.minimumStock ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")} title="Total Available">
+                                    {mat.stockLevel - (mat.reservedQuantity || 0)} Available
                                 </span>
+                                {(mat.reservedQuantity > 0) && (
+                                    <span className="px-2 py-0.5 rounded w-fit bg-yellow-50 text-yellow-700 text-xs" title="Reserved for Active Production">
+                                        {mat.reservedQuantity} Reserved
+                                    </span>
+                                )}
                             </td>
                         </tr>
                     ))}
@@ -324,16 +359,20 @@ function OrdersPanel() {
                                     <span className={clsx("px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
                                         po.status === 'Completed' ? 'bg-green-100 text-green-700' :
                                             po.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                                po.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                                po.status === 'Quality Check' ? 'bg-purple-100 text-purple-700' :
+                                                    po.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
                                     )}>
                                         {po.status}
                                     </span>
                                     {po.status === 'Planned' && (
-                                        <button onClick={() => handleStatusTransition(po, 'In Progress')} className="text-xs text-blue-600 hover:underline">Start</button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'In Progress'); }} className="text-xs text-blue-600 hover:underline font-bold bg-blue-50 px-2 py-1 rounded">Start</button>
                                     )}
                                     {po.status === 'In Progress' && (
-                                        <button onClick={() => handleStatusTransition(po, 'Completed')} className="text-xs text-green-600 hover:underline">Finish</button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Quality Check'); }} className="text-xs text-purple-600 hover:underline font-bold bg-purple-50 px-2 py-1 rounded">QC Check</button>
+                                    )}
+                                    {po.status === 'Quality Check' && (
+                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Completed'); }} className="text-xs text-green-600 hover:underline font-bold bg-green-50 px-2 py-1 rounded">Finish & Yield</button>
                                     )}
                                 </div>
                             </td>

@@ -1,9 +1,11 @@
-const moment = require('moment');
-const Order = require('../models/Order');
-const ProductVariant = require('../models/ProductVariant');
 const Expense = require('../models/Expense');
 const Revenue = require('../models/Revenue');
+const ProductVariant = require('../models/ProductVariant');
+const Order = require('../models/Order');
+const Customer = require('../models/Customer');
 const { generateExecutiveInsights } = require('../utils/aiInsights');
+
+const moment = require('moment');
 
 exports.getDashboardData = async (req, res) => {
     try {
@@ -120,11 +122,23 @@ exports.getDashboardData = async (req, res) => {
         };
 
         // Leverage AI Intelligence summaries here
-        data.aiInsights = [
-            `Stockout Risk: ${variants.filter(v => (v.totalStock - v.reservedStock) <= v.reorderLevel).length} variants require immediate restock.`,
-            `Courier Optimization: Regional dispatch logic will save roughly 5% on pending transit times.`,
-            `Recent Refusals: Refusal rates stand at ${data.deliveryMetrics.refusalRate}%. Consider phone verification.`
-        ];
+        const [criticalStock, suspiciousCustomers] = await Promise.all([
+            ProductVariant.countDocuments({ status: 'Active', $expr: { $lte: [{ $subtract: ["$totalStock", "$reservedStock"] }, "$reorderLevel"] } }),
+            Customer.countDocuments({ isSuspicious: true })
+        ]);
+
+        const realInsights = [];
+        if (criticalStock > 0) {
+            realInsights.push(`Stockout Risk: ${criticalStock} variants require immediate restock.`);
+        }
+        if (suspiciousCustomers > 0) {
+            realInsights.push(`Fraud Alert: ${suspiciousCustomers} customers flagged as Suspicious based on refusal behavior.`);
+        }
+        if (data.deliveryMetrics.refusalRate > 10) {
+            realInsights.push(`High Refusal Rate (${data.deliveryMetrics.refusalRate}%). Consider enforcing Phone Confirmation.`);
+        }
+
+        data.aiSummary = realInsights.length > 0 ? realInsights : ["All systems operating normally. Outstanding balanced delivery active."];
 
         return res.json(data);
     } catch (error) {

@@ -21,6 +21,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     const [fulfillmentPipeline, setFulfillmentPipeline] = useState('Pending');
     const [notes, setNotes] = useState('');
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
+    const [codAmount, setCodAmount] = useState(0);
+    const [courierFee, setCourierFee] = useState(0);
 
     // Dynamic products array
     const [products, setProducts] = useState([{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);

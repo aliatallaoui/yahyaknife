@@ -1,6 +1,6 @@
 import { Sparkles, TrendingUp, TrendingDown, DollarSign, Package, Truck, AlertTriangle, CheckCircle2, CheckCircle, Clock } from 'lucide-react';
 import clsx from 'clsx';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function DashboardGrid({ data }) {
     if (!data) return <div className="text-gray-500">Failed to load data.</div>;
@@ -147,7 +147,7 @@ export default function DashboardGrid({ data }) {
                             <p className="text-sm font-bold text-gray-500 mb-2">Success Rate</p>
                             <div className="flex items-end gap-2">
                                 <span className="text-4xl font-black text-emerald-600">
-                                    {(deliveryMetrics?.deliverySuccessRate || 0).toFixed(1)}%
+                                    {parseFloat(deliveryMetrics?.deliverySuccessRate || 0).toFixed(1)}%
                                 </span>
                             </div>
                             <div className="w-full bg-emerald-100 h-2 mt-4 rounded-full overflow-hidden">
@@ -159,7 +159,7 @@ export default function DashboardGrid({ data }) {
                             <p className="text-sm font-bold text-gray-500 mb-2">Refusal / Returns</p>
                             <div className="flex items-end gap-2">
                                 <span className="text-4xl font-black text-rose-600">
-                                    {(deliveryMetrics?.refusalRate || 0).toFixed(1)}%
+                                    {parseFloat(deliveryMetrics?.refusalRate || 0).toFixed(1)}%
                                 </span>
                             </div>
                             <div className="w-full bg-rose-100 h-2 mt-4 rounded-full overflow-hidden">

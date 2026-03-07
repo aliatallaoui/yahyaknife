@@ -1,0 +1,236 @@
+import React, { useState, useEffect } from 'react';
+import { Calculator, CheckCircle, ShieldAlert, Download, Clock } from 'lucide-react';
+import moment from 'moment';
+
+export default function HRPayroll() {
+    const defaultPeriod = moment().format('MM-YYYY');
+    const [period, setPeriod] = useState(defaultPeriod);
+    const [records, setRecords] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Modal State
+    const [paymentModal, setPaymentModal] = useState(null);
+    const [paymentAmount, setPaymentAmount] = useState('');
+
+    const fetchPayroll = async (selectedPeriod) => {
+        setLoading(true);
+        try {
+            const res = await fetch(`http://localhost:5000/api/hr/payroll?period=${selectedPeriod}`);
+            const data = await res.json();
+            setRecords(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPayroll(period);
+    }, [period]);
+
+    const handleGenerateRun = async () => {
+        try {
+            const res = await fetch('http://localhost:5000/api/hr/payroll/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ period })
+            });
+            if (res.ok) fetchPayroll(period);
+        } catch (error) {
+            console.error("Failed to generate payroll run", error);
+        }
+    };
+
+    const submitPayment = async () => {
+        if (!paymentModal || !paymentAmount) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/hr/payroll/${paymentModal.id}/approve`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: parseFloat(paymentAmount) })
+            });
+            if (res.ok) {
+                fetchPayroll(period);
+                setPaymentModal(null);
+                setPaymentAmount('');
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to process payment');
+            }
+        } catch (error) {
+            console.error("Failed to approve payroll", error);
+        }
+    };
+
+    const setFullPayment = () => {
+        if (paymentModal) setPaymentAmount(paymentModal.maxPayable.toString());
+    };
+
+    const totalLoad = records.reduce((acc, r) => acc + (r.finalPayableSalary || 0), 0);
+    const totalDeductions = records.reduce((acc, r) => acc + (r.missingTimeDeductions || 0) + (r.absenceDeductions || 0), 0);
+    const totalOT = records.reduce((acc, r) => acc + (r.overtimeAdditions || 0), 0);
+    const pendingCount = records.filter(r => r.status === 'Pending Approval').length;
+
+    return (
+        <div className="p-8">
+            <div className="flex justify-between items-start mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 border-b-4 border-emerald-500 pb-2 inline-block">Monthly Payroll Engine</h1>
+                    <p className="text-gray-500 mt-2">Aggregates exact pointage, calculates DZD deductions, and clears salaries.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <select value={period} onChange={(e) => setPeriod(e.target.value)}
+                        className="border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 font-bold text-gray-700">
+                        <option value={moment().format('MM-YYYY')}>{moment().format('MMMM YYYY')}</option>
+                        <option value={moment().subtract(1, 'month').format('MM-YYYY')}>{moment().subtract(1, 'month').format('MMMM YYYY')}</option>
+                    </select>
+                    <button onClick={handleGenerateRun} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-emerald-700">
+                        <Calculator className="w-5 h-5" /> Generate Run
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Payroll Load</p>
+                    <p className="text-3xl font-black text-gray-900">{totalLoad.toLocaleString()} <span className="text-sm text-gray-500 font-medium">DZD</span></p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Deductions (-)</p>
+                    <p className="text-3xl font-black text-rose-600">{totalDeductions.toLocaleString()} <span className="text-sm text-gray-500 font-medium">DZD</span></p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total OT Additions (+)</p>
+                    <p className="text-3xl font-black text-emerald-600">{totalOT.toLocaleString()} <span className="text-sm text-gray-500 font-medium">DZD</span></p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Clearance Status</p>
+                        <p className="text-lg font-bold text-amber-600">{pendingCount > 0 ? `${pendingCount} Pending` : 'All Cleared'}</p>
+                    </div>
+                    {pendingCount > 0 ? <ShieldAlert className="w-10 h-10 text-amber-100" /> : <CheckCircle className="w-10 h-10 text-emerald-100" />}
+                </div>
+            </div>
+
+            {/* Payroll Grid */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Employee Det</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Base Contract</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Deductions (Missing/Absence)</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">OT Additions</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-900 uppercase tracking-wider text-right">Final Payable</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {records.map(record => (
+                            <tr key={record._id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-6 py-4">
+                                    <div className="font-bold text-gray-900">{record.employeeId?.name || 'Unknown Employee'}</div>
+                                    <div className="text-xs text-gray-500 font-medium mt-0.5">{record.employeeId?.role || '-'}</div>
+                                </td>
+
+                                <td className="px-6 py-4 text-right">
+                                    <span className="text-sm font-medium text-gray-600">{record.baseSalary.toLocaleString()}</span>
+                                </td>
+
+                                <td className="px-6 py-4 text-right">
+                                    <div className="text-sm font-bold text-rose-600">
+                                        -{(record.missingTimeDeductions + record.absenceDeductions).toLocaleString()}
+                                    </div>
+                                    {record.metricsTotal.totalMissingMinutes > 0 && (
+                                        <div className="text-[10px] text-gray-400 mt-1">{record.metricsTotal.totalMissingMinutes}m Missing</div>
+                                    )}
+                                </td>
+
+                                <td className="px-6 py-4 text-right">
+                                    <div className="text-sm font-bold text-emerald-600">
+                                        +{record.overtimeAdditions.toLocaleString()}
+                                    </div>
+                                </td>
+
+                                <td className="px-6 py-4 text-right bg-gray-50/50">
+                                    <span className="text-lg font-black text-gray-900">{record.finalPayableSalary.toLocaleString()}</span> <span className="text-xs text-gray-500">DZD</span>
+                                    {(record.amountPaid > 0 && record.amountPaid < record.finalPayableSalary) && (
+                                        <div className="text-xs font-bold text-amber-600 mt-1 pb-1 border-b border-amber-200/50">Paid: {record.amountPaid.toLocaleString()} DZD</div>
+                                    )}
+                                    {record.amountPaid > 0 && (
+                                        <div className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">Remaining: {(record.finalPayableSalary - record.amountPaid).toLocaleString()}</div>
+                                    )}
+                                </td>
+
+                                <td className="px-6 py-4 text-center">
+                                    <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${record.status === 'Pending Approval' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                            record.status === 'Partially Paid' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                record.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                    'bg-gray-50 text-gray-600 border-gray-200'
+                                        }`}>
+                                        {record.status}
+                                    </span>
+                                </td>
+
+                                <td className="px-6 py-4 flex justify-center gap-2">
+                                    <button onClick={() => window.print()} className="p-1.5 bg-gray-100 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition" title="Download Payslip">
+                                        <Download className="w-4 h-4" />
+                                    </button>
+                                    {record.status !== 'Paid' ? (
+                                        <button onClick={() => setPaymentModal({ id: record._id, maxPayable: record.finalPayableSalary - (record.amountPaid || 0), empName: record.employeeId?.name })} className="p-1.5 bg-gray-100 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition font-bold text-xs px-3" title="Process Payment">
+                                            PAY
+                                        </button>
+                                    ) : (
+                                        <span className="p-1.5 text-emerald-400"><CheckCircle className="w-4 h-4" /></span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Partial / Full Payment Modal */}
+            {paymentModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <Calculator className="w-5 h-5 text-emerald-600" /> Issue Payment
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-gray-500 mb-4">
+                                Issuing payment for <strong className="text-gray-900">{paymentModal.empName}</strong>.
+                                <br />Remaining Deficit: <strong className="text-rose-600">{paymentModal.maxPayable.toLocaleString()} DZD</strong>
+                            </p>
+
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Payment Amount (DZD)</label>
+                            <input
+                                type="number"
+                                value={paymentAmount}
+                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                placeholder="e.g. 10000"
+                                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 text-lg font-mono px-4 py-3 border outline-none"
+                            />
+
+                            <button onClick={setFullPayment} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 mt-2 block ml-auto">
+                                Clear Full Remaining Balance ({paymentModal.maxPayable})
+                            </button>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 flex gap-3 flex-row-reverse border-t border-gray-100">
+                            <button onClick={submitPayment} disabled={!paymentAmount || isNaN(paymentAmount) || Number(paymentAmount) <= 0 || Number(paymentAmount) > paymentModal.maxPayable} className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors flex-1 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                Confirm Payout
+                            </button>
+                            <button onClick={() => { setPaymentModal(null); setPaymentAmount(''); }} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

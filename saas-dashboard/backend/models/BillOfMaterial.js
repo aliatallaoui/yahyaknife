@@ -6,7 +6,7 @@ const bomComponentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const billOfMaterialSchema = new mongoose.Schema({
-    variantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', required: true, unique: true },
+    variantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', required: true }, // Removed unique: true for versioning
     version: { type: String, default: '1.0' },
     components: [bomComponentSchema],
     totalEstimatedCost: { type: Number, default: 0 }, // Calculated sum of (material.cost * quantity)

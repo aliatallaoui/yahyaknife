@@ -1,16 +1,19 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { X, Plus, Trash2, Search, Store } from 'lucide-react';
 import { InventoryContext } from '../context/InventoryContext';
+import { ManufacturingContext } from '../context/ManufacturingContext';
 
 const PurchaseOrdersModal = ({ isOpen, onClose }) => {
-    const { suppliers, products, createPurchaseOrder } = useContext(InventoryContext);
+    const { suppliers, products } = useContext(InventoryContext);
+    const { materials } = useContext(ManufacturingContext);
     const [supplierId, setSupplierId] = useState('');
     const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
     const [notes, setNotes] = useState('');
     const [items, setItems] = useState([]);
 
-    // For selecting a variant
-    const [selectedVariantId, setSelectedVariantId] = useState('');
+    // For selecting a variant/material
+    const [selectedItemModel, setSelectedItemModel] = useState('ProductVariant');
+    const [selectedItemId, setSelectedItemId] = useState('');
     const [quantity, setQuantity] = useState('');
     const [unitCost, setUnitCost] = useState('');
     const [error, setError] = useState(null);
@@ -26,13 +29,25 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
             }
             return {
                 ...v,
-                variantId: v._id,
-                baseProductId: p._id,
-                productName: p.name,
-                displayName: `${p.name} ${attrStr ? `(${attrStr})` : ''}`
+                itemId: v._id,
+                itemModel: 'ProductVariant',
+                displayName: `${p.name} ${attrStr ? `(${attrStr})` : ''}`,
+                sku: v.sku,
+                cost: v.cost
             };
         });
     });
+
+    const availableMaterials = materials.map(m => ({
+        ...m,
+        itemId: m._id,
+        itemModel: 'RawMaterial',
+        displayName: m.name,
+        sku: m.sku,
+        cost: m.costPerUnit
+    }));
+
+    const availableItems = [...availableVariants, ...availableMaterials];
 
     useEffect(() => {
         if (!isOpen) {
@@ -49,23 +64,24 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     const handleAddItem = () => {
-        if (!selectedVariantId || !quantity || !unitCost) {
-            setError('Please select a product, quantity, and unit cost.');
+        if (!selectedItemId || !quantity || !unitCost) {
+            setError('Please select an item, quantity, and unit cost.');
             return;
         }
 
-        const variantObj = availableVariants.find(v => v.variantId === selectedVariantId);
-        if (!variantObj) return;
+        const itemObj = availableItems.find(i => i.itemId === selectedItemId);
+        if (!itemObj) return;
 
         setItems(prev => [...prev, {
-            variantObj,
-            variant: variantObj.variantId,
+            itemObj,
+            itemRef: itemObj.itemId,
+            itemModel: itemObj.itemModel,
             quantity: Number(quantity),
             unitCost: Number(unitCost)
         }]);
 
         // Reset inputs
-        setSelectedVariantId('');
+        setSelectedItemId('');
         setQuantity('');
         setUnitCost('');
         setError(null);
@@ -84,16 +100,33 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
 
         try {
             setSubmitting(true);
-            await createPurchaseOrder({
+
+            const payload = {
                 supplier: supplierId,
                 expectedDeliveryDate: expectedDeliveryDate || undefined,
                 notes,
                 items: items.map(item => ({
-                    variant: item.variant,
+                    itemRef: item.itemRef,
+                    itemModel: item.itemModel,
                     quantity: item.quantity,
                     unitCost: item.unitCost
                 }))
+            };
+
+            const response = await fetch('/api/procurement/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}` // Standardized token retrieval
+                },
+                body: JSON.stringify(payload)
             });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to create PO');
+            }
+
             onClose();
         } catch (err) {
             setError(err.message);
@@ -171,23 +204,37 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
 
                         {/* Add Items Section */}
                         <div className="p-5 border border-indigo-100 bg-indigo-50/30 rounded-xl">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-4">Add Products</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-4">Add Items format</h3>
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                <div className="md:col-span-6">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                                <div className="md:col-span-3">
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Item Type</label>
                                     <select
                                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
-                                        value={selectedVariantId}
+                                        value={selectedItemModel}
                                         onChange={(e) => {
-                                            setSelectedVariantId(e.target.value);
-                                            // Auto-fill cost
-                                            const v = availableVariants.find(vr => vr.variantId === e.target.value);
-                                            if (v) setUnitCost(v.cost);
+                                            setSelectedItemModel(e.target.value);
+                                            setSelectedItemId(''); // Reset selection
                                         }}
                                     >
-                                        <option value="">Select Variant...</option>
-                                        {availableVariants.map(v => (
-                                            <option key={v.variantId} value={v.variantId}>{v.displayName} ({v.sku})</option>
+                                        <option value="ProductVariant">Finished Product Variant</option>
+                                        <option value="RawMaterial">Raw Material Component</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-3">
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Item to Purchase</label>
+                                    <select
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
+                                        value={selectedItemId}
+                                        onChange={(e) => {
+                                            setSelectedItemId(e.target.value);
+                                            // Auto-fill cost
+                                            const match = availableItems.find(i => i.itemId === e.target.value);
+                                            if (match) setUnitCost(match.cost || 0);
+                                        }}
+                                    >
+                                        <option value="">Select Item...</option>
+                                        {availableItems.filter(i => i.itemModel === selectedItemModel).map(i => (
+                                            <option key={i.itemId} value={i.itemId}>{i.displayName} ({i.sku})</option>
                                         ))}
                                     </select>
                                 </div>
@@ -230,7 +277,8 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Item Type</th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Item</th>
                                             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Qty</th>
                                             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Cost</th>
                                             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
@@ -240,8 +288,13 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {items.map((item, idx) => (
                                             <tr key={idx} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 text-sm text-gray-600 font-medium whitespace-nowrap">
+                                                    <span className={`px-2 py-0.5 rounded text-xs border ${item.itemModel === 'RawMaterial' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                                        {item.itemModel === 'RawMaterial' ? 'Raw Material' : 'Product Variant'}
+                                                    </span>
+                                                </td>
                                                 <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                                                    {item.variantObj.displayName} <span className="text-gray-400 font-normal ml-1">({item.variantObj.sku})</span>
+                                                    {item.itemObj.displayName} <span className="text-gray-400 font-normal ml-1">({item.itemObj.sku})</span>
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-gray-600 text-right">{item.quantity}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-600 text-right">${item.unitCost.toLocaleString()}</td>

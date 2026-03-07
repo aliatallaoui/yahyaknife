@@ -23,17 +23,32 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: [
+            'Super Admin',
+            'HR Manager',
+            'Finance Controller',
+            'Sales Representative',
+            'Warehouse Supervisor',
+            'Production Lead',
+            'user' // keeping 'user' for backwards compatibility/default
+        ],
         default: 'user'
+    },
+    permissions: [{
+        type: String
+    }],
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true
 });
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);

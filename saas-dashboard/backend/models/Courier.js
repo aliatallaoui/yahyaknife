@@ -29,9 +29,8 @@ const courierSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save hook to calculate pending remittance
-courierSchema.pre('save', function (next) {
+courierSchema.pre('save', function () {
     this.pendingRemittance = this.cashCollected - this.cashSettled;
-    next();
 });
 
 module.exports = mongoose.model('Courier', courierSchema);

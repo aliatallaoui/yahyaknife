@@ -7,10 +7,26 @@ import Sales from './pages/Sales';
 import Inventory from './pages/Inventory';
 import Couriers from './pages/Couriers';
 import CustomerInsight from './pages/CustomerInsight';
+import CustomerProfile from './pages/CustomerProfile';
 import Warehouses from './pages/Warehouses';
 import HRSnapshot from './pages/HRSnapshot';
+import EmployeeProfile from './pages/EmployeeProfile';
+import HRAttendance from './pages/HRAttendance';
+import HRPayroll from './pages/HRPayroll';
+import HRReports from './pages/HRReports';
 import ProjectStatus from './pages/ProjectStatus';
+import GlobalTaskBoard from './pages/GlobalTaskBoard';
+import ProjectDetail from './pages/ProjectDetail';
 import ProductionFloor from './pages/ProductionFloor';
+import ProcurementHub from './pages/ProcurementHub';
+import SettingsLayout from './pages/settings/SettingsLayout';
+import SettingsProfile from './pages/settings/SettingsProfile';
+import SettingsGeneral from './pages/settings/SettingsGeneral';
+import SettingsSecurity from './pages/settings/SettingsSecurity';
+import SettingsAlerts from './pages/settings/SettingsAlerts';
+import SettingsUsers from './pages/settings/SettingsUsers';
+import SupportDesk from './pages/SupportDesk';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -20,6 +36,7 @@ import { SalesProvider } from './context/SalesContext';
 import { InventoryProvider } from './context/InventoryContext';
 import { ManufacturingProvider } from './context/ManufacturingContext';
 import { CustomerProvider } from './context/CustomerContext';
+import { ProjectProvider } from './context/ProjectContext';
 
 const Layout = () => {
   const location = useLocation();
@@ -57,9 +74,29 @@ const Layout = () => {
               <Route path="/warehouses" element={<Warehouses />} />
               <Route path="/couriers" element={<Couriers />} />
               <Route path="/customers" element={<CustomerInsight />} />
+              <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/hr" element={<HRSnapshot />} />
+              <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
+              <Route path="/hr/attendance" element={<HRAttendance />} />
+              <Route path="/hr/payroll" element={<HRPayroll />} />
+              <Route path="/hr/reports" element={<HRReports />} />
               <Route path="/projects" element={<ProjectStatus />} />
+              <Route path="/projects/tasks" element={<GlobalTaskBoard />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/production" element={<ProductionFloor />} />
+              <Route path="/procurement" element={<ProcurementHub />} />
+              <Route path="/support" element={<SupportDesk />} />
+
+              {/* Settings Hub Nested Routing */}
+              <Route path="/settings" element={<SettingsLayout />}>
+                <Route path="profile" element={<SettingsProfile />} />
+                <Route path="general" element={<SettingsGeneral />} />
+                <Route path="security" element={<SettingsSecurity />} />
+                <Route path="alerts" element={<SettingsAlerts />} />
+                <Route path="users" element={<SettingsUsers />} />
+                {/* Default redirect for /settings */}
+                <Route path="" element={<Navigate to="profile" replace />} />
+              </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -78,9 +115,11 @@ function App() {
           <InventoryProvider>
             <ManufacturingProvider>
               <CustomerProvider>
-                <Router>
-                  <Layout />
-                </Router>
+                <ProjectProvider>
+                  <Router>
+                    <Layout />
+                  </Router>
+                </ProjectProvider>
               </CustomerProvider>
             </ManufacturingProvider>
           </InventoryProvider>

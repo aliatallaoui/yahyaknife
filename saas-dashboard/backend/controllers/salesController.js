@@ -3,6 +3,7 @@ const Customer = require('../models/Customer');
 const ProductVariant = require('../models/ProductVariant');
 const { logStockMovement } = require('./stockController');
 const { updateCustomerMetrics } = require('./customerController');
+const { syncCourierCash, recalculateCourierKPIs } = require('./courierController');
 
 exports.getOrders = async (req, res) => {
     try {
@@ -260,6 +261,23 @@ exports.updateOrder = async (req, res) => {
             );
         }
 
+        // PHASE 27: COURIER LIABILITY SYNC
+        const isOldCODCollected = ['Delivered', 'Paid'].includes(oldMainStatus);
+        const isNewCODCollected = ['Delivered', 'Paid'].includes(newMainStatus);
+        const activeCourierId = updateData.courier || existingOrder.courier;
+
+        if (activeCourierId) {
+            let courierCashDelta = 0;
+            if (isOldCODCollected) courierCashDelta -= existingOrder.totalAmount;
+            if (isNewCODCollected) {
+                const newTotalAmount = updateData.totalAmount !== undefined ? updateData.totalAmount : existingOrder.totalAmount;
+                courierCashDelta += newTotalAmount;
+            }
+            if (courierCashDelta !== 0) {
+                await syncCourierCash(activeCourierId, courierCashDelta);
+            }
+        }
+
         const updatedOrder = await Order.findByIdAndUpdate(
             id,
             updateData,
@@ -272,6 +290,11 @@ exports.updateOrder = async (req, res) => {
         // Update customer CRM metrics
         if (updatedOrder.customer) {
             updateCustomerMetrics(updatedOrder.customer._id).catch(console.error);
+        }
+
+        // Update Courier KPIs
+        if (activeCourierId) {
+            recalculateCourierKPIs(activeCourierId).catch(console.error);
         }
 
         res.json(updatedOrder);

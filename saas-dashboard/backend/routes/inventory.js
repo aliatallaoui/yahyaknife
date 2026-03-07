@@ -43,8 +43,8 @@ router.route('/categories/:id')
 // router.get('/ledger/:productId', stockController.getProductLedger);
 
 // New routes appended as per instruction
-router.get('/reports', analyticsController.downloadReport);
-router.post('/restock/:variantId', stockController.restockItem);
+// router.get('/reports', analyticsController.downloadReport);
+// router.post('/restock/:variantId', stockController.restockItem);
 
 // --- New Enterprise Logistics Routes ---
 

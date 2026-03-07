@@ -57,11 +57,18 @@ const initJobs = () => {
     cron.schedule('0 1 * * *', async () => {
         console.log("[CRON] Running COD Fraud Sweep & Courier Sync...");
         try {
-            // A. Fraud Sweep: Flag customers with refusal rate > 30%
-            const flagged = await Customer.updateMany(
-                { refusalRate: { $gt: 30 } },
-                { $set: { isSuspicious: true } }
+            // A. Fraud Sweep: Flag customers with refusal rate > 30%, Blacklist > 50%
+            await Customer.updateMany(
+                { refusalRate: { $gt: 30 }, refusalRate: { $lte: 50 }, totalRefusals: { $gte: 2 } },
+                { $set: { isSuspicious: true, requiresDeliveryVerification: true } }
             );
+
+            const blacklisted = await Customer.updateMany(
+                { refusalRate: { $gt: 50 }, totalRefusals: { $gte: 3 } },
+                { $set: { blacklisted: true, isSuspicious: true, segment: 'At Risk' } }
+            );
+
+            console.log(`[CRON] Fraud Sweep complete. Auto-blacklisted ${blacklisted.modifiedCount} accounts.`);
             console.log(`[CRON] Fraud Sweep complete. Processed suspicious flags.`);
 
             // B. Mock Courier Assignment (e.g., auto assign based on region optimization)

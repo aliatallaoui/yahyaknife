@@ -13,7 +13,16 @@ const purchaseOrderSchema = new mongoose.Schema({
         default: 'Draft'
     },
     items: [{
-        variant: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', required: true },
+        itemModel: {
+            type: String,
+            required: true,
+            enum: ['ProductVariant', 'RawMaterial']
+        },
+        itemRef: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            refPath: 'items.itemModel'
+        },
         quantity: { type: Number, required: true, min: 1 },
         receivedQuantity: { type: Number, default: 0 },
         unitCost: { type: Number, required: true, min: 0 }

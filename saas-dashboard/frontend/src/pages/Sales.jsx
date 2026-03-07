@@ -118,7 +118,7 @@ export default function Sales() {
 
     const channelData = performance?.channelDistribution ? Object.keys(performance.channelDistribution).map((key) => ({
         name: key,
-        value: performance.channelDistribution[key].revenue
+        value: Number(performance.channelDistribution[key].revenue) || 0 // Fix: Recharts Pie needs pure Numbers, not strings!
     })).sort((a, b) => b.value - a.value) : [];
 
     // Advanced Filtering

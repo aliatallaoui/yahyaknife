@@ -11,12 +11,18 @@ import { AuthContext } from '../context/AuthContext';
 
 export default function Sidebar() {
     const location = useLocation();
-    const { logout } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
 
     // Helper to determine if a route is active
     const isActive = (path) => {
         if (path === '/' && location.pathname !== '/') return false;
         return location.pathname.startsWith(path);
+    };
+
+    const hasAccess = (allowedRoles) => {
+        if (!user) return false;
+        if (user.role === 'Super Admin') return true;
+        return allowedRoles.includes(user.role);
     };
 
     return (
@@ -53,9 +59,9 @@ export default function Sidebar() {
                     <div className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-900 cursor-pointer transition-colors">
                         <HelpCircle className="w-5 h-5" />
                     </div>
-                    <div className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-900 cursor-pointer transition-colors">
+                    <NavLink to="/settings/users" className={({ isActive }) => clsx("w-10 h-10 flex items-center justify-center cursor-pointer transition-colors", isActive ? "text-blue-600 bg-blue-50 rounded-xl" : "text-gray-400 hover:text-gray-900")}>
                         <Settings className="w-5 h-5" />
-                    </div>
+                    </NavLink>
                     <div
                         onClick={logout}
                         className="w-10 h-10 flex items-center justify-center text-red-400 hover:text-red-600 cursor-pointer transition-colors"
@@ -89,58 +95,88 @@ export default function Sidebar() {
                         </NavLink>
                         {/* Overview Sub-items */}
                         <div className="flex flex-col ml-3 py-1 gap-0.5 mb-4">
-                            <NavLink to="/financial" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                <FileText className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                <span>Financial</span>
-                            </NavLink>
-                            <NavLink to="/sales" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                <RefreshCw className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                <span>Sales</span>
-                            </NavLink>
-                            <NavLink to="/inventory" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                <Box className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                <span>Inventory Tracking</span>
-                            </NavLink>
-                            <NavLink to="/warehouses" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                <Layers className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                <span>Warehouses & Logistics</span>
-                            </NavLink>
-                            <NavLink to="/couriers" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                <Truck className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                <span>Dispatch & Couriers</span>
-                            </NavLink>
+                            {hasAccess(['Finance Controller', 'Super Admin']) && (
+                                <NavLink to="/financial" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                    <FileText className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
+                                    <span>Financial</span>
+                                </NavLink>
+                            )}
+                            {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
+                                <NavLink to="/sales" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                    <RefreshCw className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
+                                    <span>Sales</span>
+                                </NavLink>
+                            )}
+                            {hasAccess(['Finance Controller', 'Warehouse Supervisor', 'Production Lead', 'Sales Representative', 'Super Admin']) && (
+                                <NavLink to="/inventory" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                    <Box className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
+                                    <span>Inventory Tracking</span>
+                                </NavLink>
+                            )}
+                            {hasAccess(['Warehouse Supervisor', 'Production Lead', 'Super Admin']) && (
+                                <NavLink to="/warehouses" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                    <Layers className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
+                                    <span>Warehouses & Logistics</span>
+                                </NavLink>
+                            )}
+                            {hasAccess(['Warehouse Supervisor', 'Sales Representative', 'Super Admin']) && (
+                                <NavLink to="/couriers" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                    <Truck className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
+                                    <span>Dispatch & Couriers</span>
+                                </NavLink>
+                            )}
                         </div>
                     </div>
 
-                    <NavSection title="Customer Insight" icon={Users}>
-                        <NavLink to="/customers" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                            Acquisition & Feedback
-                        </NavLink>
-                        {/* Placeholders for future sub-routes */}
-                        <span className="text-gray-500 hover:text-gray-900 cursor-pointer py-1.5 text-sm font-medium px-3 flex items-center gap-2">Retention Flow</span>
-                    </NavSection>
+                    {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
+                        <NavSection title="Customer Insight" icon={Users}>
+                            <NavLink to="/customers" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Acquisition & Feedback
+                            </NavLink>
+                            <NavLink to="/support" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Support & RMAs
+                            </NavLink>
+                        </NavSection>
+                    )}
 
-                    <NavSection title="Manufacturing Floor" icon={PackageOpen}>
-                        <NavLink to="/production" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                            Production & BOMs
-                        </NavLink>
-                    </NavSection>
+                    {hasAccess(['Production Lead', 'Warehouse Supervisor', 'Super Admin']) && (
+                        <NavSection title="Manufacturing Floor" icon={PackageOpen}>
+                            <NavLink to="/production" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Production & BOMs
+                            </NavLink>
+                            <NavLink to="/procurement" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Procurement / Suppy
+                            </NavLink>
+                        </NavSection>
+                    )}
 
-                    <NavSection title="HR Snapshot" icon={Briefcase}>
-                        <NavLink to="/hr" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                            Directory & Leave
-                        </NavLink>
-                        {/* Placeholder for future sub-routes */}
-                        <span className="text-gray-500 hover:text-gray-900 cursor-pointer py-1.5 text-sm font-medium px-3 flex items-center gap-2">Performance Reviews</span>
-                    </NavSection>
+                    {hasAccess(['HR Manager', 'Super Admin']) && (
+                        <NavSection title="HR Snapshot" icon={Briefcase}>
+                            <NavLink to="/hr" end className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Directory & Leave
+                            </NavLink>
+                            <NavLink to="/hr/attendance" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Daily Pointage
+                            </NavLink>
+                            <NavLink to="/hr/payroll" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Monthly Payroll
+                            </NavLink>
+                            <NavLink to="/hr/reports" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Reports & Data
+                            </NavLink>
+                        </NavSection>
+                    )}
 
-                    <NavSection title="Project Status" icon={Flag}>
-                        <NavLink to="/projects" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                            Active Portfolio
-                        </NavLink>
-                        {/* Placeholders for future sub-routes */}
-                        <span className="text-gray-500 hover:text-gray-900 cursor-pointer py-1.5 text-sm font-medium px-3 flex items-center gap-2">Task Boards</span>
-                    </NavSection>
+                    {hasAccess(['Production Lead', 'Super Admin']) && (
+                        <NavSection title="Project Status" icon={Flag}>
+                            <NavLink to="/projects" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Active Portfolio
+                            </NavLink>
+                            <NavLink to="/projects/tasks" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
+                                Global Task Board
+                            </NavLink>
+                        </NavSection>
+                    )}
                 </div>
             </div>
         </div>
