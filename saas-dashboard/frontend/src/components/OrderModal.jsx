@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import moment from 'moment';
 
@@ -8,6 +9,7 @@ const STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped'
 const PAYMENT_STATUSES = ['Unpaid', 'Pending', 'Paid', 'Failed', 'Refunded'];
 
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], customers = [], couriers = [] }) {
+    const { t } = useTranslation();
     const isEdit = !!initialData;
 
     // Form state
@@ -158,7 +160,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900">
-                        {isEdit ? 'Edit Sales Order' : 'Create New Sale'}
+                        {isEdit ? t('modals.orderTitleEdit') : t('modals.orderTitleNew')}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -172,24 +174,26 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         {/* Two column grid for basic info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Order ID</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderIdLabel')}</label>
                                 <input required type="text" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={orderId} onChange={e => setOrderId(e.target.value)} />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Date</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderDate')}</label>
                                 <input required type="date" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={date} onChange={e => setDate(e.target.value)} />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Customer</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCustomer')}</label>
                                 <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={customerId} onChange={e => setCustomerId(e.target.value)}>
-                                    <option value="" disabled>Select a customer...</option>
+                                    <option value="" disabled>{t('modals.orderSelectCustomer')}</option>
                                     {customers.map(c => <option key={c._id} value={c._id}>{c.name} ({c.email})</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Sales Channel</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderSalesChannel')}</label>
                                 <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={channel} onChange={e => setChannel(e.target.value)}>
-                                    {CHANNELS.map(ch => <option key={ch} value={ch}>{ch}</option>)}
+                                    {CHANNELS.map(ch => <option key={ch} value={ch}>
+                                        {ch === 'Amazon' ? t('modals.chAmazon') : ch === 'Alibaba' ? t('modals.chAlibaba') : ch === 'Tokopedia' ? t('modals.chTokopedia') : ch === 'Shopee' ? t('modals.chShopee') : ch === 'Website' ? t('modals.chWebsite') : t('modals.chOther')}
+                                    </option>)}
                                 </select>
                             </div>
                         </div>
@@ -198,13 +202,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                             <div className="flex justify-between items-center mb-4">
                                 <div className="flex items-center gap-3">
-                                    <h3 className="font-semibold text-gray-900">Line Items</h3>
+                                    <h3 className="font-semibold text-gray-900">{t('modals.orderLineItems')}</h3>
                                     <a href="/inventory" target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline font-medium">
-                                        Manage Products ↗
+                                        {t('modals.orderManageProducts')}
                                     </a>
                                 </div>
                                 <button type="button" onClick={addProductLine} className="flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
-                                    <Plus className="w-3 h-3" /> Add Product
+                                    <Plus className="w-3 h-3" /> {t('modals.orderAddProduct')}
                                 </button>
                             </div>
 
@@ -230,30 +234,30 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                         }
                                                     }}
                                                 >
-                                                    <option value="" disabled>Select Variant...</option>
+                                                    <option value="" disabled>{t('modals.orderSelectVariant')}</option>
                                                     {availableVariants.map(v => (
                                                         <option key={v.variantId} value={v.variantId}>
-                                                            {v.displayName} - ${v.price?.toFixed(2) || 0} (Stock: {v.availableStock})
+                                                            {v.displayName} - ${v.price?.toFixed(2) || 0} ({t('modals.orderAvail')} {v.availableStock})
                                                         </option>
                                                     ))}
                                                     {/* Display fallback for legacy orders */}
                                                     {product.name && !product.variantId && (
-                                                        <option value="" disabled>{product.name} (Legacy)</option>
+                                                        <option value="" disabled>{product.name} {t('modals.orderLegacy')}</option>
                                                     )}
                                                 </select>
                                             ) : (
-                                                <input required type="text" placeholder="Product Name (No Inventory Loaded)" className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-blue-500 py-1 text-sm font-medium" value={product.name} onChange={e => handleProductChangeMulti(index, { name: e.target.value })} />
+                                                <input required type="text" placeholder={t('modals.orderNoInventory')} className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-blue-500 py-1 text-sm font-medium" value={product.name} onChange={e => handleProductChangeMulti(index, { name: e.target.value })} />
                                             )}
                                         </div>
                                         <div className="w-24">
-                                            <label className="text-xs text-gray-500 block mb-1">Quantity</label>
+                                            <label className="text-xs text-gray-500 block mb-1">{t('modals.orderQuantity')}</label>
                                             <input required type="number" min="1" max={product.availableStock !== null ? product.availableStock : undefined} className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 py-1 px-2 rounded text-sm" value={product.quantity} onChange={e => handleProductChange(index, 'quantity', e.target.value)} />
                                             {product.availableStock !== null && (
-                                                <p className="text-[10px] text-gray-500 mt-1 font-medium">Avail: {product.availableStock}</p>
+                                                <p className="text-[10px] text-gray-500 mt-1 font-medium">{t('modals.orderAvail')} {product.availableStock}</p>
                                             )}
                                         </div>
                                         <div className="w-32">
-                                            <label className="text-xs text-gray-500 block mb-1">Unit Price ($)</label>
+                                            <label className="text-xs text-gray-500 block mb-1">{t('modals.orderUnitPrice')}</label>
                                             <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 py-1 px-2 rounded text-sm" value={product.unitPrice} onChange={e => handleProductChange(index, 'unitPrice', e.target.value)} />
                                         </div>
                                         <button type="button" onClick={() => removeProductLine(index)} disabled={products.length === 1} className="mt-5 p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded disabled:opacity-50 transition-colors">
@@ -263,39 +267,51 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                 ))}
                             </div>
                             <div className="flex justify-end mt-4">
-                                <p className="text-sm text-gray-500 font-medium">Total: <span className="text-lg font-bold text-gray-900">${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                                <p className="text-sm text-gray-500 font-medium">{t('modals.orderTotal')} <span className="text-lg font-bold text-gray-900">${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                             </div>
                         </div>
 
                         {/* Status Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">COD Status Pipeline</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCodStatus')}</label>
                                 <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none font-bold text-blue-800" value={status} onChange={e => setStatus(e.target.value)}>
-                                    {STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
+                                    {STATUSES.map(st => <option key={st} value={st}>
+                                        {st === 'New' ? t('modals.stNew') :
+                                            st === 'Confirmed' ? t('modals.stConfirmed') :
+                                                st === 'Preparing' ? t('modals.stPreparing') :
+                                                    st === 'Ready for Pickup' ? t('modals.stReady') :
+                                                        st === 'Shipped' ? t('modals.stShipped') :
+                                                            st === 'Out for Delivery' ? t('modals.stOutForDelivery') :
+                                                                st === 'Delivered' ? t('modals.stDelivered') :
+                                                                    st === 'Paid' ? t('modals.stPaid') :
+                                                                        st === 'Refused' ? t('modals.stRefused') :
+                                                                            st === 'Returned' ? t('modals.stReturned') :
+                                                                                st === 'Cancelled' ? t('modals.stCancelled') : st}
+                                    </option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Dispatch Courier</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderDispatchCourier')}</label>
                                 <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={courierId} onChange={e => setCourierId(e.target.value)}>
-                                    <option value="">Unassigned</option>
+                                    <option value="">{t('modals.orderUnassigned')}</option>
                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Expected COD (DZ)</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderExpectedCod')}</label>
                                 <input type="number" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={codAmount} onChange={e => setCodAmount(e.target.value)} />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Courier Fee (DZ)</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCourierFee')}</label>
                                 <input type="number" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={courierFee} onChange={e => setCourierFee(e.target.value)} />
                             </div>
                         </div>
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Internal Notes</label>
-                            <textarea rows="3" placeholder="Add tracking links or customer requests here..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors resize-none" value={notes} onChange={e => setNotes(e.target.value)}></textarea>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderInternalNotes')}</label>
+                            <textarea rows="3" placeholder={t('modals.orderNotesPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors resize-none" value={notes} onChange={e => setNotes(e.target.value)}></textarea>
                         </div>
                     </form>
                 </div>
@@ -303,10 +319,10 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 {/* Footer */}
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                        Cancel
+                        {t('modals.orderBtnCancel')}
                     </button>
                     <button type="submit" form="orderForm" className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-600/20 transition-all">
-                        {isEdit ? 'Save Changes' : 'Create Order'}
+                        {isEdit ? t('modals.orderBtnSave') : t('modals.orderBtnCreate')}
                     </button>
                 </div>
             </div>

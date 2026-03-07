@@ -30,17 +30,34 @@ import SupportDesk from './pages/SupportDesk';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider } from './context/AuthContext';
+import { AuthContext, AuthProvider } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { SalesProvider } from './context/SalesContext';
 import { InventoryProvider } from './context/InventoryContext';
 import { ManufacturingProvider } from './context/ManufacturingContext';
 import { CustomerProvider } from './context/CustomerContext';
 import { ProjectProvider } from './context/ProjectContext';
+import { useContext, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Layout = () => {
   const location = useLocation();
+  const { user } = useContext(AuthContext);
+  const { i18n } = useTranslation();
+
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  // RTL DOM Flipper depending on settings language payload
+  useEffect(() => {
+    const lang = user?.preferences?.language || 'en';
+
+    // Safely execute change in internal i18next state
+    if (i18n.language !== lang) i18n.changeLanguage(lang);
+
+    // Hard toggle browser engine layouts from RTL to LTR natively
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+  }, [user?.preferences?.language, i18n]);
 
   if (isAuthPage) {
     return (
@@ -58,7 +75,7 @@ const Layout = () => {
       <Sidebar />
 
       {/* Main Content Area - Fluid */}
-      <main className="flex-1 ml-[320px] flex flex-col min-h-screen overflow-x-hidden">
+      <main className="flex-1 ms-[320px] flex flex-col min-h-screen overflow-x-hidden">
         {/* Header - Contextual */}
         <Header />
 

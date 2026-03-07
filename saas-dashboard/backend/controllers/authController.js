@@ -42,6 +42,7 @@ exports.registerUser = async (req, res) => {
                 role: user.role,
                 permissions: user.permissions,
                 isActive: user.isActive,
+                preferences: user.preferences,
                 token: generateToken(user._id),
             });
         } else {
@@ -75,6 +76,7 @@ exports.loginUser = async (req, res) => {
                 role: user.role,
                 permissions: user.permissions,
                 isActive: user.isActive,
+                preferences: user.preferences,
                 token: generateToken(user._id),
             });
         } else {
@@ -103,7 +105,8 @@ exports.getMe = async (req, res) => {
             email: user.email,
             role: user.role,
             permissions: user.permissions || [],
-            isActive: user.isActive
+            isActive: user.isActive,
+            preferences: user.preferences || {}
         });
     } catch (error) {
         console.error(error);

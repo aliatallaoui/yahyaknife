@@ -53,7 +53,8 @@ export const AuthProvider = ({ children }) => {
                 email: data.email,
                 role: data.role,
                 permissions: data.permissions || [],
-                isActive: data.isActive
+                isActive: data.isActive,
+                preferences: data.preferences || {} // capture incoming preferences
             });
             localStorage.setItem('token', data.token);
             return true;
@@ -96,8 +97,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
     };
 
+    const updateContextPreferences = (newPreferences) => {
+        if (user) {
+            setUser({ ...user, preferences: newPreferences });
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateContextPreferences }}>
             {children}
         </AuthContext.Provider>
     );

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { X, Search, FileText } from 'lucide-react';
 import moment from 'moment';
 import { InventoryContext } from '../context/InventoryContext';
+import { useTranslation } from 'react-i18next';
 
 const StockLedgerModal = ({ isOpen, onClose, product }) => {
+    const { t } = useTranslation();
     const { fetchProductLedger } = useContext(InventoryContext);
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -34,9 +36,9 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                             <FileText className="w-5 h-5 text-indigo-600" />
-                            Stock Ledger
+                            {t('modals.ledgerTitle', 'Stock Ledger')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">Movement history for {product.name} ({product.sku})</p>
+                        <p className="text-sm text-gray-500 mt-1">{t('modals.ledgerSubtitle', 'Movement history for')} {product.name} ({product.sku})</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -52,17 +54,17 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                     ) : ledger.length === 0 ? (
                         <div className="text-center py-12">
                             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No stock movements found for this product.</p>
+                            <p className="text-gray-500">{t('modals.noMovements', 'No stock movements found for this product.')}</p>
                         </div>
                     ) : (
                         <div className="overflow-hidden border border-gray-200 rounded-xl">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Quantity</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference/Reason</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colDate', 'Date')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colType', 'Type')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colQty', 'Quantity')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colReason', 'Reference/Reason')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -77,7 +79,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                                                         movement.type === 'Sale' ? 'bg-green-50 text-green-700 border-green-200' :
                                                             'bg-gray-50 text-gray-700 border-gray-200'}`}
                                                 >
-                                                    {movement.type}
+                                                    {movement.type === 'Purchase' ? t('modals.typePurchase', 'Purchase') : movement.type === 'Sale' ? t('modals.typeSale', 'Sale') : movement.type}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -87,7 +89,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                 <div>{movement.reason}</div>
-                                                {movement.referenceId && <div className="text-xs text-gray-400 mt-0.5">Ref: {movement.referenceId}</div>}
+                                                {movement.referenceId && <div className="text-xs text-gray-400 mt-0.5">{t('modals.refText', 'Ref')}: {movement.referenceId}</div>}
                                             </td>
                                         </tr>
                                     ))}
@@ -103,7 +105,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm"
                     >
-                        Close
+                        {t('modals.btnCancel', 'Close')}
                     </button>
                 </div>
             </div>

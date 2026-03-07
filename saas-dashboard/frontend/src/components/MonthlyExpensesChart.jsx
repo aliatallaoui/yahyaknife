@@ -2,8 +2,10 @@ import {
     ComposedChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function MonthlyExpensesChart({ expenses }) {
+    const { t } = useTranslation();
     if (!expenses || expenses.length === 0) return null;
 
     // Custom Tooltip
@@ -14,21 +16,21 @@ export default function MonthlyExpensesChart({ expenses }) {
                 <div className="bg-white p-4 border border-gray-100 shadow-lg rounded-xl min-w-[200px]">
                     <p className="font-bold text-gray-900 mb-3">{label}</p>
                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-gray-500 text-sm">Assets Expenses:</span>
+                        <span className="text-gray-500 text-sm">{t('widgets.expAssets')}</span>
                         <span className="font-semibold text-gray-900 tabular-nums">
-                            {data.assets.toLocaleString()} <span className="text-xs text-gray-400 font-bold ml-1">DZ</span>
+                            {data.assets.toLocaleString()} <span className="text-xs text-gray-400 font-bold ml-1">{t('widgets.currencyDZ')}</span>
                         </span>
                     </div>
                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-gray-500 text-sm">Salary Expenses:</span>
+                        <span className="text-gray-500 text-sm">{t('widgets.expSalary')}</span>
                         <span className="font-semibold text-gray-900 tabular-nums">
-                            {data.salary.toLocaleString()} <span className="text-xs text-gray-400 font-bold ml-1">DZ</span>
+                            {data.salary.toLocaleString()} <span className="text-xs text-gray-400 font-bold ml-1">{t('widgets.currencyDZ')}</span>
                         </span>
                     </div>
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                        <span className="text-gray-500 text-sm">Monthly Expenses:</span>
+                        <span className="text-gray-500 text-sm">{t('widgets.expMonthly')}</span>
                         <span className="font-bold text-gray-900 tabular-nums text-blue-600">
-                            {data.monthly.toLocaleString()} <span className="text-xs opacity-70 font-bold ml-1">DZ</span>
+                            {data.monthly.toLocaleString()} <span className="text-xs opacity-70 font-bold ml-1">{t('widgets.currencyDZ')}</span>
                         </span>
                     </div>
                 </div>
@@ -46,16 +48,16 @@ export default function MonthlyExpensesChart({ expenses }) {
                         <FileText className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold text-gray-900 leading-tight">Monthly Expenses</h2>
-                        <p className="text-sm text-gray-500">Track and compare monthly business spending</p>
+                        <h2 className="text-lg font-bold text-gray-900 leading-tight">{t('widgets.expHeader')}</h2>
+                        <p className="text-sm text-gray-500">{t('widgets.expSubtitle')}</p>
                     </div>
                 </div>
 
                 {/* Toggles */}
                 <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
-                    <button className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-white shadow-sm text-gray-900">Monthly</button>
-                    <button className="px-4 py-1.5 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-700">Quarterly</button>
-                    <button className="px-4 py-1.5 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-700">Annually</button>
+                    <button className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-white shadow-sm text-gray-900">{t('widgets.expMonthlyTab')}</button>
+                    <button className="px-4 py-1.5 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-700">{t('widgets.expQuarterlyTab')}</button>
+                    <button className="px-4 py-1.5 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-700">{t('widgets.expAnnuallyTab')}</button>
                 </div>
             </div>
 
@@ -84,7 +86,7 @@ export default function MonthlyExpensesChart({ expenses }) {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: '#9CA3AF', fontSize: 13, fontWeight: 500 }}
-                            tickFormatter={(value) => `${value / 1000}k DZ`}
+                            tickFormatter={(value) => `${value / 1000} ${t('widgets.kDZ')}`}
                             domain={[0, 400000]}
                             dx={-10}
                         />

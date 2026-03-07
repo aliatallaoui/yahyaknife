@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
-import { Users, UserMinus, UserCheck, Star, ShieldAlert, BarChart3, ArrowRight, DollarSign, Target, Plus, Search, AlertCircle } from 'lucide-react';
+import { Users, UserMinus, UserCheck, Star, ShieldAlert, BarChart3, ArrowRight, ArrowLeft, DollarSign, Target, Plus, Search, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useCustomer } from '../context/CustomerContext';
 import { AuthContext } from '../context/AuthContext';
@@ -7,12 +7,14 @@ import CustomerModal from '../components/modals/CustomerModal';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import moment from 'moment';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#4361EE', '#3B82F6', '#60A5FA', '#93C5FD', '#111827', '#6B7280'];
 const LTV_COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#94a3b8'];
 
 export default function CustomerInsight() {
     const { token } = useContext(AuthContext);
+    const { t } = useTranslation();
     const { customers, loading: contextLoading, createCustomer, updateCustomer, deleteCustomer } = useCustomer();
     const [metrics, setMetrics] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -71,10 +73,10 @@ export default function CustomerInsight() {
     })).sort((a, b) => b.count - a.count) : [];
 
     const ltvData = metrics?.ltvDistribution ? [
-        { name: 'Whales (>50k)', value: metrics.ltvDistribution.whales },
-        { name: 'VIP (>20k)', value: metrics.ltvDistribution.vip },
-        { name: 'Regular (>5k)', value: metrics.ltvDistribution.regular },
-        { name: 'Low Value', value: metrics.ltvDistribution.lowValue }
+        { name: t('crm.whale', 'Whales (>50k)'), value: metrics.ltvDistribution.whales },
+        { name: t('crm.vip', 'VIP (>20k)'), value: metrics.ltvDistribution.vip },
+        { name: t('crm.regular', 'Regular (>5k)'), value: metrics.ltvDistribution.regular },
+        { name: t('crm.lowValue', 'Low Value'), value: metrics.ltvDistribution.lowValue }
     ] : [];
 
     // Filter customers for the table
@@ -89,12 +91,12 @@ export default function CustomerInsight() {
             {/* Top Control Bar */}
             <div className="flex justify-between items-center bg-indigo-900 text-white p-6 rounded-2xl shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Customer Intelligence OS</h2>
-                    <p className="text-indigo-200 mt-1 text-sm font-medium">Segments, Retention, and COD Risk Management</p>
+                    <h2 className="text-2xl font-bold tracking-tight">{t('crm.title', 'Customer Intelligence OS')}</h2>
+                    <p className="text-indigo-200 mt-1 text-sm font-medium">{t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}</p>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={handleCreateClick} className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-sm">
-                        <Plus className="w-4 h-4" /> Add Customer
+                        <Plus className="w-4 h-4" /> {t('crm.addCustomerBtn', 'Add Customer')}
                     </button>
                 </div>
             </div>
@@ -102,34 +104,34 @@ export default function CustomerInsight() {
             {/* Macro KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MacroCard
-                    title="Total Audience"
+                    title={t('crm.macroTotalAudience', 'Total Audience')}
                     value={metrics?.totalCustomers || 0}
                     icon={Users}
-                    sub={`${metrics?.newVsReturning?.returning || 0} Repeat Buyers`}
+                    sub={`${metrics?.newVsReturning?.returning || 0} ${t('crm.macroRepeatBuyers', 'Repeat Buyers')}`}
                     color="text-blue-600"
                     bg="bg-blue-50"
                 />
                 <MacroCard
-                    title="Average LTV"
+                    title={t('crm.macroAverageLtv', 'Average LTV')}
                     value={`${Math.round(metrics?.averageLTV || 0).toLocaleString()} DZ`}
                     icon={DollarSign}
-                    sub="Gross revenue per user"
+                    sub={t('crm.macroGrossRevenue', 'Gross revenue per user')}
                     color="text-emerald-600"
                     bg="bg-emerald-50"
                 />
                 <MacroCard
-                    title="Active Retention"
+                    title={t('crm.macroActiveRetention', 'Active Retention')}
                     value={metrics?.retentionStatus?.active || 0}
                     icon={UserCheck}
-                    sub={`${metrics?.retentionStatus?.churned || 0} Churned (>120d)`}
+                    sub={`${metrics?.retentionStatus?.churned || 0} ${t('crm.macroChurned', 'Churned (>120d)')}`}
                     color="text-indigo-600"
                     bg="bg-indigo-50"
                 />
                 <MacroCard
-                    title="High Risk Accounts"
+                    title={t('crm.macroHighRisk', 'High Risk Accounts')}
                     value={metrics?.highRiskCustomers || 0}
                     icon={ShieldAlert}
-                    sub=">30% Refusal Rate"
+                    sub={t('crm.macroRefusalRate', '>30% Refusal Rate')}
                     color="text-rose-600"
                     bg="bg-rose-50"
                 />
@@ -141,9 +143,9 @@ export default function CustomerInsight() {
                 {/* Acquisition ROI */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-96">
                     <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <Target className="w-5 h-5 text-indigo-500" /> Acquisition ROI & Channels
+                        <Target className="w-5 h-5 text-indigo-500" /> {t('crm.chartAcquisitionTitle', 'Acquisition ROI & Channels')}
                     </h3>
-                    <div className="flex-1">
+                    <div className="flex-1" dir="ltr">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={acquisitionData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
@@ -164,7 +166,7 @@ export default function CustomerInsight() {
                 {/* Lifetime Value Distribution */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-96">
                     <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-pink-500" /> Lifetime Value Segments
+                        <BarChart3 className="w-5 h-5 text-pink-500" /> {t('crm.chartLtvTitle', 'Lifetime Value Segments')}
                     </h3>
                     <div className="flex h-full items-center">
                         <ResponsiveContainer width="100%" height="100%">
@@ -198,35 +200,35 @@ export default function CustomerInsight() {
             {/* CRM Directory Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[500px]">
                 <div className="flex justify-between items-center p-5 border-b border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900">CRM Directory</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{t('crm.dirTitle', 'CRM Directory')}</h3>
                     <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search name or email..."
+                            placeholder={t('crm.searchPlaceholder', "Search name or email...")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-800"
+                            className="w-full ps-9 pe-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-800"
                         />
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-auto">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                    <table className="w-full text-start border-collapse min-w-[1000px]">
                         <thead>
                             <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider sticky top-0 z-10">
-                                <th className="p-4 font-semibold rounded-tl-xl pl-6">Customer</th>
-                                <th className="p-4 font-semibold">Segment</th>
-                                <th className="p-4 font-semibold">Orders</th>
-                                <th className="p-4 font-semibold">Lifetime Value</th>
-                                <th className="p-4 font-semibold">COD Risk</th>
-                                <th className="p-4 font-semibold text-center pr-6">Profile</th>
+                                <th className="p-4 font-semibold rounded-tl-xl ps-6">{t('crm.colCustomer', 'Customer')}</th>
+                                <th className="p-4 font-semibold">{t('crm.colSegment', 'Segment')}</th>
+                                <th className="p-4 font-semibold">{t('crm.colOrders', 'Orders')}</th>
+                                <th className="p-4 font-semibold">{t('crm.colLTV', 'Lifetime Value')}</th>
+                                <th className="p-4 font-semibold">{t('crm.colRisk', 'COD Risk')}</th>
+                                <th className="p-4 font-semibold text-center pe-6">{t('crm.colProfile', 'Profile')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-sm">
                             {filteredCustomers.map(customer => (
                                 <tr key={customer._id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className="p-4 pl-6">
+                                    <td className="p-4 ps-6">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center font-bold text-indigo-700 shadow-sm border border-indigo-50">
                                                 {customer.name?.charAt(0).toUpperCase()}
@@ -254,37 +256,37 @@ export default function CustomerInsight() {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-gray-900">{customer.totalOrders} Orders</span>
-                                            <span className="text-xs font-medium text-emerald-600">{customer.deliveredOrders} Delivered</span>
+                                            <span className="font-bold text-gray-900">{customer.totalOrders} {t('crm.ordersText', 'Orders')}</span>
+                                            <span className="text-xs font-medium text-emerald-600">{customer.deliveredOrders} {t('crm.deliveredText', 'Delivered')}</span>
                                         </div>
                                     </td>
                                     <td className="p-4">
                                         <p className="font-black text-gray-900 tabular-nums">{(customer.lifetimeValue || 0).toLocaleString()} DZ</p>
-                                        <p className="text-xs font-medium text-gray-500 mt-0.5">AOV: {Math.round(customer.averageOrderValue || 0).toLocaleString()} DZ</p>
+                                        <p className="text-xs font-medium text-gray-500 mt-0.5">{t('crm.aovText', 'AOV')}: {Math.round(customer.averageOrderValue || 0).toLocaleString()} DZ</p>
                                     </td>
                                     <td className="p-4">
                                         {customer.blacklisted ? (
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-1 rounded-md w-fit border border-rose-100">
-                                                <ShieldAlert className="w-3.5 h-3.5" /> Blacklisted
+                                                <ShieldAlert className="w-3.5 h-3.5" /> {t('crm.blacklisted', 'Blacklisted')}
                                             </div>
                                         ) : customer.isSuspicious ? (
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md w-fit border border-amber-100">
-                                                    <AlertCircle className="w-3.5 h-3.5" /> High Risk ({Math.round(customer.refusalRate)}% Refusal)
+                                                    <AlertCircle className="w-3.5 h-3.5" /> {t('crm.highRisk', 'High Risk')} ({Math.round(customer.refusalRate)}% {t('crm.refusalText', 'Refusal')})
                                                 </div>
                                                 {customer.requiresDeliveryVerification && (
-                                                    <span className="text-[10px] font-bold text-amber-600 ml-1">Requires Phone Auth</span>
+                                                    <span className="text-[10px] font-bold text-amber-600 ms-1">{t('crm.requiresPhoneAuth', 'Requires Phone Auth')}</span>
                                                 )}
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md w-fit border border-emerald-100">
-                                                <UserCheck className="w-3.5 h-3.5" /> Trusted
+                                                <UserCheck className="w-3.5 h-3.5" /> {t('crm.trusted', 'Trusted')}
                                             </div>
                                         )}
                                     </td>
-                                    <td className="p-4 text-center pr-6">
+                                    <td className="p-4 text-center pe-6">
                                         <Link to={`/customers/${customer._id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 hover:shadow-sm border border-transparent hover:border-indigo-100 transition-all">
-                                            <ArrowRight className="w-4 h-4" />
+                                            <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
                                         </Link>
                                     </td>
                                 </tr>
@@ -292,7 +294,7 @@ export default function CustomerInsight() {
                             {filteredCustomers.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="p-8 text-center border-2 border-dashed border-gray-100 rounded-xl m-4 text-gray-500 font-medium bg-gray-50/50">
-                                        No customers found. They will appear here once orders are processed.
+                                        {t('crm.noCustomers', 'No customers found. They will appear here once orders are processed.')}
                                     </td>
                                 </tr>
                             )}

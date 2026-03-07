@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function TransactionModal({ isOpen, onClose, onSubmit, initialData }) {
+    const { t } = useTranslation();
     const isEdit = !!initialData;
 
     // Form State
@@ -75,7 +77,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-900">
-                        {isEdit ? 'Edit Transaction' : 'Add Transaction'}
+                        {isEdit ? t('modals.trxTitleEdit') : t('modals.trxTitleAdd')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -103,7 +105,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                     type === 'expense' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                                 )}
                             >
-                                Expense
+                                {t('modals.trxExpense')}
                             </button>
                             <button
                                 type="button"
@@ -113,13 +115,13 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                     type === 'revenue' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                                 )}
                             >
-                                Revenue
+                                {t('modals.trxRevenue')}
                             </button>
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxAmount')}</label>
                         <input
                             type="number"
                             step="0.01"
@@ -132,7 +134,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDate')}</label>
                         <input
                             type="date"
                             required
@@ -143,27 +145,39 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxCategory')}</label>
                         <select
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
                         >
-                            <option value="" disabled>Select a category</option>
+                            <option value="" disabled>{t('modals.trxSelectCategory')}</option>
                             {(type === 'expense' ? expenseCategories : revenueCategories).map(c => (
-                                <option key={c} value={c}>{c}</option>
+                                <option key={c} value={c}>
+                                    {c === 'Marketing' ? t('modals.catMarketing') :
+                                        c === 'Operations' ? t('modals.catOperations') :
+                                            c === 'Human Resources' ? t('modals.catHR') :
+                                                c === 'Infrastructure' ? t('modals.catInfrastructure') :
+                                                    c === 'Equipment' ? t('modals.catEquipment') :
+                                                        c === 'Utilities' ? t('modals.catUtilities') :
+                                                            c === 'Rent' ? t('modals.catRent') :
+                                                                c === 'Product Sales' ? t('modals.catProductSales') :
+                                                                    c === 'Service Revenue' ? t('modals.catServiceRev') :
+                                                                        c === 'Subscription Income' ? t('modals.catSubIncome') :
+                                                                            c === 'Other' ? t('modals.catOther') : c}
+                                </option>
                             ))}
                         </select>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDesc')}</label>
                         <input
                             type="text"
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Dinner with client, Software subscription..."
+                            placeholder={t('modals.trxDescPlaceholder')}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         />
@@ -175,7 +189,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                             onClick={onClose}
                             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                            Cancel
+                            {t('modals.trxBtnCancel')}
                         </button>
                         <button
                             type="submit"
@@ -183,7 +197,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            {isEdit ? 'Save Changes' : 'Create Transaction'}
+                            {isEdit ? t('modals.trxBtnSave') : t('modals.trxBtnCreate')}
                         </button>
                     </div>
                 </form>

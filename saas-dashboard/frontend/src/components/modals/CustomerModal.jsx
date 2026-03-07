@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const CHANNELS = ['Organic Search', 'Direct Traffic', 'Social Media', 'Referral', 'Paid Ads', 'Other'];
 const STATUSES = ['Active', 'Inactive', 'Churned'];
 
 export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }) {
+    const { t } = useTranslation();
     const isEdit = !!initialData;
 
     const [name, setName] = useState('');
@@ -46,7 +48,7 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col">
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900">
-                        {isEdit ? 'Edit Customer' : 'Add New Customer'}
+                        {isEdit ? t('modals.custTitleEdit', 'Edit Customer') : t('modals.custTitleAdd', 'Add New Customer')}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -56,7 +58,7 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                 <div className="p-6">
                     <form id="customerForm" onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Name</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custName', 'Name')}</label>
                             <input
                                 required
                                 type="text"
@@ -66,7 +68,7 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custEmail', 'Email')}</label>
                             <input
                                 required
                                 type="email"
@@ -77,28 +79,28 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number (*COD Required)</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custPhone', 'Phone Number (*COD Required)')}</label>
                             <input
                                 required
                                 type="tel"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={phone}
                                 onChange={e => setPhone(e.target.value)}
-                                placeholder="05XX XX XX XX"
+                                placeholder={t('modals.custPhonePlaceholder', '05XX XX XX XX')}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custAddress', 'Delivery Address')}</label>
                             <input
                                 type="text"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={address}
                                 onChange={e => setAddress(e.target.value)}
-                                placeholder="City, Region, exact street..."
+                                placeholder={t('modals.custAddressPlaceholder', 'City, Region, exact street...')}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Acquisition Channel</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custAcqChannel', 'Acquisition Channel')}</label>
                             <select
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none"
                                 value={acquisitionChannel}
@@ -108,7 +110,7 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custStatus', 'Status')}</label>
                             <select
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none"
                                 value={status}
@@ -122,10 +124,10 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
 
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                        Cancel
+                        {t('modals.btnCancel', 'Cancel')}
                     </button>
                     <button type="submit" form="customerForm" className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-600/20 transition-all">
-                        {isEdit ? 'Save Changes' : 'Create Customer'}
+                        {isEdit ? t('modals.btnSave', 'Save Changes') : t('modals.custBtnCreate', 'Create Customer')}
                     </button>
                 </div>
             </div>

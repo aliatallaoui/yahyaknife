@@ -3,16 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, CalendarDays, Flag, MessageSquare, Paperclip, Activity, Target, AlignLeft } from 'lucide-react';
 import clsx from 'clsx';
 import moment from 'moment';
-
-const TAB_OPTIONS = ['Tasks (Kanban)', 'Milestones', 'Documents', 'Activity Log'];
+import { useTranslation } from 'react-i18next';
 
 export default function ProjectDetail() {
+    const { t, i18n } = useTranslation('projects');
+    const isAr = i18n.language === 'ar';
+    const TAB_OPTIONS = [t('tabTasks'), t('tabMilestones'), t('tabDocs'), t('tabActivity')];
+
     const { id } = useParams();
     const navigate = useNavigate();
 
     const [projectData, setProjectData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('Tasks (Kanban)');
+    const [activeTab, setActiveTab] = useState(t('tabTasks'));
 
     useEffect(() => {
         const fetchDeepProject = async () => {
@@ -38,7 +41,7 @@ export default function ProjectDetail() {
         </div>
     );
 
-    if (!projectData || !projectData.project) return <div className="p-8 text-center text-gray-500">Project Not Found.</div>;
+    if (!projectData || !projectData.project) return <div className="p-8 text-center text-gray-500">{t('projectNotFound')}</div>;
 
     const { project, tasks, milestones, activity } = projectData;
 
@@ -57,7 +60,7 @@ export default function ProjectDetail() {
                     <div className="flex items-center gap-3">
                         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-gray-100 text-gray-700 border-gray-200">{project.projectId}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">{project.status}</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">{t(`status${project.status.replace(' ', '')}`)}</span>
                     </div>
                 </div>
             </div>
@@ -67,16 +70,16 @@ export default function ProjectDetail() {
 
                 {/* Main Details */}
                 <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Project Overview</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">{t('overviewTitle')}</h3>
 
-                    <p className="text-gray-600 mb-6 text-sm leading-relaxed whitespace-pre-line">{project.description || "No description provided."}</p>
+                    <p className="text-gray-600 mb-6 text-sm leading-relaxed whitespace-pre-line">{project.description || t('noDesc')}</p>
 
                     <div className="flex gap-4 mt-auto">
                         <div className="flex-1 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                            <p className="text-xs font-bold text-gray-400 mb-1">Completion</p>
+                            <p className="text-xs font-bold text-gray-400 mb-1">{t('completion')}</p>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xl font-black text-gray-900">{project.completionPercentage}%</span>
-                                <span className={clsx("text-[10px] font-bold px-2 py-0.5 rounded", project.healthIndicator === 'On Track' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}>{project.healthIndicator}</span>
+                                <span className={clsx("text-[10px] font-bold px-2 py-0.5 rounded", project.healthIndicator === 'On Track' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}>{t(`health${project.healthIndicator.replace(' ', '')}`)}</span>
                             </div>
                             <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                                 <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${project.completionPercentage}%` }}></div>
@@ -89,33 +92,33 @@ export default function ProjectDetail() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
 
                     <div>
-                        <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Project Manager</p>
+                        <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">{t('pmTitle')}</p>
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">{project.owner?.name?.charAt(0) || '?'}</div>
                             <div>
-                                <p className="text-sm font-bold text-gray-900">{project.owner?.name || 'Unassigned'}</p>
-                                <p className="text-[11px] text-gray-500 font-medium">{project.department}</p>
+                                <p className="text-sm font-bold text-gray-900">{project.owner?.name || t('unassignedPM')}</p>
+                                <p className="text-[11px] text-gray-500 font-medium">{t(`dept${project.department}`)}</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="pt-4 border-t border-gray-100">
-                        <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">Timeline</p>
+                        <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">{t('timelineTitle')}</p>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-2 text-sm font-medium text-gray-600"><CalendarDays className="w-4 h-4 text-gray-400" /> Start</span>
+                                <span className="flex items-center gap-2 text-sm font-medium text-gray-600"><CalendarDays className="w-4 h-4 text-gray-400" /> {t('start')}</span>
                                 <span className="text-sm font-semibold text-gray-900">{project.startDate ? moment(project.startDate).format('MMM D, YYYY') : '--'}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-2 text-sm font-medium text-gray-600"><Flag className="w-4 h-4 text-gray-400" /> Deadline</span>
+                                <span className="flex items-center gap-2 text-sm font-medium text-gray-600"><Flag className="w-4 h-4 text-gray-400" /> {t('deadline')}</span>
                                 <span className={clsx("text-sm font-semibold", project.deadline && new Date(project.deadline) < new Date() ? 'text-rose-600' : 'text-gray-900')}>{project.deadline ? moment(project.deadline).format('MMM D, YYYY') : '--'}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="pt-4 border-t border-gray-100">
-                        <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">Tech Link</p>
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold">{project.linkedModule}</span>
+                        <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">{t('techLink')}</p>
+                        <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold">{t(`mod${project.linkedModule}`)}</span>
                     </div>
 
                 </div>
@@ -138,7 +141,7 @@ export default function ProjectDetail() {
 
                 <div className="p-6 flex-1 bg-gray-50/20">
 
-                    {activeTab === 'Tasks (Kanban)' && (
+                    {activeTab === t('tabTasks') && (
                         <div className="flex overflow-x-auto pb-4 gap-6 styled-scrollbar min-h-[400px] items-start">
                             {['To Do', 'In Progress', 'In Review', 'Blocked', 'Done'].map(status => {
                                 const colTasks = tasks.filter(t => t.status === status);
@@ -166,7 +169,7 @@ export default function ProjectDetail() {
                                                     </div>
                                                 </div>
                                             ))}
-                                            {colTasks.length === 0 && <div className="text-center py-4 text-xs font-medium text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">Empty</div>}
+                                            {colTasks.length === 0 && <div className="text-center py-4 text-xs font-medium text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">{t('emptyLane')}</div>}
                                         </div>
                                     </div>
                                 )
@@ -174,7 +177,7 @@ export default function ProjectDetail() {
                         </div>
                     )}
 
-                    {activeTab === 'Activity Log' && (
+                    {activeTab === t('tabActivity') && (
                         <div className="space-y-4 max-w-2xl mx-auto">
                             {activity.map(act => (
                                 <div key={act._id} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
@@ -182,13 +185,13 @@ export default function ProjectDetail() {
                                         <Activity className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-900"><span className="font-bold">{act.actor?.name || 'System'}</span> {act.action}</p>
+                                        <p className="text-sm font-medium text-gray-900"><span className="font-bold">{act.actor?.name || t('systemActor')}</span> {act.action}</p>
                                         <p className="text-xs text-gray-500 mt-1">{act.details}</p>
                                         <p className="text-[10px] text-gray-400 mt-2 font-mono">{moment(act.timestamp).format('MMM D, h:mm A')}</p>
                                     </div>
                                 </div>
                             ))}
-                            {activity.length === 0 && <div className="text-center text-sm text-gray-500 py-8">No recent activity.</div>}
+                            {activity.length === 0 && <div className="text-center text-sm text-gray-500 py-8">{t('noRecentActivity')}</div>}
                         </div>
                     )}
 

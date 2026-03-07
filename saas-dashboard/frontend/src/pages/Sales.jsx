@@ -7,10 +7,12 @@ import { SalesContext } from '../context/SalesContext';
 import { InventoryContext } from '../context/InventoryContext';
 import { useCustomer } from '../context/CustomerContext';
 import OrderModal from '../components/OrderModal';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#4361EE', '#111827', '#6B7280', '#D1D5DB', '#F87171', '#34D399'];
 
 export default function Sales() {
+    const { t } = useTranslation();
     const {
         orders, performance, loading, createOrder, updateOrder, deleteOrder,
         currentPage, totalPages, fetchSalesData
@@ -147,16 +149,16 @@ export default function Sales() {
             {/* Top Header */}
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Sales Management</h2>
-                    <p className="text-sm text-gray-500 mt-1">Full commercial lifecycle tracking and order fulfillment.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('sales.title', 'Sales Management')}</h2>
+                    <p className="text-sm text-gray-500 mt-1">{t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}</p>
                 </div>
                 <div className="flex gap-3">
                     {/* Add CSV Export button later */}
                     <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 font-medium rounded-xl border border-gray-200 text-sm transition-colors hover:bg-gray-100">
-                        <Download className="w-4 h-4" /> Export
+                        <Download className="w-4 h-4" /> {t('sales.exportBtn', 'Export')}
                     </button>
                     <button onClick={handleCreateClick} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-blue-700 shadow-sm shadow-blue-600/20">
-                        <Plus className="w-4 h-4" /> Create Order
+                        <Plus className="w-4 h-4" /> {t('sales.createOrderBtn', 'Create Order')}
                     </button>
                 </div>
             </div>
@@ -164,21 +166,21 @@ export default function Sales() {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <SalesCard
-                    title="Total Sales Volume"
-                    value={`${(performance?.totalSalesVolume || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} DZ`}
+                    title={t('sales.totalVolume', 'Total Sales Volume')}
+                    value={`${(performance?.totalSalesVolume || 0).toLocaleString()} DZ`}
                     icon={TrendingUp}
                     color="text-blue-600"
                     bg="bg-blue-50"
                 />
                 <SalesCard
-                    title="Average Order Value"
-                    value={`${(performance?.averageOrderValue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} DZ`}
+                    title={t('sales.avgOrderValue', 'Average Order Value')}
+                    value={`${(performance?.averageOrderValue || 0).toLocaleString()} DZ`}
                     icon={ShoppingCart}
                     color="text-purple-600"
                     bg="bg-purple-50"
                 />
                 <SalesCard
-                    title="Total Orders Count"
+                    title={t('sales.totalOrdersCount', 'Total Orders Count')}
                     value={(performance?.totalOrders || 0).toLocaleString()}
                     icon={Users}
                     color="text-green-600"
@@ -194,33 +196,33 @@ export default function Sales() {
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-6 border-b border-gray-100 gap-4">
                         <div className="flex bg-gray-100/80 p-1.5 rounded-xl">
                             <button onClick={() => { setActiveTab('all'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all", activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
-                                All Orders
+                                {t('sales.allOrdersTab', 'All Orders')}
                             </button>
                             <button onClick={() => { setActiveTab('verification'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'verification' ? "bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200" : "text-gray-500 hover:text-gray-700")}>
-                                <AlertCircle className="w-4 h-4" /> Verification Queue
+                                <AlertCircle className="w-4 h-4" /> {t('sales.verificationTab', 'Verification Queue')}
                             </button>
                         </div>
 
                         <div className="flex items-center gap-3">
                             {/* Courier Filter */}
                             <div className="relative">
-                                <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <Filter className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <select
                                     value={selectedCourierFilter}
                                     onChange={e => setSelectedCourierFilter(e.target.value)}
-                                    className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 pl-9 pr-6 text-sm focus:border-blue-500 transition-colors appearance-none font-medium text-gray-700"
+                                    className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-6 text-sm focus:border-blue-500 transition-colors appearance-none font-medium text-gray-700"
                                 >
-                                    <option value="">All Couriers</option>
+                                    <option value="">{t('sales.filterAllCouriers', 'All Couriers')}</option>
                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                 </select>
                             </div>
 
                             <div className="relative">
-                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search orders..."
-                                    className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 pl-9 pr-4 text-sm focus:border-blue-500 w-48 transition-colors"
+                                    placeholder={t('sales.searchOrders', 'Search orders...')}
+                                    className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-4 text-sm focus:border-blue-500 w-48 transition-colors"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -231,11 +233,11 @@ export default function Sales() {
                     {/* Batch Actions Bar (Only visible if items selected) */}
                     {selectedOrderIds.size > 0 && (
                         <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
-                            <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} Orders Selected</span>
+                            <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} {t('sales.ordersSelected', 'Orders Selected')}</span>
                             <div className="flex gap-2">
                                 {activeTab === 'verification' && (
                                     <button onClick={handleBatchVerify} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
-                                        <CheckSquare className="w-4 h-4" /> Batch Verify
+                                        <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
                                     </button>
                                 )}
                             </div>
@@ -243,23 +245,23 @@ export default function Sales() {
                     )}
 
                     <div className="flex-1 overflow-x-auto">
-                        <table className="w-full text-left border-collapse min-w-[800px]">
+                        <table className="w-full text-start border-collapse min-w-[800px]">
                             <thead>
                                 <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
                                     <th className="p-4 w-12 text-center">
                                         <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
                                     </th>
-                                    <th className="p-4 font-semibold">Order ID</th>
-                                    <th className="p-4 font-semibold">Date</th>
-                                    <th className="p-4 font-semibold">Customer</th>
-                                    <th className="p-4 font-semibold text-right">Amount</th>
-                                    <th className="p-4 font-semibold">Fulfillment Pipeline</th>
-                                    <th className="p-4 font-semibold">Actions</th>
+                                    <th className="p-4 font-semibold">{t('sales.colOrder', 'Order ID')}</th>
+                                    <th className="p-4 font-semibold">{t('sales.colDate', 'Date')}</th>
+                                    <th className="p-4 font-semibold">{t('sales.colCustomer', 'Customer')}</th>
+                                    <th className="p-4 font-semibold text-end">{t('sales.colAmount', 'Amount')}</th>
+                                    <th className="p-4 font-semibold">{t('sales.colPipeline', 'Fulfillment Pipeline')}</th>
+                                    <th className="p-4 font-semibold">{t('sales.colActions', 'Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-sm">
                                 {filteredOrders.length === 0 ? (
-                                    <tr><td colSpan="7" className="p-8 text-center text-gray-500">No orders found matching that criteria.</td></tr>
+                                    <tr><td colSpan="7" className="p-8 text-center text-gray-500">{t('sales.noOrders', 'No orders found matching that criteria.')}</td></tr>
                                 ) : filteredOrders.map((order) => (
                                     <tr key={order._id} className={clsx("transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50/50" : "hover:bg-gray-50/50")}>
                                         <td className="p-4 text-center">
@@ -271,12 +273,12 @@ export default function Sales() {
                                         </td>
                                         <td className="p-4 text-gray-500 whitespace-nowrap">{moment(order.date).format('MMM DD, HH:mm')}</td>
                                         <td className="p-4">
-                                            <span className="text-gray-900 font-medium block">{order.customer?.name || 'Unknown Customer'}</span>
-                                            <span className="text-xs text-gray-400 block">{order.customer?.city || 'No City'}</span>
+                                            <span className="text-gray-900 font-medium block">{order.customer?.name || t('sales.unknownCustomer', 'Unknown Customer')}</span>
+                                            <span className="text-xs text-gray-400 block">{order.customer?.city || t('sales.noCity', 'No City')}</span>
                                         </td>
-                                        <td className="p-4 text-right font-semibold tabular-nums text-gray-900">{order.totalAmount?.toLocaleString()} DZ</td>
+                                        <td className="p-4 text-end font-semibold tabular-nums text-gray-900">{order.totalAmount?.toLocaleString()} DZ</td>
                                         <td className="p-4">
-                                            {renderCodBadge(order.status)}
+                                            {renderCodBadge(order.status, t)}
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
@@ -297,7 +299,7 @@ export default function Sales() {
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl">
                             <span className="text-sm font-medium text-gray-500">
-                                Page {currentPage} of {totalPages}
+                                {t('sales.page', 'Page')} {currentPage} {t('sales.of', 'of')} {totalPages}
                             </span>
                             <div className="flex gap-2">
                                 <button
@@ -305,14 +307,14 @@ export default function Sales() {
                                     disabled={currentPage === 1}
                                     className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                 >
-                                    Previous
+                                    {t('sales.prev', 'Previous')}
                                 </button>
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage === totalPages}
                                     className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                 >
-                                    Next
+                                    {t('sales.next', 'Next')}
                                 </button>
                             </div>
                         </div>
@@ -321,9 +323,9 @@ export default function Sales() {
 
                 {/* Channels Breakdown */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-fit sticky top-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Revenue by Channel</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('sales.revenueByChannel', 'Revenue by Channel')}</h3>
                     {channelData.length === 0 ? (
-                        <div className="flex-1 min-h-[300px] flex items-center justify-center text-gray-400 text-sm">No channel data available.</div>
+                        <div className="flex-1 min-h-[300px] flex items-center justify-center text-gray-400 text-sm">{t('sales.noChannelData', 'No channel data available.')}</div>
                     ) : (
                         <>
                             <div className="min-h-[250px] flex items-center justify-center">
@@ -344,7 +346,7 @@ export default function Sales() {
                                             ))}
                                         </Pie>
                                         <Tooltip
-                                            formatter={(value) => [`${value.toLocaleString()} DZ`, 'Revenue']}
+                                            formatter={(value) => [`${value.toLocaleString()} DZ`, t('sales.revenueText', 'Revenue')]}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                         />
                                         <Legend verticalAlign="bottom" height={36} iconType="circle" />
@@ -382,19 +384,20 @@ export default function Sales() {
     );
 }
 
-function renderCodBadge(status) {
+function renderCodBadge(status, t) {
+    if (!t) return <Badge text={status || 'Unknown'} color="text-gray-700" bg="bg-gray-100" />
     switch (status) {
-        case 'New': return <Badge text="New" color="text-gray-700" bg="bg-gray-100" />;
-        case 'Confirmed': return <Badge icon={CheckCircle2} text="Confirmed" color="text-blue-700" bg="bg-blue-50" />;
-        case 'Preparing': return <Badge icon={Clock} text="Preparing" color="text-orange-700" bg="bg-orange-50" />;
-        case 'Ready for Pickup': return <Badge icon={ShoppingCart} text="Ready for Pickup" color="text-yellow-700" bg="bg-yellow-50" />;
-        case 'Shipped': return <Badge icon={TrendingUp} text="Shipped" color="text-indigo-700" bg="bg-indigo-50" />;
-        case 'Out for Delivery': return <Badge icon={Users} text="Out for Delivery" color="text-emerald-700" bg="bg-emerald-50" />;
-        case 'Delivered': return <Badge icon={CheckCircle2} text="Delivered" color="text-green-700" bg="bg-green-50" />;
-        case 'Paid': return <Badge icon={CheckCircle2} text="Paid (Settled)" color="text-teal-700" bg="bg-teal-50" />;
-        case 'Refused': return <Badge icon={AlertCircle} text="Refused" color="text-red-700" bg="bg-red-50" />;
-        case 'Returned': return <Badge icon={AlertCircle} text="Returned" color="text-rose-700" bg="bg-rose-50" />;
-        case 'Cancelled': return <Badge icon={Trash2} text="Cancelled" color="text-gray-500" bg="bg-gray-100" />;
+        case 'New': return <Badge text={t('sales.statusNew', 'New')} color="text-gray-700" bg="bg-gray-100" />;
+        case 'Confirmed': return <Badge icon={CheckCircle2} text={t('sales.statusConfirmed', 'Confirmed')} color="text-blue-700" bg="bg-blue-50" />;
+        case 'Preparing': return <Badge icon={Clock} text={t('sales.statusPreparing', 'Preparing')} color="text-orange-700" bg="bg-orange-50" />;
+        case 'Ready for Pickup': return <Badge icon={ShoppingCart} text={t('sales.statusReady', 'Ready for Pickup')} color="text-yellow-700" bg="bg-yellow-50" />;
+        case 'Shipped': return <Badge icon={TrendingUp} text={t('sales.statusShipped', 'Shipped')} color="text-indigo-700" bg="bg-indigo-50" />;
+        case 'Out for Delivery': return <Badge icon={Users} text={t('sales.statusOutForDelivery', 'Out for Delivery')} color="text-emerald-700" bg="bg-emerald-50" />;
+        case 'Delivered': return <Badge icon={CheckCircle2} text={t('sales.statusDelivered', 'Delivered')} color="text-green-700" bg="bg-green-50" />;
+        case 'Paid': return <Badge icon={CheckCircle2} text={t('sales.statusPaid', 'Paid (Settled)')} color="text-teal-700" bg="bg-teal-50" />;
+        case 'Refused': return <Badge icon={AlertCircle} text={t('sales.statusRefused', 'Refused')} color="text-red-700" bg="bg-red-50" />;
+        case 'Returned': return <Badge icon={AlertCircle} text={t('sales.statusReturned', 'Returned')} color="text-rose-700" bg="bg-rose-50" />;
+        case 'Cancelled': return <Badge icon={Trash2} text={t('sales.statusCancelled', 'Cancelled')} color="text-gray-500" bg="bg-gray-100" />;
         default: return <Badge text={status || 'Unknown'} color="text-gray-700" bg="bg-gray-100" />;
     }
 }

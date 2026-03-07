@@ -40,6 +40,13 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    preferences: {
+        language: { type: String, default: 'ar' }, // default Arabic based on the image provided
+        timezone: { type: String, default: 'UTC' },
+        dateFormat: { type: String, default: 'DD/MM/YYYY' },
+        currency: { type: String, default: 'DZD' },
+        theme: { type: String, default: 'system' }
     }
 }, {
     timestamps: true

@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
     Search, Grid, DollarSign, ShoppingCart, Archive,
     Users, UserCheck, MessageSquare, Briefcase,
@@ -12,6 +13,7 @@ import { AuthContext } from '../context/AuthContext';
 export default function Sidebar() {
     const location = useLocation();
     const { user, logout } = useContext(AuthContext);
+    const { t } = useTranslation();
 
     // Helper to determine if a route is active
     const isActive = (path) => {
@@ -26,10 +28,10 @@ export default function Sidebar() {
     };
 
     return (
-        <div className="flex bg-white h-screen border-r border-gray-100 fixed left-0 top-0 z-50">
+        <div className="flex bg-white h-screen border-e border-gray-100 flex-shrink-0 fixed start-0 top-0 z-50">
 
             {/* 1) Mini Left Strip */}
-            <div className="w-[80px] flex flex-col items-center py-6 border-r border-gray-100 flex-shrink-0 bg-gray-50/20">
+            <div className="w-[80px] flex flex-col items-center py-6 border-e border-gray-100 flex-shrink-0 bg-gray-50/20">
                 {/* Brand / Logo */}
                 <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white mb-8 shadow-sm cursor-pointer">
                     <Layers className="w-5 h-5" />
@@ -76,11 +78,11 @@ export default function Sidebar() {
                 {/* Search */}
                 <div className="px-5 mb-6">
                     <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search Menu"
-                            className="w-full bg-white border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none rounded-lg py-2 pl-9 pr-4 text-sm font-medium transition-all shadow-sm"
+                            placeholder={t('sidebar.searchMenu', 'Search Menu')}
+                            className="w-full bg-white border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none rounded-lg py-2 ps-9 pe-4 text-sm font-medium transition-all shadow-sm"
                         />
                     </div>
                 </div>
@@ -91,89 +93,89 @@ export default function Sidebar() {
                         {/* Active Overview or Parent Link */}
                         <NavLink to="/" end className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-2 rounded-lg font-bold transition-colors mb-2 text-sm", isActive ? "bg-blue-50/80 text-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900")}>
                             <LayoutDashboard className="w-4 h-4" />
-                            <span>Overview</span>
+                            <span>{t('sidebar.dashboard')}</span>
                         </NavLink>
                         {/* Overview Sub-items */}
-                        <div className="flex flex-col ml-3 py-1 gap-0.5 mb-4">
+                        <div className="flex flex-col ms-3 py-1 gap-0.5 mb-4">
                             {hasAccess(['Finance Controller', 'Super Admin']) && (
                                 <NavLink to="/financial" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
                                     <FileText className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                    <span>Financial</span>
+                                    <span>{t('sidebar.financial', 'Financial')}</span>
                                 </NavLink>
                             )}
                             {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
                                 <NavLink to="/sales" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
                                     <RefreshCw className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                    <span>Sales</span>
+                                    <span>{t('sidebar.sales')}</span>
                                 </NavLink>
                             )}
                             {hasAccess(['Finance Controller', 'Warehouse Supervisor', 'Production Lead', 'Sales Representative', 'Super Admin']) && (
                                 <NavLink to="/inventory" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
                                     <Box className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                    <span>Inventory Tracking</span>
+                                    <span>{t('sidebar.inventory')}</span>
                                 </NavLink>
                             )}
                             {hasAccess(['Warehouse Supervisor', 'Production Lead', 'Super Admin']) && (
                                 <NavLink to="/warehouses" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
                                     <Layers className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                    <span>Warehouses & Logistics</span>
+                                    <span>{t('sidebar.warehouses', 'Warehouses & Logistics')}</span>
                                 </NavLink>
                             )}
                             {hasAccess(['Warehouse Supervisor', 'Sales Representative', 'Super Admin']) && (
                                 <NavLink to="/couriers" className={({ isActive }) => clsx("flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
                                     <Truck className={clsx("w-4 h-4", isActive ? "text-blue-500" : "text-gray-400")} />
-                                    <span>Dispatch & Couriers</span>
+                                    <span>{t('sidebar.couriers')}</span>
                                 </NavLink>
                             )}
                         </div>
                     </div>
 
                     {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
-                        <NavSection title="Customer Insight" icon={Users}>
+                        <NavSection title={t('sidebar.crm')} icon={Users}>
                             <NavLink to="/customers" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Acquisition & Feedback
+                                {t('sidebar.crm_acquisition', 'Acquisition & Feedback')}
                             </NavLink>
                             <NavLink to="/support" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Support & RMAs
+                                {t('sidebar.crm_support', 'Support & RMAs')}
                             </NavLink>
                         </NavSection>
                     )}
 
                     {hasAccess(['Production Lead', 'Warehouse Supervisor', 'Super Admin']) && (
-                        <NavSection title="Manufacturing Floor" icon={PackageOpen}>
+                        <NavSection title={t('sidebar.manufacturing')} icon={PackageOpen}>
                             <NavLink to="/production" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Production & BOMs
+                                {t('sidebar.mfg_production', 'Production & BOMs')}
                             </NavLink>
                             <NavLink to="/procurement" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Procurement / Suppy
+                                {t('sidebar.procurement')}
                             </NavLink>
                         </NavSection>
                     )}
 
                     {hasAccess(['HR Manager', 'Super Admin']) && (
-                        <NavSection title="HR Snapshot" icon={Briefcase}>
+                        <NavSection title={t('sidebar.hr')} icon={Briefcase}>
                             <NavLink to="/hr" end className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Directory & Leave
+                                {t('sidebar.hr_directory', 'Directory & Leave')}
                             </NavLink>
                             <NavLink to="/hr/attendance" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Daily Pointage
+                                {t('sidebar.hr_attendance', 'Daily Pointage')}
                             </NavLink>
                             <NavLink to="/hr/payroll" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Monthly Payroll
+                                {t('sidebar.hr_payroll', 'Monthly Payroll')}
                             </NavLink>
                             <NavLink to="/hr/reports" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Reports & Data
+                                {t('sidebar.hr_reports', 'Reports & Data')}
                             </NavLink>
                         </NavSection>
                     )}
 
                     {hasAccess(['Production Lead', 'Super Admin']) && (
-                        <NavSection title="Project Status" icon={Flag}>
+                        <NavSection title={t('sidebar.projects', 'Project Status')} icon={Flag}>
                             <NavLink to="/projects" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Active Portfolio
+                                {t('sidebar.projects_portfolio', 'Active Portfolio')}
                             </NavLink>
                             <NavLink to="/projects/tasks" className={({ isActive }) => clsx("flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", isActive ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50")}>
-                                Global Task Board
+                                {t('sidebar.projects_tasks', 'Global Task Board')}
                             </NavLink>
                         </NavSection>
                     )}
@@ -199,7 +201,7 @@ function NavSection({ title, icon: Icon, children }) {
                 <ChevronDown className={clsx("w-3.5 h-3.5 transition-transform text-gray-400", isOpen && "rotate-180")} />
             </div>
             {isOpen && (
-                <div className="flex flex-col ml-9 py-1 gap-1 pl-2 mt-1 mb-2 border-l border-gray-100">
+                <div className="flex flex-col ms-9 py-1 gap-1 ps-2 mt-1 mb-2 border-s border-gray-100">
                     {children}
                 </div>
             )}

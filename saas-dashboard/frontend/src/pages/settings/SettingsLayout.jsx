@@ -1,17 +1,20 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { User, Settings, Shield, Bell, Users, ChevronLeft } from 'lucide-react';
+import { User, Settings, Shield, Bell, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function SettingsLayout() {
+    const { t, i18n } = useTranslation('settingsTab');
+    const isAr = i18n.language === 'ar';
     const navigate = useNavigate();
 
     const tabs = [
-        { name: 'Profile', path: '/settings/profile', icon: User },
-        { name: 'General', path: '/settings/general', icon: Settings },
-        { name: 'Security & Logins', path: '/settings/security', icon: Shield },
-        { name: 'Alerts & Preferences', path: '/settings/alerts', icon: Bell },
-        { name: 'User Management', path: '/settings/users', icon: Users, adminOnly: true },
+        { name: t('tabProfile'), path: '/settings/profile', icon: User },
+        { name: t('tabGeneral'), path: '/settings/general', icon: Settings },
+        { name: t('tabSecurity'), path: '/settings/security', icon: Shield },
+        { name: t('tabAlerts'), path: '/settings/alerts', icon: Bell },
+        { name: t('tabUsers'), path: '/settings/users', icon: Users, adminOnly: true },
     ];
 
     return (
@@ -20,13 +23,13 @@ export default function SettingsLayout() {
             <div className="flex items-center gap-4 border-b border-gray-200 pb-5">
                 <button
                     onClick={() => navigate('/')}
-                    className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-lg shadow-sm transition-colors"
+                    className={clsx("p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-lg shadow-sm transition-colors", isAr ? "scale-x-[-1]" : "")}
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Account Settings</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Manage your personal profile, security, and preferences.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">{t('subtitle')}</p>
                 </div>
             </div>
 

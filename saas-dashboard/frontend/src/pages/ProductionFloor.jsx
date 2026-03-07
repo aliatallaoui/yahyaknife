@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Package, FileCode2, PlayCircle, Plus, Search, Building } from 'lucide-react';
 import clsx from 'clsx';
 import { ManufacturingContext } from '../context/ManufacturingContext';
@@ -8,6 +9,7 @@ import BOMModal from '../components/BOMModal';
 import ProductionOrderModal from '../components/ProductionOrderModal';
 
 export default function ProductionFloor() {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('materials'); // 'materials', 'boms', 'orders'
     const { loading } = useContext(ManufacturingContext);
 
@@ -28,8 +30,8 @@ export default function ProductionFloor() {
                         <Building className="w-6 h-6" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Production Floor & Manufacturing</h2>
-                        <p className="text-sm text-gray-500 mt-1">Manage Raw Materials, Bill of Materials (BOMs), and Active Production Orders.</p>
+                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('manufacturing.title')}</h2>
+                        <p className="text-sm text-gray-500 mt-1">{t('manufacturing.subtitle')}</p>
                     </div>
                 </div>
             </div>
@@ -43,19 +45,19 @@ export default function ProductionFloor() {
                     active={activeTab === 'materials'}
                     onClick={() => setActiveTab('materials')}
                     icon={Package}
-                    label="Raw Materials"
+                    label={t('manufacturing.tabMaterials')}
                 />
                 <TabButton
                     active={activeTab === 'boms'}
                     onClick={() => setActiveTab('boms')}
                     icon={FileCode2}
-                    label="Bill of Materials"
+                    label={t('manufacturing.tabBOMs')}
                 />
                 <TabButton
                     active={activeTab === 'orders'}
                     onClick={() => setActiveTab('orders')}
                     icon={PlayCircle}
-                    label="Production Orders"
+                    label={t('manufacturing.tabOrders')}
                 />
             </div>
 
@@ -88,6 +90,7 @@ function TabButton({ active, onClick, icon: Icon, label }) {
 // --- SUB-PANELS ---
 
 function ProductionAnalytics() {
+    const { t } = useTranslation();
     const { analytics } = useContext(ManufacturingContext);
 
     if (!analytics) return null;
@@ -95,19 +98,19 @@ function ProductionAnalytics() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <p className="text-sm text-gray-500 font-bold">Total Units Yielded</p>
+                <p className="text-sm text-gray-500 font-bold">{t('manufacturing.totalUnitsProduced')}</p>
                 <h3 className="text-2xl font-black text-gray-900 mt-1">{analytics.totalUnitsProduced?.toLocaleString()}</h3>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <p className="text-sm text-gray-500 font-bold">Currently In Production</p>
-                <h3 className="text-2xl font-black text-blue-600 mt-1">{analytics.inProgressOrders} Batches</h3>
+                <p className="text-sm text-gray-500 font-bold">{t('manufacturing.inProgressBatches')}</p>
+                <h3 className="text-2xl font-black text-blue-600 mt-1">{analytics.inProgressOrders}</h3>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <p className="text-sm text-gray-500 font-bold">Avg. Cost Per Unit</p>
+                <p className="text-sm text-gray-500 font-bold">{t('manufacturing.avgCostPerUnit')}</p>
                 <h3 className="text-2xl font-black text-yellow-600 mt-1">{analytics.costPerUnit?.toFixed(2)} DZ</h3>
             </div>
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <p className="text-sm text-gray-500 font-bold">Completed Batches</p>
+                <p className="text-sm text-gray-500 font-bold">{t('manufacturing.completedBatches')}</p>
                 <h3 className="text-2xl font-black text-green-600 mt-1">{analytics.completedOrders}/{analytics.totalOrders}</h3>
             </div>
         </div>
@@ -115,6 +118,7 @@ function ProductionAnalytics() {
 }
 
 function MaterialsPanel() {
+    const { t } = useTranslation();
     const { materials, createMaterial, updateMaterial } = useContext(ManufacturingContext);
     const { suppliers } = useContext(InventoryContext);
 
@@ -144,26 +148,26 @@ function MaterialsPanel() {
     return (
         <div className="p-6 flex flex-col h-full relative">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Raw Material Inventory</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('manufacturing.tabMaterials')}</h3>
                 <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
-                    <Plus className="w-4 h-4" /> Add Material
+                    <Plus className="w-4 h-4" /> {t('manufacturing.addMaterial')}
                 </button>
             </div>
 
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
                 <thead>
                     <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                        <th className="p-4 font-semibold rounded-tl-lg">SKU / Code</th>
-                        <th className="p-4 font-semibold">Name</th>
-                        <th className="p-4 font-semibold">Category</th>
-                        <th className="p-4 font-semibold">UoM</th>
-                        <th className="p-4 font-semibold">Cost</th>
-                        <th className="p-4 font-semibold rounded-tr-lg">Stock</th>
+                        <th className="p-4 font-semibold rounded-ss-lg">{t('manufacturing.colSku')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colName')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colCategory')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colUoM')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colCost')}</th>
+                        <th className="p-4 font-semibold rounded-se-lg">{t('manufacturing.colStock')}</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm">
                     {materials.length === 0 ? (
-                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">No raw materials registered.</td></tr>
+                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noMaterials')}</td></tr>
                     ) : materials.map((mat) => (
                         <tr key={mat._id} className="hover:bg-gray-50/50 cursor-pointer" onClick={() => handleEditClick(mat)}>
                             <td className="p-4 font-mono text-xs text-blue-600 hover:underline">{mat.sku}</td>
@@ -173,11 +177,11 @@ function MaterialsPanel() {
                             <td className="p-4 text-gray-900">${mat.costPerUnit?.toFixed(2)}</td>
                             <td className="p-4 font-bold flex flex-col gap-1">
                                 <span className={clsx("px-2 py-0.5 rounded w-fit", mat.stockLevel <= mat.minimumStock ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")} title="Total Available">
-                                    {mat.stockLevel - (mat.reservedQuantity || 0)} Available
+                                    {mat.stockLevel - (mat.reservedQuantity || 0)} {t('manufacturing.availableStock')}
                                 </span>
                                 {(mat.reservedQuantity > 0) && (
                                     <span className="px-2 py-0.5 rounded w-fit bg-yellow-50 text-yellow-700 text-xs" title="Reserved for Active Production">
-                                        {mat.reservedQuantity} Reserved
+                                        {mat.reservedQuantity} {t('manufacturing.reservedStock')}
                                     </span>
                                 )}
                             </td>
@@ -198,6 +202,7 @@ function MaterialsPanel() {
 }
 
 function BOPanel() {
+    const { t } = useTranslation();
     const { boms, createBOM, updateBOM } = useContext(ManufacturingContext);
     const { products } = useContext(InventoryContext);
     const { materials } = useContext(ManufacturingContext);
@@ -231,14 +236,14 @@ function BOPanel() {
     return (
         <div className="p-6 relative">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Bill of Materials (Recipes)</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('manufacturing.bomsSubtitle')}</h3>
                 <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
-                    <Plus className="w-4 h-4" /> Create BOM
+                    <Plus className="w-4 h-4" /> {t('manufacturing.createBOM')}
                 </button>
             </div>
             {boms.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl">
-                    No Bills of Material created yet.
+                    {t('manufacturing.noBoms')}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -248,16 +253,16 @@ function BOPanel() {
                                 <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-bold rounded">v{bom.version}</span>
                                 <span className={clsx("w-2 h-2 rounded-full", bom.isActive ? "bg-green-500" : "bg-gray-300")}></span>
                             </div>
-                            <h4 className="font-bold text-gray-900 text-lg">{bom.variantId?.sku || 'Unknown Variant'}</h4>
-                            <p className="text-sm text-gray-500 mb-4">{bom.variantId?.displayName || 'Base Product'}</p>
+                            <h4 className="font-bold text-gray-900 text-lg">{bom.variantId?.sku || t('manufacturing.unknownVariant')}</h4>
+                            <p className="text-sm text-gray-500 mb-4">{bom.variantId?.displayName || t('manufacturing.baseProduct')}</p>
 
                             <div className="flex justify-between items-end pt-4 border-t border-gray-100">
                                 <div>
-                                    <p className="text-xs text-gray-400 font-semibold mb-0.5">COMPONENTS</p>
+                                    <p className="text-xs text-gray-400 font-semibold mb-0.5">{t('manufacturing.componentsText')}</p>
                                     <p className="text-sm font-bold text-gray-700">{bom.components?.length || 0}</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-gray-400 font-semibold mb-0.5">EST. COST</p>
+                                <div className="text-end">
+                                    <p className="text-xs text-gray-400 font-semibold mb-0.5">{t('manufacturing.estCostText')}</p>
                                     <p className="text-sm font-bold text-yellow-600">${bom.totalEstimatedCost?.toFixed(2)}</p>
                                 </div>
                             </div>
@@ -279,6 +284,7 @@ function BOPanel() {
 }
 
 function OrdersPanel() {
+    const { t } = useTranslation();
     const { productionOrders, createProductionOrder, updateProductionStatus } = useContext(ManufacturingContext);
     const { products } = useContext(InventoryContext);
     const { boms } = useContext(ManufacturingContext);
@@ -328,26 +334,26 @@ function OrdersPanel() {
     return (
         <div className="p-6 relative">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Active Production Batches</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('manufacturing.activeBatches')}</h3>
                 <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
-                    <Plus className="w-4 h-4" /> New Production Order
+                    <Plus className="w-4 h-4" /> {t('manufacturing.newOrder')}
                 </button>
             </div>
 
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
                 <thead>
                     <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                        <th className="p-4 font-semibold rounded-tl-lg">Order #</th>
-                        <th className="p-4 font-semibold">Variant (SKU)</th>
-                        <th className="p-4 font-semibold">Planned Qty</th>
-                        <th className="p-4 font-semibold">Completed Qty</th>
-                        <th className="p-4 font-semibold">Status</th>
-                        <th className="p-4 font-semibold rounded-tr-lg text-right">Deadline</th>
+                        <th className="p-4 font-semibold rounded-ss-lg">{t('manufacturing.colOrderNo')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colVariantSku')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colPlannedQty')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colCompletedQty')}</th>
+                        <th className="p-4 font-semibold">{t('manufacturing.colStatus')}</th>
+                        <th className="p-4 font-semibold rounded-se-lg text-end">{t('manufacturing.colDeadline')}</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm">
                     {productionOrders.length === 0 ? (
-                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">No production orders found.</td></tr>
+                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noOrders')}</td></tr>
                     ) : productionOrders.map((po) => (
                         <tr key={po._id} className="hover:bg-gray-50/50">
                             <td className="p-4 font-semibold text-gray-900">{po.orderNumber}</td>
@@ -363,20 +369,20 @@ function OrdersPanel() {
                                                     po.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
                                                         'bg-yellow-100 text-yellow-700'
                                     )}>
-                                        {po.status}
+                                        {po.status === 'Planned' ? t('manufacturing.statusPlanned') : po.status === 'In Progress' ? t('manufacturing.statusInProgress') : po.status === 'Quality Check' ? t('manufacturing.statusQualityCheck') : po.status === 'Completed' ? t('manufacturing.statusCompleted') : t('manufacturing.statusCancelled')}
                                     </span>
                                     {po.status === 'Planned' && (
-                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'In Progress'); }} className="text-xs text-blue-600 hover:underline font-bold bg-blue-50 px-2 py-1 rounded">Start</button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'In Progress'); }} className="text-xs text-blue-600 hover:underline font-bold bg-blue-50 px-2 py-1 rounded">{t('manufacturing.btnStart')}</button>
                                     )}
                                     {po.status === 'In Progress' && (
-                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Quality Check'); }} className="text-xs text-purple-600 hover:underline font-bold bg-purple-50 px-2 py-1 rounded">QC Check</button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Quality Check'); }} className="text-xs text-purple-600 hover:underline font-bold bg-purple-50 px-2 py-1 rounded">{t('manufacturing.btnQcCheck')}</button>
                                     )}
                                     {po.status === 'Quality Check' && (
-                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Completed'); }} className="text-xs text-green-600 hover:underline font-bold bg-green-50 px-2 py-1 rounded">Finish & Yield</button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Completed'); }} className="text-xs text-green-600 hover:underline font-bold bg-green-50 px-2 py-1 rounded">{t('manufacturing.btnFinishYield')}</button>
                                     )}
                                 </div>
                             </td>
-                            <td className="p-4 text-right text-gray-500">
+                            <td className="p-4 text-end text-gray-500">
                                 {po.completionDate ? new Date(po.completionDate).toLocaleDateString() : '-'}
                             </td>
                         </tr>

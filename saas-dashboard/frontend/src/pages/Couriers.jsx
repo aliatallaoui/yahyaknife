@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Truck, Search, Plus, CheckCircle, Activity, MapPin, PackageOpen, Layers } from 'lucide-react';
 import moment from 'moment';
 
 export default function Couriers() {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('couriers'); // 'couriers' or 'dispatch'
 
     // Courier Data
@@ -128,7 +130,7 @@ export default function Couriers() {
     };
 
     const handleBatchDispatch = async () => {
-        if (selectedOrderIds.size === 0 || !dispatchToCourierId) return alert("Select orders and a courier destination.");
+        if (selectedOrderIds.size === 0 || !dispatchToCourierId) return alert(t('logistics.alertSelectOrders'));
         try {
             const res = await fetch(`http://localhost:5000/api/couriers/${dispatchToCourierId}/dispatch`, {
                 method: 'POST',
@@ -139,7 +141,7 @@ export default function Couriers() {
                 setSelectedOrderIds(new Set());
                 setDispatchToCourierId('');
                 fetchOrdersData();
-                alert("Orders successfully dispatched!");
+                alert(t('logistics.alertDispatchSuccess'));
             }
         } catch (error) {
             console.error(error);
@@ -161,17 +163,17 @@ export default function Couriers() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Truck className="w-6 h-6 text-blue-600" /> Delivery Management
+                        <Truck className="w-6 h-6 text-blue-600" /> {t('logistics.title')}
                     </h1>
-                    <p className="text-gray-500 mt-1 font-medium">Manage dispatch operations, route tracking, and settlements.</p>
+                    <p className="text-gray-500 mt-1 font-medium">{t('logistics.subtitle')}</p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={() => setActiveTab('couriers')} className={`px-4 py-2 font-bold rounded-lg transition-all ${activeTab === 'couriers' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Couriers</button>
+                    <button onClick={() => setActiveTab('couriers')} className={`px-4 py-2 font-bold rounded-lg transition-all ${activeTab === 'couriers' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{t('logistics.tabCouriers')}</button>
                     <button onClick={() => setActiveTab('dispatch')} className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'dispatch' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
-                        <PackageOpen className="w-4 h-4" /> Dispatch Hub
+                        <PackageOpen className="w-4 h-4" /> {t('logistics.tabDispatch')}
                     </button>
                     <button onClick={() => setActiveTab('active')} className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}>
-                        <MapPin className="w-4 h-4" /> Active Shipments
+                        <MapPin className="w-4 h-4" /> {t('logistics.tabActive')}
                     </button>
                 </div>
             </div>
@@ -181,17 +183,17 @@ export default function Couriers() {
                 <>
                     <div className="flex justify-between items-center">
                         <div className="relative w-full max-w-sm">
-                            <Search className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" />
+                            <Search className="w-5 h-5 absolute ltr:left-3 rtl:right-3 top-2.5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search Couriers..."
+                                placeholder={t('logistics.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-100 w-full"
+                                className="ltr:pl-10 rtl:pr-10 ltr:pr-4 rtl:pl-4 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-100 w-full"
                             />
                         </div>
                         <button onClick={() => setOnboardModalOpen(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-sm">
-                            <Plus className="w-4 h-4" /> Onboard Courier
+                            <Plus className="w-4 h-4" /> {t('logistics.addOnboardCourier')}
                         </button>
                     </div>
 
@@ -214,25 +216,25 @@ export default function Couriers() {
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
                                             <span className={`px-2 py-1 rounded-md text-xs font-bold ${courier.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                                                {courier.status}
+                                                {courier.status === 'Active' ? t('logistics.courierStatusActive') : courier.status}
                                             </span>
                                             <div className="flex items-center gap-1 text-xs font-bold text-gray-500">
-                                                <MapPin className="w-3 h-3 text-red-400" /> {courier.coverageZones?.join(', ') || 'Global'}
+                                                <MapPin className="w-3 h-3 text-red-400" /> {courier.coverageZones?.join(', ') || t('logistics.courierStatusGlobal')}
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
                                         <div>
-                                            <span className="text-xs text-gray-500 font-medium tracking-wide border-b border-gray-200 pb-1 mb-1 block">Cash in Hand</span>
-                                            <span className="text-lg font-bold text-orange-600">{courier.pendingRemittance.toLocaleString()} <span className="text-xs text-orange-400">DZ</span></span>
+                                            <span className="text-xs text-gray-500 font-medium tracking-wide border-b border-gray-200 pb-1 mb-1 block">{t('logistics.cashInHand')}</span>
+                                            <span className="text-lg font-bold text-orange-600">{courier.pendingRemittance.toLocaleString()} <span className="text-xs text-orange-400">{t('logistics.dzdCurrency')}</span></span>
                                         </div>
                                         <div>
-                                            <span className="text-xs text-gray-500 font-medium tracking-wide border-b border-gray-200 pb-1 mb-1 block">Settled</span>
-                                            <span className="text-lg font-bold text-green-600">{courier.cashSettled.toLocaleString()} <span className="text-xs text-green-400">DZ</span></span>
+                                            <span className="text-xs text-gray-500 font-medium tracking-wide border-b border-gray-200 pb-1 mb-1 block">{t('logistics.cashSettled')}</span>
+                                            <span className="text-lg font-bold text-green-600">{courier.cashSettled.toLocaleString()} <span className="text-xs text-green-400">{t('logistics.dzdCurrency')}</span></span>
                                         </div>
                                         <div>
-                                            <span className="text-xs text-gray-500 font-medium tracking-wide border-b border-gray-200 pb-1 mb-1 block">Score / SLA</span>
+                                            <span className="text-xs text-gray-500 font-medium tracking-wide border-b border-gray-200 pb-1 mb-1 block">{t('logistics.scoreSla')}</span>
                                             <span className="text-lg font-bold text-gray-900">{courier.reliabilityScore} / {courier.serviceLevelAgreements?.expectedDeliveryWindowHours || 24}h</span>
                                         </div>
                                     </div>
@@ -240,10 +242,10 @@ export default function Couriers() {
                                     <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
                                         <div className="flex items-center gap-2">
                                             <Activity className="w-4 h-4 text-blue-500" />
-                                            <span className="text-sm font-bold text-gray-700">SR: {courier.successRate.toFixed(1)}%</span>
+                                            <span className="text-sm font-bold text-gray-700">{t('logistics.successRate')} {courier.successRate.toFixed(1)}%</span>
                                         </div>
                                         <button onClick={() => { setSelectedCourier(courier); setSettleModalOpen(true); }} className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-md transition-colors">
-                                            <CheckCircle className="w-4 h-4" /> Settle Cash
+                                            <CheckCircle className="w-4 h-4" /> {t('logistics.settleCashBtn')}
                                         </button>
                                     </div>
                                 </div>
@@ -260,10 +262,10 @@ export default function Couriers() {
                     <div className="flex-1 bg-white border border-gray-200 p-6 rounded-2xl flex flex-col h-full shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
                             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <Layers className="w-5 h-5 text-gray-400" /> Actionable Queue <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">{pendingOrders.length}</span>
+                                <Layers className="w-5 h-5 text-gray-400" /> {t('logistics.actionableQueue')} <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">{pendingOrders.length}</span>
                             </h2>
                         </div>
-                        <div className="overflow-y-auto flex-1 pr-2 space-y-3">
+                        <div className="overflow-y-auto flex-1 ltr:pr-2 rtl:pl-2 space-y-3">
                             {pendingOrders.map(order => (
                                 <div key={order._id} onClick={() => toggleOrderSelect(order._id)} className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedOrderIds.has(order._id) ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500' : 'border-gray-100 hover:border-gray-200 bg-white'}`}>
                                     <div className="flex justify-between items-center mb-2">
@@ -271,11 +273,11 @@ export default function Couriers() {
                                         <span className={`text-xs font-bold px-2 py-1 rounded-md ${order.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>{order.status}</span>
                                     </div>
                                     <div className="text-sm text-gray-600 font-medium">
-                                        {order.products.reduce((acc, p) => acc + p.quantity, 0)} Items • <span className="text-gray-900 font-bold">{order.totalAmount} DZ</span>
+                                        {order.products.reduce((acc, p) => acc + p.quantity, 0)} {t('logistics.itemsText')} • <span className="text-gray-900 font-bold">{order.totalAmount} {t('logistics.dzdCurrency')}</span>
                                     </div>
                                     <div className="text-xs text-gray-500 mt-2 flex justify-between items-center">
-                                        <span>{order.customer?.name || 'Customer'}</span>
-                                        <span>{order.customer?.address || 'No Address'}</span>
+                                        <span>{order.customer?.name || t('logistics.customerText')}</span>
+                                        <span>{order.customer?.address || t('logistics.noAddress')}</span>
                                     </div>
                                 </div>
                             ))}
@@ -284,22 +286,22 @@ export default function Couriers() {
 
                     {/* Dispatch Control */}
                     <div className="w-[380px] bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col shadow-inner">
-                        <h2 className="text-lg font-bold text-slate-800 mb-6">Bulk Dispatch</h2>
+                        <h2 className="text-lg font-bold text-slate-800 mb-6">{t('logistics.bulkDispatchTitle')}</h2>
                         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm mb-6">
-                            <div className="text-sm font-semibold text-slate-500 mb-1">Selected Orders</div>
+                            <div className="text-sm font-semibold text-slate-500 mb-1">{t('logistics.selectedOrders')}</div>
                             <div className="text-5xl font-black text-blue-600">{selectedOrderIds.size}</div>
                         </div>
 
                         <div className="mb-6">
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Assign to Courier</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">{t('logistics.assignToCourier')}</label>
                             <select
                                 className="w-full border border-slate-300 rounded-lg p-3 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                 value={dispatchToCourierId}
                                 onChange={e => setDispatchToCourierId(e.target.value)}
                             >
-                                <option value="">Select a Courier...</option>
+                                <option value="">{t('logistics.selectCourierOpt')}</option>
                                 {couriers.map(c => (
-                                    <option key={c._id} value={c._id}>{c.name} ({c.coverageZones?.join(', ') || 'Global'}) - SLA: {c.reliabilityScore}</option>
+                                    <option key={c._id} value={c._id}>{c.name} ({c.coverageZones?.join(', ') || t('logistics.courierStatusGlobal')}) - SLA: {c.reliabilityScore}</option>
                                 ))}
                             </select>
                         </div>
@@ -309,7 +311,7 @@ export default function Couriers() {
                             disabled={selectedOrderIds.size === 0 || !dispatchToCourierId}
                             className="mt-auto bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all flex justify-center items-center gap-2"
                         >
-                            <Truck className="w-5 h-5" /> Dispatch Now
+                            <Truck className="w-5 h-5" /> {t('logistics.dispatchNowBtn')}
                         </button>
                     </div>
                 </div>
@@ -319,18 +321,18 @@ export default function Couriers() {
             {activeTab === 'active' && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="p-4 bg-gray-50 border-b border-gray-200">
-                        <h2 className="text-lg font-bold text-gray-900">Live Shipments Tracking</h2>
+                        <h2 className="text-lg font-bold text-gray-900">{t('logistics.liveShipmentsTitle')}</h2>
                     </div>
                     {activeShipments.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 font-medium">No active shipments in transit.</div>
+                        <div className="p-8 text-center text-gray-500 font-medium">{t('logistics.noActiveShipments')}</div>
                     ) : (
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 text-start">
                             <thead className="bg-white">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order / Amount</th>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Courier</th>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('logistics.colOrderAmount')}</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('logistics.colCourier')}</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('logistics.colStatus')}</th>
+                                    <th className="px-6 py-4 text-end text-xs font-bold text-gray-500 uppercase tracking-wider">{t('logistics.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
@@ -353,20 +355,20 @@ export default function Couriers() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${shipment.status === 'Out for Delivery' ? 'bg-amber-100 text-amber-800' :
-                                                        shipment.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                    shipment.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {shipment.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
                                                 <div className="flex justify-end gap-2">
                                                     {shipment.status === 'Shipped' || shipment.status === 'Ready for Pickup' ? (
                                                         <button
                                                             onClick={() => handleUpdateShipmentStatus(shipment._id, 'Out for Delivery')}
                                                             className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold rounded-md transition-colors"
                                                         >
-                                                            Mark Out for Delivery
+                                                            {t('logistics.btnMarkOut')}
                                                         </button>
                                                     ) : shipment.status === 'Out for Delivery' ? (
                                                         <>
@@ -374,13 +376,13 @@ export default function Couriers() {
                                                                 onClick={() => handleUpdateShipmentStatus(shipment._id, 'Delivered')}
                                                                 className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 font-bold rounded-md transition-colors"
                                                             >
-                                                                Mark Delivered
+                                                                {t('logistics.btnMarkDelivered')}
                                                             </button>
                                                             <button
                                                                 onClick={() => handleUpdateShipmentStatus(shipment._id, 'Refused')}
                                                                 className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 font-bold rounded-md transition-colors"
                                                             >
-                                                                Mark Refused
+                                                                {t('logistics.btnMarkRefused')}
                                                             </button>
                                                         </>
                                                     ) : null}
@@ -400,21 +402,21 @@ export default function Couriers() {
                 <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
                         <div className="p-5 border-b border-gray-100 bg-gray-50 flex justify-between">
-                            <h2 className="text-lg font-bold">Onboard Courier</h2>
+                            <h2 className="text-lg font-bold">{t('logistics.modalOnboardTitle')}</h2>
                         </div>
                         <form onSubmit={handleOnboardSubmit} className="p-6 flex flex-col gap-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">Name</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full border rounded-lg p-2" /></div>
-                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label><input type="text" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full border rounded-lg p-2" /></div>
+                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('logistics.lblName')}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full border rounded-lg p-2" /></div>
+                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('logistics.lblPhone')}</label><input type="text" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full border rounded-lg p-2" /></div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">Vehicle</label><select value={formData.vehicleType} onChange={e => setFormData({ ...formData, vehicleType: e.target.value })} className="w-full border rounded-lg p-2"><option>Motorcycle</option><option>Van</option><option>Truck</option></select></div>
-                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">SLA (Hours)</label><input type="number" required value={formData.slaHours} onChange={e => setFormData({ ...formData, slaHours: e.target.value })} className="w-full border rounded-lg p-2" /></div>
+                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('logistics.lblVehicle')}</label><select value={formData.vehicleType} onChange={e => setFormData({ ...formData, vehicleType: e.target.value })} className="w-full border rounded-lg p-2"><option>{t('logistics.optMotorcycle')}</option><option>{t('logistics.optVan')}</option><option>{t('logistics.optTruck')}</option></select></div>
+                                <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('logistics.lblSla')}</label><input type="number" required value={formData.slaHours} onChange={e => setFormData({ ...formData, slaHours: e.target.value })} className="w-full border rounded-lg p-2" /></div>
                             </div>
-                            <div><label className="block text-sm font-semibold text-gray-700 mb-1">Coverage Zones (comma separated)</label><input type="text" placeholder="Algiers, Oran, Global" required value={formData.coverageZones} onChange={e => setFormData({ ...formData, coverageZones: e.target.value })} className="w-full border rounded-lg p-2" /></div>
+                            <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('logistics.lblCoverage')}</label><input type="text" placeholder={t('logistics.coveragePlaceholder')} required value={formData.coverageZones} onChange={e => setFormData({ ...formData, coverageZones: e.target.value })} className="w-full border rounded-lg p-2" /></div>
                             <div className="flex justify-end gap-3 mt-4">
-                                <button type="button" onClick={() => setOnboardModalOpen(false)} className="px-5 py-2 font-bold text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                                <button type="submit" className="px-5 py-2 font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add Courier</button>
+                                <button type="button" onClick={() => setOnboardModalOpen(false)} className="px-5 py-2 font-bold text-gray-600 hover:bg-gray-100 rounded-lg">{t('logistics.btnCancel')}</button>
+                                <button type="submit" className="px-5 py-2 font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('logistics.btnAddCourier')}</button>
                             </div>
                         </form>
                     </div>
@@ -426,17 +428,17 @@ export default function Couriers() {
                 <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
                         <div className="p-5 border-b border-gray-100 bg-gray-50 flex justify-between">
-                            <h2 className="text-lg font-bold">Settle {selectedCourier.name}</h2>
+                            <h2 className="text-lg font-bold">{t('logistics.modalSettleTitle')} {selectedCourier.name}</h2>
                         </div>
                         <form onSubmit={handleSettle} className="p-5 flex flex-col gap-4">
                             <div>
-                                <label className="block text-sm font-semibold mb-1">Amount to Settle (DZ)</label>
+                                <label className="block text-sm font-semibold mb-1">{t('logistics.lblAmountSettle')}</label>
                                 <input type="number" required max={selectedCourier.pendingRemittance} value={settleAmount} onChange={(e) => setSettleAmount(e.target.value)} className="w-full border rounded-lg p-2 font-medium text-lg" />
-                                <p className="text-xs text-gray-500 mt-1">Pending: {selectedCourier.pendingRemittance} DZ</p>
+                                <p className="text-xs text-gray-500 mt-1">{t('logistics.lblPendingAmount')} {selectedCourier.pendingRemittance} {t('logistics.dzdCurrency')}</p>
                             </div>
                             <div className="flex justify-end gap-3 mt-4">
-                                <button type="button" onClick={() => setSettleModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 rounded-lg">Cancel</button>
-                                <button type="submit" className="px-5 py-2 text-sm font-bold bg-green-600 text-white rounded-lg">Confirm Transfer</button>
+                                <button type="button" onClick={() => setSettleModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 rounded-lg">{t('logistics.btnCancel')}</button>
+                                <button type="submit" className="px-5 py-2 text-sm font-bold bg-green-600 text-white rounded-lg">{t('logistics.btnConfirmTransfer')}</button>
                             </div>
                         </form>
                     </div>

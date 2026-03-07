@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, Calendar, AlertCircle, PieChart, Target, Inbox, DollarSign } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function KPICards({ kpis, channels }) {
@@ -44,12 +45,13 @@ function CardWrapper({ title, icon: Icon, children, trend, trendType = 'up' }) {
 
 /* 1. Total Sales */
 function SalesCard({ data }) {
+    const { t } = useTranslation();
     if (!data) return null;
     return (
-        <CardWrapper title="Total Sales" icon={PieChart} trend={data.trend} trendType="up">
+        <CardWrapper title={t('widgets.kpiTotalSales')} icon={PieChart} trend={data.trend} trendType="up">
             <div>
                 <h2 className="text-4xl font-black text-gray-900 tabular-nums">
-                    {data.value.toLocaleString()} <span className="text-xl text-gray-400 font-bold ml-1">DZ</span>
+                    {data.value.toLocaleString()} <span className="text-xl text-gray-400 font-bold ml-1">{t('widgets.currencyDZ')}</span>
                 </h2>
                 <div className="flex items-center gap-2 mt-4 text-gray-500 text-sm">
                     <Calendar className="w-4 h-4" />
@@ -57,7 +59,7 @@ function SalesCard({ data }) {
                 </div>
             </div>
             <button className="mt-8 w-full py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors">
-                View Details
+                {t('widgets.btnViewDetails')}
             </button>
         </CardWrapper>
     );
@@ -65,12 +67,13 @@ function SalesCard({ data }) {
 
 /* 2. Net Profit */
 function NetProfitCard({ data, dateRange }) {
+    const { t } = useTranslation();
     if (!data) return null;
     return (
-        <CardWrapper title="Net Profit" icon={DollarSign} trend={data.trend} trendType={data.trend >= 0 ? "up" : "down"}>
+        <CardWrapper title={t('widgets.kpiNetProfit')} icon={DollarSign} trend={data.trend} trendType={data.trend >= 0 ? "up" : "down"}>
             <div>
                 <h2 className="text-4xl font-black text-emerald-600 tabular-nums">
-                    {data.value.toLocaleString()} <span className="text-xl text-gray-400 font-bold ml-1">DZ</span>
+                    {data.value.toLocaleString()} <span className="text-xl text-gray-400 font-bold ml-1">{t('widgets.currencyDZ')}</span>
                 </h2>
                 <div className="flex items-center gap-2 mt-4 text-gray-500 text-sm font-medium">
                     <Calendar className="w-4 h-4" />
@@ -78,7 +81,7 @@ function NetProfitCard({ data, dateRange }) {
                 </div>
             </div>
             <button className="mt-8 w-full py-2.5 rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-sm font-bold shadow-sm hover:bg-emerald-100 hover:text-emerald-800 transition-colors">
-                View Report
+                {t('widgets.btnViewReport')}
             </button>
         </CardWrapper>
     );
@@ -86,12 +89,13 @@ function NetProfitCard({ data, dateRange }) {
 
 /* 3. Inventory Values */
 function InventoryCard({ data }) {
+    const { t } = useTranslation();
     if (!data) return null;
     return (
-        <CardWrapper title="Inventory Values" icon={Target} trend={data.trend} trendType="down">
+        <CardWrapper title={t('widgets.kpiInventoryValues')} icon={Target} trend={data.trend} trendType="down">
             <div>
                 <h2 className="text-4xl font-black text-gray-900 tabular-nums">
-                    {data.value.toLocaleString()} <span className="text-xl text-gray-400 font-bold ml-1">DZ</span>
+                    {data.value.toLocaleString()} <span className="text-xl text-gray-400 font-bold ml-1">{t('widgets.currencyDZ')}</span>
                 </h2>
                 <div className="flex items-center gap-2 mt-4 text-[#D93025] text-sm font-medium">
                     <AlertCircle className="w-4 h-4" />
@@ -99,7 +103,7 @@ function InventoryCard({ data }) {
                 </div>
             </div>
             <button className="mt-8 w-full py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors">
-                View Details
+                {t('widgets.btnViewDetails')}
             </button>
         </CardWrapper>
     );
@@ -107,9 +111,10 @@ function InventoryCard({ data }) {
 
 /* 3. Total Orders & Channels */
 function OrdersCard({ data, channels }) {
+    const { t } = useTranslation();
     if (!data || !channels) return null;
     return (
-        <CardWrapper title="Total Orders" icon={Inbox} trend={data.trend} trendType="up">
+        <CardWrapper title={t('widgets.kpiTotalOrders')} icon={Inbox} trend={data.trend} trendType="up">
             <div>
                 <h2 className="text-4xl font-black text-gray-900 tabular-nums mb-6">{data.value.toLocaleString()}</h2>
 
@@ -133,7 +138,7 @@ function OrdersCard({ data, channels }) {
                         <div key={i} className="flex items-center gap-2">
                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ch.color }} />
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-900">{ch.name}</span>
+                                <span className="text-xs font-semibold text-gray-900">{ch.name === 'Website' ? t('modals.chWebsite') : ch.name === 'Amazon' ? t('modals.chAmazon') : ch.name === 'Alibaba' ? t('modals.chAlibaba') : ch.name === 'Tokopedia' ? t('modals.chTokopedia') : ch.name === 'Shopee' ? t('modals.chShopee') : ch.name === 'Other' ? t('modals.chOther') : ch.name}</span>
                                 <span className="text-xs text-gray-500 tabular-nums">{ch.value.toLocaleString()} ({ch.percentage}%)</span>
                             </div>
                         </div>
@@ -142,9 +147,9 @@ function OrdersCard({ data, channels }) {
             </div>
 
             <div className="flex items-center justify-between text-sm font-semibold">
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline underline-offset-4">Track Your Order Channel</a>
+                <a href="#" className="text-blue-600 hover:text-blue-700 underline underline-offset-4">{t('widgets.trackOrderChannel')}</a>
                 <button className="px-4 py-2 rounded-xl border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors">
-                    View Details
+                    {t('widgets.btnViewDetails')}
                 </button>
             </div>
         </CardWrapper>

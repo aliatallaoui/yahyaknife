@@ -2,6 +2,8 @@ import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { KeyRound, Mail, User, ArrowRight, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import clsx from 'clsx';
 
 export default function Register() {
     const [name, setName] = useState('');
@@ -11,6 +13,8 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { register } = useContext(AuthContext);
+    const { t, i18n } = useTranslation('auth');
+    const isAr = i18n.language === 'ar';
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -35,12 +39,12 @@ export default function Register() {
                         <User className="h-6 w-6 text-indigo-600" />
                     </div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                        Create an account
+                        {t('registerTitle')}
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
-                        Already have an account?{' '}
+                        {t('registerAlreadyHave')}{' '}
                         <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                            Sign in here
+                            {t('registerSignInHere')}
                         </Link>
                     </p>
                 </div>
@@ -52,16 +56,16 @@ export default function Register() {
                     )}
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                            <label className={clsx("block text-sm font-medium text-gray-700", isAr ? "text-right" : "text-left")}>{t('fullName')}</label>
                             <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <div className={clsx("absolute inset-y-0 flex items-center pointer-events-none", isAr ? "right-0 pr-3" : "left-0 pl-3")}>
                                     <User className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
                                     type="text"
                                     required
-                                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                                    placeholder="John Doe"
+                                    className={clsx("focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 border", isAr ? "pr-10 text-right" : "pl-10 text-left")}
+                                    placeholder={t('phName')}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                 />
@@ -69,34 +73,35 @@ export default function Register() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                            <label className={clsx("block text-sm font-medium text-gray-700", isAr ? "text-right" : "text-left")}>{t('emailAddress')}</label>
                             <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <div className={clsx("absolute inset-y-0 flex items-center pointer-events-none", isAr ? "right-0 pr-3" : "left-0 pl-3")}>
                                     <Mail className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
                                     type="email"
                                     required
-                                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                                    placeholder="you@example.com"
+                                    className={clsx("focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 border", isAr ? "pr-10 text-right" : "pl-10 text-left")}
+                                    placeholder={t('phEmail')}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    dir="ltr"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Password</label>
+                            <label className={clsx("block text-sm font-medium text-gray-700", isAr ? "text-right" : "text-left")}>{t('password')}</label>
                             <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <div className={clsx("absolute inset-y-0 flex items-center pointer-events-none", isAr ? "right-0 pr-3" : "left-0 pl-3")}>
                                     <KeyRound className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
                                     type="password"
                                     required
                                     minLength="6"
-                                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                                    placeholder="Wait, it's at least 6 chars!"
+                                    className={clsx("focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 border", isAr ? "pr-10" : "pl-10")}
+                                    placeholder={t('phWait')}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                 />
@@ -114,8 +119,8 @@ export default function Register() {
                                 <Loader2 className="animate-spin h-5 w-5 text-white" />
                             ) : (
                                 <>
-                                    Create Account
-                                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                                    {t('createAccount')}
+                                    <ArrowRight className={clsx("h-5 w-5 transition-transform", isAr ? "mr-2 rotate-180 group-hover:-translate-x-1" : "ml-2 group-hover:translate-x-1")} />
                                 </>
                             )}
                         </button>

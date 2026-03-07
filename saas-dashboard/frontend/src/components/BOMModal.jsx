@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function BOMModal({ isOpen, onClose, onSubmit, initialData, variants = [], rawMaterials = [] }) {
+    const { t } = useTranslation();
     const isEdit = !!initialData;
 
     const [variantId, setVariantId] = useState('');
@@ -88,7 +90,7 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900">
-                        {isEdit ? 'Edit Bill of Materials (BOM)' : 'Create BOM Recipe'}
+                        {isEdit ? t('modals.bomTitleEdit', 'Edit Bill of Materials (BOM)') : t('modals.bomTitleAdd', 'Create BOM Recipe')}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -100,9 +102,9 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
 
                         <div className="grid grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Target Product Variant</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.bomTargetVariant', 'Target Product Variant')}</label>
                                 <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={variantId} onChange={e => setVariantId(e.target.value)}>
-                                    <option value="" disabled>Select Variant (SKU)</option>
+                                    <option value="" disabled>{t('modals.bomSelectVariant', 'Select Variant (SKU)')}</option>
                                     {variants.map(v => (
                                         <option key={v._id || v.variantId} value={v._id || v.variantId}>
                                             {v.sku} - {v.displayName || v.name}
@@ -111,17 +113,17 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">BOM Version</label>
-                                <input required type="text" placeholder="e.g. 1.0 or 2026-A" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={version} onChange={e => setVersion(e.target.value)} />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.bomVersion', 'BOM Version')}</label>
+                                <input required type="text" placeholder={t('modals.bomVersionPlaceholder', "e.g. 1.0 or 2026-A")} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={version} onChange={e => setVersion(e.target.value)} />
                             </div>
                         </div>
 
                         {/* Components Section */}
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-semibold text-gray-900">Recipe Materials</h3>
+                                <h3 className="font-semibold text-gray-900">{t('modals.bomRecipeMaterials', 'Recipe Materials')}</h3>
                                 <button type="button" onClick={addComponentLine} className="flex items-center gap-1 text-xs font-semibold text-yellow-600 bg-yellow-100/50 px-3 py-1.5 rounded-lg hover:bg-yellow-100 transition-colors">
-                                    <Plus className="w-3 h-3" /> Add Component
+                                    <Plus className="w-3 h-3" /> {t('modals.bomAddComponent', 'Add Component')}
                                 </button>
                             </div>
 
@@ -135,7 +137,7 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
                                                 value={comp.rawMaterialId}
                                                 onChange={e => handleComponentChange(index, 'rawMaterialId', e.target.value)}
                                             >
-                                                <option value="" disabled>Select Raw Material...</option>
+                                                <option value="" disabled>{t('modals.bomSelectMaterial', 'Select Raw Material...')}</option>
                                                 {rawMaterials.map(rm => (
                                                     <option key={rm._id} value={rm._id}>
                                                         {rm.name} [{rm.sku}] - ${rm.costPerUnit}/{rm.unitOfMeasure}
@@ -144,7 +146,7 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
                                             </select>
                                         </div>
                                         <div className="w-32">
-                                            <label className="text-xs text-gray-500 block mb-1">Qty Required</label>
+                                            <label className="text-xs text-gray-500 block mb-1">{t('modals.bomQtyRequired', 'Qty Required')}</label>
                                             <input required type="number" step="0.01" min="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-yellow-500 py-1 px-2 rounded text-sm" value={comp.quantityRequired} onChange={e => handleComponentChange(index, 'quantityRequired', e.target.value)} />
                                         </div>
                                         <button type="button" onClick={() => removeComponentLine(index)} disabled={components.length === 1} className="mt-4 p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded disabled:opacity-50 transition-colors">
@@ -155,7 +157,7 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
                             </div>
 
                             <div className="flex justify-end mt-4 pt-4 border-t border-gray-200/60">
-                                <p className="text-sm text-gray-500 font-medium">Estimated Net Cost: <span className="text-lg font-bold text-gray-900">${calculateEstimatedCost().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                                <p className="text-sm text-gray-500 font-medium">{t('modals.bomNetCost', 'Estimated Net Cost:')} <span className="text-lg font-bold text-gray-900">${calculateEstimatedCost().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                             </div>
                         </div>
 
@@ -164,10 +166,10 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
 
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                        Cancel
+                        {t('modals.btnCancel', 'Cancel')}
                     </button>
                     <button type="submit" form="bomForm" className="px-5 py-2.5 text-sm font-semibold text-white bg-yellow-600 hover:bg-yellow-700 rounded-xl shadow-sm shadow-yellow-600/20 transition-all">
-                        {isEdit ? 'Save BOM' : 'Create BOM'}
+                        {isEdit ? t('modals.bomBtnSave', 'Save BOM') : t('modals.bomBtnCreate', 'Create BOM')}
                     </button>
                 </div>
             </div>

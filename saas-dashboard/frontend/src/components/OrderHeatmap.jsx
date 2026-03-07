@@ -1,7 +1,9 @@
 import { FileBarChart2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function OrderHeatmap({ heatmap }) {
+    const { t } = useTranslation();
     if (!heatmap || heatmap.length === 0) return null;
 
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -25,12 +27,12 @@ export default function OrderHeatmap({ heatmap }) {
                     <div className="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center">
                         <FileBarChart2 className="w-5 h-5" />
                     </div>
-                    <h2 className="text-lg font-bold text-gray-900 leading-tight">Order Frequency</h2>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight">{t('widgets.heatmapHeader')}</h2>
                 </div>
 
                 <select className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 outline-none cursor-pointer focus:ring-2 focus:ring-blue-100 font-medium">
-                    <option>This Week</option>
-                    <option>Last Week</option>
+                    <option>{t('widgets.heatmapThisWeek')}</option>
+                    <option>{t('widgets.heatmapLastWeek')}</option>
                 </select>
             </div>
 

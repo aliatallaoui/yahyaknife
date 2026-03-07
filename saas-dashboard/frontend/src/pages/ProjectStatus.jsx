@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { ProjectContext } from '../context/ProjectContext';
 import { LayoutDashboard, CheckCircle2, Clock, AlertTriangle, Plus, Search, Filter, TrendingUp, Users } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import moment from 'moment';
 
@@ -20,6 +21,8 @@ const HEALTH_COLORS = {
 };
 
 export default function ProjectStatus() {
+    const { t, i18n } = useTranslation('projects');
+    const isAr = i18n.language === 'ar';
     const { projects, analytics, loading, createProject } = useContext(ProjectContext);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,28 +59,28 @@ export default function ProjectStatus() {
             {/* Header */}
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Project Operations Master</h2>
-                    <p className="text-sm text-gray-500 mt-1">Enterprise portfolio tracking, milestone deadlines, and workforce allocation.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h2>
+                    <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
                 </div>
                 <div className="flex gap-3">
                     <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm shadow-sm transition-colors hover:bg-gray-50 flex items-center gap-2">
-                        <Filter className="w-4 h-4" /> Reports
+                        <Filter className="w-4 h-4" /> {t('reportsBtn')}
                     </button>
                     <button
                         onClick={() => setIsModalOpen(!isModalOpen)}
                         className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-indigo-700 flex items-center gap-2"
                     >
-                        <Plus className="w-4 h-4" /> New Project
+                        <Plus className="w-4 h-4" /> {t('newProjBtn')}
                     </button>
                 </div>
             </div>
 
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <KPICard title="Active Projects" value={analytics?.activeProjects || 0} icon={LayoutDashboard} color="text-indigo-600" bg="bg-indigo-50" />
-                <KPICard title="Avg Completion" value={`${analytics?.averageCompletion || 0}%`} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
-                <KPICard title="Completed Year-to-Date" value={analytics?.completedProjects || 0} icon={CheckCircle2} color="text-teal-600" bg="bg-teal-50" />
-                <KPICard title="Overdue Tasks" value={analytics?.overdueTasks || 0} icon={AlertTriangle} color="text-rose-600" bg="bg-rose-50" alert={analytics?.overdueTasks > 0} />
+                <KPICard title={t('kpiActive')} value={analytics?.activeProjects || 0} icon={LayoutDashboard} color="text-indigo-600" bg="bg-indigo-50" />
+                <KPICard title={t('kpiAvgComp')} value={`${analytics?.averageCompletion || 0}%`} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
+                <KPICard title={t('kpiCompYTD')} value={analytics?.completedProjects || 0} icon={CheckCircle2} color="text-teal-600" bg="bg-teal-50" />
+                <KPICard title={t('kpiOverdue')} value={analytics?.overdueTasks || 0} icon={AlertTriangle} color="text-rose-600" bg="bg-rose-50" alert={analytics?.overdueTasks > 0} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -85,9 +88,9 @@ export default function ProjectStatus() {
                 {/* Global Task Workload Chart */}
                 <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[380px]">
                     <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-gray-400" /> Global Task Workload
+                        <Users className="w-5 h-5 text-gray-400" /> {t('chartTitle')}
                     </h3>
-                    <div className="flex-1">
+                    <div className="flex-1 ltr:ml-[-20px] rtl:mr-[-20px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={taskDistData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -107,13 +110,13 @@ export default function ProjectStatus() {
                 {/* Project List (Master Overview) */}
                 <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[380px]">
                     <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-                        <h3 className="text-lg font-bold text-gray-900">Active Portfolio</h3>
+                        <h3 className="text-lg font-bold text-gray-900">{t('listTitle')}</h3>
                         <div className="relative">
-                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-gray-400", isAr ? "right-3" : "left-3")} />
                             <input
                                 type="text"
-                                placeholder="Search projects..."
-                                className="bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 pl-9 pr-4 text-sm w-64"
+                                placeholder={t('searchPlaceholder')}
+                                className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 pr-4 text-sm w-64", isAr ? "pr-9 pl-4" : "pl-9")}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -131,16 +134,16 @@ export default function ProjectStatus() {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <h4 className="font-bold text-gray-900">{proj.name}</h4>
-                                                <span className={clsx("px-2 py-0.5 rounded-full text-[10px] font-bold border", STATUS_COLORS[proj.status])}>{proj.status}</span>
+                                                <span className={clsx("px-2 py-0.5 rounded-full text-[10px] font-bold border", STATUS_COLORS[proj.status])}>{t(`status${proj.status.replace(' ', '')}`)}</span>
                                             </div>
-                                            <p className="text-xs text-gray-500 font-medium">{proj.projectId} • {proj.department} • Link: {proj.linkedModule}</p>
+                                            <p className="text-xs text-gray-500 font-medium">{proj.projectId} • {t(`dept${proj.department}`)} • Link: {t(`mod${proj.linkedModule}`)}</p>
                                         </div>
                                     </div>
 
                                     <div className="text-right">
                                         <div className="text-sm font-bold text-gray-900">{proj.completionPercentage}%</div>
                                         <div className={clsx("text-[10px] font-bold px-2 py-0.5 rounded mt-1", HEALTH_COLORS[proj.healthIndicator])}>
-                                            {proj.healthIndicator}
+                                            {t(`health${proj.healthIndicator.replace(' ', '')}`)}
                                         </div>
                                     </div>
                                 </div>
@@ -154,20 +157,20 @@ export default function ProjectStatus() {
 
                                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600" title={`Owner: ${proj.owner?.name || 'Unassigned'}`}>
+                                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600" title={`${t('owner')}: ${proj.owner?.name || t('unassigned')}`}>
                                             {proj.owner?.name?.charAt(0) || '?'}
                                         </div>
-                                        <span className="text-xs text-gray-500">{proj.owner?.name || 'Unassigned Manager'}</span>
+                                        <span className="text-xs text-gray-500">{proj.owner?.name || t('unassigned')}</span>
                                     </div>
                                     <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
                                         <Clock className="w-3.5 h-3.5" />
-                                        Ends {moment(proj.deadline).format('MMM D, YYYY')}
+                                        {t('ends')} {moment(proj.deadline).format('MMM D, YYYY')}
                                     </span>
                                 </div>
                             </div>
                         ))}
                         {filteredProjects.length === 0 && (
-                            <div className="text-center p-8 text-gray-500 text-sm">No projects matched your search.</div>
+                            <div className="text-center p-8 text-gray-500 text-sm">{t('noProjects')}</div>
                         )}
                     </div>
                 </div>
@@ -178,47 +181,47 @@ export default function ProjectStatus() {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-gray-900">Create New Project</h3>
+                            <h3 className="font-bold text-lg text-gray-900">{t('modalTitle')}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700">✕</button>
                         </div>
-                        <form onSubmit={handleCreateProject} className="p-6 space-y-4">
+                        <form onSubmit={handleCreateProject} className="p-6 space-y-4 text-start">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Project Name</label>
-                                <input type="text" required value={newProj.name} onChange={e => setNewProj({ ...newProj, name: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder="e.g. Q4 Marketing Push" />
+                                <label className="block text-xs font-bold text-gray-700 mb-1">{t('nameLabel')}</label>
+                                <input type="text" required value={newProj.name} onChange={e => setNewProj({ ...newProj, name: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder={t('namePlaceholder')} />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Description</label>
-                                <textarea rows="3" value={newProj.description} onChange={e => setNewProj({ ...newProj, description: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder="Project goals..."></textarea>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">{t('descLabel')}</label>
+                                <textarea rows="3" value={newProj.description} onChange={e => setNewProj({ ...newProj, description: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder={t('descPlaceholder')}></textarea>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">{t('deptLabel')}</label>
                                     <select value={newProj.department} onChange={e => setNewProj({ ...newProj, department: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white">
-                                        <option value="General">General</option>
-                                        <option value="Manufacturing">Manufacturing</option>
-                                        <option value="Sales">Sales</option>
-                                        <option value="Marketing">Marketing</option>
-                                        <option value="Engineering">Engineering</option>
+                                        <option value="General">{t('deptGeneral')}</option>
+                                        <option value="Manufacturing">{t('deptMfg')}</option>
+                                        <option value="Sales">{t('deptSales')}</option>
+                                        <option value="Marketing">{t('deptMarketing')}</option>
+                                        <option value="Engineering">{t('deptEng')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Linked Module</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">{t('linkedModuleLabel')}</label>
                                     <select value={newProj.linkedModule} onChange={e => setNewProj({ ...newProj, linkedModule: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white">
-                                        <option value="None">None</option>
-                                        <option value="Sales">Sales</option>
-                                        <option value="Manufacturing">Manufacturing</option>
-                                        <option value="Inventory">Inventory</option>
+                                        <option value="None">{t('modNone')}</option>
+                                        <option value="Sales">{t('modSales')}</option>
+                                        <option value="Manufacturing">{t('modMfg')}</option>
+                                        <option value="Inventory">{t('modInv')}</option>
                                     </select>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Deadline</label>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">{t('deadlineLabel')}</label>
                                 <input type="date" required value={newProj.deadline} onChange={e => setNewProj({ ...newProj, deadline: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" />
                             </div>
 
                             <div className="pt-4 flex justify-end gap-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700">Create Project</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">{t('cancelBtn')}</button>
+                                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700">{t('submitBtn')}</button>
                             </div>
                         </form>
                     </div>

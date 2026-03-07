@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductModal({ isOpen, onClose, onSubmit, initialData, suppliers, categories }) {
+    const { i18n } = useTranslation();
+    const isAr = i18n.language === 'ar';
     const isEdit = !!initialData;
 
     // Base Product State
@@ -85,7 +88,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
 
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900">
-                        {isEdit ? 'Edit Base Product' : 'Add New Product & Variants'}
+                        {isEdit ? (isAr ? 'تعديل المنتج الأساسي' : 'Edit Base Product') : (isAr ? 'إضافة منتج جديد ونسخ' : 'Add New Product & Variants')}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -97,29 +100,29 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
 
                         {/* Base Details */}
                         <div>
-                            <h3 className="text-sm border-b pb-2 mb-4 font-bold text-gray-900 uppercase tracking-wider">Base Information</h3>
+                            <h3 className="text-sm border-b pb-2 mb-4 font-bold text-gray-900 uppercase tracking-wider">{isAr ? 'المعلومات الأساسية' : 'Base Information'}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Product Name</label>
-                                    <input required type="text" placeholder="e.g. Premium T-Shirt" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={name} onChange={e => setName(e.target.value)} />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">{isAr ? 'اسم المنتج' : 'Product Name'}</label>
+                                    <input required type="text" placeholder={isAr ? "مثال: تيشيرت ممتاز" : "e.g. Premium T-Shirt"} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={name} onChange={e => setName(e.target.value)} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">{isAr ? 'الفئة' : 'Category'}</label>
                                     <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={category} onChange={e => setCategory(e.target.value)}>
-                                        <option value="" disabled>Select Category</option>
+                                        <option value="" disabled>{isAr ? 'اختر الفئة' : 'Select Category'}</option>
                                         {categories?.map(cat => (
                                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Brand</label>
-                                    <input type="text" placeholder="e.g. FashionCo" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={brand} onChange={e => setBrand(e.target.value)} />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">{isAr ? 'العلامة التجارية' : 'Brand'}</label>
+                                    <input type="text" placeholder={isAr ? "مثال: فاشن كو" : "e.g. FashionCo"} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={brand} onChange={e => setBrand(e.target.value)} />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Supplier</label>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">{isAr ? 'المورد' : 'Supplier'}</label>
                                     <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={supplier} onChange={e => setSupplier(e.target.value)}>
-                                        <option value="">Select a specific supplier (Optional)</option>
+                                        <option value="">{isAr ? 'تحديد مورد معين (اختياري)' : 'Select a specific supplier (Optional)'}</option>
                                         {suppliers?.map(sup => (
                                             <option key={sup._id} value={sup._id}>{sup.name}</option>
                                         ))}
@@ -132,9 +135,9 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
                         {!isEdit && (
                             <div>
                                 <div className="flex justify-between items-center border-b pb-2 mb-4">
-                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Product Variants</h3>
+                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">{isAr ? 'نسخ المنتج' : 'Product Variants'}</h3>
                                     <button type="button" onClick={handleAddVariant} className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-100 transition-colors">
-                                        <Plus className="w-3.5 h-3.5" /> Add Variant
+                                        <Plus className="w-3.5 h-3.5" /> {isAr ? 'إضافة نسخة' : 'Add Variant'}
                                     </button>
                                 </div>
 
@@ -146,27 +149,27 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
                                                 <input required type="text" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.sku} onChange={e => updateVariant(index, 'sku', e.target.value)} />
                                             </div>
                                             <div className="col-span-2">
-                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">Attr Key</label>
-                                                <input required type="text" placeholder="Size, Color, etc" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.attrKey} onChange={e => updateVariant(index, 'attrKey', e.target.value)} />
+                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">{isAr ? 'الخاصية' : 'Attr Key'}</label>
+                                                <input required type="text" placeholder={isAr ? "المقاس، اللون، إلخ" : "Size, Color, etc"} className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.attrKey} onChange={e => updateVariant(index, 'attrKey', e.target.value)} />
                                             </div>
                                             <div className="col-span-2">
-                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">Attr Value</label>
-                                                <input required type="text" placeholder="M, L, Red" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.attrVal} onChange={e => updateVariant(index, 'attrVal', e.target.value)} />
+                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">{isAr ? 'القيمة' : 'Attr Value'}</label>
+                                                <input required type="text" placeholder={isAr ? "م، ك، أحمر" : "M, L, Red"} className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.attrVal} onChange={e => updateVariant(index, 'attrVal', e.target.value)} />
                                             </div>
                                             <div className="col-span-1">
-                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">Price</label>
+                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">{isAr ? 'السعر' : 'Price'}</label>
                                                 <input required type="number" min="0" step="0.01" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.price} onChange={e => updateVariant(index, 'price', e.target.value)} />
                                             </div>
                                             <div className="col-span-1">
-                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">Cost</label>
+                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">{isAr ? 'التكلفة' : 'Cost'}</label>
                                                 <input required type="number" min="0" step="0.01" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.cost} onChange={e => updateVariant(index, 'cost', e.target.value)} />
                                             </div>
                                             <div className="col-span-2">
-                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">Init Stock</label>
+                                                <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 block">{isAr ? 'المخزون الأولي' : 'Init Stock'}</label>
                                                 <input required type="number" min="0" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-gray-200 bg-white focus:border-blue-400" value={v.stock} onChange={e => updateVariant(index, 'stock', e.target.value)} />
                                             </div>
                                             <div className="col-span-1">
-                                                <label className="text-[10px] uppercase font-bold text-red-500 ml-1 block">Reorder</label>
+                                                <label className="text-[10px] uppercase font-bold text-red-500 ml-1 block">{isAr ? 'إعادة طلب' : 'Reorder'}</label>
                                                 <input required type="number" min="0" className="w-full text-sm outline-none px-2 py-1.5 rounded-md border border-red-200 bg-white focus:border-red-400" value={v.reorderLevel} onChange={e => updateVariant(index, 'reorderLevel', e.target.value)} />
                                             </div>
                                             <div className="col-span-1 flex justify-center mt-4">
@@ -183,7 +186,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
                         )}
                         {isEdit && (
                             <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
-                                <p className="text-sm text-orange-800">Note: Variant configurations cannot be changed from this base edit screen in the current version.</p>
+                                <p className="text-sm text-orange-800">{isAr ? 'ملاحظة: لا يمكن تغيير إعدادات النسخ من شاشة التعديل الأساسية في الإصدار الحالي.' : 'Note: Variant configurations cannot be changed from this base edit screen in the current version.'}</p>
                             </div>
                         )}
                     </form>
@@ -191,10 +194,10 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
 
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3 shrink-0">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                        Cancel
+                        {isAr ? 'إلغاء' : 'Cancel'}
                     </button>
                     <button type="submit" form="productForm" className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-t from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 rounded-xl shadow-md shadow-gray-900/10 hover:-translate-y-0.5 transition-all">
-                        {isEdit ? 'Save Changes' : 'Create Product'}
+                        {isEdit ? (isAr ? 'حفظ التغييرات' : 'Save Changes') : (isAr ? 'إنشاء منتج' : 'Create Product')}
                     </button>
                 </div>
             </div>

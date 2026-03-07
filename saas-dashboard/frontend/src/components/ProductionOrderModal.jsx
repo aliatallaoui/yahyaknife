@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductionOrderModal({ isOpen, onClose, onSubmit, initialData, variants = [], boms = [] }) {
+    const { t } = useTranslation();
     const isEdit = !!initialData;
 
     const [orderNumber, setOrderNumber] = useState('');
@@ -70,7 +72,7 @@ export default function ProductionOrderModal({ isOpen, onClose, onSubmit, initia
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900">
-                        {isEdit ? 'Edit Production Order' : 'New Production Order'}
+                        {isEdit ? t('modals.proTitleEdit', 'Edit Production Order') : t('modals.proTitleNew', 'New Production Order')}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -80,15 +82,15 @@ export default function ProductionOrderModal({ isOpen, onClose, onSubmit, initia
                 <div className="p-6 overflow-y-auto">
                     <form id="poForm" onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Order Number (Auto-Generated)</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proOrderNum', 'Order Number (Auto-Generated)')}</label>
                             <input required disabled type="text" className="w-full bg-gray-100 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm text-gray-500 font-mono" value={orderNumber} />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Target Product Variant</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proTargetVariant', 'Target Product Variant')}</label>
                                 <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={variantId} onChange={e => { setVariantId(e.target.value); setBomId(''); }}>
-                                    <option value="" disabled>Select Variant...</option>
+                                    <option value="" disabled>{t('modals.proSelectVariant', 'Select Variant...')}</option>
                                     {variants.map(v => (
                                         <option key={v.variantId || v._id} value={v.variantId || v._id}>
                                             {v.sku} - {v.displayName || v.name}
@@ -97,9 +99,9 @@ export default function ProductionOrderModal({ isOpen, onClose, onSubmit, initia
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Target BOM Recipe</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proTargetBom', 'Target BOM Recipe')}</label>
                                 <select required disabled={!variantId} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors disabled:opacity-50" value={bomId} onChange={e => setBomId(e.target.value)}>
-                                    <option value="" disabled>Select BOM version...</option>
+                                    <option value="" disabled>{t('modals.proSelectBom', 'Select BOM version...')}</option>
                                     {availableBoms.map(b => (
                                         <option key={b._id} value={b._id}>
                                             v{b.version} ({b.components?.length || 0} mat.)
@@ -110,34 +112,34 @@ export default function ProductionOrderModal({ isOpen, onClose, onSubmit, initia
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Quantity Planned (Units)</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proQtyPlanned', 'Quantity Planned (Units)')}</label>
                             <input required type="number" min="1" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={quantityPlanned} onChange={e => setQuantityPlanned(e.target.value)} />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Expected Start Date</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proStartDate', 'Expected Start Date')}</label>
                                 <input required type="date" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={startDate} onChange={e => setStartDate(e.target.value)} />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Target Deadline</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proDeadline', 'Target Deadline')}</label>
                                 <input type="date" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors" value={completionDate} onChange={e => setCompletionDate(e.target.value)} />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Production Notes</label>
-                            <textarea rows="3" placeholder="Optional instructions or notes for the manufacturing team..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors resize-none" value={notes} onChange={e => setNotes(e.target.value)} />
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.proNotes', 'Production Notes')}</label>
+                            <textarea rows="3" placeholder={t('modals.proNotesPlaceholder', "Optional instructions or notes for the manufacturing team...")} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-yellow-500 transition-colors resize-none" value={notes} onChange={e => setNotes(e.target.value)} />
                         </div>
                     </form>
                 </div>
 
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                        Cancel
+                        {t('modals.btnCancel', 'Cancel')}
                     </button>
                     <button type="submit" form="poForm" className="px-5 py-2.5 text-sm font-semibold text-white bg-yellow-600 hover:bg-yellow-700 rounded-xl shadow-sm shadow-yellow-600/20 transition-all">
-                        {isEdit ? 'Save Changes' : 'Start Production'}
+                        {isEdit ? t('modals.btnSave', 'Save Changes') : t('modals.proBtnStart', 'Start Production')}
                     </button>
                 </div>
             </div>

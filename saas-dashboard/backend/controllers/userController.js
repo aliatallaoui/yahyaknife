@@ -71,8 +71,45 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// @desc    Update My Preferences
+// @route   PUT /api/users/preferences
+// @access  Private
+const updateMyPreferences = async (req, res) => {
+    try {
+        const { language, timezone, dateFormat, currency, theme } = req.body;
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Merge existing preferences with incoming fields
+        user.preferences = {
+            ...user.preferences,
+            ...(language && { language }),
+            ...(timezone && { timezone }),
+            ...(dateFormat && { dateFormat }),
+            ...(currency && { currency }),
+            ...(theme && { theme }),
+        };
+
+        // Explicitly tell Mongoose that the nested object has changed
+        user.markModified('preferences');
+
+        const updatedUser = await user.save();
+
+        res.json({
+            message: 'Preferences updated successfully',
+            preferences: updatedUser.preferences
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error updating preferences' });
+    }
+};
+
 module.exports = {
     getUsers,
     updateUserAccess,
-    deleteUser
+    deleteUser,
+    updateMyPreferences
 };

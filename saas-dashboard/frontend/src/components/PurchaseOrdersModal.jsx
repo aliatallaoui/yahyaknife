@@ -2,8 +2,10 @@ import React, { useState, useContext, useEffect } from 'react';
 import { X, Plus, Trash2, Search, Store } from 'lucide-react';
 import { InventoryContext } from '../context/InventoryContext';
 import { ManufacturingContext } from '../context/ManufacturingContext';
+import { useTranslation } from 'react-i18next';
 
 const PurchaseOrdersModal = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
     const { suppliers, products } = useContext(InventoryContext);
     const { materials } = useContext(ManufacturingContext);
     const [supplierId, setSupplierId] = useState('');
@@ -146,9 +148,9 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                             <Store className="w-5 h-5 text-indigo-600" />
-                            Create Purchase Order
+                            {t('modals.poTitle', 'Create Purchase Order')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">Order new stock from suppliers</p>
+                        <p className="text-sm text-gray-500 mt-1">{t('modals.poSubtitle', 'Order new stock from suppliers')}</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -166,14 +168,14 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                         {/* Header Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-gray-50 rounded-xl border border-gray-200">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier *</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poSupplier', 'Supplier *')}</label>
                                 <select
                                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-colors"
                                     value={supplierId}
                                     onChange={(e) => setSupplierId(e.target.value)}
                                     required
                                 >
-                                    <option value="">Select Supplier</option>
+                                    <option value="">{t('modals.poSelectSupplier', 'Select Supplier')}</option>
                                     {suppliers.map(s => (
                                         <option key={s._id} value={s._id}>{s.name}</option>
                                     ))}
@@ -181,7 +183,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Expected Delivery</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poExpectedDelivery', 'Expected Delivery')}</label>
                                 <input
                                     type="date"
                                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-colors"
@@ -191,11 +193,11 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poNotes', 'Notes')}</label>
                                 <textarea
                                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-colors"
                                     rows="2"
-                                    placeholder="Internal notes or instructions for the supplier..."
+                                    placeholder={t('modals.poNotesPlaceholder', 'Internal notes or instructions for the supplier...')}
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
                                 ></textarea>
@@ -204,10 +206,10 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
 
                         {/* Add Items Section */}
                         <div className="p-5 border border-indigo-100 bg-indigo-50/30 rounded-xl">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-4">Add Items format</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('modals.poAddItemsFormat', 'Add Items format')}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                                 <div className="md:col-span-3">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Item Type</label>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('modals.poItemType', 'Item Type')}</label>
                                     <select
                                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
                                         value={selectedItemModel}
@@ -216,12 +218,12 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                             setSelectedItemId(''); // Reset selection
                                         }}
                                     >
-                                        <option value="ProductVariant">Finished Product Variant</option>
-                                        <option value="RawMaterial">Raw Material Component</option>
+                                        <option value="ProductVariant">{t('modals.poFinishedVariant', 'Finished Product Variant')}</option>
+                                        <option value="RawMaterial">{t('modals.poRawMaterial', 'Raw Material Component')}</option>
                                     </select>
                                 </div>
                                 <div className="md:col-span-3">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Item to Purchase</label>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('modals.poItemToPurchase', 'Item to Purchase')}</label>
                                     <select
                                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
                                         value={selectedItemId}
@@ -232,14 +234,14 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                             if (match) setUnitCost(match.cost || 0);
                                         }}
                                     >
-                                        <option value="">Select Item...</option>
+                                        <option value="">{t('modals.poSelectItem', 'Select Item...')}</option>
                                         {availableItems.filter(i => i.itemModel === selectedItemModel).map(i => (
                                             <option key={i.itemId} value={i.itemId}>{i.displayName} ({i.sku})</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('modals.poQty', 'Quantity')}</label>
                                     <input
                                         type="number"
                                         min="1"
@@ -249,7 +251,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Unit Cost ($)</label>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('modals.poUnitCost', 'Unit Cost ($)')}</label>
                                     <input
                                         type="number"
                                         min="0"
@@ -265,7 +267,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                         onClick={handleAddItem}
                                         className="w-full flex items-center justify-center gap-1 bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors"
                                     >
-                                        <Plus className="w-4 h-4" /> Add
+                                        <Plus className="w-4 h-4" /> {t('modals.poBtnAdd', 'Add')}
                                     </button>
                                 </div>
                             </div>
@@ -277,11 +279,11 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Item Type</th>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Item</th>
-                                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Qty</th>
-                                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Cost</th>
-                                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
+                                            <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 uppercase">{t('modals.poTableType', 'Item Type')}</th>
+                                            <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 uppercase">{t('modals.poTableItem', 'Item')}</th>
+                                            <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 uppercase">{t('modals.poTableQty', 'Qty')}</th>
+                                            <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 uppercase">{t('modals.poTableCost', 'Cost')}</th>
+                                            <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 uppercase">{t('modals.poTableTotal', 'Total')}</th>
                                             <th className="px-4 py-3"></th>
                                         </tr>
                                     </thead>
@@ -290,18 +292,18 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                             <tr key={idx} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 text-sm text-gray-600 font-medium whitespace-nowrap">
                                                     <span className={`px-2 py-0.5 rounded text-xs border ${item.itemModel === 'RawMaterial' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                                                        {item.itemModel === 'RawMaterial' ? 'Raw Material' : 'Product Variant'}
+                                                        {item.itemModel === 'RawMaterial' ? t('modals.poRawMaterial', 'Raw Material') : t('modals.poFinishedVariant', 'Product Variant')}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                                                     {item.itemObj.displayName} <span className="text-gray-400 font-normal ml-1">({item.itemObj.sku})</span>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-gray-600 text-right">{item.quantity}</td>
-                                                <td className="px-4 py-3 text-sm text-gray-600 text-right">${item.unitCost.toLocaleString()}</td>
-                                                <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                                                <td className="px-4 py-3 text-sm text-gray-600 text-end">{item.quantity}</td>
+                                                <td className="px-4 py-3 text-sm text-gray-600 text-end">${item.unitCost.toLocaleString()}</td>
+                                                <td className="px-4 py-3 text-sm font-medium text-gray-900 text-end">
                                                     ${(item.quantity * item.unitCost).toLocaleString()}
                                                 </td>
-                                                <td className="px-4 py-3 text-right">
+                                                <td className="px-4 py-3 text-end">
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveItem(idx)}
@@ -315,8 +317,8 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                     </tbody>
                                     <tfoot className="bg-gray-50">
                                         <tr>
-                                            <td colSpan="3" className="px-4 py-3 text-sm font-medium text-gray-600 text-right">Total Amount:</td>
-                                            <td className="px-4 py-3 text-base font-bold text-indigo-600 text-right">
+                                            <td colSpan="3" className="px-4 py-3 text-sm font-medium text-gray-600 text-end">{t('modals.poTotalAmount', 'Total Amount:')}</td>
+                                            <td className="px-4 py-3 text-base font-bold text-indigo-600 text-end">
                                                 ${totalCalculated.toLocaleString()}
                                             </td>
                                             <td></td>
@@ -334,7 +336,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                         onClick={onClose}
                         className="px-4 py-2 font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                     >
-                        Cancel
+                        {t('modals.btnCancel', 'Cancel')}
                     </button>
                     <button
                         type="submit"
@@ -342,7 +344,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                         disabled={submitting || items.length === 0}
                         className="px-6 py-2 font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {submitting ? 'Creating...' : 'Create Purchase Order'}
+                        {submitting ? t('modals.poBtnCreating', 'Creating...') : t('modals.poBtnCreate', 'Create Purchase Order')}
                     </button>
                 </div>
             </div>

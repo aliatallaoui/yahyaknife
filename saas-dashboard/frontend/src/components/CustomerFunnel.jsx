@@ -1,7 +1,9 @@
 import { Filter } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function CustomerFunnel({ funnel }) {
+    const { t } = useTranslation();
     if (!funnel || funnel.length === 0) return null;
 
     return (
@@ -12,8 +14,8 @@ export default function CustomerFunnel({ funnel }) {
                     <Filter className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-lg font-bold text-gray-900 leading-tight">Customer Funnel Analytics</h2>
-                    <p className="text-sm text-gray-500">Insights into customer journey and conversions</p>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight">{t('widgets.funnelHeader')}</h2>
+                    <p className="text-sm text-gray-500">{t('widgets.funnelSubtitle')}</p>
                 </div>
             </div>
 
