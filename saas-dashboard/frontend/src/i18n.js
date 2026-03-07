@@ -2852,6 +2852,59 @@ const resources = {
                 btnMarkOutAtt: "تسجيل الخروج",
                 btnMarkIn: "تسجيل الدخول",
                 lblOvertime: "إضافي",
+
+                // --- Translations manually added from HRReports screenshots ---
+                btnPdf: "تصدير PDF",
+                btnExcel: "تصدير Excel",
+                reportsTitle: "تقارير الموارد البشرية",
+                reportsSubtitle: "استخراج وتصدير بيانات الحضور، الرواتب والخصومات للأرشيف أو المحاسبة.",
+
+                // Report Types (Cards)
+                reportDeductionsTitle: "تقرير الخصومات",
+                reportDeductionsDesc: "احصائيات الخصومات والغيابات.",
+                reportOvertimeTitle: "تقرير الإضافي",
+                reportOvertimeDesc: "وقت المكوث الإضافي المعتمد.",
+                reportPayrollTitle: "مسير الرواتب",
+                reportPayrollDesc: "خلاصة الرواتب النهائية للدفع.",
+                reportMonthlyTitle: "المصفوفة الشهرية",
+                reportMonthlyDesc: "جدول مفصل للحضور خلال الشهر.",
+                reportDailyTitle: "التقرير اليومي",
+                reportDailyDesc: "تفاصيل الحضور ليوم محدد.",
+
+                // Extraction Matrix
+                resultsGenerated: "سجل تم استخراجه",
+                reportExtract: "استخراج التقرير",
+                lblParameters: "المعايير:",
+                monthlyMatrixReady: "المصفوفة جاهزة",
+                monthlyMatrixExcelNotice: "هذا التقرير عريض جداً للعرض، يرجى تصديره.",
+                btnExportCsvXlsx: "تصدير للمحاسبة (XLSX)",
+
+                // PDF Titles
+                pdfDaily: "التقرير اليومي -",
+                pdfMonthly: "التقرير الشهري -",
+                pdfPayroll: "مسير الرواتب -",
+                pdfOvertime: "تقرير الإضافي -",
+                pdfDeductions: "تقرير الخصومات -",
+
+                // Tables specific to Reports
+                colRole: "المنصب",
+                colWorkedTime: "وقت العمل المحتسب",
+                colLateOvertime: "تأخير / إضافي",
+                colDaysPresent: "أيام الحضور",
+                colLateDays: "أيام التأخير",
+                colAbsentDays: "أيام الغياب",
+                colTotalMissingMins: "إجمالي دقائق النقص",
+                colEstSalary: "الراتب التقديري",
+                colBaseSalary: "الراتب الأساسي",
+                colOvertimeAddition: "إضافة للإضافي",
+                colFinalClearedSalary: "الراتب الصافي",
+                colTotalLateMissedMin: "نقص / تأخير (د)",
+                colLossLateness: "خسارة التأخير",
+                colLossAbsence: "خسارة الغياب",
+                colTotalLiabilityDeducted: "إجمالي الخصم",
+                colDaysWithOvertime: "أيام بها إضافي",
+                colTotalExtraMinutes: "إجمالي دقائق الإضافي",
+                unknown: "مجهول"
             },
             widgets: {
                 // KPICards
