@@ -20,9 +20,9 @@ export const SalesProvider = ({ children }) => {
         setLoading(true);
         try {
             const [ordersRes, perfRes, customRes] = await Promise.all([
-                fetch(`/api/sales/orders?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/sales/performance', { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/custom-orders', { headers: { Authorization: `Bearer ${token}` } })
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             if (ordersRes.ok && perfRes.ok) {
@@ -49,7 +49,7 @@ export const SalesProvider = ({ children }) => {
     const fetchPerformanceOnly = async () => {
         if (!token) return;
         try {
-            const res = await fetch('/api/sales/performance', { headers: { Authorization: `Bearer ${token}` } });
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } });
             if (res.ok) setPerformance(await res.json());
         } catch (error) {
             console.error(error);
@@ -66,7 +66,7 @@ export const SalesProvider = ({ children }) => {
 
     const createOrder = async (orderData) => {
         try {
-            const res = await fetch('/api/sales/orders', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export const SalesProvider = ({ children }) => {
 
     const updateOrder = async (id, orderData) => {
         try {
-            const res = await fetch(`/api/sales/orders/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -109,7 +109,7 @@ export const SalesProvider = ({ children }) => {
 
     const deleteOrder = async (id) => {
         try {
-            const res = await fetch(`/api/sales/orders/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -127,7 +127,7 @@ export const SalesProvider = ({ children }) => {
     // --- Custom Orders ---
     const createCustomOrder = async (orderData) => {
         try {
-            const res = await fetch('/api/custom-orders', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(orderData)
@@ -145,7 +145,7 @@ export const SalesProvider = ({ children }) => {
 
     const updateCustomOrder = async (id, orderData) => {
         try {
-            const res = await fetch(`/api/custom-orders/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(orderData)
@@ -163,7 +163,7 @@ export const SalesProvider = ({ children }) => {
 
     const deleteCustomOrder = async (id) => {
         try {
-            const res = await fetch(`/api/custom-orders/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });

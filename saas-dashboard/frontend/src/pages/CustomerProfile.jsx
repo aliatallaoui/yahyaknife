@@ -25,9 +25,9 @@ export default function CustomerProfile() {
             try {
                 // Fetch fresh profile and orders and tickets
                 const [ordersRes, profilesRes, ticketsRes] = await Promise.all([
-                    fetch(`/api/customers/${id}/orders`),
-                    fetch(`/api/customers`), // Refresh full list to get newest metrics for this ID
-                    fetch(`/api/support?customerId=${id}`)
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/${id}/orders`),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`), // Refresh full list to get newest metrics for this ID
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/support?customerId=${id}`)
                 ]);
 
                 if (ordersRes.ok) setOrders(await ordersRes.json());

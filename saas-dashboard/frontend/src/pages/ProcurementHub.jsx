@@ -15,8 +15,8 @@ export default function ProcurementHub() {
         try {
             setLoading(true);
             const [ordersRes, suppliersRes] = await Promise.all([
-                axios.get('/api/procurement/orders'),
-                axios.get('/api/procurement/suppliers')
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/suppliers`)
             ]);
             setOrders(ordersRes.data);
             setSuppliers(suppliersRes.data);

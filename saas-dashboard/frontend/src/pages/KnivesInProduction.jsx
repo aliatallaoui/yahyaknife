@@ -20,7 +20,7 @@ export default function KnivesInProduction() {
     const fetchKnives = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/knives/cards');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards`);
             const data = await res.json();
             // We only want knives currently in the workshop, not Sold.
             setKnives(data.filter(k => k.status !== 'Sold'));
@@ -35,7 +35,7 @@ export default function KnivesInProduction() {
             // Optimistic update
             setKnives(prev => prev.map(k => k._id === knifeId ? { ...k, status: newStatus } : k));
 
-            const res = await fetch(`/api/knives/cards/${knifeId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${knifeId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })

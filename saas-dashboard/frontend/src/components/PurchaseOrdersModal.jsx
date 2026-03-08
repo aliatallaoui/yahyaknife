@@ -115,7 +115,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                 }))
             };
 
-            const response = await fetch('/api/procurement/orders', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -21,7 +21,7 @@ export default function DispatchCenter() {
     const fetchShipments = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('/api/shipments', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/shipments`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShipments(res.data);
@@ -35,7 +35,7 @@ export default function DispatchCenter() {
     const handleValidate = async (id) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`/api/shipments/${id}/validate`, { ask_collection: 1 }, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}/validate`, { ask_collection: 1 }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchShipments();
@@ -48,7 +48,7 @@ export default function DispatchCenter() {
         if (!window.confirm('Are you sure you want to delete this shipment/dispatch request?')) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`/api/shipments/${id}`, {
+            await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchShipments();
@@ -60,7 +60,7 @@ export default function DispatchCenter() {
     const handlePrintLabel = async (id) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`/api/shipments/${id}/label`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}/label`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.url) {
@@ -74,7 +74,7 @@ export default function DispatchCenter() {
     const handleExport = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('/api/shipments/export/csv', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/shipments/export/csv`, {
                 headers: { Authorization: `Bearer ${token}` },
                 responseType: 'blob'
             });

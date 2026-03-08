@@ -24,7 +24,7 @@ export default function CourierSettings() {
     const fetchSettings = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('/api/courier-settings', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/courier-settings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSettings(res.data);
@@ -41,7 +41,7 @@ export default function CourierSettings() {
         setMessage('');
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.put('/api/courier-settings', {
+            const res = await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/courier-settings`, {
                 apiUrl: settings.apiUrl,
                 apiToken: settings.apiToken
             }, {

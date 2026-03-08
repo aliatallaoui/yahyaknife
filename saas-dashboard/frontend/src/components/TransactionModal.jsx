@@ -31,7 +31,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
     useEffect(() => {
         if (isHR && payrollRecords.length === 0) {
             setPayrollLoading(true);
-            fetch('/api/hr/payroll', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+            fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
                 .then(r => r.ok ? r.json() : [])
                 .then(data => {
                     // Only show unpaid payroll records
@@ -113,7 +113,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
             // If HR category and a worker is selected, also sync payroll
             if (isHR && selectedPayrollId) {
-                const payRes = await fetch(`/api/hr/payroll/${selectedPayrollId}/approve`, {
+                const payRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${selectedPayrollId}/approve`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

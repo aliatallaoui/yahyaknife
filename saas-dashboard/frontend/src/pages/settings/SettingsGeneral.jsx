@@ -36,7 +36,7 @@ export default function SettingsGeneral() {
         setSaveSuccess(false);
 
         try {
-            const res = await fetch('/api/users/preferences', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/preferences`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

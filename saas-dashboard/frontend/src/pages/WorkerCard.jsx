@@ -19,9 +19,9 @@ export default function WorkerCard() {
         const fetchData = async () => {
             try {
                 const [workerRes, prodRes, rewRes] = await Promise.all([
-                    fetch(`/api/hr/employees/${id}`),
-                    fetch(`/api/hr/productivity?employeeId=${id}`),
-                    fetch(`/api/hr/rewards?employeeId=${id}`)
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/productivity?employeeId=${id}`),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/rewards?employeeId=${id}`)
                 ]);
 
                 if (!workerRes.ok) throw new Error('Worker not found');

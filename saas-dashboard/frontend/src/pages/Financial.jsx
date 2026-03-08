@@ -105,7 +105,7 @@ export default function Financial() {
     useEffect(() => {
         const fetchOverview = async () => {
             try {
-                const finRes = await fetch('/api/finance/overview');
+                const finRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/finance/overview`);
                 const data = await finRes.json();
                 setOverview(data);
             } catch (error) {

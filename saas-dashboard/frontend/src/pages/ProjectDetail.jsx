@@ -20,7 +20,7 @@ export default function ProjectDetail() {
     useEffect(() => {
         const fetchDeepProject = async () => {
             try {
-                const res = await fetch(`/api/projects/${id}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/${id}`);
                 if (res.ok) {
                     setProjectData(await res.json());
                 } else {

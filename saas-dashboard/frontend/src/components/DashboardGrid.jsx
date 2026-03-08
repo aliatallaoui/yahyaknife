@@ -10,8 +10,8 @@ export default function DashboardGrid({ data }) {
     const [dailyReport, setDailyReport] = useState(null);
 
     useEffect(() => {
-        fetch('/api/hr/metrics').then(r => r.json()).then(setHrMetrics).catch(() => { });
-        fetch('/api/hr/reports/daily').then(r => r.json()).then(setDailyReport).catch(() => { });
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`).then(r => r.json()).then(setHrMetrics).catch(() => { });
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily`).then(r => r.json()).then(setDailyReport).catch(() => { });
     }, []);
     if (!data) return (
         <div className="flex items-center justify-center h-64 flex-col gap-3">

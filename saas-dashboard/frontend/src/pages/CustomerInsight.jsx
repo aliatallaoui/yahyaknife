@@ -27,7 +27,7 @@ export default function CustomerInsight() {
         const fetchCustomerData = async () => {
             if (!token) return;
             try {
-                const metricsRes = await fetch('/api/customers/metrics', {
+                const metricsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/metrics`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 

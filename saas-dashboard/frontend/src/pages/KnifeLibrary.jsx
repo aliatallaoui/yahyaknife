@@ -152,7 +152,7 @@ export default function KnifeLibrary() {
     const fetchModels = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/knives/models');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`);
             setModels(await res.json());
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
@@ -162,7 +162,7 @@ export default function KnifeLibrary() {
 
     const handleDelete = async (id) => {
         if (!window.confirm('Delete this knife model?')) return;
-        await fetch(`/api/knives/models/${id}`, { method: 'DELETE' });
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models/${id}`, { method: 'DELETE' });
         fetchModels();
     };
 

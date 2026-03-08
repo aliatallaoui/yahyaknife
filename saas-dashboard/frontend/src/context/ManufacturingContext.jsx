@@ -17,10 +17,10 @@ export const ManufacturingProvider = ({ children }) => {
         setLoading(true);
         try {
             const [matRes, bomRes, poRes, statRes] = await Promise.all([
-                fetch('/api/production/raw-materials', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/production/boms', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/production/production-orders', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/production/analytics', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/raw-materials`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/boms`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/production-orders`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/analytics`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (matRes.ok) { const md = await matRes.json(); setMaterials(Array.isArray(md) ? md : []); }
@@ -41,7 +41,7 @@ export const ManufacturingProvider = ({ children }) => {
 
     // --- RAW MATERIALS ---
     const createMaterial = async (data) => {
-        const res = await fetch('/api/production/raw-materials', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/raw-materials`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -53,7 +53,7 @@ export const ManufacturingProvider = ({ children }) => {
     };
 
     const updateMaterial = async (id, data) => {
-        const res = await fetch(`/api/production/raw-materials/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/raw-materials/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -65,7 +65,7 @@ export const ManufacturingProvider = ({ children }) => {
     };
 
     const deleteMaterial = async (id) => {
-        const res = await fetch(`/api/production/raw-materials/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/raw-materials/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -75,7 +75,7 @@ export const ManufacturingProvider = ({ children }) => {
 
     // --- BILL OF MATERIALS (BOM) ---
     const createBOM = async (data) => {
-        const res = await fetch('/api/production/boms', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/boms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -87,7 +87,7 @@ export const ManufacturingProvider = ({ children }) => {
     };
 
     const updateBOM = async (id, data) => {
-        const res = await fetch(`/api/production/boms/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/boms/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -99,7 +99,7 @@ export const ManufacturingProvider = ({ children }) => {
     };
 
     const deleteBOM = async (id) => {
-        const res = await fetch(`/api/production/boms/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/boms/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -109,7 +109,7 @@ export const ManufacturingProvider = ({ children }) => {
 
     // --- PRODUCTION ORDERS ---
     const createProductionOrder = async (data) => {
-        const res = await fetch('/api/production/production-orders', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/production-orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -121,7 +121,7 @@ export const ManufacturingProvider = ({ children }) => {
     };
 
     const updateProductionStatus = async (id, statusData) => {
-        const res = await fetch(`/api/production/production-orders/${id}/status`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/production-orders/${id}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(statusData)
@@ -138,7 +138,7 @@ export const ManufacturingProvider = ({ children }) => {
     };
 
     const deleteProductionOrder = async (id) => {
-        const res = await fetch(`/api/production/production-orders/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/production-orders/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });

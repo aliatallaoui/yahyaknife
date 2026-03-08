@@ -26,9 +26,9 @@ export default function HRReports() {
         try {
             let res;
             if (activeReport === 'daily') {
-                res = await axios.get(`/api/hr/reports/daily?date=${date}`);
+                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily?date=${date}`);
             } else {
-                res = await axios.get(`/api/hr/reports/${activeReport}?period=${period}`);
+                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/${activeReport}?period=${period}`);
             }
             setData(res.data);
         } catch (error) {

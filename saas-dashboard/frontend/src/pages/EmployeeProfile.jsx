@@ -27,10 +27,10 @@ export default function EmployeeProfile() {
         const fetchData = async () => {
             try {
                 const [empRes, attRes, payRes, leaveRes] = await Promise.all([
-                    fetch(`/api/hr/employees/${id}`),
-                    fetch(`/api/hr/employees/${id}/attendance`),
-                    fetch(`/api/hr/payroll?employeeId=${id}`),
-                    fetch(`/api/hr/leaves?employeeId=${id}`)
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}/attendance`),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll?employeeId=${id}`),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves?employeeId=${id}`)
                 ]);
 
                 if (!empRes.ok) throw new Error('Employee not found');

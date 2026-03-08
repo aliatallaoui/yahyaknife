@@ -84,7 +84,7 @@ export default function Sales() {
     };
 
     useEffect(() => {
-        fetch('/api/couriers')
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/couriers`)
             .then(res => res.json())
             .then(data => setCouriers(data))
             .catch(err => console.error("Error fetching couriers:", err));
@@ -116,7 +116,7 @@ export default function Sales() {
         setDispatchingOrderId(orderId);
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`/api/shipments/quick-dispatch/${orderId}`, {}, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/quick-dispatch/${orderId}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             alert('Order dispatched successfully! Tracking info has been saved.');

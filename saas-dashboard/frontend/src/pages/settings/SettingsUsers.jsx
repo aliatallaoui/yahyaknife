@@ -36,7 +36,7 @@ export default function SettingsUsers() {
 
     const fetchUsers = async () => {
         try {
-            const res = await fetch('/api/users', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -83,7 +83,7 @@ export default function SettingsUsers() {
         try {
             if (editUser) {
                 // Update specific RBAC fields
-                const res = await fetch(`/api/users/${editUser._id}`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/${editUser._id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export default function SettingsUsers() {
                 }
             } else {
                 // Create new user (Hits auth endpoint since we don't have a rigid create user in standard userController yet, usually auth handles registration)
-                const res = await fetch(`/api/auth/register`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -131,7 +131,7 @@ export default function SettingsUsers() {
     const handleDelete = async (id) => {
         if (!window.confirm(t('confirmDelete'))) return;
         try {
-            const res = await fetch(`/api/users/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });

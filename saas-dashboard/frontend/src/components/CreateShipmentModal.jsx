@@ -56,8 +56,8 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
         try {
             const token = localStorage.getItem('token');
             const [stdRes, custRes] = await Promise.all([
-                axios.get('/api/sales/orders', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('/api/custom-orders', { headers: { Authorization: `Bearer ${token}` } })
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             // Filter out already dispatched orders
@@ -134,7 +134,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                 stopDeskFlag: formData.deliveryType === 1
             };
 
-            await axios.post('/api/shipments', payload, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

@@ -14,7 +14,7 @@ export const HRProvider = ({ children }) => {
     const fetchEmployees = async () => {
         try {
             setLoading(true);
-            const res = await axios.get('/api/hr/employees');
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`);
             setEmployees(res.data);
             setError(null);
         } catch (err) {
@@ -43,7 +43,7 @@ export const HRProvider = ({ children }) => {
     const recordPointage = async (employeeId, type, timestamp) => {
         try {
             setLoading(true);
-            await axios.post('/api/hr/attendance/record', { employeeId, type, timestamp });
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, { employeeId, type, timestamp });
             await fetchDailyAttendance(); // Refresh today's board
             setError(null);
         } catch (err) {
@@ -71,7 +71,7 @@ export const HRProvider = ({ children }) => {
     const generatePayroll = async (period) => {
         try {
             setLoading(true);
-            await axios.post('/api/hr/payroll/generate', { period });
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/generate`, { period });
             await fetchPayroll(period); // Refresh
             setError(null);
         } catch (err) {
@@ -84,7 +84,7 @@ export const HRProvider = ({ children }) => {
     const approvePayroll = async (payrollId) => {
         try {
             setLoading(true);
-            await axios.put(`/api/hr/payroll/${payrollId}/approve`);
+            await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${payrollId}/approve`);
             // Update local state without full refetch
             setPayrollRecords(records => records.map(r => r._id === payrollId ? { ...r, status: 'Paid' } : r));
             setError(null);

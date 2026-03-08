@@ -22,8 +22,8 @@ export default function ToolManagement() {
         try {
             setLoading(true);
             const [toolsRes, empRes] = await Promise.all([
-                axios.get('/api/tools'),
-                axios.get('/api/hr/employees')
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/tools`),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`)
             ]);
             setTools(toolsRes.data);
             setEmployees(empRes.data);
@@ -44,9 +44,9 @@ export default function ToolManagement() {
             if (payload.assignedTo === '') payload.assignedTo = null;
 
             if (selectedTool) {
-                await axios.put(`/api/tools/${selectedTool._id}`, payload);
+                await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/tools/${selectedTool._id}`, payload);
             } else {
-                await axios.post('/api/tools', payload);
+                await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/tools`, payload);
             }
             fetchTools();
             setModalOpen(false);
@@ -57,7 +57,7 @@ export default function ToolManagement() {
 
     const handleSaveMaintenance = async () => {
         try {
-            await axios.post(`/api/tools/${selectedTool._id}/maintenance`, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/tools/${selectedTool._id}/maintenance`, {
                 note: maintenanceRecord.note,
                 status: maintenanceRecord.status || selectedTool.status
             });

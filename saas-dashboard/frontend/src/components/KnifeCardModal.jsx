@@ -103,7 +103,7 @@ export default function KnifeCardModal({ isOpen, onClose, onSaved, initialData =
         setSaving(true);
         setError('');
         try {
-            const res = await fetch(`/api/knives/cards/${form._id}/consume`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${form._id}/consume`, {
                 method: 'POST',
             });
             if (!res.ok) throw new Error((await res.json()).error || 'Failed to consume materials');

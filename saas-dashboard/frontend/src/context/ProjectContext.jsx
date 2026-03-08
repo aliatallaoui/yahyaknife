@@ -12,9 +12,9 @@ export const ProjectProvider = ({ children }) => {
         setLoading(true);
         try {
             const [projRes, tasksRes, analyticsRes] = await Promise.all([
-                fetch('/api/projects'),
-                fetch('/api/projects/tasks/global'),
-                fetch('/api/projects/analytics')
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/tasks/global`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/analytics`)
             ]);
 
             setProjects(await projRes.json());
@@ -33,7 +33,7 @@ export const ProjectProvider = ({ children }) => {
     }, []);
 
     const createProject = async (data) => {
-        const res = await fetch('/api/projects', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -43,7 +43,7 @@ export const ProjectProvider = ({ children }) => {
     };
 
     const updateTaskStatus = async (taskId, status) => {
-        const res = await fetch(`/api/projects/tasks/${taskId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/tasks/${taskId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })

@@ -21,28 +21,28 @@ export const InventoryProvider = ({ children }) => {
         setLoading(true);
         try {
             const [prodRes, matRes, metricsRes, suppRes, catRes, poRes, ledgerRes, knivesRes] = await Promise.all([
-                fetch('/api/inventory/products', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/production/raw-materials', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/raw-materials`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/inventory/metrics', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/metrics`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/inventory/suppliers', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/inventory/categories', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/inventory/pos', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/pos`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/inventory/ledger', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch('/api/knives/cards?status=Completed', {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards?status=Completed`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
@@ -68,7 +68,7 @@ export const InventoryProvider = ({ children }) => {
     }, [token]);
 
     const createProduct = async (productData) => {
-        const response = await fetch('/api/inventory/products', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updateProduct = async (id, updates) => {
-        const response = await fetch(`/api/inventory/products/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const deleteProduct = async (id) => {
-        const response = await fetch(`/api/inventory/products/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products/${id}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -130,7 +130,7 @@ export const InventoryProvider = ({ children }) => {
 
     // --- SUPPLIER CRUD ---
     const createSupplier = async (data) => {
-        const res = await fetch('/api/inventory/suppliers', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -142,7 +142,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updateSupplier = async (id, updates) => {
-        const res = await fetch(`/api/inventory/suppliers/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(updates)
@@ -154,7 +154,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const deleteSupplier = async (id) => {
-        const res = await fetch(`/api/inventory/suppliers/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -164,7 +164,7 @@ export const InventoryProvider = ({ children }) => {
 
     // --- CATEGORY CRUD ---
     const createCategory = async (data) => {
-        const res = await fetch('/api/inventory/categories', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -176,7 +176,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updateCategory = async (id, updates) => {
-        const res = await fetch(`/api/inventory/categories/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(updates)
@@ -188,7 +188,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const deleteCategory = async (id) => {
-        const res = await fetch(`/api/inventory/categories/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -198,7 +198,7 @@ export const InventoryProvider = ({ children }) => {
 
     // --- POS CRUD ---
     const createPurchaseOrder = async (data) => {
-        const res = await fetch('/api/inventory/pos', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/pos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -210,7 +210,7 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updatePOStatus = async (id, status) => {
-        const res = await fetch(`/api/inventory/pos/${id}/status`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/pos/${id}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ status })
@@ -225,7 +225,7 @@ export const InventoryProvider = ({ children }) => {
 
     // --- LEDGER ---
     const fetchVariantLedger = async (variantId) => {
-        const res = await fetch(`/api/inventory/ledger/${variantId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger/${variantId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch ledger');

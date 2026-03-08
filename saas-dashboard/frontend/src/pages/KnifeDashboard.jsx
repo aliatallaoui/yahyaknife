@@ -138,10 +138,10 @@ export default function KnifeDashboard() {
         setLoading(true);
         try {
             const [knivesRes, modelsRes, workersRes, statsRes] = await Promise.all([
-                fetch('/api/knives/cards'),
-                fetch('/api/knives/models'),
-                fetch('/api/hr/employees'),
-                fetch('/api/knives/cards/stats'),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/stats`),
             ]);
             setKnives(await knivesRes.json());
             setKnifeModels(await modelsRes.json());
@@ -163,12 +163,12 @@ export default function KnifeDashboard() {
 
     const handleDelete = async (id) => {
         if (!window.confirm('Delete this knife card?')) return;
-        await fetch(`/api/knives/cards/${id}`, { method: 'DELETE' });
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${id}`, { method: 'DELETE' });
         fetchAll();
     };
 
     const handleAdvance = async (id) => {
-        await fetch(`/api/knives/cards/${id}/advance`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${id}/advance`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
         fetchAll();
     };
 

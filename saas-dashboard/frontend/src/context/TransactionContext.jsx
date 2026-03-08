@@ -12,7 +12,7 @@ export const TransactionProvider = ({ children }) => {
         if (!token) return;
         setLoading(true);
         try {
-            const res = await fetch('/api/transactions', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -38,7 +38,7 @@ export const TransactionProvider = ({ children }) => {
 
     const addTransaction = async (transaction) => {
         try {
-            const res = await fetch('/api/transactions', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export const TransactionProvider = ({ children }) => {
 
     const updateTransaction = async (id, transaction) => {
         try {
-            const res = await fetch(`/api/transactions/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

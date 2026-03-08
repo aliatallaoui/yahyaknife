@@ -9,7 +9,7 @@ export default function Overview() {
         // Fetch dashboard data
         const fetchData = async () => {
             try {
-                const response = await fetch('/api/dashboard/metrics');
+                const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/dashboard/metrics`);
                 const json = await response.json();
                 setData(json);
             } catch (error) {

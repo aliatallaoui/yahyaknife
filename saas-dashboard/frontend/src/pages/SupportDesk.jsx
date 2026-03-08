@@ -19,7 +19,7 @@ export default function SupportDesk() {
     const fetchTickets = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/support');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support`);
             const data = await res.json();
             setTickets(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -32,7 +32,7 @@ export default function SupportDesk() {
     const handleSelectTicket = async (ticket) => {
         try {
             // Fetch populated ticket
-            const res = await fetch(`/api/support/${ticket._id}`);
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${ticket._id}`);
             const data = await res.json();
             setSelectedTicket(data);
         } catch (error) {
@@ -44,7 +44,7 @@ export default function SupportDesk() {
         if (!replyText.trim() || !selectedTicket) return;
 
         try {
-            const res = await fetch(`/api/support/${selectedTicket._id}/messages`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${selectedTicket._id}/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -67,7 +67,7 @@ export default function SupportDesk() {
     const handleUpdateStatus = async (status) => {
         if (!selectedTicket) return;
         try {
-            const res = await fetch(`/api/support/${selectedTicket._id}/status`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${selectedTicket._id}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })

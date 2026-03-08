@@ -24,8 +24,8 @@ export default function Couriers() {
         try {
             const token = localStorage.getItem('token');
             const [kpiRes, regionRes] = await Promise.all([
-                axios.get('/api/couriers/analytics/kpis?dateRange=30', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('/api/couriers/analytics/regions?dateRange=30', { headers: { Authorization: `Bearer ${token}` } })
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers/analytics/kpis?dateRange=30`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers/analytics/regions?dateRange=30`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
             setStats(kpiRes.data);
             setRegionalData(regionRes.data);

@@ -49,7 +49,7 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
             ));
 
             try {
-                const res = await axios.post(`/api/shipments/quick-dispatch/${item.id}`, {}, {
+                const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/quick-dispatch/${item.id}`, {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setDispatchItems(prev => prev.map((d, idx) =>

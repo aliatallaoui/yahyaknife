@@ -31,10 +31,10 @@ export default function HRSnapshot() {
         try {
             const todayStr = moment().format('YYYY-MM-DD');
             const [metricsRes, empRes, leaveRes, attRes] = await Promise.all([
-                fetch('/api/hr/metrics'),
-                fetch('/api/hr/employees'),
-                fetch('/api/hr/leaves'),
-                fetch(`/api/hr/attendance?date=${todayStr}`)
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves`),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${todayStr}`)
             ]);
 
             const empData = await empRes.json();
@@ -110,7 +110,7 @@ export default function HRSnapshot() {
 
     const handleLeaveStatusUpdate = async (id, newStatus) => {
         try {
-            const res = await fetch(`/api/hr/leaves/${id}/status`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves/${id}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
@@ -121,7 +121,7 @@ export default function HRSnapshot() {
 
                 // Refresh employees to reflect deducted balance
                 if (newStatus === 'Approved') {
-                    const empRes = await fetch('/api/hr/employees');
+                    const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`);
                     setEmployees(await empRes.json());
                 }
             }
@@ -417,7 +417,7 @@ export default function HRSnapshot() {
                     onClose={() => setIsModalOpen(false)}
                     onSave={async () => {
                         setIsModalOpen(false);
-                        const empRes = await fetch('/api/hr/employees');
+                        const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`);
                         setEmployees(await empRes.json());
                     }}
                 />

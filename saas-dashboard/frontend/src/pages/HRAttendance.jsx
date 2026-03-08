@@ -14,8 +14,8 @@ export default function HRAttendance() {
         setLoading(true);
         try {
             const [empRes, attRes] = await Promise.all([
-                axios.get('/api/hr/employees'),
-                axios.get(`/api/hr/attendance?date=${date}`)
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${date}`)
             ]);
             const employees = empRes.data;
             const attendances = attRes.data;
@@ -76,7 +76,7 @@ export default function HRAttendance() {
         }
 
         try {
-            const res = await axios.post('/api/hr/attendance/record', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
                 employeeId,
                 type,
                 timestamp,
@@ -99,7 +99,7 @@ export default function HRAttendance() {
         const { employeeId, type } = modalConfig;
 
         try {
-            const res = await axios.post('/api/hr/attendance/record', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
                 employeeId,
                 type,
                 timestamp: null,
