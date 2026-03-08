@@ -11,6 +11,7 @@ import CustomerProfile from './pages/CustomerProfile';
 import Warehouses from './pages/Warehouses';
 import HRSnapshot from './pages/HRSnapshot';
 import EmployeeProfile from './pages/EmployeeProfile';
+import WorkerCard from './pages/WorkerCard';
 import HRAttendance from './pages/HRAttendance';
 import HRPayroll from './pages/HRPayroll';
 import HRReports from './pages/HRReports';
@@ -18,6 +19,10 @@ import ProjectStatus from './pages/ProjectStatus';
 import GlobalTaskBoard from './pages/GlobalTaskBoard';
 import ProjectDetail from './pages/ProjectDetail';
 import ProductionFloor from './pages/ProductionFloor';
+import KnifeDashboard from './pages/KnifeDashboard';
+import KnifeLibrary from './pages/KnifeLibrary';
+import KnivesInProduction from './pages/KnivesInProduction';
+import ToolManagement from './pages/ToolManagement';
 import ProcurementHub from './pages/ProcurementHub';
 import SettingsLayout from './pages/settings/SettingsLayout';
 import SettingsProfile from './pages/settings/SettingsProfile';
@@ -37,13 +42,15 @@ import { InventoryProvider } from './context/InventoryContext';
 import { ManufacturingProvider } from './context/ManufacturingContext';
 import { CustomerProvider } from './context/CustomerContext';
 import { ProjectProvider } from './context/ProjectContext';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const Layout = () => {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { i18n } = useTranslation();
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
@@ -73,15 +80,18 @@ const Layout = () => {
   return (
     <div className="flex bg-gray-50 min-h-screen">
       {/* Sidebar - Fixed */}
-      <Sidebar />
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-      {/* Main Content Area - Fluid */}
-      <main className="flex-1 ms-[320px] flex flex-col min-h-screen overflow-x-hidden">
+      {/* Main Content Area - shifts based on sidebar state */}
+      <main
+        className="flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300"
+        style={{ marginInlineStart: sidebarOpen ? '320px' : '72px' }}
+      >
         {/* Header - Contextual */}
         <Header />
 
         {/* Dashboard Content Pages */}
-        <div className="p-8 pt-0">
+        <div className="px-4 pt-10 pb-12 sm:px-8 lg:px-10 xl:px-14 2xl:px-16 w-full">
           <Routes>
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
@@ -95,6 +105,7 @@ const Layout = () => {
               <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/hr" element={<HRSnapshot />} />
               <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
+              <Route path="/production/workers/:id" element={<WorkerCard />} />
               <Route path="/hr/attendance" element={<HRAttendance />} />
               <Route path="/hr/payroll" element={<HRPayroll />} />
               <Route path="/hr/reports" element={<HRReports />} />
@@ -102,8 +113,12 @@ const Layout = () => {
               <Route path="/projects/tasks" element={<GlobalTaskBoard />} />
               <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/production" element={<ProductionFloor />} />
+              <Route path="/knives" element={<KnifeDashboard />} />
+              <Route path="/knives/library" element={<KnifeLibrary />} />
+              <Route path="/knives/production" element={<KnivesInProduction />} />
               <Route path="/procurement" element={<ProcurementHub />} />
               <Route path="/support" element={<SupportDesk />} />
+              <Route path="/production/tools" element={<ToolManagement />} />
 
               {/* Settings Hub Nested Routing */}
               <Route path="/settings" element={<SettingsLayout />}>

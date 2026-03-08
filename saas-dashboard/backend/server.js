@@ -12,12 +12,15 @@ const projectRoutes = require('./routes/project');
 const productionRoutes = require('./routes/production');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const toolRoutes = require('./routes/tools');
 const transactionRoutes = require('./routes/transactions');
 const courierRoutes = require('./routes/couriers');
 const intelligenceRoutes = require('./routes/intelligenceRoutes');
 const manufacturingRoutes = require('./routes/manufacturing');
 const procurementRoutes = require('./routes/procurement');
 const supportRoutes = require('./routes/support');
+const knifeRoutes = require('./routes/knives');
+const customOrderRoutes = require('./routes/customOrders');
 const { initJobs } = require('./cron/scheduler');
 
 dotenv.config();
@@ -50,7 +53,10 @@ app.use('/api/intelligence', intelligenceRoutes);
 app.use('/api/manufacturing', manufacturingRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/knives', knifeRoutes);
+app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/tools', toolRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

@@ -6,6 +6,8 @@ const orderSchema = new mongoose.Schema({
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     products: [{
         variantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant' },
+        knifeCardRef: { type: mongoose.Schema.Types.ObjectId, ref: 'KnifeCard' },
+        customOrderRef: { type: mongoose.Schema.Types.ObjectId, ref: 'CustomOrder' },
         name: { type: String }, // Storing snapshot of the product name
         quantity: { type: Number, required: true },
         unitPrice: { type: Number, required: true }
@@ -14,7 +16,7 @@ const orderSchema = new mongoose.Schema({
     channel: {
         type: String,
         required: true,
-        enum: ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other']
+        enum: ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Direct', 'Other']
     },
     // Main COD Lifecycle Status
     status: {
@@ -46,6 +48,7 @@ const orderSchema = new mongoose.Schema({
         default: 'Pending'
     },
     financials: {
+        deposit: { type: Number, default: 0 },
         cogs: { type: Number, default: 0 },
         marketplaceFees: { type: Number, default: 0 },
         gatewayFees: { type: Number, default: 0 },

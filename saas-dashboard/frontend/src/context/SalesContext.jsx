@@ -5,6 +5,7 @@ export const SalesContext = createContext();
 
 export const SalesProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
+    const [customOrders, setCustomOrders] = useState([]);
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -18,9 +19,10 @@ export const SalesProvider = ({ children }) => {
         if (!token) return;
         setLoading(true);
         try {
-            const [ordersRes, perfRes] = await Promise.all([
+            const [ordersRes, perfRes, customRes] = await Promise.all([
                 fetch(`/api/sales/orders?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/sales/performance', { headers: { Authorization: `Bearer ${token}` } })
+                fetch('/api/sales/performance', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/custom-orders', { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             if (ordersRes.ok && perfRes.ok) {
@@ -31,6 +33,10 @@ export const SalesProvider = ({ children }) => {
                 setTotalOrdersCount(ordersData.totalOrders || 0);
 
                 setPerformance(await perfRes.json());
+            }
+
+            if (customRes.ok) {
+                setCustomOrders(await customRes.json());
             }
         } catch (error) {
             console.error('Failed to fetch sales data:', error);
@@ -118,11 +124,66 @@ export const SalesProvider = ({ children }) => {
         }
     };
 
+    // --- Custom Orders ---
+    const createCustomOrder = async (orderData) => {
+        try {
+            const res = await fetch('/api/custom-orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(orderData)
+            });
+            if (res.ok) {
+                fetchSalesData(currentPage);
+                return true;
+            }
+            throw new Error(await res.text());
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
+    const updateCustomOrder = async (id, orderData) => {
+        try {
+            const res = await fetch(`/api/custom-orders/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(orderData)
+            });
+            if (res.ok) {
+                fetchSalesData(currentPage);
+                return true;
+            }
+            throw new Error(await res.text());
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
+    const deleteCustomOrder = async (id) => {
+        try {
+            const res = await fetch(`/api/custom-orders/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                fetchSalesData(currentPage);
+                return true;
+            }
+            throw new Error(await res.text());
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+
     return (
         <SalesContext.Provider value={{
             orders, performance, loading, fetchSalesData,
             currentPage, totalPages, totalOrdersCount,
-            createOrder, updateOrder, deleteOrder
+            createOrder, updateOrder, deleteOrder,
+            customOrders, createCustomOrder, updateCustomOrder, deleteCustomOrder
         }}>
             {children}
         </SalesContext.Provider>

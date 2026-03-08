@@ -189,6 +189,7 @@ export default function ProcurementHub() {
                                 <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
                                     <tr>
                                         <th className="p-4">{t('procurement.colVendorName')}</th>
+                                        <th className="p-4">{t('procurement.category', 'Category')}</th>
                                         <th className="p-4">{t('procurement.colContactPerson')}</th>
                                         <th className="p-4">{t('procurement.colAvgLeadTime')}</th>
                                         <th className="p-4">{t('procurement.colReliabilityScore')}</th>
@@ -204,6 +205,14 @@ export default function ProcurementHub() {
                                             <td className="p-4 font-bold text-gray-900">
                                                 {sup.name}
                                                 <div className="text-xs text-gray-400 font-normal mt-0.5">{sup.address?.city}, {sup.address?.country}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="text-sm font-bold text-gray-800">{sup.supplierCategory || 'General Hardware'}</div>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {(sup.materialsSupplied || []).map(mat => (
+                                                        <span key={mat} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded">{mat}</span>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-gray-900">{sup.contactPerson?.name || '-'}</div>

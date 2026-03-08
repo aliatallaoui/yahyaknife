@@ -340,7 +340,7 @@ export default function HRSnapshot() {
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
                             {filteredEmployees.map((emp) => (
-                                <tr key={emp._id} onClick={() => navigate(`/hr/employees/${emp._id}`)} className="hover:bg-blue-50/30 transition-colors cursor-pointer group">
+                                <tr key={emp._id} onClick={() => navigate((emp.workshopRole && emp.workshopRole !== 'None') ? `/production/workers/${emp._id}` : `/hr/employees/${emp._id}`)} className="hover:bg-blue-50/30 transition-colors cursor-pointer group">
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
@@ -435,6 +435,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
         email: employee?.email || '',
         department: employee?.department || 'Manufacturing',
         role: employee?.role || '',
+        workshopRole: employee?.workshopRole || 'None',
         status: employee?.status || 'Active',
         salary: employee?.salary || employee?.contractSettings?.monthlySalary || 0,
         dailyRequiredMinutes: employee?.contractSettings?.dailyRequiredMinutes || 480,
@@ -456,6 +457,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
             email: formData.email,
             department: formData.department,
             role: formData.role,
+            workshopRole: formData.workshopRole,
             status: formData.status,
             salary: Number(formData.salary),
             contractSettings: {
@@ -529,6 +531,18 @@ function EmployeeModal({ employee, onClose, onSave }) {
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblRole')}</label>
                             <input required type="text" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.rolePlaceholder')} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1">Workshop Role</label>
+                            <select value={formData.workshopRole} onChange={e => setFormData({ ...formData, workshopRole: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
+                                <option value="None">None (Standard HR)</option>
+                                <option value="Master Bladesmith">Master Bladesmith</option>
+                                <option value="Grinder">Grinder</option>
+                                <option value="Handle Maker">Handle Maker</option>
+                                <option value="Finisher">Finisher</option>
+                                <option value="Apprentice">Apprentice</option>
+                                <option value="Packager">Packager</option>
+                            </select>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStatus')}</label>

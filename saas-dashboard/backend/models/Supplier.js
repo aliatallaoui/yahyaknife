@@ -11,6 +11,12 @@ const supplierSchema = new mongoose.Schema({
         phone: String,
         email: String
     },
+    supplierCategory: {
+        type: String,
+        enum: ['Steel Foundry', 'Handle Materials', 'Abrasives & Belts', 'Chemicals & Epoxy', 'Packaging', 'General Hardware', 'Other'],
+        default: 'General Hardware'
+    },
+    materialsSupplied: [{ type: String }], // E.g. ['D2 Steel', '1095 Carbon']
     address: {
         street: String,
         city: String,

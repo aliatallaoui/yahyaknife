@@ -7,7 +7,7 @@ const rawMaterialSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['Fabric', 'Metal', 'Electronics', 'Packaging', 'Plastic', 'Chemicals', 'Wood', 'Other']
+        enum: ['Steel', 'Handle', 'Pins', 'Leather', 'Belt', 'Epoxy', 'Packaging', 'Other']
     },
     costPerUnit: { type: Number, required: true },
     unitOfMeasure: {
@@ -23,7 +23,17 @@ const rawMaterialSchema = new mongoose.Schema({
         warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
         quantity: { type: Number, default: 0 },
         binLocation: { type: String }
-    }]
+    }],
+    // Bladesmith-specific fields
+    steelGrade: { type: String },
+    dimensions: {
+        thickness: { type: Number }, // in mm
+        length: { type: Number },    // in mm
+        width: { type: Number }      // in mm
+    },
+    heatTreatmentNotes: { type: String },
+    storageLocation: { type: String },
+    isCritical: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Virtual field for actual available quantity

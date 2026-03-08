@@ -41,4 +41,14 @@ router.get('/reports/payroll', hrReportsController.getPayrollReport);
 router.get('/reports/overtime', hrReportsController.getOvertimeReport);
 router.get('/reports/deductions', hrReportsController.getDeductionsReport);
 
+const hrProductivityController = require('../controllers/hrProductivityController');
+
+// /api/hr/productivity
+router.get('/productivity', hrProductivityController.getProductivity);
+router.post('/productivity', hrProductivityController.logProductivity);
+
+// /api/hr/rewards
+router.get('/rewards', hrProductivityController.getRewards);
+router.post('/rewards', hrProductivityController.grantReward);
+
 module.exports = router;

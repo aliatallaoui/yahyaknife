@@ -2,14 +2,14 @@ import { useContext, useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-    Search, HelpCircle, Settings, LogOut, ChevronDown,
+    Search, HelpCircle, Settings, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen,
     LayoutDashboard, ShoppingBag, Box, LineChart, FileText, RefreshCw, Layers, PackageOpen, Truck,
-    Users, Briefcase, Flag, Archive
+    Users, Briefcase, Flag, Archive, Sword
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
 
-function NavSection({ title, icon: Icon, activePrefixes = [], children }) {
+function NavSection({ title, icon: Icon, activePrefixes = [], children, sidebarOpen }) {
     const location = useLocation();
     const isActive = activePrefixes.some(prefix => location.pathname.startsWith(prefix));
     const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +46,7 @@ function NavSection({ title, icon: Icon, activePrefixes = [], children }) {
     );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open = true, setOpen }) {
     const location = useLocation();
     const { user, logout } = useContext(AuthContext);
     const { t } = useTranslation();
@@ -104,11 +104,24 @@ export default function Sidebar() {
                     <button onClick={logout} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer transition-all">
                         <LogOut className="w-5 h-5" />
                     </button>
+                    {/* Toggle button */}
+                    {setOpen && (
+                        <button
+                            onClick={() => setOpen(!open)}
+                            title={open ? 'Collapse sidebar' : 'Expand sidebar'}
+                            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl cursor-pointer transition-all"
+                        >
+                            {open ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* 2) Main Nav Drawer */}
-            <div className="w-[248px] flex flex-col pt-5 pb-4 bg-white/60">
+            {/* 2) Main Nav Drawer — collapses when sidebar is closed */}
+            <div
+                className="flex flex-col pt-5 pb-4 bg-white/60 overflow-hidden transition-all duration-300"
+                style={{ width: open ? '248px' : '0px', opacity: open ? 1 : 0 }}
+            >
                 {/* Search */}
                 <div className="px-4 mb-7">
                     <div className="relative group">
@@ -175,6 +188,13 @@ export default function Sidebar() {
                                     <NavLink to="/support" className={subLink}>{t('sidebar.crm_support', 'الدعم والمرتجعات')}</NavLink>
                                 </NavSection>
                             )}
+                            {/* ── Knife Workshop ── */}
+                            <NavSection title={`🗡️ ${t('knives.workshop', 'Knife Workshop')}`} icon={Sword} activePrefixes={['/knives', '/production/tools']} sidebarOpen={open}>
+                                <NavLink to="/knives" end className={subLink}>{t('knives.cards', 'Knife Cards')}</NavLink>
+                                <NavLink to="/knives/library" className={subLink}>{t('knives.library', 'Knife Library')}</NavLink>
+                                <NavLink to="/knives/production" className={subLink}>{t('knives.production', 'Production Kanban')}</NavLink>
+                                <NavLink to="/production/tools" className={subLink}>{t('tools.management', 'Tool Management')}</NavLink>
+                            </NavSection>
                             {hasAccess(['Production Lead', 'Warehouse Supervisor', 'Super Admin']) && (
                                 <NavSection title={t('sidebar.manufacturing', 'أرضية التصنيع')} icon={PackageOpen} activePrefixes={['/production', '/procurement']}>
                                     <NavLink to="/production" className={subLink}>{t('sidebar.mfg_production', 'الإنتاج وقوائم المواد')}</NavLink>

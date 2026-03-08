@@ -1,15 +1,31 @@
-import { useState, useContext, useEffect } from 'react';
-import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import React, { useState, useContext, useEffect } from 'react';
+import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench } from 'lucide-react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { SalesContext } from '../context/SalesContext';
 import { InventoryContext } from '../context/InventoryContext';
 import { useCustomer } from '../context/CustomerContext';
 import OrderModal from '../components/OrderModal';
+import CustomOrdersTable from '../components/CustomOrdersTable'; // NEW
 import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#4361EE', '#111827', '#6B7280', '#D1D5DB', '#F87171', '#34D399'];
+
+const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
+
+const STATUS_STYLES = {
+    'New': 'bg-gray-100 text-gray-700 border-gray-200',
+    'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Preparing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'Ready for Pickup': 'bg-violet-50 text-violet-700 border-violet-200',
+    'Shipped': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Out for Delivery': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Paid': 'bg-green-50 text-green-700 border-green-200',
+    'Refused': 'bg-red-50 text-red-700 border-red-200',
+    'Returned': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Cancelled': 'bg-gray-50 text-gray-400 border-gray-200 line-through',
+};
 
 export default function Sales() {
     const { t } = useTranslation();
@@ -24,17 +40,43 @@ export default function Sales() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [selectedCourierFilter, setSelectedCourierFilter] = useState('');
-    const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
-    const [expandedOrderId, setExpandedOrderId] = useState(null);
-
-    const toggleExpand = (id) => setExpandedOrderId(prev => prev === id ? null : id);
-
-    // Dependent Entities
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState('');
+    const [selectedChannelFilter, setSelectedChannelFilter] = useState('');
+    const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());    // Dependent Entities
     const [couriers, setCouriers] = useState([]);
 
     // Modals
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState(null);
+
+    // Rows per page
+    const [perPage, setPerPage] = useState(10);
+
+    // Inline status/channel update loading
+    const [updatingOrderId, setUpdatingOrderId] = useState(null);
+
+    // Inline field editing: { id, field, value }
+    const [editingOrderField, setEditingOrderField] = useState(null);
+
+    // Row expansion
+    const [expandedOrderId, setExpandedOrderId] = useState(null);
+    const toggleExpand = (id) => setExpandedOrderId(prev => prev === id ? null : id);
+
+    const startOrderEdit = (order, field) =>
+        setEditingOrderField({ id: order._id, field, value: order[field] ?? '' });
+
+    const handleOrderInlineSave = async (order) => {
+        if (!editingOrderField || editingOrderField.id !== order._id) return;
+        setUpdatingOrderId(order._id);
+        try {
+            await updateOrder(order._id, { [editingOrderField.field]: editingOrderField.value });
+        } catch (err) {
+            console.error('Order inline save failed', err);
+        } finally {
+            setUpdatingOrderId(null);
+            setEditingOrderField(null);
+        }
+    };
 
     useEffect(() => {
         fetch('/api/couriers')
@@ -58,7 +100,7 @@ export default function Sales() {
             try {
                 await deleteOrder(id);
                 if (refreshInventory) refreshInventory();
-            } catch (error) {
+            } catch {
                 alert("Failed to delete order. See console limit.");
             }
         }
@@ -76,7 +118,7 @@ export default function Sales() {
             );
             await Promise.all(promises);
             setSelectedOrderIds(new Set());
-            fetchSalesData(currentPage);
+            fetchSalesData(currentPage, perPage);
         } catch (err) {
             console.error(err);
             alert("Error batch verifying orders.");
@@ -98,8 +140,30 @@ export default function Sales() {
         }
     };
 
-    const handlePrevPage = () => { if (currentPage > 1) fetchSalesData(currentPage - 1); };
-    const handleNextPage = () => { if (currentPage < totalPages) fetchSalesData(currentPage + 1); };
+    const handlePrevPage = () => { if (currentPage > 1) fetchSalesData(currentPage - 1, perPage); };
+    const handleNextPage = () => { if (currentPage < totalPages) fetchSalesData(currentPage + 1, perPage); };
+
+    const handleInlineStatusChange = async (orderId, newStatus) => {
+        setUpdatingOrderId(orderId);
+        try {
+            await updateOrder(orderId, { status: newStatus });
+        } catch (err) {
+            console.error('Status update failed', err);
+        } finally {
+            setUpdatingOrderId(null);
+        }
+    };
+
+    const handleInlineChannelChange = async (orderId, newChannel) => {
+        setUpdatingOrderId(orderId);
+        try {
+            await updateOrder(orderId, { channel: newChannel });
+        } catch (err) {
+            console.error('Channel update failed', err);
+        } finally {
+            setUpdatingOrderId(null);
+        }
+    };
 
     const handleModalSubmit = async (payload) => {
         try {
@@ -114,7 +178,7 @@ export default function Sales() {
             try {
                 const parsed = JSON.parse(msg);
                 msg = parsed.message || msg;
-            } catch (e) { }
+            } catch { /* ignore parsing errors */ }
             return { success: false, error: msg };
         }
     };
@@ -148,12 +212,24 @@ export default function Sales() {
         displayOrders = displayOrders.filter(o => o.courier === selectedCourierFilter || (o.courier && o.courier._id === selectedCourierFilter));
     }
 
-    // 3. Search Filter
+    // 3. Status Filter
+    if (selectedStatusFilter) {
+        displayOrders = displayOrders.filter(o => o.status === selectedStatusFilter);
+    }
+
+    // 4. Channel Filter
+    if (selectedChannelFilter) {
+        displayOrders = displayOrders.filter(o => o.channel === selectedChannelFilter);
+    }
+
+    // 5. Search Filter
     const filteredOrders = displayOrders.filter(o =>
         o.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (o.customer?.name && o.customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (o.status && o.status.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+    const activeFilterCount = [selectedCourierFilter, selectedStatusFilter, selectedChannelFilter, searchTerm].filter(Boolean).length;
 
     return (
         <div className="flex flex-col gap-6">
@@ -213,218 +289,499 @@ export default function Sales() {
                                 <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">{newOrderCount}</span>
                             )}
                         </button>
+                        <button onClick={() => { setActiveTab('custom'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'custom' ? "bg-purple-50 text-purple-600 shadow-sm ring-1 ring-purple-200" : "text-gray-500 hover:text-gray-700")}>
+                            <Wrench className="w-4 h-4" /> {t('sales.customOrdersTab', 'Custom Orders')}
+                        </button>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Courier Filter */}
-                        <div className="relative">
-                            <Filter className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    {activeTab !== 'custom' && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Status Filter */}
+                            <select
+                                value={selectedStatusFilter}
+                                onChange={e => setSelectedStatusFilter(e.target.value)}
+                                className={clsx("bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
+                                    selectedStatusFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
+                                )}
+                            >
+                                <option value="">All Statuses</option>
+                                {['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'].map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+
+                            {/* Channel Filter */}
+                            <select
+                                value={selectedChannelFilter}
+                                onChange={e => setSelectedChannelFilter(e.target.value)}
+                                className={clsx("bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
+                                    selectedChannelFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
+                                )}
+                            >
+                                <option value="">All Channels</option>
+                                {['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'].map(ch => (
+                                    <option key={ch} value={ch}>{ch}</option>
+                                ))}
+                            </select>
+
+                            {/* Courier Filter */}
                             <select
                                 value={selectedCourierFilter}
                                 onChange={e => setSelectedCourierFilter(e.target.value)}
-                                className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-6 text-sm focus:border-blue-500 transition-colors appearance-none font-medium text-gray-700"
+                                className={clsx("bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
+                                    selectedCourierFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
+                                )}
                             >
-                                <option value="">{t('sales.filterAllCouriers', 'All Couriers')}</option>
+                                <option value="">All Couriers</option>
                                 {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                             </select>
-                        </div>
 
-                        <div className="relative">
-                            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder={t('sales.searchOrders', 'Search orders...')}
-                                className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-4 text-sm focus:border-blue-500 w-48 transition-colors"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Batch Actions Bar (Only visible if items selected) */}
-                {selectedOrderIds.size > 0 && (
-                    <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
-                        <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} {t('sales.ordersSelected', 'Orders Selected')}</span>
-                        <div className="flex gap-2">
-                            {activeTab === 'verification' && (
-                                <button onClick={handleBatchVerify} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
-                                    <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
+                            {/* Clear All button (only when filters are active) */}
+                            {activeFilterCount > 0 && (
+                                <button
+                                    onClick={() => { setSelectedStatusFilter(''); setSelectedChannelFilter(''); setSelectedCourierFilter(''); setSearchTerm(''); }}
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 transition-colors whitespace-nowrap"
+                                >
+                                    ✕ Clear ({activeFilterCount})
                                 </button>
                             )}
                         </div>
-                    </div>
-                )}
-
-                <div className="flex-1 overflow-x-auto">
-                    <table className="w-full text-start border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
-                                <th className="px-4 py-3 w-10">
-                                    <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                                </th>
-                                <th className="px-4 py-3 font-semibold text-start">Order</th>
-                                <th className="px-4 py-3 font-semibold text-start">Customer</th>
-                                <th className="px-4 py-3 font-semibold text-start">Items</th>
-                                <th className="px-4 py-3 font-semibold text-start">Channel</th>
-                                <th className="px-4 py-3 font-semibold text-start">Courier</th>
-                                <th className="px-4 py-3 font-semibold text-end">Amount</th>
-                                <th className="px-4 py-3 font-semibold text-center">Status</th>
-                                <th className="px-4 py-3 font-semibold text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50 text-sm">
-                            {filteredOrders.length === 0 ? (
-                                <tr><td colSpan="9" className="py-16 text-center">
-                                    <div className="flex flex-col items-center gap-3 text-gray-400">
-                                        <ShoppingCart className="w-10 h-10 opacity-25" />
-                                        <p className="font-medium">No orders found.</p>
-                                    </div>
-                                </td></tr>
-                            ) : filteredOrders.map((order) => {
-                                const initials = (order.customer?.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-                                const isVerified = order.verificationStatus === 'Phone Confirmed';
-                                const itemCount = (order.products || []).length;
-                                const firstItem = order.products?.[0];
-                                return (
-                                    <tr key={order._id} className={clsx("group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
-
-                                        {/* Checkbox */}
-                                        <td className="px-4 py-3.5">
-                                            <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                                        </td>
-
-                                        {/* Order ID + Date + Verification */}
-                                        <td className="px-4 py-3.5">
-                                            <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
-                                            <p className="text-xs text-gray-400">{moment(order.date).format('MMM DD · HH:mm')}</p>
-                                            {isVerified && (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
-                                                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        {/* Customer avatar + name */}
-                                        <td className="px-4 py-3.5">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
-                                                    <span className="text-[11px] font-black text-white">{initials}</span>
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
-                                                    {order.customer?.city && <p className="text-xs text-gray-400">{order.customer.city}</p>}
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        {/* Items */}
-                                        <td className="px-4 py-3.5">
-                                            {itemCount === 0 ? (
-                                                <span className="text-xs text-gray-300 italic">—</span>
-                                            ) : (
-                                                <div>
-                                                    <p className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">{firstItem?.name || 'Product'}</p>
-                                                    {itemCount > 1 && <p className="text-xs text-gray-400">+{itemCount - 1} more item{itemCount > 2 ? 's' : ''}</p>}
-                                                    <p className="text-xs text-gray-400">Qty: {order.products.reduce((s, p) => s + (p.quantity || 0), 0)}</p>
-                                                </div>
-                                            )}
-                                        </td>
-
-                                        {/* Channel */}
-                                        <td className="px-4 py-3.5">
-                                            {order.channel ? (
-                                                <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 whitespace-nowrap">{order.channel}</span>
-                                            ) : <span className="text-gray-300 text-xs">—</span>}
-                                        </td>
-
-                                        {/* Courier */}
-                                        <td className="px-4 py-3.5">
-                                            {order.courier?.name ? (
-                                                <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 whitespace-nowrap">🚚 {order.courier.name}</span>
-                                            ) : <span className="text-xs text-gray-300">Not assigned</span>}
-                                        </td>
-
-                                        {/* Amount */}
-                                        <td className="px-4 py-3.5 text-end">
-                                            <p className="font-black text-gray-900 text-base tabular-nums">{order.totalAmount?.toLocaleString()}</p>
-                                            <p className="text-[10px] text-gray-400 font-medium">DZD</p>
-                                        </td>
-
-                                        {/* Status */}
-                                        <td className="px-4 py-3.5 text-center">
-                                            {renderCodBadge(order.status, t)}
-                                        </td>
-
-                                        {/* Actions */}
-                                        <td className="px-4 py-3.5">
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                <button onClick={() => handleEditClick(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
-                                                    <Pencil className="w-3 h-3" /> Edit
-                                                </button>
-                                                <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                    )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl">
-                        <span className="text-sm font-medium text-gray-500">
-                            {t('sales.page', 'Page')} {currentPage} {t('sales.of', 'of')} {totalPages}
-                        </span>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={handlePrevPage}
-                                disabled={currentPage === 1}
-                                className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                            >
-                                {t('sales.prev', 'Previous')}
-                            </button>
-                            <button
-                                onClick={handleNextPage}
-                                disabled={currentPage === totalPages}
-                                className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                            >
-                                {t('sales.next', 'Next')}
-                            </button>
+                {activeTab === 'custom' ? (
+                    <CustomOrdersTable searchTerm={searchTerm} />
+                ) : (
+                    <>
+                        {/* Batch Actions Bar (Only visible if items selected) */}
+                        {
+                            selectedOrderIds.size > 0 && (
+                                <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
+                                    <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} {t('sales.ordersSelected', 'Orders Selected')}</span>
+                                    <div className="flex gap-2">
+                                        {activeTab === 'verification' && (
+                                            <button onClick={handleBatchVerify} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
+                                                <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        }
+
+                        <div className="flex-1 overflow-x-auto">
+                            <table className="w-full text-start border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
+                                        <th className="px-4 py-3 w-10">
+                                            <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                        </th>
+                                        <th className="px-4 py-3 font-semibold text-start">Order</th>
+                                        <th className="px-4 py-3 font-semibold text-start">Customer</th>
+                                        <th className="px-4 py-3 font-semibold text-start">Items</th>
+                                        <th className="px-4 py-3 font-semibold text-start">Channel</th>
+                                        <th className="px-4 py-3 font-semibold text-start">Courier</th>
+                                        <th className="px-4 py-3 font-semibold text-end">Amount</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Status</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 text-sm">
+                                    {filteredOrders.length === 0 ? (
+                                        <tr><td colSpan="9" className="py-16 text-center">
+                                            <div className="flex flex-col items-center gap-3 text-gray-400">
+                                                <ShoppingCart className="w-10 h-10 opacity-25" />
+                                                <p className="font-medium">No orders found.</p>
+                                            </div>
+                                        </td></tr>
+                                    ) : filteredOrders.map((order) => {
+                                        const initials = (order.customer?.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                                        const isVerified = order.verificationStatus === 'Phone Confirmed';
+                                        const itemCount = (order.products || []).length;
+                                        const firstItem = order.products?.[0];
+                                        const isExpanded = expandedOrderId === order._id;
+                                        return (
+                                            <React.Fragment key={order._id}>
+                                                <tr onClick={() => toggleExpand(order._id)} className={clsx("cursor-pointer group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
+
+                                                    {/* Checkbox */}
+                                                    <td className="px-4 py-3.5">
+                                                        <input onClick={e => e.stopPropagation()} type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                                    </td>
+
+                                                    {/* Order ID + Date + Verification */}
+                                                    <td className="px-4 py-3.5">
+                                                        <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
+                                                        <p className="text-xs text-gray-400">{moment(order.date).format('MMM DD · HH:mm')}</p>
+                                                        {isVerified && (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
+                                                                <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Customer avatar + name */}
+                                                    <td className="px-4 py-3.5">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
+                                                                <span className="text-[11px] font-black text-white">{initials}</span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
+                                                                {order.customer?.city && <p className="text-xs text-gray-400">{order.customer.city}</p>}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Items */}
+                                                    <td className="px-4 py-3.5">
+                                                        {itemCount === 0 ? (
+                                                            <span className="text-xs text-gray-300 italic">—</span>
+                                                        ) : (
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">{firstItem?.name || 'Product'}</p>
+                                                                {itemCount > 1 && <p className="text-xs text-gray-400">+{itemCount - 1} more item{itemCount > 2 ? 's' : ''}</p>}
+                                                                <p className="text-xs text-gray-400">Qty: {order.products.reduce((s, p) => s + (p.quantity || 0), 0)}</p>
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Channel — inline select */}
+                                                    <td className="px-4 py-3.5">
+                                                        <select
+                                                            value={order.channel || ''}
+                                                            onChange={e => handleInlineChannelChange(order._id, e.target.value)}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="text-xs font-bold px-2.5 py-1.5 rounded-xl border border-blue-100 bg-blue-50 text-blue-700 appearance-none cursor-pointer outline-none w-full transition-colors hover:bg-blue-100"
+                                                        >
+                                                            {['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'].map(ch => (
+                                                                <option key={ch} value={ch}>{ch}</option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+
+                                                    {/* Courier — inline select */}
+                                                    <td className="px-4 py-3.5">
+                                                        <select
+                                                            value={order.courier?._id || order.courier || ''}
+                                                            onChange={async e => {
+                                                                e.stopPropagation();
+                                                                setUpdatingOrderId(order._id);
+                                                                try {
+                                                                    await updateOrder(order._id, { courier: e.target.value || null });
+                                                                } finally { setUpdatingOrderId(null); }
+                                                            }}
+                                                            onClick={e => e.stopPropagation()}
+                                                            className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-amber-100 bg-amber-50 text-amber-700 appearance-none cursor-pointer outline-none w-full transition-colors hover:bg-amber-100"
+                                                        >
+                                                            <option value="">Not assigned</option>
+                                                            {couriers.map(c => (
+                                                                <option key={c._id} value={c._id}>{c.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+
+                                                    {/* Amount — click to edit */}
+                                                    <td className="px-4 py-3.5 text-end">
+                                                        {editingOrderField?.id === order._id && editingOrderField?.field === 'totalAmount' ? (
+                                                            <input
+                                                                autoFocus
+                                                                type="number"
+                                                                value={editingOrderField.value}
+                                                                onChange={e => setEditingOrderField(prev => ({ ...prev, value: e.target.value }))}
+                                                                onBlur={() => handleOrderInlineSave(order)}
+                                                                onKeyDown={e => {
+                                                                    e.stopPropagation();
+                                                                    if (e.key === 'Enter') handleOrderInlineSave(order);
+                                                                    if (e.key === 'Escape') setEditingOrderField(null);
+                                                                }}
+                                                                onClick={e => e.stopPropagation()}
+                                                                className="w-28 border border-blue-400 rounded-lg px-2 py-1 text-sm font-bold text-end outline-none shadow-sm ml-auto block"
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                onClick={e => { e.stopPropagation(); startOrderEdit(order, 'totalAmount'); }}
+                                                                className="cursor-pointer group/amt"
+                                                                title="Click to edit"
+                                                            >
+                                                                <p className="font-black text-gray-900 text-base tabular-nums group-hover/amt:text-blue-600 transition-colors">{order.totalAmount?.toLocaleString()}</p>
+                                                                <p className="text-[10px] text-gray-400 font-medium">DZD</p>
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Status — inline select */}
+                                                    <td className="px-4 py-3.5">
+                                                        <div className="relative">
+                                                            {updatingOrderId === order._id ? (
+                                                                <div className="flex items-center justify-center h-7">
+                                                                    <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin" />
+                                                                </div>
+                                                            ) : (
+                                                                <select
+                                                                    value={order.status}
+                                                                    onChange={e => handleInlineStatusChange(order._id, e.target.value)}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                    className={clsx(
+                                                                        'text-xs font-bold px-2.5 py-1.5 rounded-xl border appearance-none cursor-pointer outline-none w-full transition-colors',
+                                                                        STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600 border-gray-200'
+                                                                    )}
+                                                                >
+                                                                    {COD_STATUSES.map(s => (
+                                                                        <option key={s} value={s}>{s}</option>
+                                                                    ))}
+                                                                </select>
+                                                            )}
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Actions */}
+                                                    <td className="px-4 py-3.5">
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button onClick={(e) => { e.stopPropagation(); handleEditClick(order); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
+                                                                <Pencil className="w-3 h-3" /> Edit
+                                                            </button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(order._id); }} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                                {/* EXPANDED ROW */}
+                                                {isExpanded && (
+                                                    <tr>
+                                                        <td colSpan={9} className="p-0 border-b border-gray-100 bg-gray-50/50 relative overflow-hidden">
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                                                            <div className="p-5 pl-8 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-200">
+
+                                                                {/* Order Products */}
+                                                                <div className="space-y-3">
+                                                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Package className="w-4 h-4 text-blue-400" /> Ordered Items</p>
+                                                                    {order.products?.length === 0 ? (
+                                                                        <p className="text-xs text-gray-400 italic bg-white p-3 rounded-xl border border-gray-100 shadow-sm">No products listed.</p>
+                                                                    ) : (
+                                                                        <div className="flex flex-col gap-2.5">
+                                                                            {order.products.map((p, i) => (
+                                                                                <div key={i} className="flex items-center justify-between bg-white rounded-xl shadow-sm p-3 border border-gray-100 hover:border-gray-200 transition-colors">
+                                                                                    <div>
+                                                                                        <p className="text-sm font-bold text-gray-900 leading-tight">{p.name || 'Product'}</p>
+                                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                                            <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">Qty: {p.quantity}</span>
+                                                                                            <span className="text-[10px] text-gray-400 font-medium tracking-wide">{(p.unitPrice || 0).toLocaleString()} DZD / ea</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-right">
+                                                                                        <p className="font-black text-blue-600 tabular-nums text-sm">{((p.quantity || 1) * (p.unitPrice || 0)).toLocaleString()}</p>
+                                                                                        <p className="text-[9px] font-bold text-blue-300 uppercase">DZD Total</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Delivery & Payment Setup */}
+                                                                <div className="space-y-3">
+                                                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-amber-400" /> Delivery &amp; Setup</p>
+
+                                                                    <div className="bg-white rounded-xl shadow-sm p-3.5 border border-gray-100 space-y-4">
+                                                                        <div>
+                                                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-1.5">Destination</p>
+                                                                            <p className="text-sm font-semibold text-gray-900">{order.shippingAddress?.street || order.customer?.address || 'No address provided'}</p>
+                                                                            <p className="text-xs font-medium text-gray-500 mt-0.5">{order.shippingAddress?.city || order.customer?.city || ''}</p>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-50">
+                                                                            <div>
+                                                                                <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Route Channel</p>
+                                                                                <span className="text-xs font-bold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg inline-block">{order.channel || 'Direct'}</span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Current Status</p>
+                                                                                <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg inline-block whitespace-nowrap">{order.status || 'New'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-100 flex items-center justify-between">
+                                                                        <div>
+                                                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-0.5 flex items-center gap-1"><CreditCard className="w-3 h-3" /> Payment</p>
+                                                                            <span className={clsx("text-xs font-bold",
+                                                                                order.paymentStatus === 'Paid' ? 'text-emerald-600' :
+                                                                                    order.paymentStatus === 'Pending' ? 'text-amber-600' : 'text-gray-500'
+                                                                            )}>{order.paymentStatus || 'Unpaid'}</span>
+                                                                        </div>
+                                                                        {order.trackingInfo?.trackingNumber && (
+                                                                            <div className="text-right">
+                                                                                <p className="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Tracking #</p>
+                                                                                <p className="text-xs font-mono font-semibold text-gray-700">{order.trackingInfo.trackingNumber}</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Notes & Risk Insights */}
+                                                                <div className="space-y-3">
+                                                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><FileText className="w-4 h-4 text-purple-400" /> Notes &amp; Insights</p>
+
+                                                                    {order.notes ? (
+                                                                        <div className="bg-white rounded-xl shadow-sm p-3.5 border border-purple-100 flex gap-2.5 relative overflow-hidden">
+                                                                            <div className="absolute top-0 left-0 w-1 h-full bg-purple-300"></div>
+                                                                            <FileText className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                                                                            <p className="text-xs font-medium text-gray-600 leading-relaxed italic">{order.notes}</p>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="bg-gray-50 rounded-xl p-3 border border-dashed border-gray-200">
+                                                                            <p className="text-xs text-center text-gray-400 font-medium">No order notes attached.</p>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {order.fraudRiskScore > 0 && (
+                                                                        <div className="flex items-center justify-between bg-amber-50 rounded-xl px-3.5 py-3 border border-amber-200 shadow-sm">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                                                                                <p className="text-xs font-bold text-amber-800">Fraud Risk Evaluation</p>
+                                                                            </div>
+                                                                            <span className="text-xs font-black text-amber-600 bg-white px-2 py-0.5 rounded-md border border-amber-100">{order.fraudRiskScore}% Risk</span>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(order.financials?.shippingCosts > 0) && (
+                                                                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex justify-between items-center mt-auto">
+                                                                            <p className="text-xs font-bold text-gray-500">Logistics Cost</p>
+                                                                            <p className="text-sm font-black text-gray-700">{order.financials.shippingCosts.toLocaleString()} <span className="text-[10px] text-gray-400 font-bold">DZD</span></p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+
+                        {
+                            totalPages >= 1 && (() => {
+                                // Build page numbers with ellipsis: always show first, last, current ±2
+                                const range = [];
+                                const delta = 2;
+                                const left = currentPage - delta;
+                                const right = currentPage + delta;
+                                let last = 0;
+                                for (let i = 1; i <= totalPages; i++) {
+                                    if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+                                        if (last && i - last > 1) range.push('...');
+                                        range.push(i);
+                                        last = i;
+                                    }
+                                }
+                                return (
+                                    <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl flex-wrap gap-3">
+                                        {/* Left: page info + rows per page */}
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm text-gray-400 font-medium">
+                                                Page <strong className="text-gray-700">{currentPage}</strong> of <strong className="text-gray-700">{totalPages}</strong>
+                                            </span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs text-gray-400">Show</span>
+                                                <select
+                                                    value={perPage}
+                                                    onChange={e => {
+                                                        const val = Number(e.target.value);
+                                                        setPerPage(val);
+                                                        fetchSalesData(1, val);
+                                                    }}
+                                                    className="bg-white border border-gray-200 rounded-lg py-1 px-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer"
+                                                >
+                                                    {[10, 25, 50, 100].map(n => (
+                                                        <option key={n} value={n}>{n}</option>
+                                                    ))}
+                                                </select>
+                                                <span className="text-xs text-gray-400">per page</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: page buttons */}
+                                        <div className="flex items-center gap-1">
+                                            {/* Prev */}
+                                            <button
+                                                onClick={handlePrevPage}
+                                                disabled={currentPage === 1}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                ‹ Prev
+                                            </button>
+
+                                            {/* Page numbers */}
+                                            {range.map((p, i) =>
+                                                p === '...' ? (
+                                                    <span key={`ellipsis-${i}`} className="px-2 py-1.5 text-sm text-gray-400 select-none">…</span>
+                                                ) : (
+                                                    <button
+                                                        key={p}
+                                                        onClick={() => fetchSalesData(p, perPage)}
+                                                        className={clsx(
+                                                            'min-w-[36px] px-2 py-1.5 text-sm font-bold rounded-lg transition-all border',
+                                                            p === currentPage
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/20'
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                        )}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                )
+                                            )}
+
+                                            {/* Next */}
+                                            <button
+                                                onClick={handleNextPage}
+                                                disabled={currentPage === totalPages}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Next ›
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })()
+                        }
+                    </>
                 )}
             </div>
 
             {/* Revenue by Channel — full width below table */}
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 className="text-base font-bold text-gray-900 mb-5">{t('sales.revenueByChannel', 'Revenue by Channel')}</h3>
-                {channelData.length === 0 ? (
-                    <p className="text-sm text-gray-400">{t('sales.noChannelData', 'No channel data available.')}</p>
-                ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {channelData.map((ch, i) => {
-                            const total = channelData.reduce((s, c) => s + c.value, 0);
-                            const pct = total > 0 ? Math.round((ch.value / total) * 100) : 0;
-                            return (
-                                <div key={i} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                                    <div className="flex items-center gap-1.5 mb-2">
-                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
-                                        <span className="text-xs font-bold text-gray-700 truncate">{ch.name}</span>
+                {
+                    channelData.length === 0 ? (
+                        <p className="text-sm text-gray-400">{t('sales.noChannelData', 'No channel data available.')}</p>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                            {channelData.map((ch, i) => {
+                                const total = channelData.reduce((s, c) => s + c.value, 0);
+                                const pct = total > 0 ? Math.round((ch.value / total) * 100) : 0;
+                                return (
+                                    <div key={i} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
+                                            <span className="text-xs font-bold text-gray-700 truncate">{ch.name}</span>
+                                        </div>
+                                        <p className="text-2xl font-black text-gray-900 tabular-nums">{pct}%</p>
+                                        <p className="text-[11px] text-gray-400 tabular-nums mt-0.5">{ch.value.toLocaleString()} DZ</p>
+                                        <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-2">
+                                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                                        </div>
                                     </div>
-                                    <p className="text-2xl font-black text-gray-900 tabular-nums">{pct}%</p>
-                                    <p className="text-[11px] text-gray-400 tabular-nums mt-0.5">{ch.value.toLocaleString()} DZ</p>
-                                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-2">
-                                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                                );
+                            })}
+                        </div>
+                    )
+                }
             </div>
 
             {isModalOpen && (
@@ -442,32 +799,7 @@ export default function Sales() {
     );
 }
 
-function renderCodBadge(status, t) {
-    if (!t) return <Badge text={status || 'Unknown'} color="text-gray-700" bg="bg-gray-100" />
-    switch (status) {
-        case 'New': return <Badge text={t('sales.statusNew', 'New')} color="text-gray-700" bg="bg-gray-100" />;
-        case 'Confirmed': return <Badge icon={CheckCircle2} text={t('sales.statusConfirmed', 'Confirmed')} color="text-blue-700" bg="bg-blue-50" />;
-        case 'Preparing': return <Badge icon={Clock} text={t('sales.statusPreparing', 'Preparing')} color="text-orange-700" bg="bg-orange-50" />;
-        case 'Ready for Pickup': return <Badge icon={ShoppingCart} text={t('sales.statusReady', 'Ready for Pickup')} color="text-yellow-700" bg="bg-yellow-50" />;
-        case 'Shipped': return <Badge icon={TrendingUp} text={t('sales.statusShipped', 'Shipped')} color="text-indigo-700" bg="bg-indigo-50" />;
-        case 'Out for Delivery': return <Badge icon={Users} text={t('sales.statusOutForDelivery', 'Out for Delivery')} color="text-emerald-700" bg="bg-emerald-50" />;
-        case 'Delivered': return <Badge icon={CheckCircle2} text={t('sales.statusDelivered', 'Delivered')} color="text-green-700" bg="bg-green-50" />;
-        case 'Paid': return <Badge icon={CheckCircle2} text={t('sales.statusPaid', 'Paid (Settled)')} color="text-teal-700" bg="bg-teal-50" />;
-        case 'Refused': return <Badge icon={AlertCircle} text={t('sales.statusRefused', 'Refused')} color="text-red-700" bg="bg-red-50" />;
-        case 'Returned': return <Badge icon={AlertCircle} text={t('sales.statusReturned', 'Returned')} color="text-rose-700" bg="bg-rose-50" />;
-        case 'Cancelled': return <Badge icon={Trash2} text={t('sales.statusCancelled', 'Cancelled')} color="text-gray-500" bg="bg-gray-100" />;
-        default: return <Badge text={status || 'Unknown'} color="text-gray-700" bg="bg-gray-100" />;
-    }
-}
-
-function Badge({ icon: Icon, text, color, bg }) {
-    return (
-        <span className={clsx("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold", bg, color)}>
-            {Icon && <Icon className="w-3.5 h-3.5" />} {text}
-        </span>
-    );
-}
-
+// eslint-disable-next-line no-unused-vars
 function SalesCard({ title, value, icon: Icon, color, bg }) {
     return (
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow">

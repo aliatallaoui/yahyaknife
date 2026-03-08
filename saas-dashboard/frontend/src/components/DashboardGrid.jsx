@@ -1,9 +1,18 @@
-import { Sparkles, TrendingUp, DollarSign, Package, Truck, AlertTriangle, CheckCircle, Clock, ChevronRight, ShoppingCart, Timer, PackageCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Sparkles, TrendingUp, DollarSign, Package, Truck, AlertTriangle, CheckCircle, Clock, ChevronRight, ShoppingCart, Timer, PackageCheck, Users, UserCheck, UserX, CalendarClock, FileBarChart2, BarChart3, CreditCard } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 export default function DashboardGrid({ data }) {
     const { t } = useTranslation();
+    const [hrMetrics, setHrMetrics] = useState(null);
+    const [dailyReport, setDailyReport] = useState(null);
+
+    useEffect(() => {
+        fetch('/api/hr/metrics').then(r => r.json()).then(setHrMetrics).catch(() => { });
+        fetch('/api/hr/reports/daily').then(r => r.json()).then(setDailyReport).catch(() => { });
+    }, []);
     if (!data) return (
         <div className="flex items-center justify-center h-64 flex-col gap-3">
             <AlertTriangle className="w-8 h-8 text-amber-400" />
@@ -57,7 +66,7 @@ export default function DashboardGrid({ data }) {
     ];
 
     return (
-        <div className="flex flex-col gap-5 w-full max-w-[1400px]">
+        <div className="flex flex-col gap-5 w-full">
 
             {/* ── Row 1: 4 KPI Cards — own row, no stretching ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -96,6 +105,46 @@ export default function DashboardGrid({ data }) {
                     bg="bg-rose-50"
                     isEmpty={(financialMetrics?.globalSettlementsPending || 0) === 0}
                     emptyLabel="✓ All Settled"
+                />
+            </div>
+
+            {/* ── Row 1.5: Workshop / Bladesmith Operations KPIs ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                    title={t('dashboard.activeProduction', 'Active in Forge')}
+                    value={data.workshopMetrics?.activeProduction || 0}
+                    unit={t('knives.unitKnives', 'Knives')}
+                    icon={Package}
+                    isPositive={true}
+                    color="text-orange-600"
+                    bg="bg-orange-50"
+                />
+                <MetricCard
+                    title={t('dashboard.completedThisMonth', 'Finished This Month')}
+                    value={data.workshopMetrics?.completedThisMonth || 0}
+                    unit={t('knives.unitKnives', 'Knives')}
+                    icon={CheckCircle}
+                    isPositive={true}
+                    color="text-indigo-600"
+                    bg="bg-indigo-50"
+                />
+                <MetricCard
+                    title={t('dashboard.pendingCustom', 'Custom Orders')}
+                    value={data.workshopMetrics?.pendingCustomOrders || 0}
+                    unit={t('orders.unitOrders', 'Orders')}
+                    icon={Users}
+                    isPositive={false}
+                    color="text-blue-600"
+                    bg="bg-blue-50"
+                />
+                <MetricCard
+                    title={t('dashboard.valueInProduction', 'Value in Forge')}
+                    value={(data.workshopMetrics?.valueInProduction || 0).toLocaleString()}
+                    unit={t('common.currency')}
+                    icon={DollarSign}
+                    isPositive={true}
+                    color="text-emerald-600"
+                    bg="bg-emerald-50"
                 />
             </div>
 
@@ -239,6 +288,120 @@ export default function DashboardGrid({ data }) {
                     hint="Products with no sales — review pricing"
                     isAlert={(inventoryMetrics?.deadStockVariants || 0) > 0} />
             </div>
+            {/* ── Row 5: HR Daily Snapshot + Reports ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+
+                {/* HR Attendance Snapshot */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <Users className="w-5 h-5 text-violet-500" />
+                            {t('dashboard.hrSnapshot')}
+                        </h3>
+                        <span className="text-xs text-gray-400 font-medium bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                            {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                        <HRTile
+                            icon={UserCheck} label={t('dashboard.presentToday')}
+                            value={hrMetrics?.presentToday ?? '—'}
+                            total={hrMetrics?.activeEmployees}
+                            color="text-emerald-600" bg="bg-emerald-50" bar="bg-emerald-400"
+                        />
+                        <HRTile
+                            icon={UserX} label={t('dashboard.absentToday')}
+                            value={hrMetrics?.absentToday ?? '—'}
+                            total={hrMetrics?.activeEmployees}
+                            color="text-rose-600" bg="bg-rose-50" bar="bg-rose-400"
+                            isAlert={(hrMetrics?.absentToday || 0) > 0}
+                        />
+                        <HRTile
+                            icon={Clock} label={t('dashboard.lateToday')}
+                            value={hrMetrics?.lateToday ?? '—'}
+                            total={hrMetrics?.activeEmployees}
+                            color="text-amber-600" bg="bg-amber-50" bar="bg-amber-400"
+                            isAlert={(hrMetrics?.lateToday || 0) > 0}
+                        />
+                        <HRTile
+                            icon={Users} label={t('dashboard.activeStaff')}
+                            value={hrMetrics?.activeEmployees ?? '—'}
+                            total={hrMetrics?.totalEmployees}
+                            color="text-violet-600" bg="bg-violet-50" bar="bg-violet-400"
+                        />
+                    </div>
+                    {/* Payroll estimate strip */}
+                    <div className="flex items-center justify-between bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl p-4 border border-violet-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+                                <CreditCard className="w-4 h-4 text-violet-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-violet-700 uppercase tracking-wider">{t('dashboard.monthlyPayrollEst')}</p>
+                                <p className="text-xs text-violet-500 mt-0.5">{t('dashboard.payrollSubtitle')}</p>
+                            </div>
+                        </div>
+                        <p className="text-2xl font-black text-violet-900 tabular-nums">
+                            {(hrMetrics?.estimatedPayrollDZD || 0).toLocaleString()}
+                            <span className="text-sm font-medium text-violet-400 ms-1">DZ</span>
+                        </p>
+                    </div>
+                    {/* Daily overtime if any */}
+                    {(dailyReport?.summary?.totalOvertimeMinutes || 0) > 0 && (
+                        <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 font-semibold bg-amber-50 px-3 py-2 rounded-xl border border-amber-100">
+                            <CalendarClock className="w-3.5 h-3.5" />
+                            {t('dashboard.overtimeStrip', { h: Math.round(dailyReport.summary.totalOvertimeMinutes / 60), n: dailyReport.summary.present })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Reports Quick Access */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col">
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-5">
+                        <FileBarChart2 className="w-5 h-5 text-blue-500" />
+                        {t('dashboard.reportsTitle')}
+                    </h3>
+                    <div className="flex flex-col gap-3 flex-1">
+                        <Link to="/hr/reports" className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+                                    <UserCheck className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-blue-900">{t('dashboard.dailyAttendance')}</p>
+                                    <p className="text-xs text-blue-500">{t('dashboard.attendanceSub', { present: dailyReport?.summary?.present ?? 0, absent: dailyReport?.summary?.absent ?? 0 })}</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                        <Link to="/hr/payroll" className="flex items-center justify-between p-3.5 rounded-2xl bg-violet-50 border border-violet-100 hover:bg-violet-100 transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center">
+                                    <CreditCard className="w-4 h-4 text-violet-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-violet-900">{t('dashboard.payrollLink')}</p>
+                                    <p className="text-xs text-violet-500">{t('dashboard.payrollSub', { amount: (hrMetrics?.estimatedPayrollDZD || 0).toLocaleString() })}</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-violet-400 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                        <Link to="/hr" className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center">
+                                    <BarChart3 className="w-4 h-4 text-gray-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-900">{t('dashboard.hrOverview')}</p>
+                                    <p className="text-xs text-gray-500">{t('dashboard.hrOverviewSub', { count: hrMetrics?.totalEmployees ?? 0 })}</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
         </div>
     );
 }
@@ -285,6 +448,28 @@ function InventoryCard({ icon: Icon, iconBg, iconColor, label, value, valueSuffi
                 </h4>
                 {hint && <p className="text-[11px] text-gray-400 mt-1 font-medium">{hint}</p>}
             </div>
+        </div>
+    );
+}
+
+/* ─── HR Tile ─── */
+function HRTile({ icon: Icon, label, value, total, color, bg, bar, isAlert }) {
+    const pct = total > 0 ? Math.min(100, Math.round((Number(value) / Number(total)) * 100)) : 0;
+    return (
+        <div className={clsx(
+            "rounded-2xl p-4 border flex flex-col gap-2",
+            isAlert ? "bg-rose-50/60 border-rose-100" : "bg-gray-50/60 border-gray-100"
+        )}>
+            <div className={clsx("w-8 h-8 rounded-xl flex items-center justify-center", bg)}>
+                <Icon className={clsx("w-4 h-4", color)} />
+            </div>
+            <p className="text-2xl font-black text-gray-900 tabular-nums leading-tight">{value}</p>
+            <p className="text-xs font-semibold text-gray-500">{label}</p>
+            {total != null && (
+                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div className={clsx("h-full rounded-full transition-all duration-500", bar)} style={{ width: `${pct}%` }} />
+                </div>
+            )}
         </div>
     );
 }

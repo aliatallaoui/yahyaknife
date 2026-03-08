@@ -136,6 +136,8 @@ exports.getProductionOrders = async (req, res) => {
                 path: 'bom',
                 populate: { path: 'components.material', select: 'name sku' }
             })
+            .populate('knifeRef', 'name knifeId type status')
+            .populate('assignedBladesmith', 'name')
             .sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
@@ -172,6 +174,20 @@ exports.updateProductionOrderStatus = async (req, res) => {
 
         const previousStatus = order.status;
         order.status = status;
+
+        // Stage history tracking
+        if (status !== previousStatus) {
+            if (order.stageHistory && order.stageHistory.length > 0) {
+                const lastStage = order.stageHistory[order.stageHistory.length - 1];
+                if (!lastStage.completedAt) {
+                    lastStage.completedAt = new Date();
+                }
+            }
+            order.stageHistory.push({
+                stage: status,
+                startedAt: new Date()
+            });
+        }
 
         if (status === 'Completed' && previousStatus !== 'Completed') {
             order.quantityCompleted = order.quantityPlanned;

@@ -13,13 +13,14 @@ export const InventoryProvider = ({ children }) => {
     const [metrics, setMetrics] = useState(null);
     const [purchaseOrders, setPurchaseOrders] = useState([]);
     const [globalLedger, setGlobalLedger] = useState([]);
+    const [completedKnives, setCompletedKnives] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchInventoryData = async () => {
         if (!token) return;
         setLoading(true);
         try {
-            const [prodRes, matRes, metricsRes, suppRes, catRes, poRes, ledgerRes] = await Promise.all([
+            const [prodRes, matRes, metricsRes, suppRes, catRes, poRes, ledgerRes, knivesRes] = await Promise.all([
                 fetch('/api/inventory/products', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
@@ -40,6 +41,9 @@ export const InventoryProvider = ({ children }) => {
                 }),
                 fetch('/api/inventory/ledger', {
                     headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch('/api/knives/cards?status=Completed', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
 
@@ -50,6 +54,7 @@ export const InventoryProvider = ({ children }) => {
             setCategories(await catRes.json());
             setPurchaseOrders(await poRes.json());
             setGlobalLedger(await ledgerRes.json());
+            setCompletedKnives(await knivesRes.json());
         } catch (error) {
             console.error("Error fetching inventory data:", error);
         } finally {
@@ -236,6 +241,7 @@ export const InventoryProvider = ({ children }) => {
             metrics,
             purchaseOrders,
             globalLedger,
+            completedKnives,
             loading,
             createProduct,
             updateProduct,

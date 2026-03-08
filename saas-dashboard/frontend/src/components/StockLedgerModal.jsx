@@ -6,14 +6,14 @@ import { useTranslation } from 'react-i18next';
 
 const StockLedgerModal = ({ isOpen, onClose, product }) => {
     const { t } = useTranslation();
-    const { fetchProductLedger } = useContext(InventoryContext);
+    const { fetchVariantLedger } = useContext(InventoryContext);
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (isOpen && product) {
             setLoading(true);
-            fetchProductLedger(product._id)
+            fetchVariantLedger(product._id)
                 .then(data => {
                     setLedger(data);
                     setLoading(false);
@@ -38,7 +38,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                             <FileText className="w-5 h-5 text-indigo-600" />
                             {t('modals.ledgerTitle', 'Stock Ledger')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">{t('modals.ledgerSubtitle', 'Movement history for')} {product.name} ({product.sku})</p>
+                        <p className="text-sm text-gray-500 mt-1">{t('modals.ledgerSubtitle', 'Movement history for')} {product.productName ?? product.name} ({product.sku})</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
