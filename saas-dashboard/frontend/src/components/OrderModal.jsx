@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, Truck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import moment from 'moment';
-import { useCustomer } from '../context/CustomerContext';
+import * as leblad from '@dzcode-io/leblad';
 
 const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'];
 const STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
@@ -11,41 +11,12 @@ const PAYMENT_STATUSES = ['Unpaid', 'Pending', 'Paid', 'Failed', 'Refunded'];
 
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], customers = [], couriers = [] }) {
     const { t } = useTranslation();
-    const { createCustomer } = useCustomer();
     const isEdit = !!initialData;
-
-    // Inline Customer Creation State
-    const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
-    const [isCreatingCustomerLoading, setIsCreatingCustomerLoading] = useState(false);
-    const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', city: '' });
-
-    const handleQuickCreateCustomer = async () => {
-        if (!newCustomer.name || !newCustomer.phone) {
-            alert(t('modals.orderCustomerRequired', 'Name and Phone are required'));
-            return;
-        }
-        setIsCreatingCustomerLoading(true);
-        try {
-            const created = await createCustomer({
-                name: newCustomer.name,
-                phone: newCustomer.phone,
-                city: newCustomer.city,
-                email: '',
-                address: ''
-            });
-            setCustomerId(created._id);
-            setIsCreatingCustomer(false);
-            setNewCustomer({ name: '', phone: '', city: '' });
-        } catch (error) {
-            alert(t('modals.orderCustomerError', 'Failed to create customer. Please check your data.'));
-        } finally {
-            setIsCreatingCustomerLoading(false);
-        }
-    };
 
     // Form state
     const [orderId, setOrderId] = useState('');
-    const [customerId, setCustomerId] = useState('');
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
     const [courierId, setCourierId] = useState('');
     const [channel, setChannel] = useState('Website');
     const [status, setStatus] = useState('New');
@@ -56,6 +27,16 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
     const [codAmount, setCodAmount] = useState(0);
     const [courierFee, setCourierFee] = useState(0);
+
+    // Shipping state (phone1 = customerPhone, recipientName = customerName)
+    const [shippingPhone2, setShippingPhone2] = useState('');
+    const [shippingWilayaCode, setShippingWilayaCode] = useState('');
+    const [shippingWilayaName, setShippingWilayaName] = useState('');
+    const [shippingCommune, setShippingCommune] = useState('');
+    const [shippingAddress, setShippingAddress] = useState('');
+    const [shippingWeight, setShippingWeight] = useState(1);
+    const [shippingFragile, setShippingFragile] = useState(false);
+    const [shippingDeliveryType, setShippingDeliveryType] = useState(0);
 
     // Submission states
     const [formError, setFormError] = useState('');
@@ -89,7 +70,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         if (isOpen) {
             if (isEdit && initialData) {
                 setOrderId(initialData.orderId);
-                setCustomerId(initialData.customer?._id || initialData.customer || '');
+                setCustomerName(initialData.customer?.name || '');
+                setCustomerPhone(initialData.customer?.phone || '');
                 setCourierId(initialData.courier?._id || initialData.courier || '');
                 setChannel(initialData.channel);
                 setStatus(initialData.status);
@@ -98,6 +80,15 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 setDate(moment(initialData.date).format('YYYY-MM-DD'));
                 setCodAmount(initialData.financials?.codAmount || 0);
                 setCourierFee(initialData.financials?.courierFee || 0);
+                // Load shipping
+                setShippingPhone2(initialData.shipping?.phone2 || '');
+                setShippingWilayaCode(initialData.shipping?.wilayaCode || '');
+                setShippingWilayaName(initialData.shipping?.wilayaName || '');
+                setShippingCommune(initialData.shipping?.commune || '');
+                setShippingAddress(initialData.shipping?.address || '');
+                setShippingWeight(initialData.shipping?.weight || 1);
+                setShippingFragile(initialData.shipping?.fragile || false);
+                setShippingDeliveryType(initialData.shipping?.deliveryType || 0);
                 setProducts(
                     initialData.products?.length > 0
                         ? initialData.products.map(p => ({
@@ -112,7 +103,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             } else {
                 // Reset form for create
                 setOrderId(`ORD-${Math.floor(Math.random() * 100000)}`);
-                setCustomerId('');
+                setCustomerName('');
+                setCustomerPhone('');
                 setCourierId('');
                 setChannel('Website');
                 setStatus('New');
@@ -124,6 +116,15 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 setProducts([{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);
                 setFormError('');
                 setIsSubmitting(false);
+                // Reset shipping
+                setShippingPhone2('');
+                setShippingWilayaCode('');
+                setShippingWilayaName('');
+                setShippingCommune('');
+                setShippingAddress('');
+                setShippingWeight(1);
+                setShippingFragile(false);
+                setShippingDeliveryType(0);
             }
         }
     }, [isOpen, isEdit, initialData]);
@@ -170,7 +171,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
         const payload = {
             orderId,
-            customerId,
+            customerName,
+            customerPhone,
             courier: courierId || null,
             channel,
             status,
@@ -185,7 +187,19 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             },
             date: new Date(date),
             products: validProducts,
-            totalAmount: calculateTotal()
+            totalAmount: calculateTotal(),
+            shipping: {
+                recipientName: customerName,
+                phone1: customerPhone,
+                phone2: shippingPhone2,
+                wilayaCode: shippingWilayaCode,
+                wilayaName: shippingWilayaName,
+                commune: shippingCommune,
+                address: shippingAddress,
+                weight: Number(shippingWeight),
+                fragile: shippingFragile,
+                deliveryType: Number(shippingDeliveryType)
+            }
         };
 
         setIsSubmitting(true);
@@ -233,49 +247,68 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                 <input required type="date" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={date} onChange={e => setDate(e.target.value)} />
                             </div>
 
-                            {/* Dynamic Customer Field */}
+                            {/* Customer & Delivery — unified section */}
                             <div className="col-span-1 md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-semibold text-gray-700">{t('modals.orderCustomer')}</label>
-                                    {!isCreatingCustomer ? (
-                                        <button type="button" onClick={() => setIsCreatingCustomer(true)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                                            <Plus className="w-3 h-3" /> {t('modals.orderBtnNewCustomer', 'New Customer')}
-                                        </button>
-                                    ) : (
-                                        <button type="button" onClick={() => setIsCreatingCustomer(false)} className="text-xs font-bold text-gray-500 hover:text-gray-700">
-                                            {t('modals.orderBtnCancelNew', 'Cancel')}
-                                        </button>
-                                    )}
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Truck className="w-4 h-4 text-blue-600" />
+                                    <h3 className="font-semibold text-gray-900">Customer & Delivery</h3>
+                                    <span className="text-[10px] text-gray-400 font-normal">Phone = customer identifier + shipping phone</span>
                                 </div>
-
-                                {!isCreatingCustomer ? (
-                                    <select required className="w-full bg-white border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none shadow-sm" value={customerId} onChange={e => setCustomerId(e.target.value)}>
-                                        <option value="" disabled>{t('modals.orderSelectCustomer')}</option>
-                                        {customers.map(c => <option key={c._id} value={c._id}>{c.name} {c.phone ? `(${c.phone})` : c.email ? `(${c.email})` : ''}</option>)}
-                                    </select>
-                                ) : (
-                                    <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-1">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <input type="text" placeholder={t('modals.orderCustomerName', 'Full Name *')} required={isCreatingCustomer} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
-                                            <input type="tel" placeholder={t('modals.orderCustomerPhone', 'Phone Number *')} required={isCreatingCustomer} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                                        <input required type="text" placeholder="Customer name" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={customerName} onChange={e => setCustomerName(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
+                                        <input required type="tel" placeholder="0770123456" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone 2 (Optional)</label>
+                                        <input type="tel" placeholder="" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={shippingPhone2} onChange={e => setShippingPhone2(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Wilaya *</label>
+                                        <select className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm" value={shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); setShippingWilayaCode(wCode); setShippingWilayaName(w ? w.name : ''); setShippingCommune(''); }}>
+                                            <option value="">Select Wilaya...</option>
+                                            {leblad.getWilayaList().map(w => (
+                                                <option key={w.mattricule} value={w.mattricule}>{String(w.mattricule).padStart(2, '0')} - {w.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Commune *</label>
+                                        <select disabled={!shippingWilayaCode} className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={shippingCommune} onChange={e => setShippingCommune(e.target.value)}>
+                                            <option value="">{shippingWilayaCode ? 'Select Commune...' : 'Select Wilaya first'}</option>
+                                            {shippingWilayaCode && leblad.getBaladyiatsForWilaya(Number(shippingWilayaCode))?.map(c => (
+                                                <option key={c.code} value={c.name}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Detailed Address</label>
+                                        <input type="text" placeholder="Street, building..." className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 md:col-span-2">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">Weight (kg)</label>
+                                            <input type="number" step="0.1" min="0.1" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={shippingWeight} onChange={e => setShippingWeight(e.target.value)} />
                                         </div>
-                                        <div className="flex gap-3 items-center">
-                                            <input type="text" placeholder={t('modals.orderCustomerCity', 'City / Wilaya (Optional)')} className="flex-1 bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500" value={newCustomer.city} onChange={e => setNewCustomer({ ...newCustomer, city: e.target.value })} />
-                                            <button type="button" onClick={handleQuickCreateCustomer} disabled={isCreatingCustomerLoading} className="px-4 py-2 bg-blue-600 shrink-0 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2">
-                                                {isCreatingCustomerLoading ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : t('modals.orderBtnSaveCustomer', 'Save & Select')}
-                                            </button>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">Delivery Type</label>
+                                            <select className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm" value={shippingDeliveryType} onChange={e => setShippingDeliveryType(Number(e.target.value))}>
+                                                <option value={0}>Home Delivery</option>
+                                                <option value={1}>Stop Desk</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex items-end pb-2">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" checked={shippingFragile} onChange={e => setShippingFragile(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                                                <span className="text-sm font-medium text-gray-700">Fragile</span>
+                                            </label>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderSalesChannel')}</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={channel} onChange={e => setChannel(e.target.value)}>
-                                    {CHANNELS.map(ch => <option key={ch} value={ch}>
-                                        {ch === 'Amazon' ? t('modals.chAmazon') : ch === 'Alibaba' ? t('modals.chAlibaba') : ch === 'Tokopedia' ? t('modals.chTokopedia') : ch === 'Shopee' ? t('modals.chShopee') : ch === 'Website' ? t('modals.chWebsite') : t('modals.chOther')}
-                                    </option>)}
-                                </select>
+                                </div>
                             </div>
                         </div>
 
@@ -321,7 +354,6 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                             {v.displayName} - ${v.price?.toFixed(2) || 0} ({t('modals.orderAvail')} {v.availableStock})
                                                         </option>
                                                     ))}
-                                                    {/* Display fallback for legacy orders */}
                                                     {product.name && !product.variantId && (
                                                         <option value="" disabled>{product.name} {t('modals.orderLegacy')}</option>
                                                     )}

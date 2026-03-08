@@ -2950,15 +2950,24 @@ const resources = {
     }
 };
 
+const savedLng = localStorage.getItem('i18nextLng') || 'ar';
+
 i18n
     .use(initReactI18next)
     .init({
         resources,
-        lng: 'ar', // default, overridden by AuthContext later
+        lng: savedLng,
         fallbackLng: 'ar',
         interpolation: {
             escapeValue: false // react already safes from xss
         }
     });
+
+// Persist language changes to localStorage
+i18n.on('languageChanged', (lng) => {
+    localStorage.setItem('i18nextLng', lng);
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+});
 
 export default i18n;

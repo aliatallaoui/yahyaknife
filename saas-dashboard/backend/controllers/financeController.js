@@ -46,12 +46,9 @@ exports.getFinancialOverview = async (req, res) => {
             if (o._id === 'Paid') settledRevenue += o.grossSales;
         });
 
-        // 3. Payroll Expenses
-        const payrollAgg = await Payroll.aggregate([
-            { $match: { status: 'Paid' } },
-            { $group: { _id: null, total: { $sum: '$finalPayableSalary' } } }
-        ]);
-        const totalPayroll = payrollAgg.length > 0 ? payrollAgg[0].total : 0;
+        // 3. Payroll now synced as Expense entries (Human Resources category)
+        // No need to aggregate separately — they're included in manualExpenses above
+        const totalPayroll = 0;
 
         // 4. Consolidated P&L
         const totalRevenue = manualRevenue + deliveredRevenue + settledRevenue; // Only count delivered/paid as actual recognized revenue

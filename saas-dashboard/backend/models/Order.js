@@ -21,7 +21,7 @@ const orderSchema = new mongoose.Schema({
     // Main COD Lifecycle Status
     status: {
         type: String,
-        enum: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'],
+        enum: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'],
         default: 'New'
     },
     verificationStatus: {
@@ -66,6 +66,19 @@ const orderSchema = new mongoose.Schema({
         refusalReason: { type: String },
         deliveryTimeMinutes: { type: Number },
         deliveredAt: { type: Date }
+    },
+    // Shipping details for courier dispatch
+    shipping: {
+        recipientName: { type: String },
+        phone1: { type: String },
+        phone2: { type: String },
+        wilayaCode: { type: String },
+        wilayaName: { type: String },
+        commune: { type: String },
+        address: { type: String },
+        weight: { type: Number, default: 1 },
+        fragile: { type: Boolean, default: false },
+        deliveryType: { type: Number, default: 0 } // 0=home, 1=stop desk
     },
     notes: { type: String }
 }, { timestamps: true });

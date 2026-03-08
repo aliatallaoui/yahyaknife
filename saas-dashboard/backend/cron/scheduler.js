@@ -5,6 +5,7 @@ const Customer = require('../models/Customer');
 const Courier = require('../models/Courier');
 const Supplier = require('../models/Supplier');
 const moment = require('moment');
+const { initCronJobs } = require('./trackerSync');
 
 // Background Worker Scheduler
 const initJobs = () => {
@@ -77,6 +78,9 @@ const initJobs = () => {
             console.error("[CRON] Error (Fraud/Courier):", err);
         }
     });
+
+    // 4. Ecotrack API Status Syncer
+    initCronJobs();
 
     console.log("✅ Background Worker Scheduler Initialized.");
 };

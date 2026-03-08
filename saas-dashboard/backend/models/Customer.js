@@ -2,12 +2,13 @@ const mongoose = require('mongoose');
 
 const customerSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    phone: { type: String, unique: true, sparse: true }, // Primary identifier
+    email: { type: String, unique: true, sparse: true },
     joinDate: { type: Date, default: Date.now },
     acquisitionChannel: {
         type: String,
-        required: true,
-        enum: ['Organic Search', 'Direct Traffic', 'Social Media', 'Referral', 'Paid Ads', 'Other']
+        enum: ['Organic Search', 'Direct Traffic', 'Social Media', 'Referral', 'Paid Ads', 'Other'],
+        default: 'Direct Traffic'
     },
     status: {
         type: String,

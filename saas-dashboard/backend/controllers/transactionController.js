@@ -109,7 +109,7 @@ exports.updateTransaction = async (req, res) => {
 exports.deleteTransaction = async (req, res) => {
     try {
         const { id } = req.params;
-        const { type } = req.query; // Need type to know which collection to look in
+        const { type } = req.query;
 
         if (type === 'revenue') {
             const deleted = await Revenue.findByIdAndDelete(id);
@@ -120,7 +120,12 @@ exports.deleteTransaction = async (req, res) => {
             if (!deleted) return res.status(404).json({ message: 'Expense not found' });
             return res.json({ message: 'Transaction removed' });
         } else {
-            return res.status(400).json({ message: 'Invalid transaction type' });
+            // No type specified — try both collections
+            const deletedExpense = await Expense.findByIdAndDelete(id);
+            if (deletedExpense) return res.json({ message: 'Transaction removed' });
+            const deletedRevenue = await Revenue.findByIdAndDelete(id);
+            if (deletedRevenue) return res.json({ message: 'Transaction removed' });
+            return res.status(404).json({ message: 'Transaction not found in any collection' });
         }
     } catch (error) {
         console.error('Error deleting transaction:', error);

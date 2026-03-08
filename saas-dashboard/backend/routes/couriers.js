@@ -8,9 +8,17 @@ const {
     assignOrdersToCourier
 } = require('../controllers/courierController');
 
+const {
+    getCourierKPIs,
+    getRegionalPerformance
+} = require('../controllers/courierAnalyticsController');
+
 router.route('/')
     .get(getCouriers)
     .post(createCourier);
+
+router.get('/analytics/kpis', getCourierKPIs);
+router.get('/analytics/regions', getRegionalPerformance);
 
 router.route('/:id')
     .put(updateCourier);

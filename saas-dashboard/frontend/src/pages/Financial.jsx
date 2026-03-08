@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2, Search, Filter, CheckSquare, Users, Wallet } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
     LineChart, Line
@@ -11,7 +11,7 @@ import TransactionModal from '../components/TransactionModal';
 import { useTranslation } from 'react-i18next';
 
 export default function Financial() {
-    const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction } = useContext(TransactionContext);
+    const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction, fetchTransactions } = useContext(TransactionContext);
     const { t } = useTranslation();
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(true);
@@ -22,12 +22,56 @@ export default function Financial() {
     // editingTx: { id, field, value }
     const [editingTx, setEditingTx] = useState(null);
 
+    // Multi-select & filters
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [filterType, setFilterType] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [batchDeleting, setBatchDeleting] = useState(false);
+
     // Deriving manual expenses and revenues from the unified context
     const expenses = transactions.filter(t => t.type === 'expense');
     const revenues = transactions.filter(t => t.type === 'revenue');
 
-    const totalPages = Math.max(1, Math.ceil(transactions.length / perPage));
-    const paginatedTransactions = transactions.slice((currentPage - 1) * perPage, currentPage * perPage);
+    // Get unique categories for filter dropdown
+    const allCategories = [...new Set(transactions.map(t => t.category).filter(Boolean))].sort();
+
+    // Filtered transactions
+    const filteredTransactions = transactions.filter(tx => {
+        if (filterType !== 'all' && tx.type !== filterType) return false;
+        if (filterCategory !== 'all' && tx.category !== filterCategory) return false;
+        if (searchTerm) {
+            const s = searchTerm.toLowerCase();
+            if (!(tx.description?.toLowerCase().includes(s) || tx.category?.toLowerCase().includes(s) || String(tx.amount).includes(s))) return false;
+        }
+        return true;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / perPage));
+    const paginatedTransactions = filteredTransactions.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+    // Selection helpers
+    const toggleSelect = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    const toggleSelectAll = () => {
+        const pageIds = paginatedTransactions.map(t => t._id);
+        const allSelected = pageIds.every(id => selectedIds.has(id));
+        setSelectedIds(prev => {
+            const n = new Set(prev);
+            pageIds.forEach(id => allSelected ? n.delete(id) : n.add(id));
+            return n;
+        });
+    };
+    const isAllSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.has(t._id));
+
+    const handleBatchDelete = async () => {
+        if (!window.confirm(`Delete ${selectedIds.size} selected transactions?`)) return;
+        setBatchDeleting(true);
+        for (const id of selectedIds) {
+            try { await deleteTransaction(id); } catch (e) { console.error('Failed to delete', id, e); }
+        }
+        setSelectedIds(new Set());
+        setBatchDeleting(false);
+    };
 
     // Inline save helper — backend needs type + full fields to route to correct collection
     const handleInlineSave = async (tx) => {
@@ -71,7 +115,14 @@ export default function Financial() {
             }
         };
         fetchOverview();
-    }, [transactions]); // Refetch overview when manual transactions change
+    }, [transactions]);
+
+    // Listen for payroll-synced event from TransactionModal
+    useEffect(() => {
+        const handler = () => fetchTransactions();
+        window.addEventListener('payroll-synced', handler);
+        return () => window.removeEventListener('payroll-synced', handler);
+    }, [fetchTransactions]);
 
     const handleOpenModal = (transaction = null) => {
         setSelectedTransaction(transaction);
@@ -211,7 +262,7 @@ export default function Financial() {
                 <div className="flex justify-between items-center p-5 border-b border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900">{t('finance.manualLedger', 'Manual Operating Ledger')}</h3>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{transactions.length} {t('finance.totalTx', 'Total Tx')}</span>
+                        <span className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{filteredTransactions.length} {t('finance.totalTx', 'Total Tx')}</span>
                         <button
                             onClick={() => handleOpenModal()}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
@@ -220,10 +271,73 @@ export default function Financial() {
                         </button>
                     </div>
                 </div>
+
+                {/* Filter Bar */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex-wrap">
+                    <div className="relative flex-1 min-w-[180px] max-w-xs">
+                        <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchTerm}
+                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                            className="w-full ps-9 pe-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                        />
+                    </div>
+                    <select
+                        value={filterType}
+                        onChange={e => { setFilterType(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
+                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none"
+                    >
+                        <option value="all">All Types</option>
+                        <option value="revenue">Revenue</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                    <select
+                        value={filterCategory}
+                        onChange={e => { setFilterCategory(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
+                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none"
+                    >
+                        <option value="all">All Categories</option>
+                        {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    {(filterType !== 'all' || filterCategory !== 'all' || searchTerm) && (
+                        <button
+                            onClick={() => { setFilterType('all'); setFilterCategory('all'); setSearchTerm(''); setCurrentPage(1); }}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                            Clear Filters
+                        </button>
+                    )}
+                </div>
+
+                {/* Batch Action Bar */}
+                {selectedIds.size > 0 && (
+                    <div className="flex items-center justify-between px-5 py-3 bg-blue-50 border-b border-blue-100">
+                        <span className="text-sm font-bold text-blue-800">{selectedIds.size} selected</span>
+                        <button
+                            onClick={handleBatchDelete}
+                            disabled={batchDeleting}
+                            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {batchDeleting ? 'Deleting...' : `Delete (${selectedIds.size})`}
+                        </button>
+                    </div>
+                )}
+
                 <div className="flex-1 overflow-x-auto">
-                    <table className="w-full text-start border-collapse min-w-[700px]">
+                    <table className="w-full text-start border-collapse min-w-[750px]">
                         <thead>
                             <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
+                                <th className="p-4 w-10">
+                                    <input
+                                        type="checkbox"
+                                        checked={isAllSelected}
+                                        onChange={toggleSelectAll}
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                                    />
+                                </th>
                                 <th className="p-4 font-semibold w-32">{t('finance.date', 'Date')}</th>
                                 <th className="p-4 font-semibold w-28">{t('finance.type', 'Type')}</th>
                                 <th className="p-4 font-semibold w-36">{t('finance.category', 'Category')}</th>
@@ -237,7 +351,16 @@ export default function Financial() {
                                 const isEditing = (field) => editingTx?.id === tx._id && editingTx?.field === field;
                                 const editVal = (field) => isEditing(field) ? editingTx.value : undefined;
                                 return (
-                                    <tr key={tx._id} className="hover:bg-blue-50/20 transition-colors group">
+                                    <tr key={tx._id} className={clsx("hover:bg-blue-50/20 transition-colors group", selectedIds.has(tx._id) && "bg-blue-50/40")}>
+                                        {/* Checkbox */}
+                                        <td className="p-4">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(tx._id)}
+                                                onChange={() => toggleSelect(tx._id)}
+                                                className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                                            />
+                                        </td>
                                         {/* Date — read-only */}
                                         <td className="p-4 text-gray-500 font-medium whitespace-nowrap">
                                             {moment(tx.date).format('MMM DD, YYYY')}

@@ -1,6 +1,7 @@
 const Payroll = require('../models/Payroll');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
+const Expense = require('../models/Expense');
 const moment = require('moment');
 
 exports.generateMonthlyPayroll = async (req, res) => {
@@ -160,6 +161,23 @@ exports.approvePayroll = async (req, res) => {
         }
 
         await payroll.save();
+
+        // Sync with Financial Module — create expense entry for this payment
+        try {
+            const employee = await Employee.findById(payroll.employeeId);
+            const empName = employee?.name || 'Unknown Employee';
+            await Expense.create({
+                amount: paymentAmount,
+                date: new Date(),
+                description: `Salary payment — ${empName} (${payroll.period})${newStatus === 'Partially Paid' ? ' [Partial]' : ''}`,
+                category: 'Human Resources',
+                source: 'payroll_sync',
+                linkedPayrollId: payroll._id
+            });
+        } catch (syncErr) {
+            console.warn('Failed to sync payroll to Financial ledger:', syncErr.message);
+        }
+
         res.json(payroll);
     } catch (err) {
         res.status(500).json({ error: err.message });

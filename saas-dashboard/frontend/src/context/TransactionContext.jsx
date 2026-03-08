@@ -82,7 +82,8 @@ export const TransactionProvider = ({ children }) => {
 
     const deleteTransaction = async (id, type) => {
         try {
-            const res = await fetch(`/api/transactions/${id}?type=${type}`, {
+            const url = type ? `/api/transactions/${id}?type=${type}` : `/api/transactions/${id}`;
+            const res = await fetch(url, {
                 method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${token}`

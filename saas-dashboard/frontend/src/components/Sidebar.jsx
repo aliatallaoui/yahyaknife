@@ -170,10 +170,10 @@ export default function Sidebar({ open = true, setOpen }) {
                                 </NavLink>
                             )}
                             {hasAccess(['Warehouse Supervisor', 'Sales Representative', 'Super Admin']) && (
-                                <NavLink to="/couriers" className={mainLink}>
-                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/couriers') ? "bg-blue-100" : "bg-gray-100")}><Truck className={clsx("w-4 h-4", isPath('/couriers') ? "text-blue-600" : "text-gray-500")} /></div>
-                                    {t('sidebar.couriers', 'الإرسال والمندوبين')}
-                                </NavLink>
+                                <NavSection title={t('sidebar.logistics', 'اللوجستيات والشحن')} icon={Truck} activePrefixes={['/couriers']} sidebarOpen={open}>
+                                    <NavLink to="/couriers" end className={subLink}>{t('sidebar.logistics_analytics', 'تحليلات التوصيل')}</NavLink>
+                                    <NavLink to="/couriers/dispatch" className={subLink}>{t('sidebar.logistics_dispatch', 'مركز الإرسال')}</NavLink>
+                                </NavSection>
                             )}
                         </div>
                     </div>

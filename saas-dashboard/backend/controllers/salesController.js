@@ -67,10 +67,32 @@ exports.getSalesPerformance = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
     try {
-        const { orderId, customerId, channel, products, status, paymentStatus, fulfillmentStatus, fulfillmentPipeline, notes } = req.body;
+        const { orderId, customerId, customerName, customerPhone, channel, products, status, paymentStatus, fulfillmentStatus, fulfillmentPipeline, notes, shipping } = req.body;
 
-        if (!orderId || !customerId || !channel || !products || products.length === 0) {
+        if (!orderId || !channel || !products || products.length === 0) {
             return res.status(400).json({ message: 'Missing required order fields or products array is empty' });
+        }
+
+        // Auto-resolve customer: by ID, or find/create by phone
+        let resolvedCustomerId = customerId;
+        if (!resolvedCustomerId && customerPhone) {
+            let customer = await Customer.findOne({ phone: customerPhone });
+            if (!customer) {
+                customer = await Customer.create({
+                    name: customerName || 'Unknown',
+                    phone: customerPhone,
+                    acquisitionChannel: 'Direct Traffic'
+                });
+            } else if (customerName && customerName !== customer.name) {
+                // Update name if changed
+                customer.name = customerName;
+                await customer.save();
+            }
+            resolvedCustomerId = customer._id;
+        }
+
+        if (!resolvedCustomerId) {
+            return res.status(400).json({ message: 'Customer phone number is required' });
         }
 
         let totalAmount = 0;
@@ -84,7 +106,7 @@ exports.createOrder = async (req, res) => {
 
         const newOrder = new Order({
             orderId,
-            customer: customerId,
+            customer: resolvedCustomerId,
             channel,
             products: processedProducts,
             totalAmount,
@@ -92,6 +114,7 @@ exports.createOrder = async (req, res) => {
             paymentStatus: paymentStatus || 'Unpaid',
             fulfillmentStatus: fulfillmentStatus || 'Unfulfilled',
             fulfillmentPipeline: fulfillmentPipeline || 'Pending',
+            shipping: shipping || {},
             notes
         });
 

@@ -6,6 +6,7 @@ import Financial from './pages/Financial';
 import Sales from './pages/Sales';
 import Inventory from './pages/Inventory';
 import Couriers from './pages/Couriers';
+import DispatchCenter from './pages/DispatchCenter';
 import CustomerInsight from './pages/CustomerInsight';
 import CustomerProfile from './pages/CustomerProfile';
 import Warehouses from './pages/Warehouses';
@@ -30,6 +31,7 @@ import SettingsGeneral from './pages/settings/SettingsGeneral';
 import SettingsSecurity from './pages/settings/SettingsSecurity';
 import SettingsAlerts from './pages/settings/SettingsAlerts';
 import SettingsUsers from './pages/settings/SettingsUsers';
+import CourierSettings from './pages/CourierSettings';
 import SupportDesk from './pages/SupportDesk';
 
 import Login from './pages/Login';
@@ -56,8 +58,8 @@ const Layout = () => {
 
   // RTL DOM Flipper - reacts to i18n.language so any changeLanguage() call takes effect
   useEffect(() => {
-    const lang = user?.preferences?.language || 'en';
-    // On initial load, sync from user preferences
+    const lang = user?.preferences?.language || localStorage.getItem('i18nextLng') || 'ar';
+    // On initial load, sync from user preferences or localStorage
     if (i18n.language !== lang) i18n.changeLanguage(lang);
   }, [user?.preferences?.language]); // eslint-disable-line
 
@@ -101,6 +103,7 @@ const Layout = () => {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/warehouses" element={<Warehouses />} />
               <Route path="/couriers" element={<Couriers />} />
+              <Route path="/couriers/dispatch" element={<DispatchCenter />} />
               <Route path="/customers" element={<CustomerInsight />} />
               <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/hr" element={<HRSnapshot />} />
@@ -127,6 +130,7 @@ const Layout = () => {
                 <Route path="security" element={<SettingsSecurity />} />
                 <Route path="alerts" element={<SettingsAlerts />} />
                 <Route path="users" element={<SettingsUsers />} />
+                <Route path="couriers" element={<CourierSettings />} />
                 {/* Default redirect for /settings */}
                 <Route path="" element={<Navigate to="profile" replace />} />
               </Route>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { User, Settings, Shield, Bell, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Settings, Shield, Bell, Users, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
@@ -14,6 +14,7 @@ export default function SettingsLayout() {
         { name: t('tabGeneral'), path: '/settings/general', icon: Settings },
         { name: t('tabSecurity'), path: '/settings/security', icon: Shield },
         { name: t('tabAlerts'), path: '/settings/alerts', icon: Bell },
+        { name: t('tabCouriers', 'Courier Integration'), path: '/settings/couriers', icon: Truck, adminOnly: true },
         { name: t('tabUsers'), path: '/settings/users', icon: Users, adminOnly: true },
     ];
 

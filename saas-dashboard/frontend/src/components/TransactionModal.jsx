@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Loader2 } from 'lucide-react';
+import { X, Save, Loader2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
@@ -16,9 +16,45 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Payroll worker state
+    const [payrollRecords, setPayrollRecords] = useState([]);
+    const [payrollLoading, setPayrollLoading] = useState(false);
+    const [selectedPayrollId, setSelectedPayrollId] = useState('');
+
     // Categories definition
     const expenseCategories = ['Marketing', 'Operations', 'Human Resources', 'Infrastructure', 'Equipment', 'Utilities', 'Rent', 'Other'];
     const revenueCategories = ['Product Sales', 'Service Revenue', 'Subscription Income', 'Other'];
+
+    const isHR = type === 'expense' && category === 'Human Resources';
+
+    // Fetch payroll records when HR category is selected
+    useEffect(() => {
+        if (isHR && payrollRecords.length === 0) {
+            setPayrollLoading(true);
+            fetch('/api/hr/payroll', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+                .then(r => r.ok ? r.json() : [])
+                .then(data => {
+                    // Only show unpaid payroll records
+                    const unpaid = data.filter(p => p.status !== 'Paid');
+                    setPayrollRecords(unpaid);
+                })
+                .catch(() => setPayrollRecords([]))
+                .finally(() => setPayrollLoading(false));
+        }
+    }, [isHR]);
+
+    // When a worker is selected, auto-fill amount and description
+    useEffect(() => {
+        if (selectedPayrollId && payrollRecords.length > 0) {
+            const record = payrollRecords.find(p => p._id === selectedPayrollId);
+            if (record) {
+                const remaining = record.finalPayableSalary - record.amountPaid;
+                const empName = record.employeeId?.name || 'Unknown';
+                setAmount(remaining);
+                setDescription(`Salary payment — ${empName} (${record.period})`);
+            }
+        }
+    }, [selectedPayrollId]);
 
     // Reset or populate form when modal opens/closes or initialData changes
     useEffect(() => {
@@ -28,7 +64,6 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                 setAmount(initialData.amount);
                 setDate(new Date(initialData.date).toISOString().split('T')[0]);
                 setDescription(initialData.description);
-                // Map DB source to category field for unified form
                 setCategory(initialData.category || initialData.source || '');
             } else {
                 setType('expense');
@@ -37,14 +72,29 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                 setDescription('');
                 setCategory(expenseCategories[0]);
             }
+            setSelectedPayrollId('');
+            setPayrollRecords([]);
             setError(null);
         }
     }, [isOpen, initialData]);
 
-    // Handle type change - ensure valid category is selected
+    // Handle type change
     const handleTypeChange = (newType) => {
         setType(newType);
         setCategory(newType === 'expense' ? expenseCategories[0] : revenueCategories[0]);
+        setSelectedPayrollId('');
+    };
+
+    const handleCategoryChange = (newCat) => {
+        setCategory(newCat);
+        setSelectedPayrollId('');
+        if (newCat !== 'Human Resources') {
+            // Clear auto-filled HR data
+            if (description.startsWith('Salary payment')) {
+                setDescription('');
+                setAmount('');
+            }
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -61,6 +111,30 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                 category
             };
 
+            // If HR category and a worker is selected, also sync payroll
+            if (isHR && selectedPayrollId) {
+                const payRes = await fetch(`/api/hr/payroll/${selectedPayrollId}/approve`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ amount: Number(amount) })
+                });
+                if (!payRes.ok) {
+                    const payErr = await payRes.json();
+                    throw new Error(payErr.error || 'Payroll sync failed');
+                }
+                // The payroll controller already creates an Expense via sync
+                // So we don't need to also call onSubmit which would create a duplicate
+                onClose();
+                // Trigger a refresh of transactions
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('payroll-synced'));
+                }
+                return;
+            }
+
             await onSubmit(formData);
             onClose();
         } catch (err) {
@@ -71,6 +145,8 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
     };
 
     if (!isOpen) return null;
+
+    const selectedRecord = payrollRecords.find(p => p._id === selectedPayrollId);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -94,7 +170,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                         </div>
                     )}
 
-                    {/* Type Selector (Only allowed when adding) */}
+                    {/* Type Selector */}
                     {!isEdit && (
                         <div className="grid grid-cols-2 gap-3 p-1 bg-gray-50 rounded-lg">
                             <button
@@ -120,37 +196,14 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                         </div>
                     )}
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxAmount')}</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            required
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDate')}</label>
-                        <input
-                            type="date"
-                            required
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
-                    </div>
-
+                    {/* Category */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxCategory')}</label>
                         <select
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                             value={category}
-                            onChange={(e) => setCategory(e.target.value)}
+                            onChange={(e) => handleCategoryChange(e.target.value)}
                         >
                             <option value="" disabled>{t('modals.trxSelectCategory')}</option>
                             {(type === 'expense' ? expenseCategories : revenueCategories).map(c => (
@@ -171,6 +224,89 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                         </select>
                     </div>
 
+                    {/* Worker Selection — only when HR category */}
+                    {isHR && (
+                        <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-bold text-violet-800">
+                                <Users className="w-4 h-4" />
+                                Select Employee to Pay
+                            </div>
+                            {payrollLoading ? (
+                                <div className="text-sm text-violet-500 flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" /> Loading workers...
+                                </div>
+                            ) : payrollRecords.length === 0 ? (
+                                <div className="text-sm text-violet-400 italic">
+                                    No unpaid payroll records. You can still add a manual HR expense below.
+                                </div>
+                            ) : (
+                                <>
+                                    <select
+                                        value={selectedPayrollId}
+                                        onChange={(e) => setSelectedPayrollId(e.target.value)}
+                                        className="w-full border border-violet-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+                                    >
+                                        <option value="">— Select a worker (optional) —</option>
+                                        {payrollRecords.map(pr => {
+                                            const remaining = pr.finalPayableSalary - pr.amountPaid;
+                                            const empName = pr.employeeId?.name || 'Unknown';
+                                            return (
+                                                <option key={pr._id} value={pr._id}>
+                                                    {empName} — {pr.period} — Remaining: {remaining.toLocaleString()} DZ
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+
+                                    {/* Show worker payment info */}
+                                    {selectedRecord && (
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div className="bg-white rounded-lg p-2 border border-violet-100">
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase">Salary</div>
+                                                <div className="text-sm font-black text-gray-900">{selectedRecord.finalPayableSalary.toLocaleString()}</div>
+                                            </div>
+                                            <div className="bg-white rounded-lg p-2 border border-violet-100">
+                                                <div className="text-[10px] text-emerald-600 font-bold uppercase">Paid</div>
+                                                <div className="text-sm font-black text-emerald-600">{selectedRecord.amountPaid.toLocaleString()}</div>
+                                            </div>
+                                            <div className="bg-white rounded-lg p-2 border border-violet-100">
+                                                <div className="text-[10px] text-amber-600 font-bold uppercase">Remaining</div>
+                                                <div className="text-sm font-black text-amber-600">{(selectedRecord.finalPayableSalary - selectedRecord.amountPaid).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Amount */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxAmount')}</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            required
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="0.00"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Date */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDate')}</label>
+                        <input
+                            type="date"
+                            required
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Description */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDesc')}</label>
                         <input
@@ -197,7 +333,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            {isEdit ? t('modals.trxBtnSave') : t('modals.trxBtnCreate')}
+                            {isEdit ? t('modals.trxBtnSave') : (isHR && selectedPayrollId ? 'Pay & Record' : t('modals.trxBtnCreate'))}
                         </button>
                     </div>
                 </form>

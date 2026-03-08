@@ -13,6 +13,8 @@ const productionRoutes = require('./routes/production');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const toolRoutes = require('./routes/tools');
+const courierSettingsRoutes = require('./routes/courierSettings');
+const shipmentRoutes = require('./routes/shipments');
 const transactionRoutes = require('./routes/transactions');
 const courierRoutes = require('./routes/couriers');
 const intelligenceRoutes = require('./routes/intelligenceRoutes');
@@ -57,6 +59,8 @@ app.use('/api/knives', knifeRoutes);
 app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tools', toolRoutes);
+app.use('/api/courier-settings', courierSettingsRoutes);
+app.use('/api/shipments', shipmentRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

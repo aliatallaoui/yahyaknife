@@ -1,23 +1,26 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench, Truck } from 'lucide-react';
+import axios from 'axios';
 import clsx from 'clsx';
 import moment from 'moment';
 import { SalesContext } from '../context/SalesContext';
 import { InventoryContext } from '../context/InventoryContext';
 import { useCustomer } from '../context/CustomerContext';
 import OrderModal from '../components/OrderModal';
-import CustomOrdersTable from '../components/CustomOrdersTable'; // NEW
+import BatchDispatchModal from '../components/BatchDispatchModal';
+import CustomOrdersTable from '../components/CustomOrdersTable';
 import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#4361EE', '#111827', '#6B7280', '#D1D5DB', '#F87171', '#34D399'];
 
-const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
+const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 
 const STATUS_STYLES = {
     'New': 'bg-gray-100 text-gray-700 border-gray-200',
     'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
     'Preparing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
     'Ready for Pickup': 'bg-violet-50 text-violet-700 border-violet-200',
+    'Dispatched': 'bg-cyan-50 text-cyan-700 border-cyan-200',
     'Shipped': 'bg-amber-50 text-amber-700 border-amber-200',
     'Out for Delivery': 'bg-orange-50 text-orange-700 border-orange-200',
     'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -48,6 +51,7 @@ export default function Sales() {
     // Modals
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState(null);
+    const [isBatchDispatchOpen, setIsBatchDispatchOpen] = useState(false);
 
     // Rows per page
     const [perPage, setPerPage] = useState(10);
@@ -60,6 +64,7 @@ export default function Sales() {
 
     // Row expansion
     const [expandedOrderId, setExpandedOrderId] = useState(null);
+    const [dispatchingOrderId, setDispatchingOrderId] = useState(null);
     const toggleExpand = (id) => setExpandedOrderId(prev => prev === id ? null : id);
 
     const startOrderEdit = (order, field) =>
@@ -103,6 +108,24 @@ export default function Sales() {
             } catch {
                 alert("Failed to delete order. See console limit.");
             }
+        }
+    };
+
+    const handleQuickDispatch = async (orderId) => {
+        if (!window.confirm('Dispatch this order to ECOTRACK courier now?')) return;
+        setDispatchingOrderId(orderId);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`/api/shipments/quick-dispatch/${orderId}`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Order dispatched successfully! Tracking info has been saved.');
+            fetchSalesData(currentPage, perPage);
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message;
+            alert('Dispatch failed: ' + msg);
+        } finally {
+            setDispatchingOrderId(null);
         }
     };
 
@@ -364,6 +387,9 @@ export default function Sales() {
                                                 <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
                                             </button>
                                         )}
+                                        <button onClick={() => setIsBatchDispatchOpen(true)} className="flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm">
+                                            <Truck className="w-4 h-4" /> Dispatch ({selectedOrderIds.size})
+                                        </button>
                                     </div>
                                 </div>
                             )
@@ -538,6 +564,21 @@ export default function Sales() {
                                                     {/* Actions */}
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center justify-center gap-1.5">
+                                                            {/* Quick Dispatch button — for dispatchable statuses */}
+                                                            {['Confirmed', 'Preparing', 'Ready for Pickup'].includes(order.status) && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); handleQuickDispatch(order._id); }}
+                                                                    disabled={dispatchingOrderId === order._id}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition-colors border border-green-100 disabled:opacity-50"
+                                                                >
+                                                                    {dispatchingOrderId === order._id ? (
+                                                                        <div className="w-3 h-3 rounded-full border-2 border-green-300 border-t-green-600 animate-spin" />
+                                                                    ) : (
+                                                                        <Truck className="w-3 h-3" />
+                                                                    )}
+                                                                    Dispatch
+                                                                </button>
+                                                            )}
                                                             <button onClick={(e) => { e.stopPropagation(); handleEditClick(order); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
                                                                 <Pencil className="w-3 h-3" /> Edit
                                                             </button>
@@ -795,6 +836,16 @@ export default function Sales() {
                     couriers={couriers}
                 />
             )}
+
+            <BatchDispatchModal
+                isOpen={isBatchDispatchOpen}
+                onClose={() => setIsBatchDispatchOpen(false)}
+                orders={orders.filter(o => selectedOrderIds.has(o._id) && ['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(o.status))}
+                onComplete={() => {
+                    setSelectedOrderIds(new Set());
+                    fetchSalesData(currentPage, perPage);
+                }}
+            />
         </div>
     );
 }
