@@ -1,7 +1,7 @@
 services:
   # Backend API
   - type: web
-    name: saas-dashboard-api
+    name: yahyaknife
     env: node
     buildCommand: "cd backend && npm install"
     startCommand: "cd backend && node server.js"
@@ -21,11 +21,11 @@ services:
     staticPublishPath: "frontend/dist"
     envVars:
       - key: VITE_API_URL
-        value: "https://saas-dashboard-api.onrender.com" # Should point to the backend serviceURL
+        value: "https://yahyaknife.onrender.com" # Should point to the backend serviceURL
     routes:
       - type: rewrite
         source: /api/*
-        destination: "https://saas-dashboard-api.onrender.com/api/*"
+        destination: "https://yahyaknife.onrender.com/api/*"
       - type: rewrite
         source: /*
         destination: "/index.html"
