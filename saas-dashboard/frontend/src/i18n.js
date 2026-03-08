@@ -1787,7 +1787,8 @@ const resources = {
                 btnSave: "حفظ المستودع",
                 leadTimeText: "وقت التوريد",
                 daysText: "أيام",
-                reliabilityText: "الموثوقية"
+                reliabilityText: "الموثوقية",
+                defectRate: "معدل العيوب"
             },
             crm: {
                 title: "نظام ذكاء العملاء",
