@@ -257,57 +257,86 @@ export default function Sales() {
                     )}
 
                     <div className="flex-1 overflow-x-auto">
-                        <table className="w-full text-start border-collapse min-w-[800px]">
+                        <table className="w-full text-start border-collapse">
                             <thead>
-                                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                                    <th className="p-4 w-12 text-center">
+                                <tr className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
+                                    <th className="px-5 py-3 w-10">
                                         <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
                                     </th>
-                                    <th className="p-4 font-semibold">{t('sales.colOrder', 'Order ID')}</th>
-                                    <th className="p-4 font-semibold">{t('sales.colDate', 'Date')}</th>
-                                    <th className="p-4 font-semibold">{t('sales.colCustomer', 'Customer')}</th>
-                                    <th className="p-4 font-semibold text-end">{t('sales.colAmount', 'Amount')}</th>
-                                    <th className="p-4 font-semibold">{t('sales.colPipeline', 'Fulfillment Pipeline')}</th>
-                                    <th className="p-4 font-semibold">{t('sales.colActions', 'Actions')}</th>
+                                    <th className="px-5 py-3 font-semibold text-start">Order</th>
+                                    <th className="px-5 py-3 font-semibold text-start">Customer</th>
+                                    <th className="px-5 py-3 font-semibold text-end">Amount</th>
+                                    <th className="px-5 py-3 font-semibold text-center">Status</th>
+                                    <th className="px-5 py-3 font-semibold text-center">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 text-sm">
+                            <tbody className="divide-y divide-gray-50 text-sm">
                                 {filteredOrders.length === 0 ? (
-                                    <tr><td colSpan="7" className="p-8 text-center text-gray-500">{t('sales.noOrders', 'No orders found matching that criteria.')}</td></tr>
-                                ) : filteredOrders.map((order) => (
-                                    <tr key={order._id} className={clsx("transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50/50" : "hover:bg-gray-50/50")}>
-                                        <td className="p-4 text-center">
-                                            <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                                        </td>
-                                        <td className="p-4">
-                                            <p className="font-medium text-gray-900 font-mono text-xs">{order.orderId}</p>
-                                            <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                                                order.verificationStatus === 'Phone Confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                                            )}>
-                                                {order.verificationStatus || 'Unverified'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-gray-500 whitespace-nowrap text-xs">{moment(order.date).format('MMM DD, HH:mm')}</td>
-                                        <td className="p-4">
-                                            <span className="text-gray-900 font-medium block">{order.customer?.name || t('sales.unknownCustomer', 'Unknown')}</span>
-                                            {order.customer?.city && <span className="text-xs text-gray-400 block">{order.customer.city}</span>}
-                                        </td>
-                                        <td className="p-4 text-end font-bold tabular-nums text-gray-900">{order.totalAmount?.toLocaleString()} <span className="text-xs font-medium text-gray-400">DZ</span></td>
-                                        <td className="p-4">
-                                            {renderCodBadge(order.status, t)}
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-1.5">
-                                                <button onClick={() => handleEditClick(order)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100">
-                                                    <Pencil className="w-3 h-3" /> Edit
-                                                </button>
-                                                <button onClick={() => handleDeleteClick(order._id)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100">
-                                                    <Trash2 className="w-3 h-3" /> Delete
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                    <tr><td colSpan="6" className="py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3 text-gray-400">
+                                            <ShoppingCart className="w-10 h-10 opacity-25" />
+                                            <p className="font-medium">{t('sales.noOrders', 'No orders found.')}</p>
+                                        </div>
+                                    </td></tr>
+                                ) : filteredOrders.map((order) => {
+                                    const initials = (order.customer?.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                                    const isVerified = order.verificationStatus === 'Phone Confirmed';
+                                    return (
+                                        <tr key={order._id} className={clsx("group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
+                                            {/* Checkbox */}
+                                            <td className="px-5 py-4">
+                                                <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                            </td>
+
+                                            {/* Order ID + Date */}
+                                            <td className="px-5 py-4">
+                                                <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{moment(order.date).format('MMM DD · HH:mm')}</p>
+                                                {isVerified && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
+                                                        <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Customer (avatar + name) */}
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
+                                                        <span className="text-xs font-black text-white">{initials}</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
+                                                        {order.customer?.city && <p className="text-xs text-gray-400 leading-tight">{order.customer.city}</p>}
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Amount */}
+                                            <td className="px-5 py-4 text-end">
+                                                <p className="font-black text-gray-900 text-base tabular-nums">{order.totalAmount?.toLocaleString()}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium">DZD</p>
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="px-5 py-4 text-center">
+                                                {renderCodBadge(order.status, t)}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button onClick={() => handleEditClick(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
+                                                        <Pencil className="w-3 h-3" /> Edit
+                                                    </button>
+                                                    <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
