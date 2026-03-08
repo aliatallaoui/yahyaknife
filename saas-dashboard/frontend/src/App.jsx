@@ -47,17 +47,18 @@ const Layout = () => {
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
-  // RTL DOM Flipper depending on settings language payload
+  // RTL DOM Flipper - reacts to i18n.language so any changeLanguage() call takes effect
   useEffect(() => {
     const lang = user?.preferences?.language || 'en';
-
-    // Safely execute change in internal i18next state
+    // On initial load, sync from user preferences
     if (i18n.language !== lang) i18n.changeLanguage(lang);
+  }, [user?.preferences?.language]); // eslint-disable-line
 
-    // Hard toggle browser engine layouts from RTL to LTR natively
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  }, [user?.preferences?.language, i18n]);
+  // Watch i18n.language directly so the Header language selector takes effect immediately
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
 
   if (isAuthPage) {
     return (
