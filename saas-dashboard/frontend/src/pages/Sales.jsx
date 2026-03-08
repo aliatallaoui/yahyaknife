@@ -197,231 +197,198 @@ export default function Sales() {
                 />
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Transaction History Table */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-6 border-b border-gray-100 gap-4">
-                        <div className="flex bg-gray-100/80 p-1.5 rounded-xl">
-                            <button onClick={() => { setActiveTab('all'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all", activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
-                                {t('sales.allOrdersTab', 'All Orders')}
-                            </button>
-                            <button onClick={() => { setActiveTab('verification'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'verification' ? "bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200" : "text-gray-500 hover:text-gray-700")}>
-                                <AlertCircle className="w-4 h-4" /> {t('sales.verificationTab', 'Verification Queue')}
-                                {newOrderCount > 0 && (
-                                    <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">{newOrderCount}</span>
-                                )}
-                            </button>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            {/* Courier Filter */}
-                            <div className="relative">
-                                <Filter className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <select
-                                    value={selectedCourierFilter}
-                                    onChange={e => setSelectedCourierFilter(e.target.value)}
-                                    className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-6 text-sm focus:border-blue-500 transition-colors appearance-none font-medium text-gray-700"
-                                >
-                                    <option value="">{t('sales.filterAllCouriers', 'All Couriers')}</option>
-                                    {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="relative">
-                                <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder={t('sales.searchOrders', 'Search orders...')}
-                                    className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-4 text-sm focus:border-blue-500 w-48 transition-colors"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                        </div>
+            {/* Full-width Order Table */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-6 border-b border-gray-100 gap-4">
+                    <div className="flex bg-gray-100/80 p-1.5 rounded-xl">
+                        <button onClick={() => { setActiveTab('all'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all", activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
+                            {t('sales.allOrdersTab', 'All Orders')}
+                        </button>
+                        <button onClick={() => { setActiveTab('verification'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'verification' ? "bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200" : "text-gray-500 hover:text-gray-700")}>
+                            <AlertCircle className="w-4 h-4" /> {t('sales.verificationTab', 'Verification Queue')}
+                            {newOrderCount > 0 && (
+                                <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">{newOrderCount}</span>
+                            )}
+                        </button>
                     </div>
 
-                    {/* Batch Actions Bar (Only visible if items selected) */}
-                    {selectedOrderIds.size > 0 && (
-                        <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
-                            <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} {t('sales.ordersSelected', 'Orders Selected')}</span>
-                            <div className="flex gap-2">
-                                {activeTab === 'verification' && (
-                                    <button onClick={handleBatchVerify} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
-                                        <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
-                                    </button>
-                                )}
-                            </div>
+                    <div className="flex items-center gap-3">
+                        {/* Courier Filter */}
+                        <div className="relative">
+                            <Filter className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={selectedCourierFilter}
+                                onChange={e => setSelectedCourierFilter(e.target.value)}
+                                className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-6 text-sm focus:border-blue-500 transition-colors appearance-none font-medium text-gray-700"
+                            >
+                                <option value="">{t('sales.filterAllCouriers', 'All Couriers')}</option>
+                                {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                            </select>
                         </div>
-                    )}
 
-                    <div className="flex-1 overflow-x-auto">
-                        <table className="w-full text-start border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
-                                    <th className="px-5 py-3 w-10">
-                                        <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                                    </th>
-                                    <th className="px-5 py-3 font-semibold text-start">Order</th>
-                                    <th className="px-5 py-3 font-semibold text-start">Customer</th>
-                                    <th className="px-5 py-3 font-semibold text-end">Amount</th>
-                                    <th className="px-5 py-3 font-semibold text-center">Status</th>
-                                    <th className="px-5 py-3 font-semibold text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-sm">
-                                {filteredOrders.length === 0 ? (
-                                    <tr><td colSpan="6" className="py-16 text-center">
-                                        <div className="flex flex-col items-center gap-3 text-gray-400">
-                                            <ShoppingCart className="w-10 h-10 opacity-25" />
-                                            <p className="font-medium">{t('sales.noOrders', 'No orders found.')}</p>
-                                        </div>
-                                    </td></tr>
-                                ) : filteredOrders.map((order) => {
-                                    const initials = (order.customer?.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-                                    const isVerified = order.verificationStatus === 'Phone Confirmed';
-                                    return (
-                                        <tr key={order._id} className={clsx("group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
-                                            {/* Checkbox */}
-                                            <td className="px-5 py-4">
-                                                <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                                            </td>
-
-                                            {/* Order ID + Date */}
-                                            <td className="px-5 py-4">
-                                                <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
-                                                <p className="text-xs text-gray-400 mt-0.5">{moment(order.date).format('MMM DD · HH:mm')}</p>
-                                                {isVerified && (
-                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
-                                                        <CheckCircle2 className="w-2.5 h-2.5" /> Verified
-                                                    </span>
-                                                )}
-                                            </td>
-
-                                            {/* Customer (avatar + name) */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
-                                                        <span className="text-xs font-black text-white">{initials}</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
-                                                        {order.customer?.city && <p className="text-xs text-gray-400 leading-tight">{order.customer.city}</p>}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* Amount */}
-                                            <td className="px-5 py-4 text-end">
-                                                <p className="font-black text-gray-900 text-base tabular-nums">{order.totalAmount?.toLocaleString()}</p>
-                                                <p className="text-[10px] text-gray-400 font-medium">DZD</p>
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="px-5 py-4 text-center">
-                                                {renderCodBadge(order.status, t)}
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEditClick(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
-                                                        <Pencil className="w-3 h-3" /> Edit
-                                                    </button>
-                                                    <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                        <div className="relative">
+                            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder={t('sales.searchOrders', 'Search orders...')}
+                                className="bg-gray-50 border border-gray-200 outline-none rounded-lg py-2 ps-9 pe-4 text-sm focus:border-blue-500 w-48 transition-colors"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
-
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl">
-                            <span className="text-sm font-medium text-gray-500">
-                                {t('sales.page', 'Page')} {currentPage} {t('sales.of', 'of')} {totalPages}
-                            </span>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handlePrevPage}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                                >
-                                    {t('sales.prev', 'Previous')}
-                                </button>
-                                <button
-                                    onClick={handleNextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                                >
-                                    {t('sales.next', 'Next')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                {/* Channels Breakdown */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-fit sticky top-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('sales.revenueByChannel', 'Revenue by Channel')}</h3>
-                    {channelData.length === 0 ? (
-                        <div className="flex-1 min-h-[300px] flex items-center justify-center text-gray-400 text-sm">{t('sales.noChannelData', 'No channel data available.')}</div>
-                    ) : (
-                        <>
-                            <div className="min-h-[250px] flex items-center justify-center">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={channelData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={90}
-                                            paddingAngle={2}
-                                            dataKey="value"
-                                            stroke="none"
-                                        >
-                                            {channelData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip
-                                            formatter={(value) => [`${value.toLocaleString()} DZ`, t('sales.revenueText', 'Revenue')]}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        />
-                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                                {channelData.map((ch, i) => {
-                                    const total = channelData.reduce((s, c) => s + c.value, 0);
-                                    const pct = total > 0 ? Math.round((ch.value / total) * 100) : 0;
-                                    return (
-                                        <div key={i}>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
-                                                    {ch.name}
+                {/* Batch Actions Bar (Only visible if items selected) */}
+                {selectedOrderIds.size > 0 && (
+                    <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
+                        <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} {t('sales.ordersSelected', 'Orders Selected')}</span>
+                        <div className="flex gap-2">
+                            {activeTab === 'verification' && (
+                                <button onClick={handleBatchVerify} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
+                                    <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex-1 overflow-x-auto">
+                    <table className="w-full text-start border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
+                                <th className="px-5 py-3 w-10">
+                                    <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                </th>
+                                <th className="px-5 py-3 font-semibold text-start">Order</th>
+                                <th className="px-5 py-3 font-semibold text-start">Customer</th>
+                                <th className="px-5 py-3 font-semibold text-end">Amount</th>
+                                <th className="px-5 py-3 font-semibold text-center">Status</th>
+                                <th className="px-5 py-3 font-semibold text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 text-sm">
+                            {filteredOrders.length === 0 ? (
+                                <tr><td colSpan="6" className="py-16 text-center">
+                                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                                        <ShoppingCart className="w-10 h-10 opacity-25" />
+                                        <p className="font-medium">{t('sales.noOrders', 'No orders found.')}</p>
+                                    </div>
+                                </td></tr>
+                            ) : filteredOrders.map((order) => {
+                                const initials = (order.customer?.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                                const isVerified = order.verificationStatus === 'Phone Confirmed';
+                                return (
+                                    <tr key={order._id} className={clsx("group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
+                                        {/* Checkbox */}
+                                        <td className="px-5 py-4">
+                                            <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                        </td>
+
+                                        {/* Order ID + Date */}
+                                        <td className="px-5 py-4">
+                                            <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
+                                            <p className="text-xs text-gray-400 mt-0.5">{moment(order.date).format('MMM DD · HH:mm')}</p>
+                                            {isVerified && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
+                                                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified
                                                 </span>
-                                                <span className="text-xs font-bold text-gray-900 tabular-nums">{pct}%</span>
+                                            )}
+                                        </td>
+
+                                        {/* Customer (avatar + name) */}
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
+                                                    <span className="text-xs font-black text-white">{initials}</span>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
+                                                    {order.customer?.city && <p className="text-xs text-gray-400 leading-tight">{order.customer.city}</p>}
+                                                </div>
                                             </div>
-                                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                                        </td>
+
+                                        {/* Amount */}
+                                        <td className="px-5 py-4 text-end">
+                                            <p className="font-black text-gray-900 text-base tabular-nums">{order.totalAmount?.toLocaleString()}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium">DZD</p>
+                                        </td>
+
+                                        {/* Status */}
+                                        <td className="px-5 py-4 text-center">
+                                            {renderCodBadge(order.status, t)}
+                                        </td>
+
+                                        {/* Actions */}
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button onClick={() => handleEditClick(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
+                                                    <Pencil className="w-3 h-3" /> Edit
+                                                </button>
+                                                <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <p className="text-[10px] text-gray-400 mt-0.5 tabular-nums text-right">{ch.value.toLocaleString()} DZ</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl">
+                        <span className="text-sm font-medium text-gray-500">
+                            {t('sales.page', 'Page')} {currentPage} {t('sales.of', 'of')} {totalPages}
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handlePrevPage}
+                                disabled={currentPage === 1}
+                                className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                            >
+                                {t('sales.prev', 'Previous')}
+                            </button>
+                            <button
+                                onClick={handleNextPage}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                            >
+                                {t('sales.next', 'Next')}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Revenue by Channel — full width below table */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="text-base font-bold text-gray-900 mb-5">{t('sales.revenueByChannel', 'Revenue by Channel')}</h3>
+                {channelData.length === 0 ? (
+                    <p className="text-sm text-gray-400">{t('sales.noChannelData', 'No channel data available.')}</p>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {channelData.map((ch, i) => {
+                            const total = channelData.reduce((s, c) => s + c.value, 0);
+                            const pct = total > 0 ? Math.round((ch.value / total) * 100) : 0;
+                            return (
+                                <div key={i} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
+                                        <span className="text-xs font-bold text-gray-700 truncate">{ch.name}</span>
+                                    </div>
+                                    <p className="text-2xl font-black text-gray-900 tabular-nums">{pct}%</p>
+                                    <p className="text-[11px] text-gray-400 tabular-nums mt-0.5">{ch.value.toLocaleString()} DZ</p>
+                                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-2">
+                                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (
