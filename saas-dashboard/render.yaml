@@ -8,10 +8,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGO_URI
-        sync: false # Must be set manually in Render Dashboard
+      - key: PROD_MONGO_URI
+        sync: false # Must be set manually in Render Dashboard!
       - key: JWT_SECRET
-        sync: false # Must be set manually in Render Dashboard
+        sync: false # Must be set manually in Render Dashboard!
 
   # Frontend App
   - type: web
