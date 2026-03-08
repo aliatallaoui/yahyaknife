@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import clsx from 'clsx';
 import moment from 'moment';
@@ -22,9 +22,12 @@ export default function Sales() {
 
     // UI State
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('all'); // 'all' or 'verification'
+    const [activeTab, setActiveTab] = useState('all');
     const [selectedCourierFilter, setSelectedCourierFilter] = useState('');
     const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
+    const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+    const toggleExpand = (id) => setExpandedOrderId(prev => prev === id ? null : id);
 
     // Dependent Entities
     const [couriers, setCouriers] = useState([]);
@@ -265,11 +268,12 @@ export default function Sales() {
                                 <th className="px-5 py-3 font-semibold text-end">Amount</th>
                                 <th className="px-5 py-3 font-semibold text-center">Status</th>
                                 <th className="px-5 py-3 font-semibold text-center">Actions</th>
+                                <th className="px-5 py-3 w-10"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-sm">
                             {filteredOrders.length === 0 ? (
-                                <tr><td colSpan="6" className="py-16 text-center">
+                                <tr><td colSpan="7" className="py-16 text-center">
                                     <div className="flex flex-col items-center gap-3 text-gray-400">
                                         <ShoppingCart className="w-10 h-10 opacity-25" />
                                         <p className="font-medium">{t('sales.noOrders', 'No orders found.')}</p>
@@ -278,60 +282,155 @@ export default function Sales() {
                             ) : filteredOrders.map((order) => {
                                 const initials = (order.customer?.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
                                 const isVerified = order.verificationStatus === 'Phone Confirmed';
+                                const isExpanded = expandedOrderId === order._id;
                                 return (
-                                    <tr key={order._id} className={clsx("group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
-                                        {/* Checkbox */}
-                                        <td className="px-5 py-4">
-                                            <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
-                                        </td>
+                                    <>
+                                        {/* Main row */}
+                                        <tr key={order._id} className={clsx("group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : isExpanded ? "bg-indigo-50/40" : "hover:bg-gray-50/60")}>
+                                            {/* Checkbox */}
+                                            <td className="px-5 py-4">
+                                                <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
+                                            </td>
 
-                                        {/* Order ID + Date */}
-                                        <td className="px-5 py-4">
-                                            <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5">{moment(order.date).format('MMM DD · HH:mm')}</p>
-                                            {isVerified && (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
-                                                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified
-                                                </span>
-                                            )}
-                                        </td>
+                                            {/* Order ID + Date */}
+                                            <td className="px-5 py-4">
+                                                <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{moment(order.date).format('MMM DD · HH:mm')}</p>
+                                                {isVerified && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
+                                                        <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                                                    </span>
+                                                )}
+                                            </td>
 
-                                        {/* Customer (avatar + name) */}
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
-                                                    <span className="text-xs font-black text-white">{initials}</span>
+                                            {/* Customer (avatar + name) */}
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shrink-0">
+                                                        <span className="text-xs font-black text-white">{initials}</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
+                                                        {order.customer?.city && <p className="text-xs text-gray-400 leading-tight">{order.customer.city}</p>}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer?.name || 'Unknown'}</p>
-                                                    {order.customer?.city && <p className="text-xs text-gray-400 leading-tight">{order.customer.city}</p>}
+                                            </td>
+
+                                            {/* Amount */}
+                                            <td className="px-5 py-4 text-end">
+                                                <p className="font-black text-gray-900 text-base tabular-nums">{order.totalAmount?.toLocaleString()}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium">DZD</p>
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="px-5 py-4 text-center">
+                                                {renderCodBadge(order.status, t)}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button onClick={() => handleEditClick(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
+                                                        <Pencil className="w-3 h-3" /> Edit
+                                                    </button>
+                                                    <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        </td>
+                                            </td>
 
-                                        {/* Amount */}
-                                        <td className="px-5 py-4 text-end">
-                                            <p className="font-black text-gray-900 text-base tabular-nums">{order.totalAmount?.toLocaleString()}</p>
-                                            <p className="text-[10px] text-gray-400 font-medium">DZD</p>
-                                        </td>
-
-                                        {/* Status */}
-                                        <td className="px-5 py-4 text-center">
-                                            {renderCodBadge(order.status, t)}
-                                        </td>
-
-                                        {/* Actions */}
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button onClick={() => handleEditClick(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
-                                                    <Pencil className="w-3 h-3" /> Edit
+                                            {/* Expand toggle */}
+                                            <td className="px-3 py-4">
+                                                <button onClick={() => toggleExpand(order._id)} className={clsx("p-1.5 rounded-lg transition-colors", isExpanded ? "bg-indigo-100 text-indigo-600" : "text-gray-300 hover:text-gray-600 hover:bg-gray-100")}>
+                                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                                 </button>
-                                                <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                        </tr>
+
+                                        {/* Expandable detail row */}
+                                        {isExpanded && (
+                                            <tr key={`${order._id}-detail`} className="bg-indigo-50/30">
+                                                <td colSpan="7" className="px-6 pb-5 pt-0">
+                                                    <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                                                        {/* Products */}
+                                                        <div className="lg:col-span-2">
+                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><Package className="w-3.5 h-3.5" /> Order Items</p>
+                                                            {(order.products || []).length === 0 ? (
+                                                                <p className="text-xs text-gray-400 italic">No product details recorded</p>
+                                                            ) : (
+                                                                <div className="space-y-1.5">
+                                                                    {order.products.map((p, i) => (
+                                                                        <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
+                                                                            <div>
+                                                                                <p className="text-sm font-semibold text-gray-800">{p.name || 'Product'}</p>
+                                                                                <p className="text-xs text-gray-400">Qty: <strong>{p.quantity}</strong> &times; {(p.unitPrice || 0).toLocaleString()} DZD</p>
+                                                                            </div>
+                                                                            <p className="font-bold text-gray-900 tabular-nums text-sm">{((p.quantity || 1) * (p.unitPrice || 0)).toLocaleString()} <span className="text-[10px] text-gray-400">DZD</span></p>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Order meta */}
+                                                        <div className="space-y-3">
+                                                            <div>
+                                                                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Channel &amp; Courier</p>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {order.channel && (
+                                                                        <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100">{order.channel}</span>
+                                                                    )}
+                                                                    {order.courier?.name && (
+                                                                        <span className="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100">🚚 {order.courier.name}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> Payment</p>
+                                                                <span className={clsx("text-xs font-bold px-2.5 py-1 rounded-full",
+                                                                    order.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700' :
+                                                                        order.paymentStatus === 'Pending' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                                                                )}>{order.paymentStatus || 'Unpaid'}</span>
+                                                            </div>
+                                                            {order.trackingInfo?.trackingNumber && (
+                                                                <div>
+                                                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">📦 Tracking</p>
+                                                                    <p className="text-xs font-mono text-gray-700 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100 inline-block">{order.trackingInfo.trackingNumber}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Financials & Notes */}
+                                                        <div className="space-y-3">
+                                                            {(order.financials?.cogs > 0 || order.financials?.netProfit !== undefined) && (
+                                                                <div>
+                                                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">💰 Financials</p>
+                                                                    <div className="space-y-1">
+                                                                        {order.financials?.cogs > 0 && <p className="text-xs text-gray-600">COGS: <strong>{order.financials.cogs.toLocaleString()} DZD</strong></p>}
+                                                                        {order.financials?.shippingCosts > 0 && <p className="text-xs text-gray-600">Shipping: <strong>{order.financials.shippingCosts.toLocaleString()} DZD</strong></p>}
+                                                                        {order.financials?.netProfit !== 0 && <p className={clsx("text-xs font-bold", order.financials?.netProfit >= 0 ? 'text-emerald-600' : 'text-red-500')}>Net Profit: {order.financials?.netProfit?.toLocaleString()} DZD</p>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {order.fraudRiskScore > 0 && (
+                                                                <div className="flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2 border border-amber-100">
+                                                                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                                                                    <p className="text-xs font-bold text-amber-700">Fraud Risk: {order.fraudRiskScore}%</p>
+                                                                </div>
+                                                            )}
+                                                            {order.notes && (
+                                                                <div>
+                                                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> Notes</p>
+                                                                    <p className="text-xs text-gray-600 bg-gray-50 rounded-xl px-3 py-2 border border-gray-100 italic">{order.notes}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
                                 );
                             })}
                         </tbody>
