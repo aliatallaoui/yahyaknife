@@ -9,7 +9,7 @@ export default function Overview() {
         // Fetch dashboard data
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/dashboard/metrics');
+                const response = await fetch('/api/dashboard/metrics');
                 const json = await response.json();
                 setData(json);
             } catch (error) {

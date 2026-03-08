@@ -17,7 +17,7 @@ export default function HRPayroll() {
     const fetchPayroll = async (selectedPeriod) => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/hr/payroll?period=${selectedPeriod}`);
+            const res = await fetch(`/api/hr/payroll?period=${selectedPeriod}`);
             const data = await res.json();
             setRecords(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -33,7 +33,7 @@ export default function HRPayroll() {
 
     const handleGenerateRun = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/hr/payroll/generate', {
+            const res = await fetch('/api/hr/payroll/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ period })
@@ -47,7 +47,7 @@ export default function HRPayroll() {
     const submitPayment = async () => {
         if (!paymentModal || !paymentAmount) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/hr/payroll/${paymentModal.id}/approve`, {
+            const res = await fetch(`/api/hr/payroll/${paymentModal.id}/approve`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount: parseFloat(paymentAmount) })

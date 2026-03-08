@@ -15,7 +15,7 @@ export const CustomerProvider = ({ children }) => {
         if (!token) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/customers', {
+            const res = await fetch('/api/customers', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch customers');
@@ -35,7 +35,7 @@ export const CustomerProvider = ({ children }) => {
 
     const createCustomer = async (customerData) => {
         try {
-            const res = await fetch('http://localhost:5000/api/customers', {
+            const res = await fetch('/api/customers', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ export const CustomerProvider = ({ children }) => {
 
     const updateCustomer = async (id, updateData) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/customers/${id}`, {
+            const res = await fetch(`/api/customers/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export const CustomerProvider = ({ children }) => {
 
     const deleteCustomer = async (id) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/customers/${id}`, {
+            const res = await fetch(`/api/customers/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });

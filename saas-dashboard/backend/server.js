@@ -24,7 +24,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
+
+// Determine which Mongo URI to use based on the environment
+const isProd = process.env.NODE_ENV === 'production';
+const MONGO_URI = isProd ? process.env.PROD_MONGO_URI : (process.env.DEV_MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard');
+
 
 // Middleware
 app.use(cors());

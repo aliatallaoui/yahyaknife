@@ -25,9 +25,9 @@ export default function Warehouses() {
         setLoading(true);
         try {
             const [wRes, lRes, sRes] = await Promise.all([
-                fetch('http://localhost:5000/api/inventory/warehouses', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('http://localhost:5000/api/inventory/ledger', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('http://localhost:5000/api/inventory/suppliers', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/inventory/warehouses', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/inventory/ledger', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/inventory/suppliers', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             setWarehouses(await wRes.json());
             setLedger(await lRes.json());
@@ -47,7 +47,7 @@ export default function Warehouses() {
     const handleCreateWarehouse = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('http://localhost:5000/api/inventory/warehouses', {
+            const res = await fetch('/api/inventory/warehouses', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(warehouseForm)

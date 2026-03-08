@@ -36,7 +36,7 @@ export default function SettingsGeneral() {
         setSaveSuccess(false);
 
         try {
-            const res = await fetch('http://localhost:5000/api/users/preferences', {
+            const res = await fetch('/api/users/preferences', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -37,7 +37,7 @@ export default function Couriers() {
 
     const fetchCouriers = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/couriers');
+            const res = await fetch('/api/couriers');
             const data = await res.json();
             setCouriers(data);
         } catch (error) {
@@ -49,7 +49,7 @@ export default function Couriers() {
 
     const fetchOrdersData = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/sales/orders?limit=1000'); // temporary simple fetch all for dispatch
+            const res = await fetch('/api/sales/orders?limit=1000'); // temporary simple fetch all for dispatch
             const data = await res.json();
             const ordersList = data.orders || data || [];
 
@@ -70,7 +70,7 @@ export default function Couriers() {
 
     const handleUpdateShipmentStatus = async (orderId, newStatus) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/sales/orders/${orderId}`, {
+            const res = await fetch(`/api/sales/orders/${orderId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
@@ -95,7 +95,7 @@ export default function Couriers() {
                 pricingRules: formData.pricingRule,
                 serviceLevelAgreements: { expectedDeliveryWindowHours: Number(formData.slaHours) }
             };
-            const res = await fetch('http://localhost:5000/api/couriers', {
+            const res = await fetch('/api/couriers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -113,7 +113,7 @@ export default function Couriers() {
     const handleSettle = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:5000/api/couriers/${selectedCourier._id}/settle`, {
+            const res = await fetch(`/api/couriers/${selectedCourier._id}/settle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amountToSettle: Number(settleAmount) })
@@ -132,7 +132,7 @@ export default function Couriers() {
     const handleBatchDispatch = async () => {
         if (selectedOrderIds.size === 0 || !dispatchToCourierId) return alert(t('logistics.alertSelectOrders'));
         try {
-            const res = await fetch(`http://localhost:5000/api/couriers/${dispatchToCourierId}/dispatch`, {
+            const res = await fetch(`/api/couriers/${dispatchToCourierId}/dispatch`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderIds: Array.from(selectedOrderIds) })

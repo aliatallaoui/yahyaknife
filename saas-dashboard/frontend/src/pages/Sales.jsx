@@ -34,7 +34,7 @@ export default function Sales() {
     const [editingOrder, setEditingOrder] = useState(null);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/couriers')
+        fetch('/api/couriers')
             .then(res => res.json())
             .then(data => setCouriers(data))
             .catch(err => console.error("Error fetching couriers:", err));
@@ -105,8 +105,14 @@ export default function Sales() {
 
             if (refreshInventory) refreshInventory();
             setIsModalOpen(false);
+            return { success: true };
         } catch (error) {
-            alert("Failed to save order. Make sure you filled all required fields properly.");
+            let msg = error.message || "Failed to save order.";
+            try {
+                const parsed = JSON.parse(msg);
+                msg = parsed.message || msg;
+            } catch (e) { }
+            return { success: false, error: msg };
         }
     };
 

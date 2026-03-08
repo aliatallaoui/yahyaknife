@@ -25,9 +25,9 @@ export default function CustomerProfile() {
             try {
                 // Fetch fresh profile and orders and tickets
                 const [ordersRes, profilesRes, ticketsRes] = await Promise.all([
-                    fetch(`http://localhost:5000/api/customers/${id}/orders`),
-                    fetch(`http://localhost:5000/api/customers`), // Refresh full list to get newest metrics for this ID
-                    fetch(`http://localhost:5000/api/support?customerId=${id}`)
+                    fetch(`/api/customers/${id}/orders`),
+                    fetch(`/api/customers`), // Refresh full list to get newest metrics for this ID
+                    fetch(`/api/support?customerId=${id}`)
                 ]);
 
                 if (ordersRes.ok) setOrders(await ordersRes.json());

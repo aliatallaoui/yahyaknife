@@ -2,10 +2,10 @@
 
 @theme {
   --font-sans: "Inter", "Roboto", "Helvetica Neue", "Arial Nova", "Nimbus Sans", "Arial", sans-serif;
-  
+
   --color-google-blue: #1A73E8;
   --color-dash-purple: #C58AF9;
-  
+
   --color-soft-red-bg: #FFE2E5;
   --color-soft-red-text: #D93025;
 
@@ -29,4 +29,8 @@
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+html[dir="rtl"] {
+  --font-sans: "Cairo", "Inter", "Roboto", "Helvetica Neue", "Arial Nova", "Nimbus Sans", "Arial", sans-serif;
 }

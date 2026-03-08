@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import moment from 'moment';
+import { useCustomer } from '../context/CustomerContext';
 
 const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'];
 const STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
@@ -10,7 +11,37 @@ const PAYMENT_STATUSES = ['Unpaid', 'Pending', 'Paid', 'Failed', 'Refunded'];
 
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], customers = [], couriers = [] }) {
     const { t } = useTranslation();
+    const { createCustomer } = useCustomer();
     const isEdit = !!initialData;
+
+    // Inline Customer Creation State
+    const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+    const [isCreatingCustomerLoading, setIsCreatingCustomerLoading] = useState(false);
+    const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', city: '' });
+
+    const handleQuickCreateCustomer = async () => {
+        if (!newCustomer.name || !newCustomer.phone) {
+            alert(t('modals.orderCustomerRequired', 'Name and Phone are required'));
+            return;
+        }
+        setIsCreatingCustomerLoading(true);
+        try {
+            const created = await createCustomer({
+                name: newCustomer.name,
+                phone: newCustomer.phone,
+                city: newCustomer.city,
+                email: '',
+                address: ''
+            });
+            setCustomerId(created._id);
+            setIsCreatingCustomer(false);
+            setNewCustomer({ name: '', phone: '', city: '' });
+        } catch (error) {
+            alert(t('modals.orderCustomerError', 'Failed to create customer. Please check your data.'));
+        } finally {
+            setIsCreatingCustomerLoading(false);
+        }
+    };
 
     // Form state
     const [orderId, setOrderId] = useState('');
@@ -25,6 +56,10 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
     const [codAmount, setCodAmount] = useState(0);
     const [courierFee, setCourierFee] = useState(0);
+
+    // Submission states
+    const [formError, setFormError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Dynamic products array
     const [products, setProducts] = useState([{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);
@@ -87,6 +122,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 setCodAmount(0);
                 setCourierFee(0);
                 setProducts([{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);
+                setFormError('');
+                setIsSubmitting(false);
             }
         }
     }, [isOpen, isEdit, initialData]);
@@ -119,14 +156,15 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         return products.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setFormError('');
 
         // Filter out empty lines
         const validProducts = products.filter(p => (p.variantId || p.name.trim() !== '') && Number(p.quantity) > 0 && Number(p.unitPrice) >= 0);
 
         if (validProducts.length === 0) {
-            alert("Order must contain at least one valid product.");
+            setFormError("Order must contain at least one valid product.");
             return;
         }
 
@@ -150,7 +188,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             totalAmount: calculateTotal()
         };
 
-        onSubmit(payload);
+        setIsSubmitting(true);
+        const result = await onSubmit(payload);
+        setIsSubmitting(false);
+
+        if (result && result.success === false) {
+            setFormError(result.error);
+        }
     };
 
     return (
@@ -171,6 +215,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 <div className="p-6 overflow-y-auto flex-1">
                     <form id="orderForm" onSubmit={handleSubmit} className="space-y-6">
 
+                        {formError && (
+                            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium border border-red-200 break-words flex items-start gap-2">
+                                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                <span>{formError}</span>
+                            </div>
+                        )}
+
                         {/* Two column grid for basic info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -181,13 +232,43 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderDate')}</label>
                                 <input required type="date" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={date} onChange={e => setDate(e.target.value)} />
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCustomer')}</label>
-                                <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={customerId} onChange={e => setCustomerId(e.target.value)}>
-                                    <option value="" disabled>{t('modals.orderSelectCustomer')}</option>
-                                    {customers.map(c => <option key={c._id} value={c._id}>{c.name} ({c.email})</option>)}
-                                </select>
+
+                            {/* Dynamic Customer Field */}
+                            <div className="col-span-1 md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-sm font-semibold text-gray-700">{t('modals.orderCustomer')}</label>
+                                    {!isCreatingCustomer ? (
+                                        <button type="button" onClick={() => setIsCreatingCustomer(true)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                            <Plus className="w-3 h-3" /> {t('modals.orderBtnNewCustomer', 'New Customer')}
+                                        </button>
+                                    ) : (
+                                        <button type="button" onClick={() => setIsCreatingCustomer(false)} className="text-xs font-bold text-gray-500 hover:text-gray-700">
+                                            {t('modals.orderBtnCancelNew', 'Cancel')}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {!isCreatingCustomer ? (
+                                    <select required className="w-full bg-white border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none shadow-sm" value={customerId} onChange={e => setCustomerId(e.target.value)}>
+                                        <option value="" disabled>{t('modals.orderSelectCustomer')}</option>
+                                        {customers.map(c => <option key={c._id} value={c._id}>{c.name} {c.phone ? `(${c.phone})` : c.email ? `(${c.email})` : ''}</option>)}
+                                    </select>
+                                ) : (
+                                    <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-1">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <input type="text" placeholder={t('modals.orderCustomerName', 'Full Name *')} required={isCreatingCustomer} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                                            <input type="tel" placeholder={t('modals.orderCustomerPhone', 'Phone Number *')} required={isCreatingCustomer} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                                        </div>
+                                        <div className="flex gap-3 items-center">
+                                            <input type="text" placeholder={t('modals.orderCustomerCity', 'City / Wilaya (Optional)')} className="flex-1 bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500" value={newCustomer.city} onChange={e => setNewCustomer({ ...newCustomer, city: e.target.value })} />
+                                            <button type="button" onClick={handleQuickCreateCustomer} disabled={isCreatingCustomerLoading} className="px-4 py-2 bg-blue-600 shrink-0 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+                                                {isCreatingCustomerLoading ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : t('modals.orderBtnSaveCustomer', 'Save & Select')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderSalesChannel')}</label>
                                 <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={channel} onChange={e => setChannel(e.target.value)}>
@@ -272,8 +353,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         </div>
 
                         {/* Status Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                            <div className="flex flex-col justify-end h-full">
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCodStatus')}</label>
                                 <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none font-bold text-blue-800" value={status} onChange={e => setStatus(e.target.value)}>
                                     {STATUSES.map(st => <option key={st} value={st}>
@@ -291,18 +372,18 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                     </option>)}
                                 </select>
                             </div>
-                            <div>
+                            <div className="flex flex-col justify-end h-full">
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderDispatchCourier')}</label>
                                 <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={courierId} onChange={e => setCourierId(e.target.value)}>
                                     <option value="">{t('modals.orderUnassigned')}</option>
                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                 </select>
                             </div>
-                            <div>
+                            <div className="flex flex-col justify-end h-full">
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderExpectedCod')}</label>
                                 <input type="number" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={codAmount} onChange={e => setCodAmount(e.target.value)} />
                             </div>
-                            <div>
+                            <div className="flex flex-col justify-end h-full">
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCourierFee')}</label>
                                 <input type="number" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={courierFee} onChange={e => setCourierFee(e.target.value)} />
                             </div>
@@ -318,10 +399,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
                 {/* Footer */}
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                    <button type="button" onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50">
                         {t('modals.orderBtnCancel')}
                     </button>
-                    <button type="submit" form="orderForm" className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-600/20 transition-all">
+                    <button type="submit" form="orderForm" disabled={isSubmitting} className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
+                        {isSubmitting ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : null}
                         {isEdit ? t('modals.orderBtnSave') : t('modals.orderBtnCreate')}
                     </button>
                 </div>

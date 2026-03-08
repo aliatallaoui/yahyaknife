@@ -27,7 +27,7 @@ export default function CustomerInsight() {
         const fetchCustomerData = async () => {
             if (!token) return;
             try {
-                const metricsRes = await fetch('http://localhost:5000/api/customers/metrics', {
+                const metricsRes = await fetch('/api/customers/metrics', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
