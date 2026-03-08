@@ -129,6 +129,9 @@ export default function Sales() {
         value: Number(performance.channelDistribution[key].revenue) || 0 // Fix: Recharts Pie needs pure Numbers, not strings!
     })).sort((a, b) => b.value - a.value) : [];
 
+    // Count of orders needing verification
+    const newOrderCount = orders.filter(o => o.status === 'New').length;
+
     // Advanced Filtering
     let displayOrders = orders;
 
@@ -206,6 +209,9 @@ export default function Sales() {
                             </button>
                             <button onClick={() => { setActiveTab('verification'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'verification' ? "bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200" : "text-gray-500 hover:text-gray-700")}>
                                 <AlertCircle className="w-4 h-4" /> {t('sales.verificationTab', 'Verification Queue')}
+                                {newOrderCount > 0 && (
+                                    <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">{newOrderCount}</span>
+                                )}
                             </button>
                         </div>
 
@@ -274,25 +280,29 @@ export default function Sales() {
                                             <input type="checkbox" checked={selectedOrderIds.has(order._id)} onChange={() => toggleOrderSelect(order._id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
                                         </td>
                                         <td className="p-4">
-                                            <p className="font-medium text-gray-900">{order.orderId}</p>
-                                            <span className="text-xs text-blue-600 font-bold">{order.verificationStatus || 'Pending'}</span>
+                                            <p className="font-medium text-gray-900 font-mono text-xs">{order.orderId}</p>
+                                            <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                                                order.verificationStatus === 'Phone Confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                                            )}>
+                                                {order.verificationStatus || 'Unverified'}
+                                            </span>
                                         </td>
-                                        <td className="p-4 text-gray-500 whitespace-nowrap">{moment(order.date).format('MMM DD, HH:mm')}</td>
+                                        <td className="p-4 text-gray-500 whitespace-nowrap text-xs">{moment(order.date).format('MMM DD, HH:mm')}</td>
                                         <td className="p-4">
-                                            <span className="text-gray-900 font-medium block">{order.customer?.name || t('sales.unknownCustomer', 'Unknown Customer')}</span>
-                                            <span className="text-xs text-gray-400 block">{order.customer?.city || t('sales.noCity', 'No City')}</span>
+                                            <span className="text-gray-900 font-medium block">{order.customer?.name || t('sales.unknownCustomer', 'Unknown')}</span>
+                                            {order.customer?.city && <span className="text-xs text-gray-400 block">{order.customer.city}</span>}
                                         </td>
-                                        <td className="p-4 text-end font-semibold tabular-nums text-gray-900">{order.totalAmount?.toLocaleString()} DZ</td>
+                                        <td className="p-4 text-end font-bold tabular-nums text-gray-900">{order.totalAmount?.toLocaleString()} <span className="text-xs font-medium text-gray-400">DZ</span></td>
                                         <td className="p-4">
                                             {renderCodBadge(order.status, t)}
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={() => handleEditClick(order)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Order">
-                                                    <Pencil className="w-4 h-4" />
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => handleEditClick(order)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100">
+                                                    <Pencil className="w-3 h-3" /> Edit
                                                 </button>
-                                                <button onClick={() => handleDeleteClick(order._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Order">
-                                                    <Trash2 className="w-4 h-4" />
+                                                <button onClick={() => handleDeleteClick(order._id)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100">
+                                                    <Trash2 className="w-3 h-3" /> Delete
                                                 </button>
                                             </div>
                                         </td>
@@ -359,16 +369,26 @@ export default function Sales() {
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                                {channelData.map((ch, i) => (
-                                    <div key={i} className="flex justify-between items-center text-sm py-1">
-                                        <span className="text-gray-500 flex items-center gap-2">
-                                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
-                                            {ch.name}
-                                        </span>
-                                        <span className="font-semibold text-gray-900 tabular-nums">{ch.value.toLocaleString()} DZ</span>
-                                    </div>
-                                ))}
+                            <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                                {channelData.map((ch, i) => {
+                                    const total = channelData.reduce((s, c) => s + c.value, 0);
+                                    const pct = total > 0 ? Math.round((ch.value / total) * 100) : 0;
+                                    return (
+                                        <div key={i}>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
+                                                    {ch.name}
+                                                </span>
+                                                <span className="text-xs font-bold text-gray-900 tabular-nums">{pct}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 mt-0.5 tabular-nums text-right">{ch.value.toLocaleString()} DZ</p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </>
                     )}
@@ -418,13 +438,13 @@ function Badge({ icon: Icon, text, color, bg }) {
 
 function SalesCard({ title, value, icon: Icon, color, bg }) {
     return (
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0", bg, color)}>
-                <Icon className="w-7 h-7" />
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow">
+            <div className={clsx("w-11 h-11 rounded-xl flex items-center justify-center shrink-0", bg, color)}>
+                <Icon className="w-5 h-5" />
             </div>
             <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-                <h3 className="text-2xl font-black text-gray-900 tabular-nums tracking-tight">{value}</h3>
+                <p className="text-xs font-semibold text-gray-500 mb-0.5">{title}</p>
+                <h3 className="text-xl font-black text-gray-900 tabular-nums tracking-tight">{value}</h3>
             </div>
         </div>
     );
