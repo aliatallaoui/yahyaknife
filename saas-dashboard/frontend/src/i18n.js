@@ -37,7 +37,9 @@ const resources = {
                 signout: "Secure Sign Out"
             },
             common: {
-                currency: "DZD"
+                currency: "DZD",
+                prev: "Previous",
+                next: "Next"
             },
             dashboard: {
                 title: "Platform Overview",
@@ -1576,7 +1578,9 @@ const resources = {
                 itemHelp: "المساعدة والتوثيق"
             },
             common: {
-                currency: "دج"
+                currency: "دج",
+                prev: "السابق",
+                next: "التالي"
             },
             dashboard: {
                 title: "نظرة عامة على المنصة",
