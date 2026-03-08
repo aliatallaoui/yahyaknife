@@ -36,6 +36,9 @@ const resources = {
                 profile: "My Account",
                 signout: "Secure Sign Out"
             },
+            common: {
+                currency: "DZD"
+            },
             dashboard: {
                 title: "Platform Overview",
                 subtitle: "Key metrics of business performance",
@@ -67,7 +70,10 @@ const resources = {
                 totalInventoryValue: "Total Inventory Value",
                 totalAvailableStock: "Total Available Stock",
                 deadStockVariants: "Dead Stock Variants",
-                actionRequired: "Action Required"
+                actionRequired: "Action Required",
+                cash_transit: "Cash in Transit",
+                couriers_pending: "Couriers Pending",
+                volume: "Volume"
             },
             settings: {
                 title: "General Settings",
@@ -1569,6 +1575,9 @@ const resources = {
                 itemNotificationsSub: "الطلبات، نقص المخزون، المهام",
                 itemHelp: "المساعدة والتوثيق"
             },
+            common: {
+                currency: "دج"
+            },
             dashboard: {
                 title: "نظرة عامة على المنصة",
                 subtitle: "المقاييس الرئيسية لأداء الأعمال",
@@ -1600,7 +1609,10 @@ const resources = {
                 totalInventoryValue: "إجمالي قيمة المخزون",
                 totalAvailableStock: "إجمالي المخزون المتاح",
                 deadStockVariants: "منتجات المخزون الميت",
-                actionRequired: "إجراء مطلوب"
+                actionRequired: "إجراء مطلوب",
+                cash_transit: "النقد في الطريق",
+                couriers_pending: "مناديب في الانتظار",
+                volume: "الحجم"
             },
             settings: {
                 title: "الإعدادات العامة",
