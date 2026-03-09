@@ -10,6 +10,7 @@ export default function ProcurementHub() {
     const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'suppliers'
     const [orders, setOrders] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
@@ -57,14 +58,24 @@ export default function ProcurementHub() {
                 subtitle={t('procurement.subtitle', 'Strategic sourcing, purchase orders, and supplier relationship management.')}
                 variant="procurement"
                 actions={
-                    <>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-purple-500 absolute start-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('procurement.searchPlaceholder', 'Search PO or Supplier...')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="ps-9 pe-4 py-2 bg-white border border-purple-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                            />
+                        </div>
                         <button className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
                             <Plus className="w-5 h-5" /> {t('procurement.newPo')}
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors border border-white/10">
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
                             <Users className="w-4 h-4" /> {t('procurement.addSupplier')}
                         </button>
-                    </>
+                    </div>
                 }
             />
 
@@ -150,9 +161,15 @@ export default function ProcurementHub() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {orders.length === 0 ? (
+                                        {orders.filter(o =>
+                                            o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            o.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length === 0 ? (
                                             <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noPosFound')}</td></tr>
-                                        ) : orders.map(order => (
+                                        ) : orders.filter(o =>
+                                            o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            o.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).map(order => (
                                             <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                                                 <td className="p-4 font-bold text-gray-900">{order.poNumber}</td>
                                                 <td className="p-4">
@@ -200,9 +217,15 @@ export default function ProcurementHub() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {suppliers.length === 0 ? (
+                                        {suppliers.filter(s =>
+                                            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            s.contactPerson?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length === 0 ? (
                                             <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noSuppliersFound')}</td></tr>
-                                        ) : suppliers.map(sup => (
+                                        ) : suppliers.filter(s =>
+                                            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            s.contactPerson?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).map(sup => (
                                             <tr key={sup._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                                                 <td className="p-4 font-bold text-gray-900">
                                                     {sup.name}

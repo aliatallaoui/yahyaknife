@@ -264,41 +264,27 @@ export default function Sales() {
                 subtitle={t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}
                 variant="sales"
                 actions={
-                    <>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-rose-500 absolute start-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('sales.searchOrders', 'Search orders...')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="ps-9 pe-4 py-2 bg-white border border-rose-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                            />
+                        </div>
                         <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
                             <Plus className="w-5 h-5" /> {t('sales.createOrderBtn', 'Create Order')}
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors border border-white/10">
-                            <Download className="w-4 h-4" /> {t('sales.exportBtn', 'Export')}
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all border border-gray-200 shadow-sm active:scale-95 leading-none">
+                            <Download className="w-4 h-4 text-rose-500" /> {t('sales.exportBtn', 'Export')}
                         </button>
-                    </>
+                    </div>
                 }
             />
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <SalesCard
-                    title={t('sales.totalVolume', 'Total Sales Volume')}
-                    value={`${(performance?.totalSalesVolume || 0).toLocaleString()} DZ`}
-                    icon={TrendingUp}
-                    color="text-blue-600"
-                    bg="bg-blue-50"
-                />
-                <SalesCard
-                    title={t('sales.avgOrderValue', 'Average Order Value')}
-                    value={`${(performance?.averageOrderValue || 0).toLocaleString()} DZ`}
-                    icon={ShoppingCart}
-                    color="text-purple-600"
-                    bg="bg-purple-50"
-                />
-                <SalesCard
-                    title={t('sales.totalOrdersCount', 'Total Orders Count')}
-                    value={(performance?.totalOrders || 0).toLocaleString()}
-                    icon={Users}
-                    color="text-green-600"
-                    bg="bg-green-50"
-                />
-            </div>
 
             {/* Full-width Order Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
@@ -847,21 +833,6 @@ export default function Sales() {
                     fetchSalesData(currentPage, perPage);
                 }}
             />
-        </div>
-    );
-}
-
-// eslint-disable-next-line no-unused-vars
-function SalesCard({ title, value, icon: Icon, color, bg }) {
-    return (
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow">
-            <div className={clsx("w-11 h-11 rounded-xl flex items-center justify-center shrink-0", bg, color)}>
-                <Icon className="w-5 h-5" />
-            </div>
-            <div>
-                <p className="text-xs font-semibold text-gray-500 mb-0.5">{title}</p>
-                <h3 className="text-xl font-black text-gray-900 tabular-nums tracking-tight">{value}</h3>
-            </div>
         </div>
     );
 }

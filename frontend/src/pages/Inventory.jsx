@@ -175,7 +175,17 @@ export default function Inventory() {
                 subtitle={t('inventory.subtitle', 'Manage product catalog, track stock levels, and monitor supplier flow.')}
                 variant="inventory"
                 actions={
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-amber-500 absolute start-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name...')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="ps-9 pe-4 py-2 bg-white border border-amber-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                            />
+                        </div>
                         {activeTab === 'categories' ? (
                             <button onClick={handleCreateCategory} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
                                 <Plus className="w-5 h-5" /> {t('inventory.addCategoryBtn', 'Add Category')}
@@ -185,7 +195,7 @@ export default function Inventory() {
                                 <Plus className="w-5 h-5" /> {t('inventory.addProductBtn', 'Add New Product')}
                             </button>
                         )}
-                        <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors border border-white/10">
+                        <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
                             <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
                         </button>
                     </div>
@@ -243,16 +253,6 @@ export default function Inventory() {
                             >
                                 {t('inventory.tabCategories', 'Categories')}
                             </button>
-                        </div>
-                        <div className="relative group w-full xl:w-72">
-                            <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                            <input
-                                type="text"
-                                placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name...')}
-                                className="bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none rounded-xl py-2.5 ps-10 pe-4 text-sm w-full transition-all duration-200 font-medium placeholder:text-gray-400"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
                         </div>
                     </div>
                     {activeTab === 'raw' && (

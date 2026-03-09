@@ -108,6 +108,8 @@ exports.getDashboardData = async (req, res) => {
                 courierPerformanceScore: couriers.length > 0 ? (couriers.reduce((acc, c) => acc + c.reliabilityScore, 0) / couriers.length).toFixed(1) : 100
             },
             financialMetrics: {
+                totalSalesVolume: totalRevenue,
+                averageOrderValue: totalOrders > 0 ? (totalRevenue / totalOrders) : 0,
                 expectedRevenue, // Revenue shipped but not delivered
                 deliveredRevenue, // Delivered but cash not settled
                 cashCollected: globalCashCollected,

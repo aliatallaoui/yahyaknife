@@ -194,7 +194,7 @@ export default function KnifeLibrary() {
                         >
                             <Plus className="w-5 h-5" /> {t('knives.addModel', 'New Template')}
                         </button>
-                        <button onClick={fetchModels} className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all backdrop-blur-md">
+                        <button onClick={fetchModels} className="p-2.5 rounded-xl bg-white border border-indigo-200 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm active:scale-95">
                             <RefreshCw className={clsx("w-5 h-5", loading && "animate-spin")} />
                         </button>
                     </div>

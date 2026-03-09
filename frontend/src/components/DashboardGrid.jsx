@@ -108,6 +108,34 @@ export default function DashboardGrid({ data }) {
                 />
             </div>
 
+            {/* ── Row 1.2: Sales Performance KPIs — Moved from Sales Page ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <MetricCard
+                    title={t('sales.totalVolume', 'Total Sales Volume')}
+                    value={(financialMetrics?.totalSalesVolume || 0).toLocaleString()}
+                    unit={t('common.currency')}
+                    icon={TrendingUp}
+                    color="text-blue-600"
+                    bg="bg-blue-50"
+                />
+                <MetricCard
+                    title={t('sales.avgOrderValue', 'Average Order Value')}
+                    value={(financialMetrics?.averageOrderValue || 0).toLocaleString()}
+                    unit={t('common.currency')}
+                    icon={ShoppingCart}
+                    color="text-purple-600"
+                    bg="bg-purple-50"
+                />
+                <MetricCard
+                    title={t('sales.totalOrdersCount', 'Total Orders Count')}
+                    value={(orderMetrics?.totalOrders || 0).toLocaleString()}
+                    unit={t('orders.unitOrders', 'Orders')}
+                    icon={Package}
+                    color="text-green-600"
+                    bg="bg-green-50"
+                />
+            </div>
+
             {/* ── Row 1.5: Workshop / Bladesmith Operations KPIs ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <MetricCard

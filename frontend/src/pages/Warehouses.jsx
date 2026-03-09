@@ -72,14 +72,14 @@ export default function Warehouses() {
                 subtitle={t('warehouses.subtitle', 'Manage Multi-Warehouse operations, Movement ledgers, and Supplier SLAs.')}
                 variant="inventory"
                 actions={
-                    <div className="flex flex-wrap gap-1 bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md">
-                        <button onClick={() => setActiveTab('warehouses')} className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'warehouses' ? 'bg-[#5D5DFF] text-white shadow-lg shadow-blue-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>
+                    <div className="flex flex-wrap gap-1 bg-white border border-gray-100 p-1 rounded-xl shadow-sm shadow-indigo-500/5">
+                        <button onClick={() => setActiveTab('warehouses')} className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'warehouses' ? 'bg-[#5D5DFF] text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                             {t('warehouses.tabWarehouses', 'Warehouses')}
                         </button>
-                        <button onClick={() => setActiveTab('ledger')} className={clsx("flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>
+                        <button onClick={() => setActiveTab('ledger')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                             <ArrowRightLeft className="w-4 h-4 shrink-0" /> {t('warehouses.tabLedger', 'Ledger')}
                         </button>
-                        <button onClick={() => setActiveTab('suppliers')} className={clsx("flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-[#10B981] text-white shadow-lg shadow-emerald-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>
+                        <button onClick={() => setActiveTab('suppliers')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-[#10B981] text-white shadow-lg shadow-emerald-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                             <ShieldCheck className="w-4 h-4 shrink-0" /> {t('warehouses.tabSuppliers', 'Suppliers')}
                         </button>
                     </div>

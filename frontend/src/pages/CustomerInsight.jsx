@@ -93,12 +93,24 @@ export default function CustomerInsight() {
                 subtitle={t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}
                 variant="customers"
                 actions={
-                    <button
-                        onClick={handleCreateClick}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4B4BFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 leading-none"
-                    >
-                        <Plus className="w-5 h-5" /> {t('crm.addCustomerBtn', 'Add Customer')}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-sky-500 absolute start-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('crm.searchPlaceholder', "Search name or email...")}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="ps-9 pe-4 py-2 bg-white border border-sky-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                            />
+                        </div>
+                        <button
+                            onClick={handleCreateClick}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4B4BFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 leading-none"
+                        >
+                            <Plus className="w-5 h-5" /> {t('crm.addCustomerBtn', 'Add Customer')}
+                        </button>
+                    </div>
                 }
             />
 
@@ -202,16 +214,6 @@ export default function CustomerInsight() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[500px]">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-5 border-b border-gray-100 gap-4">
                     <h3 className="text-lg font-bold text-gray-900">{t('crm.dirTitle', 'CRM Directory')}</h3>
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder={t('crm.searchPlaceholder', "Search name or email...")}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full ps-9 pe-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-800"
-                        />
-                    </div>
                 </div>
 
                 <div className="flex-1 overflow-auto">

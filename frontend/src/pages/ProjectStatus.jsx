@@ -61,8 +61,18 @@ export default function ProjectStatus() {
                 subtitle={t('subtitle', 'Strategic oversight of manufacturing cycles and corporate initiatives.')}
                 variant="projects"
                 actions={
-                    <div className="flex flex-wrap gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-purple-500", isAr ? "right-3" : "left-3")} />
+                            <input
+                                type="text"
+                                placeholder={t('searchPlaceholder', 'Search projects...')}
+                                className={clsx("bg-white border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-xl py-2 text-sm w-48 sm:w-64 shadow-sm font-bold transition-all", isAr ? "pr-9 pl-4" : "pl-9 pr-4")}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
                             <Filter className="w-4 h-4" /> {t('reportsBtn', 'Reports')}
                         </button>
                         <button
@@ -111,16 +121,6 @@ export default function ProjectStatus() {
                 <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[380px] lg:h-[380px]">
                     <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center shrink-0 gap-4">
                         <h3 className="text-lg font-bold text-gray-900">{t('listTitle')}</h3>
-                        <div className="relative w-full sm:w-auto">
-                            <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-gray-400", isAr ? "right-3" : "left-3")} />
-                            <input
-                                type="text"
-                                placeholder={t('searchPlaceholder')}
-                                className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 text-sm w-full sm:w-64", isAr ? "pr-9 pl-4" : "pl-9 pr-4")}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 styled-scrollbar space-y-3">

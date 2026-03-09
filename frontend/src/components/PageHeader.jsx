@@ -15,14 +15,14 @@ const PageHeader = ({ title, subtitle, actions, variant = 'default' }) => {
 
     const variants = {
         default: "bg-white border-gray-100",
-        finance: "bg-gradient-to-br from-indigo-50/50 to-white border-indigo-100",
-        inventory: "bg-gradient-to-br from-amber-50/50 to-white border-amber-100",
-        hr: "bg-gradient-to-br from-teal-50/50 to-white border-teal-100",
-        sales: "bg-gradient-to-br from-rose-50/50 to-white border-rose-100",
-        projects: "bg-gradient-to-br from-blue-50/50 to-white border-blue-100",
-        production: "bg-gradient-to-br from-slate-50/50 to-white border-slate-200",
-        procurement: "bg-gradient-to-br from-purple-50/50 to-white border-purple-100",
-        customers: "bg-gradient-to-br from-sky-50/50 to-white border-sky-100",
+        finance: "bg-gradient-to-br from-indigo-50/70 to-white border-indigo-100",
+        inventory: "bg-gradient-to-br from-amber-50/70 to-white border-amber-100",
+        hr: "bg-gradient-to-br from-emerald-50/80 to-white border-emerald-100", // Soft Emerald for eyes
+        sales: "bg-gradient-to-br from-rose-50/70 to-white border-rose-100",
+        projects: "bg-gradient-to-br from-blue-50/70 to-white border-blue-100",
+        production: "bg-gradient-to-br from-slate-50/80 to-white border-slate-200", // Soft Slate
+        procurement: "bg-gradient-to-br from-purple-50/70 to-white border-purple-100",
+        customers: "bg-gradient-to-br from-sky-50/70 to-white border-sky-100",
     };
 
     return (

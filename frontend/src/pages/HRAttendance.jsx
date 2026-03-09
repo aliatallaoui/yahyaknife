@@ -127,9 +127,12 @@ export default function HRAttendance() {
                 variant="hr"
                 actions={
                     <div className="flex flex-wrap gap-3">
-                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all cursor-pointer" />
-                        <button onClick={fetchAttendance} disabled={loading} className="flex items-center gap-2 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all leading-none">
+                        <div className="flex items-center gap-2 bg-white border border-emerald-300 rounded-xl px-3 py-1.5 shadow-sm ring-1 ring-emerald-500/5">
+                            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">{t('hr.lblDate', 'Date')}</span>
+                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                                className="bg-transparent text-gray-900 text-sm outline-none cursor-pointer font-black" />
+                        </div>
+                        <button onClick={fetchAttendance} disabled={loading} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/30 active:scale-95 transition-all leading-none">
                             <RefreshCcw className={clsx("w-4 h-4", loading && "animate-spin")} />
                             {loading ? t('hr.syncing', 'Syncing...') : t('hr.btnLiveSync', 'Live Sync')}
                         </button>

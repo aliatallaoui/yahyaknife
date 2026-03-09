@@ -70,7 +70,7 @@ export default function WorkerCard() {
                 actions={
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none"
                     >
                         <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('hr.btnBack', 'Back')}
                     </button>

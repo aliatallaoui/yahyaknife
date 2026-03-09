@@ -39,7 +39,13 @@ const resources = {
                 hr_attendance: "Attendance",
                 hr_payroll: "Payroll",
                 hr_reports: "HR Reports",
-                production_tools: "Tool Management"
+                production_tools: "Tool Management",
+                projects: "Projects",
+                knives: {
+                    cards: "Work Orders",
+                    library: "BOM / Library",
+                    production: "Manufacturing Status"
+                }
             },
             header: {
                 searchPlaceholder: "Search orders, customers, SKUs...",
@@ -47,6 +53,30 @@ const resources = {
                 notifications: "Notifications",
                 profile: "My Account",
                 signout: "Secure Sign Out"
+            },
+            dropdown: {
+                accountSettings: "Account Settings",
+                myProfile: "My Profile",
+                profileDesc: "Personal details",
+                generalPref: "General Preferences",
+                generalDesc: "Language & Timezone",
+                security: "Security & Access",
+                securityDesc: "Passcodes & MFA",
+                new: "NEW",
+                orgRoles: "Roles & Org",
+                activeSession: "JWT Auth Active",
+                manageUsers: "Manage Users",
+                usersDesc: "Roles & Permissions",
+                preferences: "Preferences",
+                notifications: "Alert Notifications",
+                help: "Help & Docs",
+                signOut: "Secure Sign Out"
+            },
+            roles: {
+                superAdmin: "Super Admin",
+                admin: "Admin",
+                manager: "Manager",
+                employee: "Employee"
             },
             common: {
                 currency: "DZD",
@@ -533,7 +563,8 @@ const resources = {
                 statusSent: "Sent",
                 statusPartial: "Partial",
                 statusReceived: "Received",
-                statusCancelled: "Cancelled"
+                statusCancelled: "Cancelled",
+                searchPlaceholder: "Search PO or Supplier..."
             },
             hr: {
                 title: "HR & Workforce",
@@ -553,6 +584,8 @@ const resources = {
                 requestedAgo: "Requested",
                 btnApprove: "Approve",
                 btnReject: "Reject",
+                lblDate: "Date",
+                btnLiveSync: "Live Sync",
                 workforceUtilization: "Workforce Utilization",
                 activeWorking: "Active (Working)",
                 onLeaveInactive: "On Leave / Inactive",
@@ -1553,20 +1586,19 @@ const resources = {
                 hr_attendance: "الحضور",
                 hr_payroll: "الرواتب",
                 hr_reports: "تقارير الموارد البشرية",
-                production_tools: "إدارة الأدوات"
+                production_tools: "إدارة الأدوات",
+                projects: "المشاريع",
+                knives: {
+                    cards: "أوامر العمل",
+                    library: "قائمة المواد (BOM)",
+                    production: "حالة التصنيع"
+                }
             },
             header: {
-                searchPlaceholder: "البحث في الطلبات، العملاء، المنتجات...",
-                businessOS: "نظام كورتكس التشغيلي",
-                notifications: "الإشعارات",
+                searchPlaceholder: "البحث عن الطلبات، العملاء، السلع...",
+                businessOS: "كورتيكس - نظام إدارة الأعمال",
+                notifications: "التنبيهات",
                 profile: "حسابي",
-                signout: "تسجيل الخروج الآمن",
-                sectionAccountSettings: "إعدادات الحساب",
-                sectionRoleAccess: "الدور والصلاحيات",
-                sectionAdminTools: "أدوات المسؤول",
-                sectionPreferences: "التفضيلات",
-                itemGeneralSettings: "الإعدادات العامة",
-                itemGeneralSettingsSub: "اللغة، المنطقة الزمنية",
                 itemSecurity: "الأمان وسجلات الدخول",
                 itemSecuritySub: "كلمة المرور، التحقق الثنائي",
                 item2FAOff: "التحقق معطل",
@@ -2015,7 +2047,8 @@ const resources = {
                 statusSent: "مُرسل",
                 statusPartial: "جزئي",
                 statusReceived: "مُستلم",
-                statusCancelled: "ملغى"
+                statusCancelled: "ملغى",
+                searchPlaceholder: "ابحث عن طلب شراء أو مورد..."
             },
             logistics: {
                 title: "إدارة التوصيل",
@@ -2088,6 +2121,7 @@ const resources = {
                 requestedAgo: "طُلب",
                 btnApprove: "موافقة",
                 btnReject: "رفض",
+                lblDate: "التاريخ",
                 workforceUtilization: "استخدام القوى العاملة",
                 activeWorking: "نشط (يعمل)",
                 onLeaveInactive: "في إجازة / غير نشط",

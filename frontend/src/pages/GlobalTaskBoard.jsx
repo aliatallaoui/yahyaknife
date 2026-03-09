@@ -53,19 +53,31 @@ export default function GlobalTaskBoard() {
                 subtitle={t('gtbSubtitle', 'Unified visibility across all projects and operational lifecycles.')}
                 variant="projects"
                 actions={
-                    <div className="flex bg-white/10 rounded-xl p-1 border border-white/20">
-                        <button
-                            className={clsx("p-2 rounded-lg flex items-center justify-center transition-all", viewMode === 'kanban' ? "bg-[#5D5DFF] text-white shadow-lg" : "text-white/60 hover:text-white")}
-                            onClick={() => setViewMode('kanban')}
-                        >
-                            <LayoutGrid className="w-5 h-5" />
-                        </button>
-                        <button
-                            className={clsx("p-2 rounded-lg flex items-center justify-center transition-all", viewMode === 'list' ? "bg-[#8B5CF6] text-white shadow-lg" : "text-white/60 hover:text-white")}
-                            onClick={() => setViewMode('list')}
-                        >
-                            <List className="w-5 h-5" />
-                        </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-blue-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('projects.gtbSearch', 'Search tasks, assignees...')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="ps-9 pe-4 py-2 bg-white border border-blue-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                            />
+                        </div>
+                        <div className="flex bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
+                            <button
+                                className={clsx("p-2 rounded-lg flex items-center justify-center transition-all", viewMode === 'kanban' ? "bg-indigo-50 text-[#5D5DFF] shadow-sm ring-1 ring-indigo-500/10" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50")}
+                                onClick={() => setViewMode('kanban')}
+                            >
+                                <LayoutGrid className="w-5 h-5" />
+                            </button>
+                            <button
+                                className={clsx("p-2 rounded-lg flex items-center justify-center transition-all", viewMode === 'list' ? "bg-purple-50 text-[#8B5CF6] shadow-sm ring-1 ring-purple-500/10" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50")}
+                                onClick={() => setViewMode('list')}
+                            >
+                                <List className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 }
             />

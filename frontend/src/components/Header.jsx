@@ -15,7 +15,7 @@ const LANGUAGES = [
 ];
 
 export default function Header({ setMobileMenuOpen }) {
-    const { user, logout } = useContext(AuthContext);
+    const { user, token, logout, updateContextPreferences } = useContext(AuthContext);
     const { t, i18n } = useTranslation();
     const [profileOpen, setProfileOpen] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
@@ -39,9 +39,40 @@ export default function Header({ setMobileMenuOpen }) {
         if (window.confirm('Are you sure you want to sign out?')) logout();
     };
 
-    const handleLangChange = (code) => {
+    const handleLangChange = async (code) => {
+        // 1. Update UI and LocalStorage instantly
         i18n.changeLanguage(code);
         setLangOpen(false);
+
+        // 2. Optimistic Update of Context (prevents jumping back on refresh if token loads quickly)
+        if (user) {
+            updateContextPreferences({
+                ...(user.preferences || {}),
+                language: code
+            });
+        }
+
+        // 3. Sync to backend
+        if (user && token) {
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/preferences`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        language: code
+                    })
+                });
+
+                if (!res.ok) {
+                    console.error("Backend failed to save language preference");
+                }
+            } catch (error) {
+                console.error("Failed to sync language preference:", error);
+            }
+        }
     };
 
     return (
@@ -144,63 +175,95 @@ export default function Header({ setMobileMenuOpen }) {
                         {profileOpen && (
                             <div className="absolute end-0 mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                 {/* Profile Header */}
-                                <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-br from-indigo-50/50 to-blue-50/30">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center font-bold text-white text-lg shadow-md">
-                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                                    </div>
-                                    <div className="flex-1 overflow-hidden">
-                                        <h4 className="font-bold text-gray-900 truncate">{user?.name || 'User Account'}</h4>
-                                        <p className="text-xs text-gray-500 truncate">{user?.email || 'user@company.com'}</p>
-                                        <div className="mt-2 flex gap-1.5">
-                                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full capitalize">{user?.role || 'User'}</span>
-                                            {user?.department && <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{user?.department}</span>}
+                                <div className="px-2 py-1 flex flex-col gap-1 border-b border-gray-100 bg-gray-50/30">
+                                    <div className="flex items-center gap-3 px-3 py-2">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-inner">
+                                            {user?.name?.charAt(0)}
                                         </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-gray-900 leading-none mb-1">{user?.name}</span>
+                                            <span className="text-[10px] font-bold text-gray-400 truncate max-w-[140px] leading-none">{user?.email}</span>
+                                        </div>
+                                    </div>
+                                    <div className="px-3 pb-2 flex">
+                                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full border border-indigo-100">
+                                            {user?.role === 'Super Admin' ? t('roles.superAdmin', 'Super Admin') : user?.role}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="py-2">
-                                    <MenuSection label={t('header.sectionAccountSettings', 'Account Settings')}>
-                                        <MenuAction onClick={() => { setProfileOpen(false); navigate('/settings/general'); }} icon={Settings} label={t('header.itemGeneralSettings', 'General Settings')} subtitle={t('header.itemGeneralSettingsSub', 'Language, Timezone')} />
-                                        <MenuAction onClick={() => { setProfileOpen(false); navigate('/settings/security'); }} icon={Shield} label={t('header.itemSecurity', 'Security & Logins')} subtitle={t('header.itemSecuritySub', 'Password, 2FA')} badge={t('header.item2FAOff', '2FA Off')} badgeColor="bg-amber-100 text-amber-700" />
-                                    </MenuSection>
-
-                                    <div className="h-px bg-gray-100 mx-3 my-1" />
-
-                                    <MenuSection label={t('header.sectionRoleAccess', 'Role & Access')}>
-                                        <div className="px-3 py-2 flex items-start gap-3">
-                                            <div className="mt-0.5 text-blue-500 shrink-0"><CheckCircle2 className="w-4 h-4" /></div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900 capitalize">{user?.role || 'User'}</p>
-                                                <p className="text-[10px] text-gray-400 mt-0.5">{t('header.itemRoleAccessSub', 'Access granted via JWT scope policy')}</p>
-                                            </div>
+                                <div className="p-1 space-y-0.5">
+                                    <p className="text-[10px] font-bold text-gray-400 px-3 pt-2 pb-1 uppercase tracking-widest">{t('dropdown.accountSettings', 'Account Settings')}</p>
+                                    <button onClick={() => { navigate('/settings/profile'); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors group">
+                                        <div className="p-1.5 bg-gray-50 group-hover:bg-indigo-100 rounded-md transition-colors">
+                                            <Users className="w-4 h-4" /> {/* Changed from User to Users based on the provided snippet, assuming it's a typo in the instruction and should be User */}
                                         </div>
-                                    </MenuSection>
+                                        <div className="flex flex-col items-start translate-y-[-1px]">
+                                            <span>{t('dropdown.myProfile', 'My Profile')}</span>
+                                            <span className="text-[10px] font-medium text-gray-400 leading-none">{t('dropdown.profileDesc', 'Personal details')}</span>
+                                        </div>
+                                    </button>
 
-                                    {isAdmin && (
-                                        <>
-                                            <div className="h-px bg-gray-100 mx-3 my-1" />
-                                            <MenuSection label={t('header.sectionAdminTools', 'Admin Tools')} labelColor="text-indigo-600">
-                                                <MenuAction onClick={() => { setProfileOpen(false); navigate('/settings/users'); }} icon={Users} label={t('header.itemUserManagement', 'User Management')} subtitle={t('header.itemUserManagementSub', 'Roles, permissions & policies')} />
-                                            </MenuSection>
-                                        </>
-                                    )}
+                                    <button onClick={() => { navigate('/settings/general'); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group">
+                                        <div className="p-1.5 bg-gray-50 group-hover:bg-blue-100 rounded-md transition-colors">
+                                            <Settings className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex flex-col items-start translate-y-[-1px]">
+                                            <span>{t('dropdown.generalPref', 'General Preferences')}</span>
+                                            <span className="text-[10px] font-medium text-gray-400 leading-none">{t('dropdown.generalDesc', 'Language & Timezone')}</span>
+                                        </div>
+                                    </button>
 
-                                    <div className="h-px bg-gray-100 mx-3 my-1" />
-
-                                    <MenuSection label={t('header.sectionPreferences', 'Preferences')}>
-                                        <MenuAction onClick={() => { setProfileOpen(false); navigate('/settings/alerts'); }} icon={BellRing} label={t('header.itemNotifications', 'Notification Alerts')} subtitle={t('header.itemNotificationsSub', 'Orders, Low Stock, Tasks')} />
-                                        <MenuAction onClick={() => { setProfileOpen(false); }} icon={HelpCircle} label={t('header.itemHelp', 'Help & Documentation')} />
-                                    </MenuSection>
+                                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors group">
+                                        <div className="p-1.5 bg-gray-50 group-hover:bg-orange-100 rounded-md transition-colors">
+                                            <Shield className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex flex-col items-start translate-y-[-1px]">
+                                            <span>{t('dropdown.security', 'Security & Access')}</span>
+                                            <span className="text-[10px] font-medium text-gray-400 leading-none">{t('dropdown.securityDesc', 'Passcodes & MFA')}</span>
+                                        </div>
+                                        <span className="ms-auto text-[9px] font-bold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('dropdown.new', 'NEW')}</span>
+                                    </button>
                                 </div>
 
-                                {/* Sign Out */}
-                                <div className="p-2 border-t border-gray-100">
+                                <div className="p-1 border-t border-gray-100 mt-1">
+                                    <p className="text-[10px] font-bold text-gray-400 px-3 pt-2 pb-1 uppercase tracking-widest">{t('dropdown.orgRoles', 'Roles & Org')}</p>
+                                    <div className="px-3 py-1 flex items-center gap-2 mb-2">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                                        <span className="text-[11px] font-bold text-indigo-600">{user?.role}</span>
+                                        <span className="text-[10px] text-gray-400 font-medium italic">{t('dropdown.activeSession', 'JWT Auth Active')}</span>
+                                    </div>
+
+                                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors group">
+                                        <div className="p-1.5 bg-gray-50 group-hover:bg-indigo-100 rounded-md transition-colors text-indigo-400">
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex flex-col items-start translate-y-[-1px]">
+                                            <span>{t('dropdown.manageUsers', 'Manage Users')}</span>
+                                            <span className="text-[10px] font-medium text-gray-400 leading-none">{t('dropdown.usersDesc', 'Roles & Permissions')}</span>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className="p-1 border-t border-gray-100 mt-1">
+                                    <p className="text-[10px] font-bold text-gray-400 px-3 pt-2 pb-1 uppercase tracking-widest">{t('dropdown.preferences', 'Preferences')}</p>
+                                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-lg transition-colors group">
+                                        <Bell className="w-4 h-4 text-gray-400" />
+                                        <span>{t('dropdown.notifications', 'Alert Notifications')}</span>
+                                    </button>
+                                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-lg transition-colors group">
+                                        <HelpCircle className="w-4 h-4 text-gray-400" />
+                                        <span>{t('dropdown.help', 'Help & Docs')}</span>
+                                    </button>
+                                </div>
+
+                                <div className="p-2 bg-gray-50 border-t border-gray-100 mt-2">
                                     <button
                                         onClick={handleSignOut}
-                                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-200 border border-transparent hover:border-rose-100"
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-white border border-rose-100 text-rose-600 font-bold rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 group"
                                     >
-                                        <LogOut className="w-4 h-4" />
-                                        {t('header.signout', 'تسجيل الخروج')}
+                                        <LogOut className="w-4 h-4 rotate-180 group-hover:translate-x-1 duration-200" />
+                                        {t('dropdown.signOut', 'Secure Sign Out')}
                                     </button>
                                 </div>
                             </div>
