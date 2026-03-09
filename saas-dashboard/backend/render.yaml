@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: MONGO_URI
+        fromSecret: MONGO_URI
+      - key: PORT
+        value: "5000"
+    region: oregon
+    autoDeploy: true
