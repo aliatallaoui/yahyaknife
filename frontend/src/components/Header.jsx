@@ -2,7 +2,7 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import {
     MessageSquare, Bell, ChevronDown, LogOut,
     Settings, Shield, Users, BellRing, HelpCircle,
-    CheckCircle2, Globe, Check
+    CheckCircle2, Globe, Check, Menu
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import clsx from 'clsx';
@@ -14,7 +14,7 @@ const LANGUAGES = [
     { code: 'en', label: 'English', flag: '🇬🇧', dir: 'ltr' },
 ];
 
-export default function Header() {
+export default function Header({ setMobileMenuOpen }) {
     const { user, logout } = useContext(AuthContext);
     const { t, i18n } = useTranslation();
     const [profileOpen, setProfileOpen] = useState(false);
@@ -48,9 +48,17 @@ export default function Header() {
         <header className="h-[72px] px-8 flex items-center border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-40">
             <div className="flex items-center justify-between w-full">
                 {/* Left: Page Title */}
-                <div>
-                    <h1 className="text-xl font-black text-gray-900 tracking-tight leading-tight">{t('dashboard.title', 'لوحة التحكم')}</h1>
-                    <p className="text-xs text-gray-500 font-medium mt-0.5">{t('dashboard.subtitle', 'المؤشرات الرئيسية للأداء')}</p>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setMobileMenuOpen?.(true)}
+                        className="p-1 -ms-2 text-gray-600 hover:bg-gray-100 rounded-lg md:hidden"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-xl font-black text-gray-900 tracking-tight leading-tight">{t('dashboard.title', 'لوحة التحكم')}</h1>
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">{t('dashboard.subtitle', 'المؤشرات الرئيسية للأداء')}</p>
+                    </div>
                 </div>
 
                 {/* Right: Controls */}

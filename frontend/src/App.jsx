@@ -53,6 +53,7 @@ const Layout = () => {
   const { i18n } = useTranslation();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
@@ -82,15 +83,21 @@ const Layout = () => {
   return (
     <div className="flex bg-gray-50 min-h-screen">
       {/* Sidebar - Fixed */}
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      <Sidebar 
+        open={sidebarOpen} 
+        setOpen={setSidebarOpen} 
+        mobileOpen={mobileMenuOpen}
+        setMobileOpen={setMobileMenuOpen}
+      />
 
       {/* Main Content Area - shifts based on sidebar state */}
       <main
-        className="flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300"
-        style={{ marginInlineStart: sidebarOpen ? '320px' : '72px' }}
+        className={`flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300 ${
+          sidebarOpen ? 'md:ms-[320px]' : 'md:ms-[72px]'
+        }`}
       >
         {/* Header - Contextual */}
-        <Header />
+        <Header setMobileMenuOpen={setMobileMenuOpen} />
 
         {/* Dashboard Content Pages */}
         <div className="px-4 pt-10 pb-12 sm:px-8 lg:px-10 xl:px-14 2xl:px-16 w-full">

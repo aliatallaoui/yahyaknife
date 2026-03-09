@@ -46,7 +46,7 @@ function NavSection({ title, icon: Icon, activePrefixes = [], children, sidebarO
     );
 }
 
-export default function Sidebar({ open = true, setOpen }) {
+export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpen }) {
     const location = useLocation();
     const { user, logout } = useContext(AuthContext);
     const { t } = useTranslation();
@@ -70,155 +70,168 @@ export default function Sidebar({ open = true, setOpen }) {
     );
 
     return (
-        <div className="flex bg-white h-screen border-e border-gray-100/80 flex-shrink-0 fixed start-0 top-0 z-50 shadow-sm">
-            {/* 1) Mini Strip */}
-            <div className="w-[72px] flex flex-col items-center py-5 border-e border-gray-100 flex-shrink-0 bg-gray-50/50">
-                {/* Logo */}
-                <div className="w-11 h-11 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 rounded-xl flex items-center justify-center text-white mb-8 shadow-lg cursor-pointer hover:scale-105 transition-transform">
-                    <Layers className="w-5 h-5" />
-                </div>
+        <>
+            {/* Mobile Overlay */}
+            {mobileOpen && (
+                <div
+                    className="fixed inset-0 bg-gray-900/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setMobileOpen?.(false)}
+                />
+            )}
 
-                {/* Icon Links */}
-                <div className="flex flex-col gap-3 flex-1 items-center">
-                    {[
-                        { Icon: LayoutDashboard, path: '_dashboard' },
-                        { Icon: ShoppingBag, path: '/sales' },
-                        { Icon: Archive, path: '/inventory' },
-                        { Icon: Box, path: '/warehouses' },
-                        { Icon: LineChart, path: '/financial' },
-                    ].map(({ Icon, path }, i) => (
-                        <div key={i} className={clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-200", i === 0 ? "bg-blue-600 text-white shadow-md shadow-blue-200" : isPath(path) ? "bg-blue-50 text-blue-600" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
-                            <Icon className="w-5 h-5" />
-                        </div>
-                    ))}
-                </div>
-
-                {/* Bottom Utils */}
-                <div className="flex flex-col gap-3 mt-auto items-center">
-                    <div className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer transition-all">
-                        <HelpCircle className="w-5 h-5" />
+            <div className={clsx(
+                "flex bg-white h-screen border-e border-gray-100/80 flex-shrink-0 fixed start-0 top-0 z-50 shadow-sm transition-transform duration-300",
+                mobileOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full md:translate-x-0 md:rtl:translate-x-0"
+            )}>
+                {/* 1) Mini Strip */}
+                <div className="w-[72px] flex flex-col items-center py-5 border-e border-gray-100 flex-shrink-0 bg-gray-50/50">
+                    {/* Logo */}
+                    <div className="w-11 h-11 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 rounded-xl flex items-center justify-center text-white mb-8 shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                        <Layers className="w-5 h-5" />
                     </div>
-                    <NavLink to="/settings/users" className={({ isActive }) => clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all", isActive ? "text-blue-600 bg-blue-50 shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
-                        <Settings className="w-5 h-5" />
-                    </NavLink>
-                    <button onClick={logout} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer transition-all">
-                        <LogOut className="w-5 h-5" />
-                    </button>
-                    {/* Toggle button */}
-                    {setOpen && (
-                        <button
-                            onClick={() => setOpen(!open)}
-                            title={open ? 'Collapse sidebar' : 'Expand sidebar'}
-                            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl cursor-pointer transition-all"
-                        >
-                            {open ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+
+                    {/* Icon Links */}
+                    <div className="flex flex-col gap-3 flex-1 items-center">
+                        {[
+                            { Icon: LayoutDashboard, path: '_dashboard' },
+                            { Icon: ShoppingBag, path: '/sales' },
+                            { Icon: Archive, path: '/inventory' },
+                            { Icon: Box, path: '/warehouses' },
+                            { Icon: LineChart, path: '/financial' },
+                        ].map(({ Icon, path }, i) => (
+                            <div key={i} className={clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-200", i === 0 ? "bg-blue-600 text-white shadow-md shadow-blue-200" : isPath(path) ? "bg-blue-50 text-blue-600" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
+                                <Icon className="w-5 h-5" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Bottom Utils */}
+                    <div className="flex flex-col gap-3 mt-auto items-center">
+                        <div className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer transition-all">
+                            <HelpCircle className="w-5 h-5" />
+                        </div>
+                        <NavLink to="/settings/users" className={({ isActive }) => clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all", isActive ? "text-blue-600 bg-blue-50 shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
+                            <Settings className="w-5 h-5" />
+                        </NavLink>
+                        <button onClick={logout} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer transition-all">
+                            <LogOut className="w-5 h-5" />
                         </button>
-                    )}
-                </div>
-            </div>
-
-            {/* 2) Main Nav Drawer — collapses when sidebar is closed */}
-            <div
-                className="flex flex-col pt-5 pb-4 bg-white/60 overflow-hidden transition-all duration-300"
-                style={{ width: open ? '248px' : '0px', opacity: open ? 1 : 0 }}
-            >
-                {/* Search */}
-                <div className="px-4 mb-7">
-                    <div className="relative group">
-                        <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder={t('sidebar.searchMenu', 'البحث في القائمة')}
-                            className="w-full bg-gray-100/80 hover:bg-gray-100 focus:bg-white border border-transparent focus:border-blue-300 focus:ring-4 focus:ring-blue-50 outline-none rounded-xl py-2.5 ps-10 pe-4 text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all"
-                        />
+                        {/* Toggle button */}
+                        {setOpen && (
+                            <button
+                                onClick={() => setOpen(!open)}
+                                title={open ? 'Collapse sidebar' : 'Expand sidebar'}
+                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl cursor-pointer transition-all"
+                            >
+                                {open ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* Nav */}
-                <div className="flex-1 overflow-y-auto px-3 custom-scrollbar space-y-6">
-
-                    {/* Main Views */}
-                    <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-2">{t('sidebar.mainMenu', 'نظرة عامة')}</p>
-                        <div className="flex flex-col gap-0.5">
-                            <NavLink to="/" end className={mainLink}>
-                                <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/') && location.pathname === '/' ? "bg-blue-100" : "bg-gray-100")}><LayoutDashboard className={clsx("w-4 h-4", isPath('/') && location.pathname === '/' ? "text-blue-600" : "text-gray-500")} /></div>
-                                {t('sidebar.dashboard', 'لوحة التحكم')}
-                            </NavLink>
-                            {hasAccess(['Finance Controller', 'Super Admin']) && (
-                                <NavLink to="/financial" className={mainLink}>
-                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/financial') ? "bg-blue-100" : "bg-gray-100")}><FileText className={clsx("w-4 h-4", isPath('/financial') ? "text-blue-600" : "text-gray-500")} /></div>
-                                    {t('sidebar.financial', 'المالية')}
-                                </NavLink>
-                            )}
-                            {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
-                                <NavLink to="/sales" className={mainLink}>
-                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/sales') ? "bg-blue-100" : "bg-gray-100")}><RefreshCw className={clsx("w-4 h-4", isPath('/sales') ? "text-blue-600" : "text-gray-500")} /></div>
-                                    {t('sidebar.sales', 'محرك المبيعات')}
-                                </NavLink>
-                            )}
-                            {hasAccess(['Finance Controller', 'Warehouse Supervisor', 'Production Lead', 'Sales Representative', 'Super Admin']) && (
-                                <NavLink to="/inventory" className={mainLink}>
-                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/inventory') ? "bg-blue-100" : "bg-gray-100")}><Box className={clsx("w-4 h-4", isPath('/inventory') ? "text-blue-600" : "text-gray-500")} /></div>
-                                    {t('sidebar.inventory', 'تتبع المخزون')}
-                                </NavLink>
-                            )}
-                            {hasAccess(['Warehouse Supervisor', 'Production Lead', 'Super Admin']) && (
-                                <NavLink to="/warehouses" className={mainLink}>
-                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/warehouses') ? "bg-blue-100" : "bg-gray-100")}><Layers className={clsx("w-4 h-4", isPath('/warehouses') ? "text-blue-600" : "text-gray-500")} /></div>
-                                    {t('sidebar.warehouses', 'المستودعات والخدمات اللوجستية')}
-                                </NavLink>
-                            )}
-                            {hasAccess(['Warehouse Supervisor', 'Sales Representative', 'Super Admin']) && (
-                                <NavSection title={t('sidebar.logistics', 'اللوجستيات والشحن')} icon={Truck} activePrefixes={['/couriers']} sidebarOpen={open}>
-                                    <NavLink to="/couriers" end className={subLink}>{t('sidebar.logistics_analytics', 'تحليلات التوصيل')}</NavLink>
-                                    <NavLink to="/couriers/dispatch" className={subLink}>{t('sidebar.logistics_dispatch', 'مركز الإرسال')}</NavLink>
-                                </NavSection>
-                            )}
+                {/* 2) Main Nav Drawer — collapses when sidebar is closed */}
+                <div
+                    className="flex flex-col pt-5 pb-4 bg-white/60 overflow-hidden transition-all duration-300"
+                    style={{ width: open ? '248px' : '0px', opacity: open ? 1 : 0 }}
+                >
+                    {/* Search */}
+                    <div className="px-4 mb-7">
+                        <div className="relative group">
+                            <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder={t('sidebar.searchMenu', 'البحث في القائمة')}
+                                className="w-full bg-gray-100/80 hover:bg-gray-100 focus:bg-white border border-transparent focus:border-blue-300 focus:ring-4 focus:ring-blue-50 outline-none rounded-xl py-2.5 ps-10 pe-4 text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all"
+                            />
                         </div>
                     </div>
 
-                    {/* Department Accordions */}
-                    <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-2">{t('sidebar.departments', 'الأقسام والتشغيل')}</p>
-                        <div className="flex flex-col gap-0.5">
-                            {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
-                                <NavSection title={t('sidebar.crm', 'دعم العملاء')} icon={Users} activePrefixes={['/customers', '/support']}>
-                                    <NavLink to="/customers" className={subLink}>{t('sidebar.crm_acquisition', 'الاستحواذ والملاحظات')}</NavLink>
-                                    <NavLink to="/support" className={subLink}>{t('sidebar.crm_support', 'الدعم والمرتجعات')}</NavLink>
+                    {/* Nav */}
+                    <div className="flex-1 overflow-y-auto px-3 custom-scrollbar space-y-6">
+
+                        {/* Main Views */}
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-2">{t('sidebar.mainMenu', 'نظرة عامة')}</p>
+                            <div className="flex flex-col gap-0.5">
+                                <NavLink to="/" end className={mainLink}>
+                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/') && location.pathname === '/' ? "bg-blue-100" : "bg-gray-100")}><LayoutDashboard className={clsx("w-4 h-4", isPath('/') && location.pathname === '/' ? "text-blue-600" : "text-gray-500")} /></div>
+                                    {t('sidebar.dashboard', 'لوحة التحكم')}
+                                </NavLink>
+                                {hasAccess(['Finance Controller', 'Super Admin']) && (
+                                    <NavLink to="/financial" className={mainLink}>
+                                        <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/financial') ? "bg-blue-100" : "bg-gray-100")}><FileText className={clsx("w-4 h-4", isPath('/financial') ? "text-blue-600" : "text-gray-500")} /></div>
+                                        {t('sidebar.financial', 'المالية')}
+                                    </NavLink>
+                                )}
+                                {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
+                                    <NavLink to="/sales" className={mainLink}>
+                                        <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/sales') ? "bg-blue-100" : "bg-gray-100")}><RefreshCw className={clsx("w-4 h-4", isPath('/sales') ? "text-blue-600" : "text-gray-500")} /></div>
+                                        {t('sidebar.sales', 'محرك المبيعات')}
+                                    </NavLink>
+                                )}
+                                {hasAccess(['Finance Controller', 'Warehouse Supervisor', 'Production Lead', 'Sales Representative', 'Super Admin']) && (
+                                    <NavLink to="/inventory" className={mainLink}>
+                                        <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/inventory') ? "bg-blue-100" : "bg-gray-100")}><Box className={clsx("w-4 h-4", isPath('/inventory') ? "text-blue-600" : "text-gray-500")} /></div>
+                                        {t('sidebar.inventory', 'تتبع المخزون')}
+                                    </NavLink>
+                                )}
+                                {hasAccess(['Warehouse Supervisor', 'Production Lead', 'Super Admin']) && (
+                                    <NavLink to="/warehouses" className={mainLink}>
+                                        <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/warehouses') ? "bg-blue-100" : "bg-gray-100")}><Layers className={clsx("w-4 h-4", isPath('/warehouses') ? "text-blue-600" : "text-gray-500")} /></div>
+                                        {t('sidebar.warehouses', 'المستودعات والخدمات اللوجستية')}
+                                    </NavLink>
+                                )}
+                                {hasAccess(['Warehouse Supervisor', 'Sales Representative', 'Super Admin']) && (
+                                    <NavSection title={t('sidebar.logistics', 'اللوجستيات والشحن')} icon={Truck} activePrefixes={['/couriers']} sidebarOpen={open}>
+                                        <NavLink to="/couriers" end className={subLink}>{t('sidebar.logistics_analytics', 'تحليلات التوصيل')}</NavLink>
+                                        <NavLink to="/couriers/dispatch" className={subLink}>{t('sidebar.logistics_dispatch', 'مركز الإرسال')}</NavLink>
+                                    </NavSection>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Department Accordions */}
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-2">{t('sidebar.departments', 'الأقسام والتشغيل')}</p>
+                            <div className="flex flex-col gap-0.5">
+                                {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
+                                    <NavSection title={t('sidebar.crm', 'دعم العملاء')} icon={Users} activePrefixes={['/customers', '/support']}>
+                                        <NavLink to="/customers" className={subLink}>{t('sidebar.crm_acquisition', 'الاستحواذ والملاحظات')}</NavLink>
+                                        <NavLink to="/support" className={subLink}>{t('sidebar.crm_support', 'الدعم والمرتجعات')}</NavLink>
+                                    </NavSection>
+                                )}
+                                {/* ── Knife Workshop ── */}
+                                <NavSection title={`🗡️ ${t('knives.workshop', 'Knife Workshop')}`} icon={Sword} activePrefixes={['/knives', '/production/tools']} sidebarOpen={open}>
+                                    <NavLink to="/knives" end className={subLink}>{t('knives.cards', 'Knife Cards')}</NavLink>
+                                    <NavLink to="/knives/library" className={subLink}>{t('knives.library', 'Knife Library')}</NavLink>
+                                    <NavLink to="/knives/production" className={subLink}>{t('knives.production', 'Production Kanban')}</NavLink>
+                                    <NavLink to="/production/tools" className={subLink}>{t('tools.management', 'Tool Management')}</NavLink>
                                 </NavSection>
-                            )}
-                            {/* ── Knife Workshop ── */}
-                            <NavSection title={`🗡️ ${t('knives.workshop', 'Knife Workshop')}`} icon={Sword} activePrefixes={['/knives', '/production/tools']} sidebarOpen={open}>
-                                <NavLink to="/knives" end className={subLink}>{t('knives.cards', 'Knife Cards')}</NavLink>
-                                <NavLink to="/knives/library" className={subLink}>{t('knives.library', 'Knife Library')}</NavLink>
-                                <NavLink to="/knives/production" className={subLink}>{t('knives.production', 'Production Kanban')}</NavLink>
-                                <NavLink to="/production/tools" className={subLink}>{t('tools.management', 'Tool Management')}</NavLink>
-                            </NavSection>
-                            {hasAccess(['Production Lead', 'Warehouse Supervisor', 'Super Admin']) && (
-                                <NavSection title={t('sidebar.manufacturing', 'أرضية التصنيع')} icon={PackageOpen} activePrefixes={['/production', '/procurement']}>
-                                    <NavLink to="/production" className={subLink}>{t('sidebar.mfg_production', 'الإنتاج وقوائم المواد')}</NavLink>
-                                    <NavLink to="/procurement" className={subLink}>{t('sidebar.procurement', 'مركز المشتريات')}</NavLink>
-                                </NavSection>
-                            )}
-                            {hasAccess(['HR Manager', 'Super Admin']) && (
-                                <NavSection title={t('sidebar.hr', 'الموارد البشرية')} icon={Briefcase} activePrefixes={['/hr']}>
-                                    <NavLink to="/hr" end className={subLink}>{t('sidebar.hr_directory', 'الدليل والإجازات')}</NavLink>
-                                    <NavLink to="/hr/attendance" className={subLink}>{t('sidebar.hr_attendance', 'الحضور اليومي')}</NavLink>
-                                    <NavLink to="/hr/payroll" className={subLink}>{t('sidebar.hr_payroll', 'الرواتب الشهرية')}</NavLink>
-                                    <NavLink to="/hr/reports" className={subLink}>{t('sidebar.hr_reports', 'التقارير والبيانات')}</NavLink>
-                                </NavSection>
-                            )}
-                            {hasAccess(['Production Lead', 'Super Admin']) && (
-                                <NavSection title={t('sidebar.projects', 'حالة المشاريع')} icon={Flag} activePrefixes={['/projects']}>
-                                    <NavLink to="/projects" end className={subLink}>{t('sidebar.projects_portfolio', 'المحفظة النشطة')}</NavLink>
-                                    <NavLink to="/projects/tasks" className={subLink}>{t('sidebar.projects_tasks', 'لوحة المهام العالمية')}</NavLink>
-                                </NavSection>
-                            )}
+                                {hasAccess(['Production Lead', 'Warehouse Supervisor', 'Super Admin']) && (
+                                    <NavSection title={t('sidebar.manufacturing', 'أرضية التصنيع')} icon={PackageOpen} activePrefixes={['/production', '/procurement']}>
+                                        <NavLink to="/production" className={subLink}>{t('sidebar.mfg_production', 'الإنتاج وقوائم المواد')}</NavLink>
+                                        <NavLink to="/procurement" className={subLink}>{t('sidebar.procurement', 'مركز المشتريات')}</NavLink>
+                                    </NavSection>
+                                )}
+                                {hasAccess(['HR Manager', 'Super Admin']) && (
+                                    <NavSection title={t('sidebar.hr', 'الموارد البشرية')} icon={Briefcase} activePrefixes={['/hr']}>
+                                        <NavLink to="/hr" end className={subLink}>{t('sidebar.hr_directory', 'الدليل والإجازات')}</NavLink>
+                                        <NavLink to="/hr/attendance" className={subLink}>{t('sidebar.hr_attendance', 'الحضور اليومي')}</NavLink>
+                                        <NavLink to="/hr/payroll" className={subLink}>{t('sidebar.hr_payroll', 'الرواتب الشهرية')}</NavLink>
+                                        <NavLink to="/hr/reports" className={subLink}>{t('sidebar.hr_reports', 'التقارير والبيانات')}</NavLink>
+                                    </NavSection>
+                                )}
+                                {hasAccess(['Production Lead', 'Super Admin']) && (
+                                    <NavSection title={t('sidebar.projects', 'حالة المشاريع')} icon={Flag} activePrefixes={['/projects']}>
+                                        <NavLink to="/projects" end className={subLink}>{t('sidebar.projects_portfolio', 'المحفظة النشطة')}</NavLink>
+                                        <NavLink to="/projects/tasks" className={subLink}>{t('sidebar.projects_tasks', 'لوحة المهام العالمية')}</NavLink>
+                                    </NavSection>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
