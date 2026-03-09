@@ -51,6 +51,7 @@ export default function GlobalTaskBoard() {
             <PageHeader
                 title={t('gtbTitle', 'Global Task Board')}
                 subtitle={t('gtbSubtitle', 'Unified visibility across all projects and operational lifecycles.')}
+                variant="projects"
                 actions={
                     <div className="flex bg-white/10 rounded-xl p-1 border border-white/20">
                         <button

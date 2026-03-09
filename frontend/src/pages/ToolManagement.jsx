@@ -108,6 +108,7 @@ export default function ToolManagement() {
             <PageHeader
                 title={t('tools.title', 'Tool Management & Machinery')}
                 subtitle={t('tools.subtitle', 'Track operational status, assignments, and repair history')}
+                variant="inventory"
                 actions={
                     <button
                         onClick={() => openToolModal()}

@@ -138,6 +138,7 @@ export default function HRSnapshot() {
             <PageHeader
                 title={t('hr.title', 'HR Snapshot')}
                 subtitle={t('hr.subtitle', 'Dynamic workforce management, performance tracking, and payroll.')}
+                variant="hr"
                 actions={
                     <>
                         <button onClick={() => { setSelectedEmployee(null); setIsModalOpen(true); }} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">

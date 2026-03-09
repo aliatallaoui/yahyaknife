@@ -91,6 +91,7 @@ export default function CustomerInsight() {
             <PageHeader
                 title={t('crm.title', 'Customer Intelligence OS')}
                 subtitle={t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}
+                variant="customers"
                 actions={
                     <button
                         onClick={handleCreateClick}

@@ -185,6 +185,7 @@ export default function KnifeLibrary() {
             <PageHeader
                 title={t('knives.libraryTitle', 'Knife Architecture Library')}
                 subtitle={t('knives.libraryDesc', 'Design and manage reusable patterns for high-precision bladesmithing.')}
+                variant="production"
                 actions={
                     <div className="flex items-center gap-2">
                         <button

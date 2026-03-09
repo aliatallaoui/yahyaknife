@@ -46,6 +46,7 @@ export default function Couriers() {
             <PageHeader
                 title={t('couriers.dashboardTitle', 'Delivery Analytics')}
                 subtitle={t('couriers.dashboardSubtitle', 'Monitor fleet performance and ECOTRACK synchronization.')}
+                variant="sales"
                 actions={
                     <button className="flex items-center gap-2 px-6 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none">
                         <Settings className="w-5 h-5" /> {t('common.settings', 'Logistics Settings')}

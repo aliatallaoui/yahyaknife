@@ -124,6 +124,7 @@ export default function HRAttendance() {
             <PageHeader
                 title={t('hr.attendanceTitle', 'Staff Attendance')}
                 subtitle={t('hr.attendanceSubtitle', 'Live clock-in tracking and automated work-hour computation.')}
+                variant="hr"
                 actions={
                     <div className="flex flex-wrap gap-3">
                         <input type="date" value={date} onChange={(e) => setDate(e.target.value)}

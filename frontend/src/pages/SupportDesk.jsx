@@ -114,6 +114,7 @@ export default function SupportDesk() {
             <PageHeader
                 title={t('crm.helpdeskInbox', 'Support Desk')}
                 subtitle={t('crm.subtitle', 'Live customer communication and issue resolution center.')}
+                variant="customers"
                 actions={
                     <button className="flex items-center gap-2 px-6 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 leading-none">
                         <Plus className="w-5 h-5" /> {t('crm.newTicket', 'Manual Ticket')}

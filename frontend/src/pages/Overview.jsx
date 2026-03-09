@@ -37,6 +37,7 @@ export default function Overview() {
             <PageHeader
                 title={t('dashboard.title', 'Operations Overview')}
                 subtitle={t('dashboard.subtitle', 'Real-time monitoring of sales, inventory, and workshop performance.')}
+                variant="finance"
             />
             <DashboardGrid data={data} />
         </div>

@@ -262,6 +262,7 @@ export default function Sales() {
             <PageHeader
                 title={t('sales.title', 'Sales Management')}
                 subtitle={t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}
+                variant="sales"
                 actions={
                     <>
                         <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">

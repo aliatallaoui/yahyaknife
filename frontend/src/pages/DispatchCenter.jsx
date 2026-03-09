@@ -135,6 +135,7 @@ export default function DispatchCenter() {
             <PageHeader
                 title={t('dispatch.title', 'Dispatch & Logistics Center')}
                 subtitle={t('dispatch.subtitle', 'Manage outbound ECOTRACK shipments, tracking statuses, and returns.')}
+                variant="sales"
                 actions={
                     <div className="flex flex-wrap gap-3">
                         <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-95">

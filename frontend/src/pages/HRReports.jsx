@@ -299,6 +299,7 @@ export default function HRReports() {
             <PageHeader
                 title={t('hr.reportsTitle', 'Analytical Intelligence')}
                 subtitle={t('hr.reportsSubtitle', 'Comprehensive visibility into workforce performance and financial liabilities.')}
+                variant="hr"
                 actions={
                     <div className="flex flex-wrap gap-3">
                         {activeReport === 'daily' ? (

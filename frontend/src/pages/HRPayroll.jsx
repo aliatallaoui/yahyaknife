@@ -80,6 +80,7 @@ export default function HRPayroll() {
             <PageHeader
                 title={t('hr.payrollTitle', 'Enterprise Payroll')}
                 subtitle={t('hr.payrollSubtitle', 'Automated salary distribution and compliance tracking.')}
+                variant="hr"
                 actions={
                     <div className="flex flex-wrap gap-3">
                         <select

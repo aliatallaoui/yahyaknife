@@ -55,6 +55,7 @@ export default function ProcurementHub() {
             <PageHeader
                 title={t('procurement.title', 'Procurement Hub')}
                 subtitle={t('procurement.subtitle', 'Strategic sourcing, purchase orders, and supplier relationship management.')}
+                variant="procurement"
                 actions={
                     <>
                         <button className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">

@@ -97,6 +97,7 @@ export default function CustomerProfile() {
             <PageHeader
                 title={customer.name}
                 subtitle={`${t('crm.customerProfileSubtitle', 'Intelligence profile for')} ${customer.email || customer.name}`}
+                variant="customers"
                 actions={
                     <button
                         onClick={() => navigate('/customers')}

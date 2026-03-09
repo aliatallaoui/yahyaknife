@@ -70,6 +70,7 @@ export default function Warehouses() {
             <PageHeader
                 title={t('warehouses.title', 'Enterprise Logistics')}
                 subtitle={t('warehouses.subtitle', 'Manage Multi-Warehouse operations, Movement ledgers, and Supplier SLAs.')}
+                variant="inventory"
                 actions={
                     <div className="flex flex-wrap gap-1 bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md">
                         <button onClick={() => setActiveTab('warehouses')} className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'warehouses' ? 'bg-[#5D5DFF] text-white shadow-lg shadow-blue-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>

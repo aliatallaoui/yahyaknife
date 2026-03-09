@@ -189,6 +189,7 @@ export default function KnifeDashboard() {
             <PageHeader
                 title={t('knives.workshop', 'Knife Workshop')}
                 subtitle={t('knives.overviewDesc', 'Track every knife from design to sale')}
+                variant="production"
                 actions={
                     <button
                         onClick={handleNew}

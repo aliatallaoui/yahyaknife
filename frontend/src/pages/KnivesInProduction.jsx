@@ -83,6 +83,7 @@ export default function KnivesInProduction() {
             <PageHeader
                 title={t('knives.productionTitle', 'Production Floor')}
                 subtitle={t('knives.productionDesc', 'Monitor and manage knife lifecycles across the bladesmithing workshop.')}
+                variant="production"
                 actions={
                     <div className="flex flex-wrap gap-3">
                         <div className="relative">

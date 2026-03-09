@@ -9,12 +9,27 @@ import clsx from 'clsx';
  * @param {string} props.subtitle - Subtitle text (optional)
  * @param {React.ReactNode} props.actions - Action buttons/controls (optional)
  */
-const PageHeader = ({ title, subtitle, actions }) => {
+const PageHeader = ({ title, subtitle, actions, variant = 'default' }) => {
     const { i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
 
+    const variants = {
+        default: "bg-white border-gray-100",
+        finance: "bg-gradient-to-br from-indigo-50/50 to-white border-indigo-100",
+        inventory: "bg-gradient-to-br from-amber-50/50 to-white border-amber-100",
+        hr: "bg-gradient-to-br from-teal-50/50 to-white border-teal-100",
+        sales: "bg-gradient-to-br from-rose-50/50 to-white border-rose-100",
+        projects: "bg-gradient-to-br from-blue-50/50 to-white border-blue-100",
+        production: "bg-gradient-to-br from-slate-50/50 to-white border-slate-200",
+        procurement: "bg-gradient-to-br from-purple-50/50 to-white border-purple-100",
+        customers: "bg-gradient-to-br from-sky-50/50 to-white border-sky-100",
+    };
+
     return (
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm gap-4 mb-6">
+        <div className={clsx(
+            "flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 rounded-2xl border shadow-sm gap-4 mb-6 transition-all duration-300",
+            variants[variant] || variants.default
+        )}>
             <div className={clsx("flex flex-col gap-1 w-full md:w-auto", isRTL ? "text-right" : "text-left")}>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
                     {title}

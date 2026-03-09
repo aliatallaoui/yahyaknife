@@ -112,6 +112,7 @@ export default function EmployeeProfile() {
             <PageHeader
                 title={t('hr.empProfileTitle', 'Employee Profile')}
                 subtitle={t('hr.empProfileSubtitle', 'Comprehensive overview of performance, attendance, and payroll projections.')}
+                variant="hr"
                 actions={
                     <button
                         onClick={() => navigate('/hr')}

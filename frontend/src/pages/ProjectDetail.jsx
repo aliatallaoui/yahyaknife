@@ -51,6 +51,7 @@ export default function ProjectDetail() {
             <PageHeader
                 title={project.name}
                 subtitle={`${t('projectId', 'Project ID')}: ${project.projectId} • ${t(`status${project.status.replace(' ', '')}`)}`}
+                variant="projects"
                 actions={
                     <button
                         onClick={() => navigate('/projects')}

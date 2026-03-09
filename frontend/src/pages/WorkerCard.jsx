@@ -66,6 +66,7 @@ export default function WorkerCard() {
             <PageHeader
                 title={t('hr.workerCardTitle', 'Artisan Workbench Profile')}
                 subtitle={t('hr.workerCardSubtitle', 'Deep productivity analytics and workshop contribution record.')}
+                variant="hr"
                 actions={
                     <button
                         onClick={() => navigate(-1)}

@@ -59,6 +59,7 @@ export default function ProjectStatus() {
             <PageHeader
                 title={t('title', 'Project Intelligence Hub')}
                 subtitle={t('subtitle', 'Strategic oversight of manufacturing cycles and corporate initiatives.')}
+                variant="projects"
                 actions={
                     <div className="flex flex-wrap gap-3">
                         <button className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none">

@@ -173,6 +173,7 @@ export default function Inventory() {
             <PageHeader
                 title={t('inventory.title', 'Inventory Tracking')}
                 subtitle={t('inventory.subtitle', 'Manage product catalog, track stock levels, and monitor supplier flow.')}
+                variant="inventory"
                 actions={
                     <div className="flex gap-2">
                         {activeTab === 'categories' ? (

@@ -28,6 +28,7 @@ export default function ProductionFloor() {
             <PageHeader
                 title={t('manufacturing.title', 'Production Floor')}
                 subtitle={t('manufacturing.subtitle', 'Live manufacturing line control, Bill of Materials, and resource planning.')}
+                variant="production"
             />
 
             {/* Analytics Dashboard */}
