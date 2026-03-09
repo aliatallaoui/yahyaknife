@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Plus, Clock, Search, GripVertical } from 'lucide-react';
+import { Loader2, Plus, Clock, Search, GripVertical, User } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import KnifeCardModal from '../components/KnifeCardModal';
 import { getStageTranslation } from './KnifeDashboard';
@@ -79,30 +80,30 @@ export default function KnivesInProduction() {
 
     return (
         <div className="flex flex-col h-full gap-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">⚒️ {t('knives.productionTitle', 'Production Kanban')}</h1>
-                    <p className="text-sm text-gray-500 mt-1">{t('knives.productionDesc', 'Drag and drop knives through the bladesmithing stages.')}</p>
-                </div>
-                <div className="flex gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="text"
-                            placeholder={t('knives.searchDb', 'Search knives...')}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
-                        />
+            <PageHeader
+                title={t('knives.productionTitle', 'Production Floor')}
+                subtitle={t('knives.productionDesc', 'Monitor and manage knife lifecycles across the bladesmithing workshop.')}
+                actions={
+                    <div className="flex flex-wrap gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('knives.searchDb', 'Search blades...')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5D5DFF] focus:bg-white/10 transition-all w-48 sm:w-64"
+                            />
+                        </div>
+                        <button
+                            onClick={() => { setEditingKnife(null); setIsModalOpen(true); }}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none"
+                        >
+                            <Plus className="w-5 h-5" /> {t('knives.addKnife', 'New Blade')}
+                        </button>
                     </div>
-                    <button
-                        onClick={() => { setEditingKnife(null); setIsModalOpen(true); }}
-                        className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition-all whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4" /> {t('knives.addKnife', 'New Knife')}
-                    </button>
-                </div>
-            </div>
+                }
+            />
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-gray-50/50 p-2">
                 <div className="flex h-full gap-4 items-start w-max pb-4">

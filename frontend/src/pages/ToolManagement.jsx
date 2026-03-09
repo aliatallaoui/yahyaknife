@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Wrench, Settings, AlertCircle, Plus, CheckCircle2, Clock, Calendar, Hash, User, FileText } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 
 export default function ToolManagement() {
@@ -104,22 +105,19 @@ export default function ToolManagement() {
     return (
         <div className="p-8 pb-32">
             {/* Header & Action */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-gray-200 pb-5 gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-slate-600 shrink-0" />
-                        <span className="leading-tight">{t('tools.title', 'Tool Management & Machinery')}</span>
-                    </h1>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-2 font-medium">Track operational status, assignments, and repair history</p>
-                </div>
-                <button
-                    onClick={() => openToolModal()}
-                    className="flex w-full sm:w-auto justify-center items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-900 transition-all shadow-sm whitespace-nowrap"
-                >
-                    <Plus className="w-5 h-5" />
-                    {t('tools.addNew', 'Register Tool')}
-                </button>
-            </div>
+            <PageHeader
+                title={t('tools.title', 'Tool Management & Machinery')}
+                subtitle={t('tools.subtitle', 'Track operational status, assignments, and repair history')}
+                actions={
+                    <button
+                        onClick={() => openToolModal()}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none"
+                    >
+                        <Plus className="w-5 h-5" />
+                        {t('tools.addNew', 'Register Tool')}
+                    </button>
+                }
+            />
 
             {/* KPI Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

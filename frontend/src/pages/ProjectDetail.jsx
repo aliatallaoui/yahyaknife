@@ -4,6 +4,7 @@ import { ArrowLeft, Clock, CalendarDays, Flag, MessageSquare, Paperclip, Activit
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 
 export default function ProjectDetail() {
     const { t, i18n } = useTranslation('projects');
@@ -47,23 +48,18 @@ export default function ProjectDetail() {
 
     return (
         <div className="flex flex-col gap-6 w-full max-w-[1400px]">
-
-            {/* Nav & Header row */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate('/projects')}
-                    className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-gray-900 rounded-lg shadow-sm transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
-                        <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border bg-gray-100 text-gray-700 border-gray-200">{project.projectId}</span>
-                        <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">{t(`status${project.status.replace(' ', '')}`)}</span>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                title={project.name}
+                subtitle={`${t('projectId', 'Project ID')}: ${project.projectId} • ${t(`status${project.status.replace(' ', '')}`)}`}
+                actions={
+                    <button
+                        onClick={() => navigate('/projects')}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none text-xs"
+                    >
+                        <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('backToProjects', 'Projects')}
+                    </button>
+                }
+            />
 
             {/* Top Layout Split */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

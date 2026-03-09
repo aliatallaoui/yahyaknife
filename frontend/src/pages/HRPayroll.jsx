@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckCircle, ShieldAlert, Download, Clock } from 'lucide-react';
+import { Calculator, CheckCircle, ShieldAlert, Download, Clock, Plus } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 
@@ -75,23 +76,29 @@ export default function HRPayroll() {
     const pendingCount = records.filter(r => r.status === 'Pending Approval').length;
 
     return (
-        <div className="p-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 border-b-4 border-emerald-500 pb-2 inline-block">{t('hr.payrollTitle')}</h1>
-                    <p className="text-sm sm:text-base text-gray-500 mt-2">{t('hr.payrollSubtitle')}</p>
-                </div>
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto">
-                    <select value={period} onChange={(e) => setPeriod(e.target.value)}
-                        className="flex-1 sm:flex-none border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 font-bold text-gray-700 px-3 py-2 w-full sm:w-auto">
-                        <option value={moment().format('MM-YYYY')}>{moment().format('MMMM YYYY')}</option>
-                        <option value={moment().subtract(1, 'month').format('MM-YYYY')}>{moment().subtract(1, 'month').format('MMMM YYYY')}</option>
-                    </select>
-                    <button onClick={handleGenerateRun} className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-emerald-700 whitespace-nowrap">
-                        <Calculator className="w-4 h-4 sm:w-5 sm:h-5" /> {t('hr.btnGenerateRun')}
-                    </button>
-                </div>
-            </div>
+        <div className="flex flex-col gap-6">
+            <PageHeader
+                title={t('hr.payrollTitle', 'Enterprise Payroll')}
+                subtitle={t('hr.payrollSubtitle', 'Automated salary distribution and compliance tracking.')}
+                actions={
+                    <div className="flex flex-wrap gap-3">
+                        <select
+                            value={period}
+                            onChange={(e) => setPeriod(e.target.value)}
+                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all"
+                        >
+                            <option value={moment().format('MM-YYYY')} className="text-gray-900">{moment().format('MMMM YYYY')}</option>
+                            <option value={moment().subtract(1, 'month').format('MM-YYYY')} className="text-gray-900">{moment().subtract(1, 'month').format('MMMM YYYY')}</option>
+                        </select>
+                        <button
+                            onClick={handleGenerateRun}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
+                        >
+                            <Calculator className="w-5 h-5" /> {t('hr.btnGenerateRun', 'Generate Run')}
+                        </button>
+                    </div>
+                }
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">

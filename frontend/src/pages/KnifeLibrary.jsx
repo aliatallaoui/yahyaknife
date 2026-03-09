@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, RefreshCw, Edit2, Trash2, BookOpen, ChevronRight, Loader2, X, Save } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
 import BOMBuilder from '../components/BOMBuilder';
@@ -181,25 +182,23 @@ export default function KnifeLibrary() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        📚 {t('knives.libraryTitle', 'Knife Library')}
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">{t('knives.libraryDesc', 'Reusable knife model templates — create a new knife in seconds')}</p>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <button onClick={fetchModels} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-400 shrink-0">
-                        <RefreshCw className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => { setEditingModel(null); setModalOpen(true); }}
-                        className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-2xl shadow"
-                    >
-                        <Plus className="w-4 h-4" /> {t('knives.addModel', 'Add Model')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('knives.libraryTitle', 'Knife Architecture Library')}
+                subtitle={t('knives.libraryDesc', 'Design and manage reusable patterns for high-precision bladesmithing.')}
+                actions={
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => { setEditingModel(null); setModalOpen(true); }}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none"
+                        >
+                            <Plus className="w-5 h-5" /> {t('knives.addModel', 'New Template')}
+                        </button>
+                        <button onClick={fetchModels} className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all backdrop-blur-md">
+                            <RefreshCw className={clsx("w-5 h-5", loading && "animate-spin")} />
+                        </button>
+                    </div>
+                }
+            />
 
             {loading ? (
                 <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" /></div>

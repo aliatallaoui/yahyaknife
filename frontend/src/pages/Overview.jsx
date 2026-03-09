@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import DashboardGrid from '../components/DashboardGrid';
+import PageHeader from '../components/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 export default function Overview() {
+    const { t } = useTranslation();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -29,5 +32,13 @@ export default function Overview() {
         );
     }
 
-    return <DashboardGrid data={data} />;
+    return (
+        <div className="flex flex-col gap-8">
+            <PageHeader
+                title={t('dashboard.title', 'Operations Overview')}
+                subtitle={t('dashboard.subtitle', 'Real-time monitoring of sales, inventory, and workshop performance.')}
+            />
+            <DashboardGrid data={data} />
+        </div>
+    );
 }

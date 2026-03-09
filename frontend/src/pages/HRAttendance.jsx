@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckSquare, XCircle, AlertCircle, RefreshCcw } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 import axios from 'axios';
+import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 
 export default function HRAttendance() {
@@ -118,20 +120,21 @@ export default function HRAttendance() {
     };
 
     return (
-        <div className="p-8 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold border-b-4 border-indigo-600 pb-2 inline-block">{t('hr.attendanceTitle')}</h1>
-                    <p className="text-sm sm:text-base text-gray-500 mt-2">{t('hr.attendanceSubtitle')}</p>
-                </div>
-                <div className="flex flex-wrap sm:flex-nowrap gap-3 sm:gap-4 w-full md:w-auto">
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                        className="flex-1 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium text-gray-700 px-3 py-2 border outline-none cursor-pointer ltr:text-left rtl:text-right w-full sm:w-auto text-sm" />
-                    <button onClick={fetchAttendance} disabled={loading} className="flex-1 flex justify-center items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 disabled:bg-indigo-300 whitespace-nowrap text-sm">
-                        <RefreshCcw className={`w-4 h-4 sm:w-5 sm:h-5 ${loading ? 'animate-spin' : ''}`} /> {loading ? t('hr.syncing') : t('hr.btnLiveSync')}
-                    </button>
-                </div>
-            </div>
+        <div className="relative">
+            <PageHeader
+                title={t('hr.attendanceTitle', 'Staff Attendance')}
+                subtitle={t('hr.attendanceSubtitle', 'Live clock-in tracking and automated work-hour computation.')}
+                actions={
+                    <div className="flex flex-wrap gap-3">
+                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all cursor-pointer" />
+                        <button onClick={fetchAttendance} disabled={loading} className="flex items-center gap-2 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all leading-none">
+                            <RefreshCcw className={clsx("w-4 h-4", loading && "animate-spin")} />
+                            {loading ? t('hr.syncing', 'Syncing...') : t('hr.btnLiveSync', 'Live Sync')}
+                        </button>
+                    </div>
+                }
+            />
 
             {/* Attendance Grid */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">

@@ -3,6 +3,7 @@ import { ProjectContext } from '../context/ProjectContext';
 import { LayoutDashboard, CheckCircle2, Clock, AlertTriangle, Plus, Search, Filter, TrendingUp, Users } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
 
@@ -55,25 +56,23 @@ export default function ProjectStatus() {
 
     return (
         <div className="flex flex-col gap-6">
-
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm gap-4">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('subtitle')}</p>
-                </div>
-                <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none justify-center items-center gap-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm shadow-sm transition-colors hover:bg-gray-50 flex px-4 py-2 whitespace-nowrap">
-                        <Filter className="w-4 h-4" /> {t('reportsBtn')}
-                    </button>
-                    <button
-                        onClick={() => setIsModalOpen(!isModalOpen)}
-                        className="flex-1 sm:flex-none justify-center items-center gap-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-indigo-700 flex px-4 py-2 whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4" /> {t('newProjBtn')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('title', 'Project Intelligence Hub')}
+                subtitle={t('subtitle', 'Strategic oversight of manufacturing cycles and corporate initiatives.')}
+                actions={
+                    <div className="flex flex-wrap gap-3">
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none">
+                            <Filter className="w-4 h-4" /> {t('reportsBtn', 'Reports')}
+                        </button>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
+                        >
+                            <Plus className="w-5 h-5" /> {t('newProjBtn', 'New Project')}
+                        </button>
+                    </div>
+                }
+            />
 
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

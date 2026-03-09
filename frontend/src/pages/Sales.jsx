@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench, Truck } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench, Truck, ShoppingBag } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import axios from 'axios';
 import clsx from 'clsx';
 import moment from 'moment';
@@ -258,20 +259,20 @@ export default function Sales() {
         <div className="flex flex-col gap-6">
 
             {/* Top Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{t('sales.title', 'Sales Management')}</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 font-medium rounded-xl border border-gray-200 text-sm transition-colors hover:bg-gray-100">
-                        <Download className="w-4 h-4" /> {t('sales.exportBtn', 'Export')}
-                    </button>
-                    <button onClick={handleCreateClick} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-blue-700 shadow-sm shadow-blue-600/20">
-                        <Plus className="w-4 h-4" /> {t('sales.createOrderBtn', 'Create Order')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('sales.title', 'Sales Management')}
+                subtitle={t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}
+                actions={
+                    <>
+                        <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                            <Plus className="w-5 h-5" /> {t('sales.createOrderBtn', 'Create Order')}
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors border border-white/10">
+                            <Download className="w-4 h-4" /> {t('sales.exportBtn', 'Export')}
+                        </button>
+                    </>
+                }
+            />
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

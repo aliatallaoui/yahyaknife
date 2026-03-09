@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, RefreshCw, Filter, ChevronRight, Swords, Flame, CheckCircle2, ShoppingBag, Edit2, Trash2 } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import KnifeCardModal from '../components/KnifeCardModal';
 import KnifeStageTracker from '../components/KnifeStageTracker';
@@ -185,20 +186,18 @@ export default function KnifeDashboard() {
     return (
         <div className="flex flex-col gap-6">
             {/* Page header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        🗡️ {t('knives.workshop', 'Knife Workshop')}
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">{t('knives.overviewDesc', 'Track every knife from design to sale')}</p>
-                </div>
-                <button
-                    onClick={handleNew}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-2xl shadow transition-colors w-full sm:w-auto"
-                >
-                    <Plus className="w-4 h-4" /> {t('knives.newCard', 'New Knife Card')}
-                </button>
-            </div>
+            <PageHeader
+                title={t('knives.workshop', 'Knife Workshop')}
+                subtitle={t('knives.overviewDesc', 'Track every knife from design to sale')}
+                actions={
+                    <button
+                        onClick={handleNew}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none"
+                    >
+                        <Plus className="w-5 h-5" /> {t('knives.newCard', 'New Knife Card')}
+                    </button>
+                }
+            />
 
             {/* Stats row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

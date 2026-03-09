@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 
 export default function ProcurementHub() {
@@ -51,23 +52,20 @@ export default function ProcurementHub() {
 
     return (
         <div className="p-8 pb-32">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-gray-200 pb-5 gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600 shrink-0" />
-                        <span className="leading-tight">{t('procurement.title')}</span>
-                    </h1>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-2 font-medium">{t('procurement.subtitle')}</p>
-                </div>
-                <div className="flex gap-3 flex-col min-[400px]:flex-row w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-indigo-700 hover:border-indigo-300 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors whitespace-nowrap">
-                        <Users className="w-4 h-4" /> {t('procurement.addSupplier')}
-                    </button>
-                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-700 transition-colors whitespace-nowrap">
-                        <Plus className="w-4 h-4" /> {t('procurement.newPo')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('procurement.title', 'Procurement Hub')}
+                subtitle={t('procurement.subtitle', 'Strategic sourcing, purchase orders, and supplier relationship management.')}
+                actions={
+                    <>
+                        <button className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                            <Plus className="w-5 h-5" /> {t('procurement.newPo')}
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors border border-white/10">
+                            <Users className="w-4 h-4" /> {t('procurement.addSupplier')}
+                        </button>
+                    </>
+                }
+            />
 
             {/* KPI Widgets */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserCheck, CalendarDays, Search, CheckCircle, XCircle, Clock, Banknote, Filter } from 'lucide-react';
+import { Users, UserCheck, CalendarDays, Search, CheckCircle, XCircle, Clock, Banknote, Filter, Plus, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -134,20 +135,20 @@ export default function HRSnapshot() {
         <div className="flex flex-col gap-6">
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm gap-4">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{t('hr.title')}</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('hr.subtitle')}</p>
-                </div>
-                <div className="flex gap-3 w-full sm:w-auto">
-                    <button onClick={fetchHRData} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs sm:text-sm transition-colors hover:bg-gray-200">
-                        {t('hr.btnRefresh')}
-                    </button>
-                    <button onClick={() => { setSelectedEmployee(null); setIsModalOpen(true); }} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition-colors hover:bg-blue-700">
-                        {t('hr.btnAddEmployee')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('hr.title', 'HR Snapshot')}
+                subtitle={t('hr.subtitle', 'Dynamic workforce management, performance tracking, and payroll.')}
+                actions={
+                    <>
+                        <button onClick={() => { setSelectedEmployee(null); setIsModalOpen(true); }} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                            <UserPlus className="w-5 h-5" /> {t('hr.btnAddEmployee')}
+                        </button>
+                        <button onClick={fetchHRData} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl transition-all hover:bg-gray-50 active:scale-95 leading-none">
+                            <Clock className="w-4 h-4" /> {t('hr.btnRefresh')}
+                        </button>
+                    </>
+                }
+            />
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -203,131 +204,6 @@ export default function HRSnapshot() {
                     </div>
                     <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200 shrink-0">
                         <Banknote className="w-8 h-8 text-gray-800" />
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Department Distribution (Chart) */}
-                <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.departmentDistribution')}</h3>
-                    <div className="flex-1 min-h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={deptData} layout="vertical" margin={{ top: 5, right: isAr ? 70 : 30, left: isAr ? 30 : 20, bottom: 5 }}>
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} orientation={isAr ? 'right' : 'left'} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 500, dx: isAr ? 60 : -10 }} width={80} />
-                                <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Bar dataKey="Headcount" radius={isAr ? [4, 0, 0, 4] : [0, 4, 4, 0]} barSize={24}>
-                                    {deptData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Leave Requests Feed */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[400px]">
-                    <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-                        <h3 className="text-lg font-bold text-gray-900">{t('hr.recentLeaveRequests')}</h3>
-                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{leaves.length} {t('hr.totalLabel')}</span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 styled-scrollbar space-y-3">
-                        {leaves.map(req => {
-                            const statusConfig = {
-                                'Approved': { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-                                'Pending': { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-                                'Rejected': { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' }
-                            }[req.status];
-                            const StatusIcon = statusConfig.icon;
-
-                            return (
-                                <div key={req._id} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-200 transition-colors bg-gray-50/30">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
-                                            {req.employeeId?.name?.charAt(0) || '?'}
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">{req.employeeId?.name || 'Unknown'}</h4>
-                                            <p className="text-xs text-gray-500">{req.type} • {moment(req.startDate).format('MMM D')} - {moment(req.endDate).format('MMM D, YYYY')}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="ltr:text-right rtl:text-left hidden sm:block">
-                                            <div className="text-xs font-medium text-gray-900">{moment(req.endDate).diff(moment(req.startDate), 'days') + 1} {t('hr.daysLabel')}</div>
-                                            <div className="text-[10px] text-gray-400">{t('hr.requestedAgo')} {moment(req.requestDate).fromNow()}</div>
-                                        </div>
-                                        {req.status === 'Pending' ? (
-                                            <div className="flex gap-1 ltr:ml-2 rtl:mr-2">
-                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Approved')} className="p-1.5 rounded-md hover:bg-green-100 text-green-600 transition-colors" title={t('hr.btnApprove')}>
-                                                    <CheckCircle className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Rejected')} className="p-1.5 rounded-md hover:bg-red-100 text-red-600 transition-colors" title={t('hr.btnReject')}>
-                                                    <XCircle className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className={clsx("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold w-24 justify-center shrink-0 ltr:ml-2 rtl:mr-2", statusConfig.bg, statusConfig.color)}>
-                                                <StatusIcon className="w-3.5 h-3.5" />
-                                                {req.status}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* Workforce Analytics Row */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.workforceUtilization')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-auto md:h-[280px]">
-                    <div className="h-[250px] md:h-full relative flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={utilizationData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius="60%"
-                                    outerRadius="80%"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    stroke="none"
-                                >
-                                    {utilizationData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={UTILIZATION_COLORS[index % UTILIZATION_COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8 sm:pb-5">
-                            <span className="text-2xl sm:text-3xl font-black text-gray-900">{metrics?.activeEmployees || 0}</span>
-                            <span className="text-[10px] sm:text-xs font-bold text-gray-400">{t('hr.activeLabel')}</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                            <h4 className="font-bold text-gray-900 mb-2">{t('hr.liveAvailabilityScore')}</h4>
-                            <p className="text-sm text-gray-600 mb-4">{t('hr.liveAvailabilityDesc')}</p>
-                            <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
-                                <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${metrics?.totalEmployees > 0 ? ((metrics.activeEmployees / metrics.totalEmployees) * 100).toFixed(1) : 0}%` }}></div>
-                            </div>
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs font-bold text-gray-400">0%</span>
-                                <span className="text-sm font-black text-emerald-600">
-                                    {metrics?.totalEmployees > 0 ? ((metrics.activeEmployees / metrics.totalEmployees) * 100).toFixed(1) : 0}% {t('hr.operationalText')}
-                                </span>
-                                <span className="text-xs font-bold text-gray-400">100%</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -457,6 +333,131 @@ export default function HRSnapshot() {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Department Distribution (Chart) */}
+                <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.departmentDistribution')}</h3>
+                    <div className="flex-1 min-h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={deptData} layout="vertical" margin={{ top: 5, right: isAr ? 70 : 30, left: isAr ? 30 : 20, bottom: 5 }}>
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} orientation={isAr ? 'right' : 'left'} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 500, dx: isAr ? 60 : -10 }} width={80} />
+                                <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Bar dataKey="Headcount" radius={isAr ? [4, 0, 0, 4] : [0, 4, 4, 0]} barSize={24}>
+                                    {deptData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Leave Requests Feed */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[400px]">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
+                        <h3 className="text-lg font-bold text-gray-900">{t('hr.recentLeaveRequests')}</h3>
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{leaves.length} {t('hr.totalLabel')}</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 styled-scrollbar space-y-3">
+                        {leaves.map(req => {
+                            const statusConfig = {
+                                'Approved': { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
+                                'Pending': { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+                                'Rejected': { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' }
+                            }[req.status];
+                            const StatusIcon = statusConfig.icon;
+
+                            return (
+                                <div key={req._id} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-200 transition-colors bg-gray-50/30">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+                                            {req.employeeId?.name?.charAt(0) || '?'}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 text-sm">{req.employeeId?.name || 'Unknown'}</h4>
+                                            <p className="text-xs text-gray-500">{req.type} • {moment(req.startDate).format('MMM D')} - {moment(req.endDate).format('MMM D, YYYY')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="ltr:text-right rtl:text-left hidden sm:block">
+                                            <div className="text-xs font-medium text-gray-900">{moment(req.endDate).diff(moment(req.startDate), 'days') + 1} {t('hr.daysLabel')}</div>
+                                            <div className="text-[10px] text-gray-400">{t('hr.requestedAgo')} {moment(req.requestDate).fromNow()}</div>
+                                        </div>
+                                        {req.status === 'Pending' ? (
+                                            <div className="flex gap-1 ltr:ml-2 rtl:mr-2">
+                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Approved')} className="p-1.5 rounded-md hover:bg-green-100 text-green-600 transition-colors" title={t('hr.btnApprove')}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Rejected')} className="p-1.5 rounded-md hover:bg-red-100 text-red-600 transition-colors" title={t('hr.btnReject')}>
+                                                    <XCircle className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className={clsx("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold w-24 justify-center shrink-0 ltr:ml-2 rtl:mr-2", statusConfig.bg, statusConfig.color)}>
+                                                <StatusIcon className="w-3.5 h-3.5" />
+                                                {req.status}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* Workforce Analytics Row */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.workforceUtilization')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-auto md:h-[280px]">
+                    <div className="h-[250px] md:h-full relative flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={utilizationData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius="60%"
+                                    outerRadius="80%"
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    stroke="none"
+                                >
+                                    {utilizationData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={UTILIZATION_COLORS[index % UTILIZATION_COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8 sm:pb-5">
+                            <span className="text-2xl sm:text-3xl font-black text-gray-900">{metrics?.activeEmployees || 0}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-400">{t('hr.activeLabel')}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                            <h4 className="font-bold text-gray-900 mb-2">{t('hr.liveAvailabilityScore')}</h4>
+                            <p className="text-sm text-gray-600 mb-4">{t('hr.liveAvailabilityDesc')}</p>
+                            <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${metrics?.totalEmployees > 0 ? ((metrics.activeEmployees / metrics.totalEmployees) * 100).toFixed(1) : 0}%` }}></div>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                                <span className="text-xs font-bold text-gray-400">0%</span>
+                                <span className="text-sm font-black text-emerald-600">
+                                    {metrics?.totalEmployees > 0 ? ((metrics.activeEmployees / metrics.totalEmployees) * 100).toFixed(1) : 0}% {t('hr.operationalText')}
+                                </span>
+                                <span className="text-xs font-bold text-gray-400">100%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             {isModalOpen && (

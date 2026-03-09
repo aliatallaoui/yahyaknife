@@ -4,6 +4,7 @@ import { ArrowLeft, User, Wrench, Star, Zap, Award, Activity, CheckCircle, Trend
 import moment from 'moment';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 
 export default function WorkerCard() {
     const { t } = useTranslation();
@@ -62,13 +63,18 @@ export default function WorkerCard() {
 
     return (
         <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-10">
-            {/* Header Row */}
-            <div className="flex items-center gap-4 mb-2">
-                <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl transition-colors border-transparent border hover:border-gray-200 hover:shadow-sm">
-                    <ArrowLeft className="w-5 h-5 text-gray-500 ltr:scale-x-100 rtl:-scale-x-100" />
-                </button>
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Artisan Workbench Profile</h1>
-            </div>
+            <PageHeader
+                title={t('hr.workerCardTitle', 'Artisan Workbench Profile')}
+                subtitle={t('hr.workerCardSubtitle', 'Deep productivity analytics and workshop contribution record.')}
+                actions={
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none"
+                    >
+                        <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('hr.btnBack', 'Back')}
+                    </button>
+                }
+            />
 
             {/* Top Cards: Identity & Global Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -121,11 +127,11 @@ export default function WorkerCard() {
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 lg:p-8 flex flex-col justify-between">
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Award className="w-5 h-5 text-indigo-500" /> Bonuses & Rewards</h3>
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Award className="w-5 h-5 text-indigo-500" /> {t('hr.bonusesRewards', 'Bonuses & Rewards')}</h3>
                         </div>
 
                         <div className="mb-4">
-                            <p className="text-sm font-semibold text-gray-500 mb-1">Lifetime Bonuses Earned</p>
+                            <p className="text-sm font-semibold text-gray-500 mb-1">{t('hr.lifetimeBonuses', 'Lifetime Bonuses Earned')}</p>
                             <div className="flex items-end gap-2">
                                 <span className="text-4xl font-black text-gray-900 tracking-tight">{totalBonuses.toLocaleString()}</span>
                                 <span className="text-base font-bold text-gray-400 mb-1">DZ</span>
@@ -135,8 +141,51 @@ export default function WorkerCard() {
 
                     <div className="mt-4 pt-6 border-t border-gray-100">
                         <div className="bg-indigo-50 rounded-2xl p-4 flex flex-col">
-                            <p className="text-xs font-bold text-indigo-400 mb-0.5">Pending Payout (Next Payroll Cycle)</p>
+                            <p className="text-xs font-bold text-indigo-400 mb-0.5">{t('hr.pendingPayout', 'Pending Payout')}</p>
                             <p className="text-xl font-black text-indigo-600">{unpaidBonuses.toLocaleString()} DZ</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Shift Schedule (Requested) */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 lg:p-8 flex flex-col lg:col-span-1">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-blue-500" /> {t('hr.shiftSchedule', 'Work Schedule')}
+                    </h3>
+
+                    <div className="space-y-4">
+                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> {t('hr.morningShift', 'Morning Shift')}
+                            </p>
+                            <div className="flex justify-between items-center">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.starts', 'Starts')}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.morningStart || '08:00'}</span>
+                                </div>
+                                <div className="w-8 h-px bg-gray-200"></div>
+                                <div className="flex flex-col text-right">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.ends', 'Ends')}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.morningEnd || '12:00'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> {t('hr.eveningShift', 'Evening Shift')}
+                            </p>
+                            <div className="flex justify-between items-center">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.starts', 'Starts')}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.eveningStart || '13:00'}</span>
+                                </div>
+                                <div className="w-8 h-px bg-gray-200"></div>
+                                <div className="flex flex-col text-right">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.ends', 'Ends')}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.eveningEnd || '17:00'}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

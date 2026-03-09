@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 
 const COLORS = ['#4361EE', '#3B82F6', '#60A5FA', '#93C5FD', '#111827', '#6B7280'];
 const LTV_COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#94a3b8'];
@@ -87,19 +88,18 @@ export default function CustomerInsight() {
 
     return (
         <div className="flex flex-col gap-6 max-w-[1600px]">
-
-            {/* Top Control Bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-indigo-900 text-white p-5 sm:p-6 rounded-2xl shadow-sm">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t('crm.title', 'Customer Intelligence OS')}</h2>
-                    <p className="text-indigo-200 mt-1 text-xs sm:text-sm font-medium">{t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}</p>
-                </div>
-                <div className="flex gap-3 w-full md:w-auto">
-                    <button onClick={handleCreateClick} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-sm">
-                        <Plus className="w-4 h-4" /> {t('crm.addCustomerBtn', 'Add Customer')}
+            <PageHeader
+                title={t('crm.title', 'Customer Intelligence OS')}
+                subtitle={t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}
+                actions={
+                    <button
+                        onClick={handleCreateClick}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4B4BFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 leading-none"
+                    >
+                        <Plus className="w-5 h-5" /> {t('crm.addCustomerBtn', 'Add Customer')}
                     </button>
-                </div>
-            </div>
+                }
+            />
 
             {/* Macro KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

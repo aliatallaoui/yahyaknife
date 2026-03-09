@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer } from 'lucide-react';
+import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
 import CreateShipmentModal from '../components/CreateShipmentModal';
@@ -131,28 +132,25 @@ export default function DispatchCenter() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                        <Truck className="w-7 h-7 mr-3 text-blue-600" />
-                        {t('dispatch.title', 'Dispatch & Logistics Center')}
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">{t('dispatch.subtitle', 'Manage outbound ECOTRACK shipments, tracking statuses, and returns.')}</p>
-                </div>
-                <div className="flex gap-3 w-full md:w-auto">
-                    <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <FileText className="w-4 h-4 mr-2" />
-                        {t('dispatch.exportList', 'Export List')}
-                    </button>
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t('dispatch.createShipment', 'New Shipment')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('dispatch.title', 'Dispatch & Logistics Center')}
+                subtitle={t('dispatch.subtitle', 'Manage outbound ECOTRACK shipments, tracking statuses, and returns.')}
+                actions={
+                    <div className="flex flex-wrap gap-3">
+                        <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-95">
+                            <FileText className="w-4 h-4 mr-2" />
+                            {t('dispatch.exportList', 'Export List')}
+                        </button>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex-1 md:flex-none inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-blue-500/20 transition-all active:scale-95"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {t('dispatch.createShipment', 'New Shipment')}
+                        </button>
+                    </div>
+                }
+            />
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -228,12 +226,12 @@ export default function DispatchCenter() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking / Ref</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Courier Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">COD Amount</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.tracking', 'Tracking / Ref')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.recipient', 'Recipient')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.destination', 'Destination')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.status', 'Courier Status')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.cod', 'COD Amount')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.actions', 'Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -243,8 +241,8 @@ export default function DispatchCenter() {
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                                         <Archive className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                                        <p className="text-lg font-medium text-gray-900">No shipments found</p>
-                                        <p className="text-sm mt-1">Adjust filters or create a new dispatch order.</p>
+                                        <p className="text-lg font-medium text-gray-900">{t('dispatch.empty.title', 'No shipments found')}</p>
+                                        <p className="text-sm mt-1">{t('dispatch.empty.subtitle', 'Adjust filters or create a new dispatch order.')}</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -297,7 +295,7 @@ export default function DispatchCenter() {
                                                 </button>
                                             )}
 
-                                            <button className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-2">Details</button>
+                                            <button className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-2">{t('common.details', 'Details')}</button>
                                         </td>
                                     </tr>
                                 ))

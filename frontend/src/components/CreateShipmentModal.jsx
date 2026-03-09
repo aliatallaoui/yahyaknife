@@ -162,9 +162,9 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 flex items-center">
                             <Send className="w-5 h-5 mr-2 text-blue-600" />
-                            Dispatch New Shipment
+                            {t('dispatch.modal.title', 'Dispatch New Shipment')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">Map an internal order directly to the ECOTRACK courier network.</p>
+                        <p className="text-sm text-gray-500 mt-1">{t('dispatch.modal.subtitle', 'Map an internal order directly to the ECOTRACK courier network.')}</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -183,16 +183,16 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
                         {/* 1. Internal Order Selection */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">1. Select Internal Order</h3>
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">{t('dispatch.modal.step1', '1. Select Internal Order')}</h3>
                             <div className="relative">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Search Pending Orders</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('dispatch.modal.searchLabel', 'Search Pending Orders')}</label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                     <input
                                         type="text"
                                         value={searchOrder}
                                         onChange={(e) => setSearchOrder(e.target.value)}
-                                        placeholder="Order ID or Customer Name..."
+                                        placeholder={t('dispatch.modal.searchPlaceholder', 'Order ID or Customer Name...')}
                                         className="pl-10 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     />
                                 </div>
@@ -229,26 +229,26 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                         {/* 2. Customer & Destination */}
                         <div className="space-y-4 opacity-100 transition-opacity" style={{ opacity: formData.orderId ? 1 : 0.4 }}>
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center">
-                                <MapPin className="w-4 h-4 mr-2 text-gray-400" /> 2. EcoTrack Routing Details
+                                <MapPin className="w-4 h-4 mr-2 text-gray-400" /> {t('dispatch.modal.step2', '2. EcoTrack Routing Details')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700">Recipient Name *</label>
+                                    <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.recipient', 'Recipient Name')} *</label>
                                     <input required type="text" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700">Primary Phone *</label>
+                                        <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.phone1', 'Primary Phone')} *</label>
                                         <input required type="text" value={formData.phone1} onChange={e => setFormData({ ...formData, phone1: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700">Phone 2 (Opt)</label>
+                                        <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.phone2', 'Phone 2 (Opt)')}</label>
                                         <input type="text" value={formData.phone2} onChange={e => setFormData({ ...formData, phone2: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700">Wilaya Name *</label>
+                                    <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.wilaya', 'Wilaya Name')} *</label>
                                     <select
                                         required
                                         value={formData.wilayaCode}
@@ -273,7 +273,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700">Commune *</label>
+                                    <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.commune', 'Commune')} *</label>
                                     <select
                                         required
                                         disabled={!formData.wilayaCode}
@@ -291,7 +291,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700">Detailed Address *</label>
+                                    <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.address', 'Detailed Address')} *</label>
                                     <textarea required rows="2" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"></textarea>
                                 </div>
                             </div>
@@ -300,15 +300,15 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                         {/* 3. Package & Financials */}
                         <div className="space-y-4 opacity-100 transition-opacity" style={{ opacity: formData.orderId ? 1 : 0.4 }}>
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center">
-                                <Package className="w-4 h-4 mr-2 text-gray-400" /> 3. Payload & Payment
+                                <Package className="w-4 h-4 mr-2 text-gray-400" /> {t('dispatch.modal.step3', '3. Payload & Payment')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700">Shipping Item Description *</label>
+                                    <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.desc', 'Shipping Item Description')} *</label>
                                     <input required type="text" value={formData.productName} onChange={e => setFormData({ ...formData, productName: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700">Total COD Amount (DZD) *</label>
+                                    <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.cod', 'Total COD Amount (DZD)')} *</label>
                                     <div className="relative mt-1 border border-gray-300 rounded-md shadow-sm overflow-hidden flex focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                                         <div className="flex-1">
                                             <input required type="number" min="0" value={formData.codAmount} onChange={e => setFormData({ ...formData, codAmount: Number(e.target.value) })} className="w-full border-0 focus:ring-0 text-sm font-medium py-2 px-3" />
@@ -320,25 +320,25 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Delivery Type</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">{t('dispatch.modal.deliveryType', 'Delivery Type')}</label>
                                     <select value={formData.deliveryType} onChange={e => setFormData({ ...formData, deliveryType: Number(e.target.value) })} className="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500 py-1.5">
                                         <option value={0}>Home Delivery (0)</option>
                                         <option value={1}>Stop Desk / Point (1)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Weight (kg)</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">{t('dispatch.modal.weight', 'Weight (kg)')}</label>
                                     <input type="number" step="0.1" value={formData.weight} onChange={e => setFormData({ ...formData, weight: Number(e.target.value) })} className="w-full rounded-md border-gray-300 shadow-sm text-sm py-1.5 focus:border-blue-500 focus:ring-blue-500" />
                                 </div>
                                 <div className="flex items-center mt-6">
                                     <input type="checkbox" id="fragile" checked={formData.fragileFlag} onChange={e => setFormData({ ...formData, fragileFlag: e.target.checked })} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
-                                    <label htmlFor="fragile" className="ml-2 text-sm font-medium text-gray-700 cursor-pointer">Fragile Package</label>
+                                    <label htmlFor="fragile" className="ml-2 text-sm font-medium text-gray-700 cursor-pointer">{t('dispatch.modal.fragile', 'Fragile Package')}</label>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-700">Delivery Instructions / Remarks</label>
-                                <input type="text" placeholder="e.g. Call before delivery" value={formData.remark} onChange={e => setFormData({ ...formData, remark: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
+                                <label className="block text-xs font-medium text-gray-700">{t('dispatch.modal.remark', 'Delivery Instructions / Remarks')}</label>
+                                <input type="text" placeholder={t('dispatch.modal.remarkPlaceholder', 'e.g. Call before delivery')} value={formData.remark} onChange={e => setFormData({ ...formData, remark: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                             </div>
                         </div>
 
@@ -347,7 +347,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
                 <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        Cancel
+                        {t('dispatch.modal.cancel', 'Cancel')}
                     </button>
                     <button
                         type="submit"
@@ -355,7 +355,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                         disabled={!formData.orderId || submitting}
                         className="inline-flex items-center px-6 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        {submitting ? 'Pushing to EcoTrack...' : 'Dispatch to Courier'}
+                        {submitting ? t('dispatch.modal.submitting', 'Pushing to EcoTrack...') : t('dispatch.modal.submit', 'Dispatch to Courier')}
                     </button>
                 </div>
             </div>

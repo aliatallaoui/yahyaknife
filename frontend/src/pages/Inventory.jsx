@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
-import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { InventoryContext } from '../context/InventoryContext';
 import ProductModal from '../components/ProductModal';
@@ -169,24 +170,26 @@ export default function Inventory() {
         <div className="flex flex-col gap-6">
 
             {/* Top Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 bg-white/80 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-gray-100/50 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 end-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-blue-50/20 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
-                <div>
-                    <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">{t('inventory.title', 'Inventory Tracking')}</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">{t('inventory.subtitle', 'Manage product catalog, track stock levels, and monitor supplier flow.')}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <button onClick={() => setIsPOModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 hover:shadow-sm hover:-translate-y-0.5 font-bold rounded-xl text-xs sm:text-sm transition-all duration-200">
-                        <Package className="w-4 h-4 shrink-0" /> {t('inventory.receivePoBtn', 'Receive PO')}
-                    </button>
-                    <button onClick={handleCreateCategory} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow hover:border-gray-300 hover:-translate-y-0.5 transition-all duration-200">
-                        <Plus className="w-4 h-4 shrink-0" /> {t('inventory.addCategoryBtn', 'Add Category')}
-                    </button>
-                    <button onClick={handleCreateClick} className="w-full md:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-b from-gray-800 to-gray-900 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg hover:from-gray-700 hover:to-gray-800 hover:-translate-y-0.5 transition-all duration-200 ring-1 ring-gray-900/50 ring-offset-1">
-                        <Plus className="w-4 h-4 shrink-0" /> {t('inventory.addProductBtn', 'Add New Product')}
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={t('inventory.title', 'Inventory Tracking')}
+                subtitle={t('inventory.subtitle', 'Manage product catalog, track stock levels, and monitor supplier flow.')}
+                actions={
+                    <div className="flex gap-2">
+                        {activeTab === 'categories' ? (
+                            <button onClick={handleCreateCategory} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                                <Plus className="w-5 h-5" /> {t('inventory.addCategoryBtn', 'Add Category')}
+                            </button>
+                        ) : (
+                            <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                                <Plus className="w-5 h-5" /> {t('inventory.addProductBtn', 'Add New Product')}
+                            </button>
+                        )}
+                        <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors border border-white/10">
+                            <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
+                        </button>
+                    </div>
+                }
+            />
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

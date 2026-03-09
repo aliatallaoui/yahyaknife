@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { ProjectContext } from '../context/ProjectContext';
 import { Target, Search, Clock, List, LayoutGrid, CheckCircle2, AlertCircle } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -47,45 +48,26 @@ export default function GlobalTaskBoard() {
         <div className="flex flex-col gap-6">
 
             {/* Header Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm gap-4">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                        <Target className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                        {t('gtbTitle')}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('gtbSubtitle')}</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:flex-none">
-                        <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-gray-400", isAr ? "right-3" : "left-3")} />
-                        <input
-                            type="text"
-                            placeholder={t('gtbSearch')}
-                            className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 text-sm w-full sm:w-64", isAr ? "pr-9 pl-4" : "pl-9 pr-4")}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="flex bg-gray-100 rounded-lg p-1">
+            <PageHeader
+                title={t('gtbTitle', 'Global Task Board')}
+                subtitle={t('gtbSubtitle', 'Unified visibility across all projects and operational lifecycles.')}
+                actions={
+                    <div className="flex bg-white/10 rounded-xl p-1 border border-white/20">
                         <button
-                            className={clsx("p-1.5 rounded-md flex items-center justify-center transition-colors shadow-sm", viewMode === 'kanban' ? "bg-white text-indigo-600" : "text-gray-500 hover:text-gray-700")}
+                            className={clsx("p-2 rounded-lg flex items-center justify-center transition-all", viewMode === 'kanban' ? "bg-[#5D5DFF] text-white shadow-lg" : "text-white/60 hover:text-white")}
                             onClick={() => setViewMode('kanban')}
-                            title="Kanban View"
                         >
-                            <LayoutGrid className="w-4 h-4" />
+                            <LayoutGrid className="w-5 h-5" />
                         </button>
                         <button
-                            className={clsx("p-1.5 rounded-md flex items-center justify-center transition-colors shadow-sm", viewMode === 'list' ? "bg-white text-indigo-600" : "text-gray-500 hover:text-gray-700")}
+                            className={clsx("p-2 rounded-lg flex items-center justify-center transition-all", viewMode === 'list' ? "bg-[#8B5CF6] text-white shadow-lg" : "text-white/60 hover:text-white")}
                             onClick={() => setViewMode('list')}
-                            title="List View"
                         >
-                            <List className="w-4 h-4" />
+                            <List className="w-5 h-5" />
                         </button>
                     </div>
-                </div>
-            </div>
+                }
+            />
 
             {viewMode === 'kanban' ? (
                 /* KANBAN VIEW */

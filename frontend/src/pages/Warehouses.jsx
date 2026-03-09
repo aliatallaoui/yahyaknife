@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Box, MapPin, Search, Plus, List, ArrowRightLeft, ShieldCheck, ArrowDown, ArrowUp } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import { AuthContext } from '../context/AuthContext';
 import clsx from 'clsx';
 import moment from 'moment';
@@ -65,25 +66,24 @@ export default function Warehouses() {
     return (
         <div className="flex flex-col gap-6 w-full max-w-[1400px]">
             {/* Header & Stats */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Box className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" /> {t('warehouses.title', 'Enterprise Logistics')}
-                    </h1>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">{t('warehouses.subtitle', 'Manage Multi-Warehouse operations, Movement ledgers, and Supplier SLAs.')}</p>
-                </div>
-                <div className="flex flex-wrap gap-1 bg-gray-100 p-1.5 rounded-xl border border-gray-200 w-full md:w-auto">
-                    <button onClick={() => setActiveTab('warehouses')} className={clsx("flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all text-center", activeTab === 'warehouses' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50')}>
-                        {t('warehouses.tabWarehouses', 'Warehouses')}
-                    </button>
-                    <button onClick={() => setActiveTab('ledger')} className={clsx("flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50')}>
-                        <ArrowRightLeft className="w-4 h-4 rtl:rotate-180 shrink-0" /> {t('warehouses.tabLedger', 'Movement Ledger')}
-                    </button>
-                    <button onClick={() => setActiveTab('suppliers')} className={clsx("flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50')}>
-                        <ShieldCheck className="w-4 h-4 shrink-0" /> {t('warehouses.tabSuppliers', 'Supplier Metrics')}
-                    </button>
-                </div>
-            </div>
+            {/* Header & Stats */}
+            <PageHeader
+                title={t('warehouses.title', 'Enterprise Logistics')}
+                subtitle={t('warehouses.subtitle', 'Manage Multi-Warehouse operations, Movement ledgers, and Supplier SLAs.')}
+                actions={
+                    <div className="flex flex-wrap gap-1 bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+                        <button onClick={() => setActiveTab('warehouses')} className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'warehouses' ? 'bg-[#5D5DFF] text-white shadow-lg shadow-blue-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>
+                            {t('warehouses.tabWarehouses', 'Warehouses')}
+                        </button>
+                        <button onClick={() => setActiveTab('ledger')} className={clsx("flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>
+                            <ArrowRightLeft className="w-4 h-4 shrink-0" /> {t('warehouses.tabLedger', 'Ledger')}
+                        </button>
+                        <button onClick={() => setActiveTab('suppliers')} className={clsx("flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-[#10B981] text-white shadow-lg shadow-emerald-500/20' : 'text-white/60 hover:text-white hover:bg-white/10')}>
+                            <ShieldCheck className="w-4 h-4 shrink-0" /> {t('warehouses.tabSuppliers', 'Suppliers')}
+                        </button>
+                    </div>
+                }
+            />
 
             {loading ? (
                 <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div></div>

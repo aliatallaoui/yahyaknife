@@ -83,18 +83,17 @@ const Layout = () => {
   return (
     <div className="flex bg-gray-50 min-h-screen">
       {/* Sidebar - Fixed */}
-      <Sidebar 
-        open={sidebarOpen} 
-        setOpen={setSidebarOpen} 
+      <Sidebar
+        open={sidebarOpen}
+        setOpen={setSidebarOpen}
         mobileOpen={mobileMenuOpen}
         setMobileOpen={setMobileMenuOpen}
       />
 
       {/* Main Content Area - shifts based on sidebar state */}
       <main
-        className={`flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300 ${
-          sidebarOpen ? 'md:ms-[320px]' : 'md:ms-[72px]'
-        }`}
+        className={`flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300 ${sidebarOpen ? 'md:ms-[260px]' : 'md:ms-[72px]'
+          }`}
       >
         {/* Header - Contextual */}
         <Header setMobileMenuOpen={setMobileMenuOpen} />

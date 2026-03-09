@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import moment from 'moment';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 
 export default function CustomerProfile() {
     const { id } = useParams();
@@ -93,14 +94,18 @@ export default function CustomerProfile() {
 
     return (
         <div className="flex flex-col gap-6 max-w-[1400px]">
-            {/* Header Path */}
-            <div className="flex items-center gap-4 text-sm font-medium text-gray-500 mb-2">
-                <Link to="/customers" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
-                    <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" /> {t('crm.directory', 'Directory')}
-                </Link>
-                <span>/</span>
-                <span className="text-gray-900">{customer.name}</span>
-            </div>
+            <PageHeader
+                title={customer.name}
+                subtitle={`${t('crm.customerProfileSubtitle', 'Intelligence profile for')} ${customer.email || customer.name}`}
+                actions={
+                    <button
+                        onClick={() => navigate('/customers')}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none text-xs"
+                    >
+                        <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('crm.directory', 'Directory')}
+                    </button>
+                }
+            />
 
             {/* Profile Header Card */}
             <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm relative overflow-hidden">

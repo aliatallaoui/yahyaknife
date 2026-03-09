@@ -1,6 +1,7 @@
 import { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Package, FileCode2, PlayCircle, Plus, Search, Building } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { ManufacturingContext } from '../context/ManufacturingContext';
 import { InventoryContext } from '../context/InventoryContext';
@@ -24,17 +25,10 @@ export default function ProductionFloor() {
     return (
         <div className="flex flex-col gap-6">
             {/* Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center shrink-0">
-                        <Building className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('manufacturing.title')}</h2>
-                        <p className="text-sm text-gray-500 mt-1">{t('manufacturing.subtitle')}</p>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                title={t('manufacturing.title', 'Production Floor')}
+                subtitle={t('manufacturing.subtitle', 'Live manufacturing line control, Bill of Materials, and resource planning.')}
+            />
 
             {/* Analytics Dashboard */}
             <ProductionAnalytics />

@@ -9,6 +9,7 @@ import moment from 'moment';
 import clsx from 'clsx';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import PageHeader from '../components/PageHeader';
 
 export default function EmployeeProfile() {
     const { t } = useTranslation();
@@ -108,13 +109,18 @@ export default function EmployeeProfile() {
 
     return (
         <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-10">
-            {/* Nav Row */}
-            <div className="flex items-center gap-4 mb-2">
-                <button onClick={() => navigate('/hr')} className="p-2 hover:bg-white rounded-xl transition-colors border-transparent border hover:border-gray-200 hover:shadow-sm">
-                    <ArrowLeft className="w-5 h-5 text-gray-500 ltr:scale-x-100 rtl:-scale-x-100" />
-                </button>
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('hr.empProfileTitle')}</h1>
-            </div>
+            <PageHeader
+                title={t('hr.empProfileTitle', 'Employee Profile')}
+                subtitle={t('hr.empProfileSubtitle', 'Comprehensive overview of performance, attendance, and payroll projections.')}
+                actions={
+                    <button
+                        onClick={() => navigate('/hr')}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none"
+                    >
+                        <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('hr.btnReturnDirectory', 'Return')}
+                    </button>
+                }
+            />
 
             {/* Top Grid: Identity & Salary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
