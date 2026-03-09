@@ -45,31 +45,31 @@ export default function Header({ setMobileMenuOpen }) {
     };
 
     return (
-        <header className="h-[72px] px-8 flex items-center border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-40">
+        <header className="h-[72px] px-3 sm:px-8 flex items-center border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-40">
             <div className="flex items-center justify-between w-full">
                 {/* Left: Page Title */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <button
                         onClick={() => setMobileMenuOpen?.(true)}
-                        className="p-1 -ms-2 text-gray-600 hover:bg-gray-100 rounded-lg md:hidden"
+                        className="p-1 -ms-1 text-gray-600 hover:bg-gray-100 rounded-lg md:hidden shrink-0"
                     >
                         <Menu className="w-6 h-6" />
                     </button>
-                    <div>
-                        <h1 className="text-xl font-black text-gray-900 tracking-tight leading-tight">{t('dashboard.title', 'لوحة التحكم')}</h1>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">{t('dashboard.subtitle', 'المؤشرات الرئيسية للأداء')}</p>
+                    <div className="min-w-0 flex flex-col">
+                        <h1 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight leading-tight truncate">{t('dashboard.title', 'لوحة التحكم')}</h1>
+                        <p className="hidden sm:block text-xs text-gray-500 font-medium mt-0.5 truncate">{t('dashboard.subtitle', 'المؤشرات الرئيسية للأداء')}</p>
                     </div>
                 </div>
 
                 {/* Right: Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
 
                     {/* Language Selector */}
                     <div className="relative" ref={langRef}>
                         <button
                             onClick={() => setLangOpen(!langOpen)}
                             className={clsx(
-                                "flex items-center gap-2 h-9 px-3 rounded-xl border font-semibold text-sm transition-all duration-200",
+                                "flex items-center gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 rounded-xl border font-semibold text-sm transition-all duration-200 shrink-0",
                                 langOpen
                                     ? "bg-blue-50 border-blue-200 text-blue-700 shadow-sm"
                                     : "bg-white border-gray-200 text-gray-600 hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-700"
@@ -106,32 +106,32 @@ export default function Header({ setMobileMenuOpen }) {
                     </div>
 
                     {/* Divider */}
-                    <div className="h-7 w-px bg-gray-200 mx-1" />
+                    <div className="hidden sm:block h-7 w-px bg-gray-200 mx-1" />
 
                     {/* Notification Bell */}
-                    <button className="relative w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200">
-                        <Bell className="w-5 h-5" />
+                    <button className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200 shrink-0">
+                        <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                         <span className="absolute top-2 end-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
                     </button>
 
                     {/* Messages */}
-                    <button className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200">
+                    <button className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200 shrink-0">
                         <MessageSquare className="w-5 h-5" />
                     </button>
 
                     {/* Divider */}
-                    <div className="h-7 w-px bg-gray-200 mx-1" />
+                    <div className="hidden sm:block h-7 w-px bg-gray-200 mx-1" />
 
                     {/* User Profile */}
                     <div className="relative" ref={profileRef}>
                         <button
                             onClick={() => setProfileOpen(!profileOpen)}
                             className={clsx(
-                                "flex items-center gap-3 h-10 pl-2 pr-3 rounded-xl border transition-all duration-200",
+                                "flex items-center gap-2 sm:gap-3 h-9 sm:h-10 pl-1.5 pr-1.5 sm:pl-2 sm:pr-3 rounded-xl border transition-all duration-200 shrink-0",
                                 profileOpen ? "bg-gray-50 border-gray-200 shadow-sm" : "bg-transparent border-transparent hover:bg-gray-50 hover:border-gray-200"
                             )}
                         >
-                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center font-bold text-white text-sm shadow-sm">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center font-bold text-white text-sm shadow-sm shrink-0">
                                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
                             <div className="flex flex-col items-start hidden sm:flex">

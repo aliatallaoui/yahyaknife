@@ -40,7 +40,7 @@ export default function ProductionFloor() {
             <ProductionAnalytics />
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-gray-200 pb-px">
+            <div className="flex gap-2 border-b border-gray-200 pb-px overflow-x-auto styled-scrollbar">
                 <TabButton
                     active={activeTab === 'materials'}
                     onClick={() => setActiveTab('materials')}
@@ -76,7 +76,7 @@ function TabButton({ active, onClick, icon: Icon, label }) {
         <button
             onClick={onClick}
             className={clsx(
-                "flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-xl transition-all border-b-2",
+                "flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-semibold rounded-t-xl transition-all border-b-2 whitespace-nowrap",
                 active
                     ? "border-yellow-600 text-yellow-700 bg-white"
                     : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-white"
@@ -146,49 +146,51 @@ function MaterialsPanel() {
     };
 
     return (
-        <div className="p-6 flex flex-col h-full relative">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-4 sm:p-6 flex flex-col h-full relative">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('manufacturing.tabMaterials')}</h3>
-                <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
+                <button onClick={handleAddClick} className="flex-1 sm:flex-none justify-center w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
                     <Plus className="w-4 h-4" /> {t('manufacturing.addMaterial')}
                 </button>
             </div>
 
-            <table className="w-full text-start border-collapse">
-                <thead>
-                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                        <th className="p-4 font-semibold rounded-ss-lg">{t('manufacturing.colSku')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colName')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colCategory')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colUoM')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colCost')}</th>
-                        <th className="p-4 font-semibold rounded-se-lg">{t('manufacturing.colStock')}</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
-                    {materials.length === 0 ? (
-                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noMaterials')}</td></tr>
-                    ) : materials.map((mat) => (
-                        <tr key={mat._id} className="hover:bg-gray-50/50 cursor-pointer" onClick={() => handleEditClick(mat)}>
-                            <td className="p-4 font-mono text-xs text-blue-600 hover:underline">{mat.sku}</td>
-                            <td className="p-4 font-semibold text-gray-900">{mat.name}</td>
-                            <td className="p-4 text-gray-500">{mat.category}</td>
-                            <td className="p-4 text-gray-500">{mat.unitOfMeasure}</td>
-                            <td className="p-4 text-gray-900">${mat.costPerUnit?.toFixed(2)}</td>
-                            <td className="p-4 font-bold flex flex-col gap-1">
-                                <span className={clsx("px-2 py-0.5 rounded w-fit", mat.stockLevel <= mat.minimumStock ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")} title="Total Available">
-                                    {mat.stockLevel - (mat.reservedQuantity || 0)} {t('manufacturing.availableStock')}
-                                </span>
-                                {(mat.reservedQuantity > 0) && (
-                                    <span className="px-2 py-0.5 rounded w-fit bg-yellow-50 text-yellow-700 text-xs" title="Reserved for Active Production">
-                                        {mat.reservedQuantity} {t('manufacturing.reservedStock')}
-                                    </span>
-                                )}
-                            </td>
+            <div className="overflow-x-auto w-full">
+                <table className="w-full text-start border-collapse min-w-[800px]">
+                    <thead>
+                        <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                            <th className="p-4 font-semibold rounded-ss-lg">{t('manufacturing.colSku')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colName')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colCategory')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colUoM')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colCost')}</th>
+                            <th className="p-4 font-semibold rounded-se-lg">{t('manufacturing.colStock')}</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                        {materials.length === 0 ? (
+                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noMaterials')}</td></tr>
+                        ) : materials.map((mat) => (
+                            <tr key={mat._id} className="hover:bg-gray-50/50 cursor-pointer" onClick={() => handleEditClick(mat)}>
+                                <td className="p-4 font-mono text-xs text-blue-600 hover:underline">{mat.sku}</td>
+                                <td className="p-4 font-semibold text-gray-900">{mat.name}</td>
+                                <td className="p-4 text-gray-500">{mat.category}</td>
+                                <td className="p-4 text-gray-500">{mat.unitOfMeasure}</td>
+                                <td className="p-4 text-gray-900">${mat.costPerUnit?.toFixed(2)}</td>
+                                <td className="p-4 font-bold flex flex-col gap-1">
+                                    <span className={clsx("px-2 py-0.5 rounded w-fit", mat.stockLevel <= mat.minimumStock ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")} title="Total Available">
+                                        {mat.stockLevel - (mat.reservedQuantity || 0)} {t('manufacturing.availableStock')}
+                                    </span>
+                                    {(mat.reservedQuantity > 0) && (
+                                        <span className="px-2 py-0.5 rounded w-fit bg-yellow-50 text-yellow-700 text-xs" title="Reserved for Active Production">
+                                            {mat.reservedQuantity} {t('manufacturing.reservedStock')}
+                                        </span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
             <RawMaterialModal
                 isOpen={isModalOpen}
@@ -234,10 +236,10 @@ function BOPanel() {
     };
 
     return (
-        <div className="p-6 relative">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-4 sm:p-6 relative">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('manufacturing.bomsSubtitle')}</h3>
-                <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
+                <button onClick={handleAddClick} className="flex-1 sm:flex-none justify-center w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
                     <Plus className="w-4 h-4" /> {t('manufacturing.createBOM')}
                 </button>
             </div>
@@ -332,63 +334,65 @@ function OrdersPanel() {
     };
 
     return (
-        <div className="p-6 relative">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-4 sm:p-6 relative">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('manufacturing.activeBatches')}</h3>
-                <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
+                <button onClick={handleAddClick} className="flex-1 sm:flex-none justify-center w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-yellow-700 shadow-sm">
                     <Plus className="w-4 h-4" /> {t('manufacturing.newOrder')}
                 </button>
             </div>
 
-            <table className="w-full text-start border-collapse">
-                <thead>
-                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                        <th className="p-4 font-semibold rounded-ss-lg">{t('manufacturing.colOrderNo')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colVariantSku')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colPlannedQty')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colCompletedQty')}</th>
-                        <th className="p-4 font-semibold">{t('manufacturing.colStatus')}</th>
-                        <th className="p-4 font-semibold rounded-se-lg text-end">{t('manufacturing.colDeadline')}</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
-                    {productionOrders.length === 0 ? (
-                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noOrders')}</td></tr>
-                    ) : productionOrders.map((po) => (
-                        <tr key={po._id} className="hover:bg-gray-50/50">
-                            <td className="p-4 font-semibold text-gray-900">{po.orderNumber}</td>
-                            <td className="p-4 font-mono text-xs">{po.variantId?.sku}</td>
-                            <td className="p-4 text-gray-900">{po.quantityPlanned}</td>
-                            <td className="p-4 text-gray-900">{po.quantityCompleted}</td>
-                            <td className="p-4">
-                                <div className="flex items-center gap-2">
-                                    <span className={clsx("px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
-                                        po.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                            po.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                                po.status === 'Quality Check' ? 'bg-purple-100 text-purple-700' :
-                                                    po.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                                        'bg-yellow-100 text-yellow-700'
-                                    )}>
-                                        {po.status === 'Planned' ? t('manufacturing.statusPlanned') : po.status === 'In Progress' ? t('manufacturing.statusInProgress') : po.status === 'Quality Check' ? t('manufacturing.statusQualityCheck') : po.status === 'Completed' ? t('manufacturing.statusCompleted') : t('manufacturing.statusCancelled')}
-                                    </span>
-                                    {po.status === 'Planned' && (
-                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'In Progress'); }} className="text-xs text-blue-600 hover:underline font-bold bg-blue-50 px-2 py-1 rounded">{t('manufacturing.btnStart')}</button>
-                                    )}
-                                    {po.status === 'In Progress' && (
-                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Quality Check'); }} className="text-xs text-purple-600 hover:underline font-bold bg-purple-50 px-2 py-1 rounded">{t('manufacturing.btnQcCheck')}</button>
-                                    )}
-                                    {po.status === 'Quality Check' && (
-                                        <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Completed'); }} className="text-xs text-green-600 hover:underline font-bold bg-green-50 px-2 py-1 rounded">{t('manufacturing.btnFinishYield')}</button>
-                                    )}
-                                </div>
-                            </td>
-                            <td className="p-4 text-end text-gray-500">
-                                {po.completionDate ? new Date(po.completionDate).toLocaleDateString() : '-'}
-                            </td>
+            <div className="overflow-x-auto w-full">
+                <table className="w-full text-start border-collapse min-w-[900px]">
+                    <thead>
+                        <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                            <th className="p-4 font-semibold rounded-ss-lg">{t('manufacturing.colOrderNo')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colVariantSku')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colPlannedQty')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colCompletedQty')}</th>
+                            <th className="p-4 font-semibold">{t('manufacturing.colStatus')}</th>
+                            <th className="p-4 font-semibold rounded-se-lg text-end">{t('manufacturing.colDeadline')}</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                        {productionOrders.length === 0 ? (
+                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noOrders')}</td></tr>
+                        ) : productionOrders.map((po) => (
+                            <tr key={po._id} className="hover:bg-gray-50/50">
+                                <td className="p-4 font-semibold text-gray-900">{po.orderNumber}</td>
+                                <td className="p-4 font-mono text-xs">{po.variantId?.sku}</td>
+                                <td className="p-4 text-gray-900">{po.quantityPlanned}</td>
+                                <td className="p-4 text-gray-900">{po.quantityCompleted}</td>
+                                <td className="p-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className={clsx("px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
+                                            po.status === 'Completed' ? 'bg-green-100 text-green-700' :
+                                                po.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                                    po.status === 'Quality Check' ? 'bg-purple-100 text-purple-700' :
+                                                        po.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                                            'bg-yellow-100 text-yellow-700'
+                                        )}>
+                                            {po.status === 'Planned' ? t('manufacturing.statusPlanned') : po.status === 'In Progress' ? t('manufacturing.statusInProgress') : po.status === 'Quality Check' ? t('manufacturing.statusQualityCheck') : po.status === 'Completed' ? t('manufacturing.statusCompleted') : t('manufacturing.statusCancelled')}
+                                        </span>
+                                        {po.status === 'Planned' && (
+                                            <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'In Progress'); }} className="text-xs text-blue-600 hover:underline font-bold bg-blue-50 px-2 py-1 rounded">{t('manufacturing.btnStart')}</button>
+                                        )}
+                                        {po.status === 'In Progress' && (
+                                            <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Quality Check'); }} className="text-xs text-purple-600 hover:underline font-bold bg-purple-50 px-2 py-1 rounded">{t('manufacturing.btnQcCheck')}</button>
+                                        )}
+                                        {po.status === 'Quality Check' && (
+                                            <button onClick={(e) => { e.stopPropagation(); handleStatusTransition(po, 'Completed'); }} className="text-xs text-green-600 hover:underline font-bold bg-green-50 px-2 py-1 rounded">{t('manufacturing.btnFinishYield')}</button>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="p-4 text-end text-gray-500">
+                                    {po.completionDate ? new Date(po.completionDate).toLocaleDateString() : '-'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
             <ProductionOrderModal
                 isOpen={isModalOpen}

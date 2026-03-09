@@ -60,117 +60,125 @@ export default function HRReports() {
         if (!data?.records) return null;
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
-                <table className="w-full text-start text-sm">
-                    <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
-                        <tr>
-                            <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                            <th className="px-5 py-3 font-semibold text-center">{t('hr.colWorkedTime')}</th>
-                            <th className="px-5 py-3 font-semibold text-center">{t('hr.colLateOvertime')}</th>
-                            <th className="px-5 py-3 font-semibold text-center">{t('hr.colStatus')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {data.records.map((r, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                                <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name} <span className="text-xs text-gray-400 block">{r.employeeId?.role}</span></td>
-                                <td className="px-5 py-3 font-mono text-center">{Math.floor(r.workedMinutes / 60)}{t('hr.lblHours')} {r.workedMinutes % 60}{t('hr.lblMinutes')}</td>
-                                <td className="px-5 py-3 text-center">
-                                    {r.lateMinutes > 0 ? <span className="text-red-500 font-bold">{r.lateMinutes}{t('hr.lblMinutes')} {t('hr.lblLate')}</span> :
-                                        r.overtimeMinutes > 0 ? <span className="text-emerald-500 font-bold">+{r.overtimeMinutes}{t('hr.lblMinutes')} {t('hr.lblOvertime')}</span> : '-'}
-                                </td>
-                                <td className="px-5 py-3 text-center font-bold text-gray-600">{r.status}</td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-start text-sm min-w-[600px]">
+                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                            <tr>
+                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
+                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colWorkedTime')}</th>
+                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colLateOvertime')}</th>
+                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colStatus')}</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {data.records.map((r, i) => (
+                                <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name} <span className="text-xs text-gray-400 block">{r.employeeId?.role}</span></td>
+                                    <td className="px-5 py-3 font-mono text-center">{Math.floor(r.workedMinutes / 60)}{t('hr.lblHours')} {r.workedMinutes % 60}{t('hr.lblMinutes')}</td>
+                                    <td className="px-5 py-3 text-center">
+                                        {r.lateMinutes > 0 ? <span className="text-red-500 font-bold">{r.lateMinutes}{t('hr.lblMinutes')} {t('hr.lblLate')}</span> :
+                                            r.overtimeMinutes > 0 ? <span className="text-emerald-500 font-bold">+{r.overtimeMinutes}{t('hr.lblMinutes')} {t('hr.lblOvertime')}</span> : '-'}
+                                    </td>
+                                    <td className="px-5 py-3 text-center font-bold text-gray-600">{r.status}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        )
+        );
     };
 
     const renderPayrollTable = () => {
         if (!data?.records) return null;
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
-                <table className="w-full text-start text-sm">
-                    <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
-                        <tr>
-                            <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                            <th className="px-5 py-3 font-semibold text-end">{t('hr.colBaseSalary')}</th>
-                            <th className="px-5 py-3 font-semibold text-end">{t('hr.colDeductionsTotal')}</th>
-                            <th className="px-5 py-3 font-semibold text-end">{t('hr.colOvertimeAddition')}</th>
-                            <th className="px-5 py-3 font-semibold text-end text-gray-900 ltr:border-l rtl:border-r border-gray-200">{t('hr.colFinalClearedSalary')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {data.records.map((r, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                                <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
-                                <td className="px-5 py-3 text-end text-gray-600">{r.baseSalary.toLocaleString()}</td>
-                                <td className="px-5 py-3 text-end text-red-600 font-bold">-{r.missingTimeDeductions + r.absenceDeductions}</td>
-                                <td className="px-5 py-3 text-end text-emerald-600 font-bold">+{r.overtimeAdditions}</td>
-                                <td className="px-5 py-3 text-end text-lg font-black text-gray-900 ltr:border-l rtl:border-r border-gray-100 bg-gray-50/30">{r.finalPayableSalary.toLocaleString()} {t('hr.dzdCurrency')}</td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-start text-sm min-w-[700px]">
+                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                            <tr>
+                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
+                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colBaseSalary')}</th>
+                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colDeductionsTotal')}</th>
+                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colOvertimeAddition')}</th>
+                                <th className="px-5 py-3 font-semibold text-end text-gray-900 ltr:border-l rtl:border-r border-gray-200">{t('hr.colFinalClearedSalary')}</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {data.records.map((r, i) => (
+                                <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
+                                    <td className="px-5 py-3 text-end text-gray-600">{r.baseSalary.toLocaleString()}</td>
+                                    <td className="px-5 py-3 text-end text-red-600 font-bold">-{r.missingTimeDeductions + r.absenceDeductions}</td>
+                                    <td className="px-5 py-3 text-end text-emerald-600 font-bold">+{r.overtimeAdditions}</td>
+                                    <td className="px-5 py-3 text-end text-lg font-black text-gray-900 ltr:border-l rtl:border-r border-gray-100 bg-gray-50/30">{r.finalPayableSalary.toLocaleString()} {t('hr.dzdCurrency')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        )
+        );
     };
 
     const renderDeductionsTable = () => {
         if (!data?.records) return null;
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
-                <table className="w-full text-start text-sm">
-                    <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
-                        <tr>
-                            <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                            <th className="px-5 py-3 font-semibold text-end">{t('hr.colTotalLateMissedMin')}</th>
-                            <th className="px-5 py-3 font-semibold text-end">{t('hr.colLossLateness')}</th>
-                            <th className="px-5 py-3 font-semibold text-end">{t('hr.colLossAbsence')}</th>
-                            <th className="px-5 py-3 font-semibold text-end text-rose-700">{t('hr.colTotalLiabilityDeducted')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {data.records.map((r, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                                <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
-                                <td className="px-5 py-3 text-end font-mono text-gray-600">{r.metricsTotal?.totalMissingMinutes}{t('hr.lblMinutes')}</td>
-                                <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.missingTimeDeductions}</td>
-                                <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.absenceDeductions}</td>
-                                <td className="px-5 py-3 text-end text-rose-700 font-bold bg-rose-50/30">-{Math.round(r.missingTimeDeductions + r.absenceDeductions)} {t('hr.dzdCurrency')}</td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-start text-sm min-w-[700px]">
+                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                            <tr>
+                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
+                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colTotalLateMissedMin')}</th>
+                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colLossLateness')}</th>
+                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colLossAbsence')}</th>
+                                <th className="px-5 py-3 font-semibold text-end text-rose-700">{t('hr.colTotalLiabilityDeducted')}</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {data.records.map((r, i) => (
+                                <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
+                                    <td className="px-5 py-3 text-end font-mono text-gray-600">{r.metricsTotal?.totalMissingMinutes}{t('hr.lblMinutes')}</td>
+                                    <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.missingTimeDeductions}</td>
+                                    <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.absenceDeductions}</td>
+                                    <td className="px-5 py-3 text-end text-rose-700 font-bold bg-rose-50/30">-{Math.round(r.missingTimeDeductions + r.absenceDeductions)} {t('hr.dzdCurrency')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        )
+        );
     };
 
     const renderOvertimeTable = () => {
         if (!data?.leaders) return null;
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
-                <table className="w-full text-start text-sm">
-                    <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
-                        <tr>
-                            <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                            <th className="px-5 py-3 font-semibold text-center">{t('hr.colDaysWithOvertime')}</th>
-                            <th className="px-5 py-3 font-semibold text-end text-emerald-700">{t('hr.colTotalExtraMinutes')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {data.leaders.map((r, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                                <td className="px-5 py-3 font-medium text-gray-900">{r.employee?.name} <span className="text-xs text-gray-400 block">{r.employee?.role}</span></td>
-                                <td className="px-5 py-3 text-center text-gray-600 font-bold">{r.daysWithOvertime} {t('hr.daysLabel')}</td>
-                                <td className="px-5 py-3 text-end text-emerald-600 font-bold bg-emerald-50/30">{r.totalOvertimeMinutes}{t('hr.lblMinutes')}</td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-start text-sm min-w-[500px]">
+                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                            <tr>
+                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
+                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colDaysWithOvertime')}</th>
+                                <th className="px-5 py-3 font-semibold text-end text-emerald-700">{t('hr.colTotalExtraMinutes')}</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {data.leaders.map((r, i) => (
+                                <tr key={i} className="hover:bg-gray-50">
+                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employee?.name} <span className="text-xs text-gray-400 block">{r.employee?.role}</span></td>
+                                    <td className="px-5 py-3 text-center text-gray-600 font-bold">{r.daysWithOvertime} {t('hr.daysLabel')}</td>
+                                    <td className="px-5 py-3 text-end text-emerald-600 font-bold bg-emerald-50/30">{r.totalOvertimeMinutes}{t('hr.lblMinutes')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        )
+        );
     };
 
     const getReportTitle = () => {
@@ -287,26 +295,26 @@ export default function HRReports() {
 
     return (
         <div className="p-8 pb-32">
-            <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-gray-200 pb-5 gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
-                        <FileText className="w-8 h-8 text-blue-600" /> {t('hr.reportsTitle')}
+                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-3">
+                        <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-blue-600" /> {t('hr.reportsTitle')}
                     </h1>
-                    <p className="text-gray-500 mt-2">{t('hr.reportsSubtitle')}</p>
+                    <p className="text-sm sm:text-base text-gray-500 mt-2">{t('hr.reportsSubtitle')}</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     {activeReport === 'daily' ? (
-                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="border-gray-200 rounded-lg shadow-sm font-medium" />
+                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="border-gray-200 rounded-lg shadow-sm font-medium w-full sm:w-auto flex-1 sm:flex-none text-sm px-3 py-2" />
                     ) : (
-                        <select value={period} onChange={(e) => setPeriod(e.target.value)} className="border-gray-200 rounded-lg shadow-sm font-bold text-gray-700">
+                        <select value={period} onChange={(e) => setPeriod(e.target.value)} className="border-gray-200 rounded-lg shadow-sm font-bold text-gray-700 w-full sm:w-auto flex-1 sm:flex-none text-sm px-3 py-2">
                             <option value={moment().format('MM-YYYY')}>{moment().format('MMMM YYYY')}</option>
                             <option value={moment().subtract(1, 'months').format('MM-YYYY')}>{moment().subtract(1, 'months').format('MMMM YYYY')}</option>
                         </select>
                     )}
-                    <button onClick={handleExportExcel} disabled={!data} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-green-700 hover:border-green-300 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors disabled:opacity-50">
+                    <button onClick={handleExportExcel} disabled={!data} className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-green-700 hover:border-green-300 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors disabled:opacity-50 text-sm whitespace-nowrap">
                         <FileSpreadsheet className="w-4 h-4 text-green-600" /> {t('hr.btnExcel')}
                     </button>
-                    <button onClick={handleExportPDF} disabled={!data} className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-black transition-colors disabled:opacity-50">
+                    <button onClick={handleExportPDF} disabled={!data} className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-black transition-colors disabled:opacity-50 text-sm whitespace-nowrap">
                         <Download className="w-4 h-4" /> {t('hr.btnPdf')}
                     </button>
                 </div>

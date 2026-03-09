@@ -258,17 +258,16 @@ export default function Sales() {
         <div className="flex flex-col gap-6">
 
             {/* Top Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('sales.title', 'Sales Management')}</h2>
-                    <p className="text-sm text-gray-500 mt-1">{t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{t('sales.title', 'Sales Management')}</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('sales.subtitle', 'Full commercial lifecycle tracking and order fulfillment.')}</p>
                 </div>
-                <div className="flex gap-3">
-                    {/* Add CSV Export button later */}
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 font-medium rounded-xl border border-gray-200 text-sm transition-colors hover:bg-gray-100">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 font-medium rounded-xl border border-gray-200 text-sm transition-colors hover:bg-gray-100">
                         <Download className="w-4 h-4" /> {t('sales.exportBtn', 'Export')}
                     </button>
-                    <button onClick={handleCreateClick} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-blue-700 shadow-sm shadow-blue-600/20">
+                    <button onClick={handleCreateClick} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm transition-all hover:bg-blue-700 shadow-sm shadow-blue-600/20">
                         <Plus className="w-4 h-4" /> {t('sales.createOrderBtn', 'Create Order')}
                     </button>
                 </div>
@@ -301,29 +300,29 @@ export default function Sales() {
 
             {/* Full-width Order Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-6 border-b border-gray-100 gap-4">
-                    <div className="flex bg-gray-100/80 p-1.5 rounded-xl">
-                        <button onClick={() => { setActiveTab('all'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all", activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
+                <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 sm:p-6 border-b border-gray-100 gap-4">
+                    <div className="flex flex-wrap gap-1 bg-gray-100/80 p-1.5 rounded-xl w-full xl:w-auto">
+                        <button onClick={() => { setActiveTab('all'); setSelectedOrderIds(new Set()); }} className={clsx("flex-1 xl:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all text-center", activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
                             {t('sales.allOrdersTab', 'All Orders')}
                         </button>
-                        <button onClick={() => { setActiveTab('verification'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'verification' ? "bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200" : "text-gray-500 hover:text-gray-700")}>
-                            <AlertCircle className="w-4 h-4" /> {t('sales.verificationTab', 'Verification Queue')}
+                        <button onClick={() => { setActiveTab('verification'); setSelectedOrderIds(new Set()); }} className={clsx("flex-1 xl:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex justify-center items-center gap-2 whitespace-nowrap", activeTab === 'verification' ? "bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200" : "text-gray-500 hover:text-gray-700")}>
+                            <AlertCircle className="w-4 h-4 shrink-0" /> {t('sales.verificationTab', 'Verification Queue')}
                             {newOrderCount > 0 && (
                                 <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">{newOrderCount}</span>
                             )}
                         </button>
-                        <button onClick={() => { setActiveTab('custom'); setSelectedOrderIds(new Set()); }} className={clsx("px-4 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2", activeTab === 'custom' ? "bg-purple-50 text-purple-600 shadow-sm ring-1 ring-purple-200" : "text-gray-500 hover:text-gray-700")}>
-                            <Wrench className="w-4 h-4" /> {t('sales.customOrdersTab', 'Custom Orders')}
+                        <button onClick={() => { setActiveTab('custom'); setSelectedOrderIds(new Set()); }} className={clsx("flex-1 xl:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex justify-center items-center gap-2 whitespace-nowrap", activeTab === 'custom' ? "bg-purple-50 text-purple-600 shadow-sm ring-1 ring-purple-200" : "text-gray-500 hover:text-gray-700")}>
+                            <Wrench className="w-4 h-4 shrink-0" /> {t('sales.customOrdersTab', 'Custom Orders')}
                         </button>
                     </div>
 
                     {activeTab !== 'custom' && (
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
                             {/* Status Filter */}
                             <select
                                 value={selectedStatusFilter}
                                 onChange={e => setSelectedStatusFilter(e.target.value)}
-                                className={clsx("bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
+                                className={clsx("flex-1 min-w-[130px] bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
                                     selectedStatusFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
                                 )}
                             >
@@ -337,7 +336,7 @@ export default function Sales() {
                             <select
                                 value={selectedChannelFilter}
                                 onChange={e => setSelectedChannelFilter(e.target.value)}
-                                className={clsx("bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
+                                className={clsx("flex-1 min-w-[130px] bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
                                     selectedChannelFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
                                 )}
                             >
@@ -351,7 +350,7 @@ export default function Sales() {
                             <select
                                 value={selectedCourierFilter}
                                 onChange={e => setSelectedCourierFilter(e.target.value)}
-                                className={clsx("bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
+                                className={clsx("flex-1 min-w-[130px] bg-gray-50 border outline-none rounded-xl py-2 px-3 text-sm font-medium transition-colors appearance-none cursor-pointer",
                                     selectedCourierFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
                                 )}
                             >
@@ -363,7 +362,7 @@ export default function Sales() {
                             {activeFilterCount > 0 && (
                                 <button
                                     onClick={() => { setSelectedStatusFilter(''); setSelectedChannelFilter(''); setSelectedCourierFilter(''); setSearchTerm(''); }}
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 transition-colors whitespace-nowrap"
+                                    className="flex-1 min-w-[100px] flex justify-center items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 transition-colors whitespace-nowrap"
                                 >
                                     ✕ Clear ({activeFilterCount})
                                 </button>

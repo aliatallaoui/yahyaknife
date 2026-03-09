@@ -158,7 +158,7 @@ export default function WorkerCard() {
                         ) : (
                             <div className="divide-y divide-gray-50">
                                 {productivity.map(log => (
-                                    <div key={log._id} className="p-6 hover:bg-gray-50/50 transition-colors">
+                                    <div key={log._id} className="p-4 sm:p-6 hover:bg-gray-50/50 transition-colors">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <p className="text-sm font-bold text-gray-900">{moment(log.date).format('MMMM Do YYYY')}</p>
@@ -197,7 +197,7 @@ export default function WorkerCard() {
                         ) : (
                             <div className="divide-y divide-gray-50">
                                 {rewards.map(r => (
-                                    <div key={r._id} className="p-6 hover:bg-gray-50/50 transition-colors flex items-center justify-between">
+                                    <div key={r._id} className="p-4 sm:p-6 hover:bg-gray-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
                                                 <TrendingUp className="w-5 h-5 text-indigo-600" />
@@ -207,7 +207,7 @@ export default function WorkerCard() {
                                                 <p className="text-xs text-gray-500 mt-0.5">{moment(r.dateAwarded).format('MMM Do, YYYY')} • {r.reason || 'Routine bonus'}</p>
                                             </div>
                                         </div>
-                                        <div className="text-right flex flex-col items-end gap-1.5">
+                                        <div className="text-left sm:text-right flex flex-row sm:flex-col items-baseline sm:items-end gap-2 sm:gap-1.5 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-gray-100 justify-between sm:justify-end">
                                             <span className="text-lg font-black text-indigo-600">+{r.amount.toLocaleString()} <span className="text-xs">DZ</span></span>
                                             <span className={clsx("px-2 py-0.5 text-[10px] font-bold uppercase rounded", r.isPaid ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
                                                 {r.isPaid ? 'Cleared in Payroll' : 'Pending Payout'}

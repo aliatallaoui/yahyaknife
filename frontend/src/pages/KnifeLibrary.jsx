@@ -56,8 +56,8 @@ function ModelModal({ isOpen, onClose, onSaved, initial = null }) {
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="col-span-1 sm:col-span-2">
                             <label className={lbl}>Model Name *</label>
                             <input className={inp} placeholder="e.g. Classic Hunter Knife" value={form.name} onChange={e => set('name', e.target.value)} />
                         </div>
@@ -105,11 +105,11 @@ function ModelModal({ isOpen, onClose, onSaved, initial = null }) {
                             <label className={lbl}>Price Max (DZ)</label>
                             <input type="number" className={inp} value={form.suggestedPriceMax} onChange={e => set('suggestedPriceMax', e.target.value)} />
                         </div>
-                        <div className="col-span-2 flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                        <div className="col-span-1 sm:col-span-2 flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
                             <input type="checkbox" id="sheath" checked={form.sheathRequired} onChange={e => set('sheathRequired', e.target.checked)} />
                             <label htmlFor="sheath" className="text-sm font-semibold text-amber-700">Sheath typically required</label>
                         </div>
-                        <div className="col-span-2">
+                        <div className="col-span-1 sm:col-span-2">
                             <label className={lbl}>Notes</label>
                             <textarea className={inp} rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
                         </div>
@@ -188,13 +188,13 @@ export default function KnifeLibrary() {
                     </h1>
                     <p className="text-sm text-gray-500 mt-0.5">{t('knives.libraryDesc', 'Reusable knife model templates — create a new knife in seconds')}</p>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={fetchModels} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-400">
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <button onClick={fetchModels} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-400 shrink-0">
                         <RefreshCw className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => { setEditingModel(null); setModalOpen(true); }}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-2xl shadow"
+                        className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-2xl shadow"
                     >
                         <Plus className="w-4 h-4" /> {t('knives.addModel', 'Add Model')}
                     </button>

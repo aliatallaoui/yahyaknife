@@ -160,17 +160,17 @@ export default function SettingsUsers() {
 
     return (
         <div className="max-w-6xl mx-auto">
-            <div className="mb-8 flex items-end justify-between">
+            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <Users className="w-6 h-6 text-indigo-500" />
+                        <Users className="w-6 h-6 text-indigo-500 shrink-0" />
                         {t('title')}
                     </h1>
                     <p className="text-gray-500 mt-2">{t('subtitle')}</p>
                 </div>
                 <button
                     onClick={handleOpenCreate}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+                    className="flex w-full sm:w-auto justify-center items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm"
                 >
                     <UserPlus className="w-5 h-5" />
                     {t('invite')}
@@ -178,79 +178,81 @@ export default function SettingsUsers() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
-                            <th className={clsx("p-4 font-semibold", isAr ? "pr-6 text-right" : "pl-6 text-left")}>{t('thColIdentity')}</th>
-                            <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColRole')}</th>
-                            <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColStatus')}</th>
-                            <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColDate')}</th>
-                            <th className={clsx("p-4 font-semibold", isAr ? "text-left pl-6" : "text-right pr-6")}>{t('thColManage')}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50 text-sm">
-                        {users.map((userObj) => (
-                            <tr key={userObj._id} className="hover:bg-gray-50/50 transition-colors group">
-                                <td className={clsx("p-4", isAr ? "pr-6" : "pl-6")}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center font-bold text-indigo-700">
-                                            {userObj.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-900">{userObj.name}</p>
-                                            <p className="text-xs font-semibold text-gray-400">{userObj.email}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <span className={clsx(
-                                        "inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border flex items-center gap-1 w-max",
-                                        userObj.role === 'Super Admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                            userObj.role === 'Finance Controller' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                userObj.role === 'HR Manager' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                    'bg-gray-50 text-gray-700 border-gray-200'
-                                    )}>
-                                        {userObj.role === 'Super Admin' && <Key className="w-3 h-3" />}
-                                        {t(`role${userObj.role.replace(' ', '')}`)}
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    {userObj.isActive ? (
-                                        <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded-md w-max">
-                                            <CheckCircle className="w-4 h-4" /> {t('lblActive')}
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1.5 text-rose-600 font-bold text-xs bg-rose-50 px-2 py-1 rounded-md w-max">
-                                            <XCircle className="w-4 h-4" /> {t('lblRestricted')}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="p-4 text-gray-500 font-medium">
-                                    {moment(userObj.createdAt).format('MMM DD, YYYY')}
-                                </td>
-                                <td className={clsx("p-4", isAr ? "text-left pl-6" : "text-right pr-6")}>
-                                    <div className={clsx("flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity", isAr ? "justify-start" : "justify-end")}>
-                                        <button
-                                            onClick={() => handleOpenEdit(userObj)}
-                                            className="p-2 bg-gray-50 text-gray-600 rounded-lg border border-gray-200 hover:bg-white hover:text-indigo-600 hover:border-indigo-200 transition-all font-medium text-xs flex items-center gap-1"
-                                            disabled={userObj._id === currentUser._id}
-                                        >
-                                            <Edit2 className="w-3.5 h-3.5" /> {t('btnModify')}
-                                        </button>
-                                        {userObj._id !== currentUser._id && (
-                                            <button
-                                                onClick={() => handleDelete(userObj._id)}
-                                                className="p-2 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 hover:bg-rose-100 transition-colors"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
+                                <th className={clsx("p-4 font-semibold", isAr ? "pr-6 text-right" : "pl-6 text-left")}>{t('thColIdentity')}</th>
+                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColRole')}</th>
+                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColStatus')}</th>
+                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColDate')}</th>
+                                <th className={clsx("p-4 font-semibold", isAr ? "text-left pl-6" : "text-right pr-6")}>{t('thColManage')}</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 text-sm">
+                            {users.map((userObj) => (
+                                <tr key={userObj._id} className="hover:bg-gray-50/50 transition-colors group">
+                                    <td className={clsx("p-4", isAr ? "pr-6" : "pl-6")}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center font-bold text-indigo-700">
+                                                {userObj.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900">{userObj.name}</p>
+                                                <p className="text-xs font-semibold text-gray-400">{userObj.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className={clsx(
+                                            "inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border flex items-center gap-1 w-max",
+                                            userObj.role === 'Super Admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                userObj.role === 'Finance Controller' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                    userObj.role === 'HR Manager' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                        )}>
+                                            {userObj.role === 'Super Admin' && <Key className="w-3 h-3" />}
+                                            {t(`role${userObj.role.replace(' ', '')}`)}
+                                        </span>
+                                    </td>
+                                    <td className="p-4">
+                                        {userObj.isActive ? (
+                                            <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded-md w-max">
+                                                <CheckCircle className="w-4 h-4" /> {t('lblActive')}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5 text-rose-600 font-bold text-xs bg-rose-50 px-2 py-1 rounded-md w-max">
+                                                <XCircle className="w-4 h-4" /> {t('lblRestricted')}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="p-4 text-gray-500 font-medium">
+                                        {moment(userObj.createdAt).format('MMM DD, YYYY')}
+                                    </td>
+                                    <td className={clsx("p-4", isAr ? "text-left pl-6" : "text-right pr-6")}>
+                                        <div className={clsx("flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity", isAr ? "justify-start" : "justify-end")}>
+                                            <button
+                                                onClick={() => handleOpenEdit(userObj)}
+                                                className="p-2 bg-gray-50 text-gray-600 rounded-lg border border-gray-200 hover:bg-white hover:text-indigo-600 hover:border-indigo-200 transition-all font-medium text-xs flex items-center gap-1"
+                                                disabled={userObj._id === currentUser._id}
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" /> {t('btnModify')}
+                                            </button>
+                                            {userObj._id !== currentUser._id && (
+                                                <button
+                                                    onClick={() => handleDelete(userObj._id)}
+                                                    className="p-2 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 hover:bg-rose-100 transition-colors"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Config Modal */}

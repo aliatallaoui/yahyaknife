@@ -104,17 +104,17 @@ export default function ToolManagement() {
     return (
         <div className="p-8 pb-32">
             {/* Header & Action */}
-            <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-gray-200 pb-5 gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <Wrench className="w-8 h-8 text-slate-600" />
-                        {t('tools.title', 'Tool Management & Machinery')}
+                    <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-slate-600 shrink-0" />
+                        <span className="leading-tight">{t('tools.title', 'Tool Management & Machinery')}</span>
                     </h1>
-                    <p className="text-gray-500 mt-2 font-medium">Track operational status, assignments, and repair history</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-2 font-medium">Track operational status, assignments, and repair history</p>
                 </div>
                 <button
                     onClick={() => openToolModal()}
-                    className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-900 transition-all shadow-sm"
+                    className="flex w-full sm:w-auto justify-center items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-900 transition-all shadow-sm whitespace-nowrap"
                 >
                     <Plus className="w-5 h-5" />
                     {t('tools.addNew', 'Register Tool')}
@@ -155,68 +155,70 @@ export default function ToolManagement() {
 
             {/* Main Table */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <table className="w-full text-start text-sm">
-                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-gray-200">
-                        <tr>
-                            <th className="p-4 text-left">Equipment Name</th>
-                            <th className="p-4 text-left">Category & S/N</th>
-                            <th className="p-4 text-left">Status</th>
-                            <th className="p-4 text-left">Assigned To</th>
-                            <th className="p-4 text-left">Last Maintenance</th>
-                            <th className="p-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading && <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading tools...</td></tr>}
-                        {!loading && tools.length === 0 && <tr><td colSpan="6" className="p-8 text-center text-gray-500">No machinery registered.</td></tr>}
-                        {tools.map(tool => (
-                            <tr key={tool._id} className="border-b border-gray-100 hover:bg-slate-50/50 transition-colors">
-                                <td className="p-4">
-                                    <div className="font-bold text-gray-900">{tool.name}</div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="text-gray-900 font-medium">{tool.category}</div>
-                                    <div className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5">
-                                        <Hash className="w-3 h-3" /> {tool.serialNumber || 'N/A'}
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <span className={`px-2.5 py-1 text-[11px] font-black tracking-wide rounded-full border ${getStatusStyle(tool.status)}`}>
-                                        {tool.status.toUpperCase()}
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    {tool.assignedTo ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
-                                                {tool.assignedTo.name.charAt(0)}
-                                            </div>
-                                            <span className="font-medium text-gray-900">{tool.assignedTo.name}</span>
-                                        </div>
-                                    ) : (
-                                        <span className="text-gray-400 text-sm">Unassigned</span>
-                                    )}
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-1.5 text-gray-600">
-                                        <Calendar className="w-4 h-4 text-slate-400" />
-                                        <span>{tool.lastMaintenanceDate ? moment(tool.lastMaintenanceDate).format('MMM Do YYYY') : 'Never'}</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <button onClick={() => openMaintenanceModal(tool)} className="p-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors border border-amber-200" title="Log Maintenance">
-                                            <Settings className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => openToolModal(tool)} className="p-2 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" title="Edit Tool">
-                                            <FileText className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-start text-sm min-w-[800px]">
+                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-gray-200">
+                            <tr>
+                                <th className="p-4 text-left">Equipment Name</th>
+                                <th className="p-4 text-left">Category & S/N</th>
+                                <th className="p-4 text-left">Status</th>
+                                <th className="p-4 text-left">Assigned To</th>
+                                <th className="p-4 text-left">Last Maintenance</th>
+                                <th className="p-4 text-right">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {loading && <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading tools...</td></tr>}
+                            {!loading && tools.length === 0 && <tr><td colSpan="6" className="p-8 text-center text-gray-500">No machinery registered.</td></tr>}
+                            {tools.map(tool => (
+                                <tr key={tool._id} className="border-b border-gray-100 hover:bg-slate-50/50 transition-colors">
+                                    <td className="p-4">
+                                        <div className="font-bold text-gray-900">{tool.name}</div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="text-gray-900 font-medium">{tool.category}</div>
+                                        <div className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5">
+                                            <Hash className="w-3 h-3" /> {tool.serialNumber || 'N/A'}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className={`px-2.5 py-1 text-[11px] font-black tracking-wide rounded-full border ${getStatusStyle(tool.status)}`}>
+                                            {tool.status.toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td className="p-4">
+                                        {tool.assignedTo ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
+                                                    {tool.assignedTo.name.charAt(0)}
+                                                </div>
+                                                <span className="font-medium text-gray-900">{tool.assignedTo.name}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 text-sm">Unassigned</span>
+                                        )}
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-1.5 text-gray-600">
+                                            <Calendar className="w-4 h-4 text-slate-400" />
+                                            <span>{tool.lastMaintenanceDate ? moment(tool.lastMaintenanceDate).format('MMM Do YYYY') : 'Never'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button onClick={() => openMaintenanceModal(tool)} className="p-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors border border-amber-200" title="Log Maintenance">
+                                                <Settings className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => openToolModal(tool)} className="p-2 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" title="Edit Tool">
+                                                <FileText className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Tool Registration Modal */}
@@ -232,7 +234,7 @@ export default function ToolManagement() {
                                 <label className="block text-sm font-bold text-gray-700 mb-1">Tool/Machinery Name</label>
                                 <input type="text" value={newTool.name} onChange={e => setNewTool({ ...newTool, name: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-slate-500 focus:ring-0 outline-none" placeholder="e.g. Belt Grinder 2x72" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
                                     <select value={newTool.category} onChange={e => setNewTool({ ...newTool, category: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200">
@@ -244,7 +246,7 @@ export default function ToolManagement() {
                                     <input type="text" value={newTool.serialNumber} onChange={e => setNewTool({ ...newTool, serialNumber: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200" />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Status</label>
                                     <select value={newTool.status} onChange={e => setNewTool({ ...newTool, status: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200">

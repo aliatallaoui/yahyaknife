@@ -156,21 +156,41 @@ export default function DispatchCenter() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <p className="text-sm font-medium text-gray-500">{t('dispatch.kpi.total', 'Total Shipments')}</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">{shipments.length}</p>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.total', 'Total Shipments')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{shipments.length}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
+                        <Package className="w-8 h-8 text-gray-600" />
+                    </div>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <p className="text-sm font-medium text-blue-600">{t('dispatch.kpi.active', 'Active & In Transit')}</p>
-                    <p className="mt-2 text-3xl font-bold text-blue-700">{totalActive}</p>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.active', 'Active & In Transit')}</p>
+                        <h3 className="text-3xl font-black text-blue-700 tracking-tighter truncate">{totalActive}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                        <Truck className="w-8 h-8 text-blue-600" />
+                    </div>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <p className="text-sm font-medium text-green-600">{t('dispatch.kpi.delivered', 'Successfully Delivered')}</p>
-                    <p className="mt-2 text-3xl font-bold text-green-700">{totalDelivered}</p>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-green-600 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.delivered', 'Successfully Delivered')}</p>
+                        <h3 className="text-3xl font-black text-green-700 tracking-tighter truncate">{totalDelivered}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-green-50 rounded-2xl flex items-center justify-center border border-green-100 shrink-0">
+                        <CheckCircle className="w-8 h-8 text-green-600" />
+                    </div>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <p className="text-sm font-medium text-orange-600">{t('dispatch.kpi.returns', 'Returns & Exceptions')}</p>
-                    <p className="mt-2 text-3xl font-bold text-orange-700">{totalReturns}</p>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-orange-600 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.returns', 'Returns & Exceptions')}</p>
+                        <h3 className="text-3xl font-black text-orange-700 tracking-tighter truncate">{totalReturns}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-orange-50 rounded-2xl flex items-center justify-center border border-orange-100 shrink-0">
+                        <AlertTriangle className="w-8 h-8 text-orange-600" />
+                    </div>
                 </div>
             </div>
 

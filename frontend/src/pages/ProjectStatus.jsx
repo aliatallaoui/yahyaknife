@@ -57,18 +57,18 @@ export default function ProjectStatus() {
         <div className="flex flex-col gap-6">
 
             {/* Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h2>
-                    <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('subtitle')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm shadow-sm transition-colors hover:bg-gray-50 flex items-center gap-2">
+                <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
+                    <button className="flex-1 sm:flex-none justify-center items-center gap-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm shadow-sm transition-colors hover:bg-gray-50 flex px-4 py-2 whitespace-nowrap">
                         <Filter className="w-4 h-4" /> {t('reportsBtn')}
                     </button>
                     <button
                         onClick={() => setIsModalOpen(!isModalOpen)}
-                        className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-indigo-700 flex items-center gap-2"
+                        className="flex-1 sm:flex-none justify-center items-center gap-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-indigo-700 flex px-4 py-2 whitespace-nowrap"
                     >
                         <Plus className="w-4 h-4" /> {t('newProjBtn')}
                     </button>
@@ -108,15 +108,15 @@ export default function ProjectStatus() {
                 </div>
 
                 {/* Project List (Master Overview) */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[380px]">
-                    <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[380px] lg:h-[380px]">
+                    <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center shrink-0 gap-4">
                         <h3 className="text-lg font-bold text-gray-900">{t('listTitle')}</h3>
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-gray-400", isAr ? "right-3" : "left-3")} />
                             <input
                                 type="text"
                                 placeholder={t('searchPlaceholder')}
-                                className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 pr-4 text-sm w-64", isAr ? "pr-9 pl-4" : "pl-9")}
+                                className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 text-sm w-full sm:w-64", isAr ? "pr-9 pl-4" : "pl-9 pr-4")}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -193,7 +193,7 @@ export default function ProjectStatus() {
                                 <label className="block text-xs font-bold text-gray-700 mb-1">{t('descLabel')}</label>
                                 <textarea rows="3" value={newProj.description} onChange={e => setNewProj({ ...newProj, description: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" placeholder={t('descPlaceholder')}></textarea>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1">{t('deptLabel')}</label>
                                     <select value={newProj.department} onChange={e => setNewProj({ ...newProj, department: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white">

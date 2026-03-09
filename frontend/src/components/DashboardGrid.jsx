@@ -69,7 +69,7 @@ export default function DashboardGrid({ data }) {
         <div className="flex flex-col gap-5 w-full">
 
             {/* ── Row 1: 4 KPI Cards — own row, no stretching ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <MetricCard
                     title={t('dashboard.profit')}
                     value={(financialMetrics?.realProfit || 0).toLocaleString()}
@@ -109,7 +109,7 @@ export default function DashboardGrid({ data }) {
             </div>
 
             {/* ── Row 1.5: Workshop / Bladesmith Operations KPIs ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <MetricCard
                     title={t('dashboard.activeProduction', 'Active in Forge')}
                     value={data.workshopMetrics?.activeProduction || 0}
@@ -169,30 +169,30 @@ export default function DashboardGrid({ data }) {
                             <p className="text-sm font-medium">No active orders right now</p>
                         </div>
                     ) : (
-                        <div className="flex items-stretch gap-2">
+                        <div className="flex items-stretch gap-2 md:gap-3 overflow-x-auto pb-4 custom-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0">
                             {pipelineStages.map((stage, idx) => {
                                 const StageIcon = stage.icon;
                                 const pct = Math.round((stage.count / total) * 100);
                                 return (
-                                    <div key={stage.key} className="flex items-center gap-2 flex-1 min-w-0">
-                                        <div className={clsx("flex-1 rounded-2xl border p-4 flex flex-col gap-2 min-w-0", stage.bg, stage.border)}>
-                                            <div className="flex items-center justify-between">
-                                                <StageIcon className={clsx("w-4 h-4", stage.text)} />
+                                    <div key={stage.key} className="flex items-center gap-2 md:gap-3 flex-1 min-w-[150px] sm:min-w-0 shrink-0 snap-center sm:snap-align-none">
+                                        <div className={clsx("flex-1 rounded-2xl border p-4 flex flex-col gap-2 min-w-0 h-full", stage.bg, stage.border)}>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <StageIcon className={clsx("w-5 h-5", stage.text)} />
                                                 {stage.count > 0 && (
                                                     <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/70", stage.text)}>
                                                         {pct}%
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className={clsx("text-2xl font-black leading-none", stage.text)}>{stage.count}</p>
-                                            <p className="text-xs font-bold text-gray-600 leading-tight truncate">{stage.label}</p>
-                                            <div className="w-full bg-white/50 h-1.5 rounded-full overflow-hidden">
+                                            <p className={clsx("text-3xl font-black leading-none", stage.text)}>{stage.count}</p>
+                                            <p className="text-xs font-bold text-gray-600 leading-tight mt-1 truncate">{stage.label}</p>
+                                            <div className="w-full bg-white/50 h-1.5 rounded-full overflow-hidden mt-auto">
                                                 <div className={clsx("h-full rounded-full", stage.bar)} style={{ width: `${pct}%` }} />
                                             </div>
                                             <p className="text-[10px] text-gray-500 leading-tight">{stage.hint}</p>
                                         </div>
                                         {idx < pipelineStages.length - 1 && (
-                                            <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                                            <ChevronRight className="w-5 h-5 text-gray-300 shrink-0 rtl:rotate-180" />
                                         )}
                                     </div>
                                 );
@@ -293,57 +293,57 @@ export default function DashboardGrid({ data }) {
 
                 {/* HR Attendance Snapshot */}
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-                    <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                            <Users className="w-5 h-5 text-violet-500" />
-                            {t('dashboard.hrSnapshot')}
+                    <div className="flex items-center justify-between mb-5 select-none gap-2">
+                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 truncate">
+                            <Users className="w-5 h-5 text-violet-500 shrink-0" />
+                            <span className="truncate">{t('dashboard.hrSnapshot', 'HR Snapshot')}</span>
                         </h3>
-                        <span className="text-xs text-gray-400 font-medium bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                        <span className="text-[10px] sm:text-xs text-gray-400 font-medium bg-gray-50 px-2 sm:px-3 py-1 rounded-full border border-gray-100 whitespace-nowrap">
                             {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })}
                         </span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-5">
                         <HRTile
-                            icon={UserCheck} label={t('dashboard.presentToday')}
+                            icon={UserCheck} label={t('dashboard.presentToday', 'Present Today')}
                             value={hrMetrics?.presentToday ?? '—'}
                             total={hrMetrics?.activeEmployees}
                             color="text-emerald-600" bg="bg-emerald-50" bar="bg-emerald-400"
                         />
                         <HRTile
-                            icon={UserX} label={t('dashboard.absentToday')}
+                            icon={UserX} label={t('dashboard.absentToday', 'Absent Today')}
                             value={hrMetrics?.absentToday ?? '—'}
                             total={hrMetrics?.activeEmployees}
                             color="text-rose-600" bg="bg-rose-50" bar="bg-rose-400"
                             isAlert={(hrMetrics?.absentToday || 0) > 0}
                         />
                         <HRTile
-                            icon={Clock} label={t('dashboard.lateToday')}
+                            icon={Clock} label={t('dashboard.lateToday', 'Late Today')}
                             value={hrMetrics?.lateToday ?? '—'}
                             total={hrMetrics?.activeEmployees}
                             color="text-amber-600" bg="bg-amber-50" bar="bg-amber-400"
                             isAlert={(hrMetrics?.lateToday || 0) > 0}
                         />
                         <HRTile
-                            icon={Users} label={t('dashboard.activeStaff')}
+                            icon={Users} label={t('dashboard.activeStaff', 'Active Staff')}
                             value={hrMetrics?.activeEmployees ?? '—'}
                             total={hrMetrics?.totalEmployees}
                             color="text-violet-600" bg="bg-violet-50" bar="bg-violet-400"
                         />
                     </div>
                     {/* Payroll estimate strip */}
-                    <div className="flex items-center justify-between bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl p-4 border border-violet-100">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
-                                <CreditCard className="w-4 h-4 text-violet-600" />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl p-4 border border-violet-100 gap-3">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
                             </div>
-                            <div>
-                                <p className="text-xs font-bold text-violet-700 uppercase tracking-wider">{t('dashboard.monthlyPayrollEst')}</p>
-                                <p className="text-xs text-violet-500 mt-0.5">{t('dashboard.payrollSubtitle')}</p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] sm:text-xs font-bold text-violet-700 uppercase tracking-wider truncate">{t('dashboard.monthlyPayrollEst', 'Monthly Payroll Est')}</p>
+                                <p className="text-[10px] sm:text-xs text-violet-500 mt-0.5 truncate">{t('dashboard.payrollSubtitle', 'Projected based on attendance')}</p>
                             </div>
                         </div>
-                        <p className="text-2xl font-black text-violet-900 tabular-nums">
+                        <p className="text-xl sm:text-2xl font-black text-violet-900 tabular-nums self-end sm:self-auto block text-end w-full sm:w-auto">
                             {(hrMetrics?.estimatedPayrollDZD || 0).toLocaleString()}
-                            <span className="text-sm font-medium text-violet-400 ms-1">DZ</span>
+                            <span className="text-[10px] sm:text-sm font-medium text-violet-400 ms-1">DZ</span>
                         </p>
                     </div>
                     {/* Daily overtime if any */}
@@ -406,47 +406,47 @@ export default function DashboardGrid({ data }) {
     );
 }
 
-/* ─── Metric Card — compact, no stretching ─── */
+/* ─── Metric Card — compact, updated to match Net Real Profit card design ─── */
 function MetricCard({ title, value, unit, icon: Icon, trend, isPositive, color, bg, isEmpty, emptyLabel }) {
+    const borderColor = bg.replace('bg-', 'border-').replace('50', '100');
     return (
-        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            {/* Icon row */}
-            <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center mb-3", bg, color)}>
-                <Icon className="w-5 h-5" />
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{title}</p>
+                {isEmpty ? (
+                    <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 mt-1">{emptyLabel}</span>
+                ) : (
+                    <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter flex items-baseline gap-1.5 flex-wrap truncate">
+                        {value} <span className="text-sm font-medium text-gray-400">{unit}</span>
+                    </h3>
+                )}
+                {trend && !isEmpty && (
+                    <p className={clsx("text-xs font-bold mt-2 flex items-center gap-1", isPositive ? "text-emerald-600" : "text-gray-400")}>
+                        {isPositive && <TrendingUp className="w-3 h-3" />}{trend}
+                    </p>
+                )}
             </div>
-            {/* Value */}
-            {isEmpty ? (
-                <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">{emptyLabel}</span>
-            ) : (
-                <p className="text-2xl font-black text-gray-900 tabular-nums leading-tight">
-                    {value} <span className="text-sm font-medium text-gray-400">{unit}</span>
-                </p>
-            )}
-            {/* Label */}
-            <p className="text-sm font-semibold text-gray-500 mt-1.5">{title}</p>
-            {/* Trend */}
-            {trend && !isEmpty && (
-                <p className={clsx("text-xs font-semibold mt-2 flex items-center gap-1", isPositive ? "text-emerald-600" : "text-gray-400")}>
-                    {isPositive && <TrendingUp className="w-3 h-3" />}{trend}
-                </p>
-            )}
+            <div className={clsx("h-16 w-16 rounded-2xl flex items-center justify-center border shrink-0", bg, borderColor)}>
+                <Icon className={clsx("w-8 h-8", color)} />
+            </div>
         </div>
     );
 }
 
 /* ─── Inventory Card ─── */
 function InventoryCard({ icon: Icon, iconBg, iconColor, label, value, valueSuffix, hint, isAlert }) {
+    const borderColor = iconBg.replace('bg-', 'border-').replace('50', '100');
     return (
-        <div className={clsx("bg-white rounded-3xl shadow-sm border p-5 flex items-start gap-4 hover:shadow-md transition-shadow", isAlert ? "border-rose-100" : "border-gray-100")}>
-            <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0", iconBg)}>
-                <Icon className={clsx("w-5 h-5", iconColor)} />
-            </div>
-            <div className="min-w-0">
-                <p className="text-xs font-bold text-gray-500 mb-0.5">{label}</p>
-                <h4 className="text-xl font-black text-gray-900">
+        <div className={clsx("bg-white rounded-2xl shadow-sm border p-5 flex items-center justify-between gap-4 hover:shadow-md transition-shadow", isAlert ? "border-rose-100" : "border-gray-100")}>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{label}</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter flex items-baseline gap-1.5 truncate">
                     {value}{valueSuffix && <span className="text-xs font-bold text-rose-400 ms-1.5">{valueSuffix}</span>}
-                </h4>
-                {hint && <p className="text-[11px] text-gray-400 mt-1 font-medium">{hint}</p>}
+                </h3>
+                {hint && <p className="text-xs text-gray-400 mt-1 font-medium truncate">{hint}</p>}
+            </div>
+            <div className={clsx("h-16 w-16 rounded-2xl flex items-center justify-center border shrink-0", iconBg, borderColor)}>
+                <Icon className={clsx("w-8 h-8", iconColor)} />
             </div>
         </div>
     );
@@ -457,19 +457,23 @@ function HRTile({ icon: Icon, label, value, total, color, bg, bar, isAlert }) {
     const pct = total > 0 ? Math.min(100, Math.round((Number(value) / Number(total)) * 100)) : 0;
     return (
         <div className={clsx(
-            "rounded-2xl p-4 border flex flex-col gap-2",
+            "rounded-2xl p-3 sm:p-4 border flex flex-col justify-between hover:shadow-sm transition-shadow",
             isAlert ? "bg-rose-50/60 border-rose-100" : "bg-gray-50/60 border-gray-100"
         )}>
-            <div className={clsx("w-8 h-8 rounded-xl flex items-center justify-center", bg)}>
-                <Icon className={clsx("w-4 h-4", color)} />
-            </div>
-            <p className="text-2xl font-black text-gray-900 tabular-nums leading-tight">{value}</p>
-            <p className="text-xs font-semibold text-gray-500">{label}</p>
-            {total != null && (
-                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                    <div className={clsx("h-full rounded-full transition-all duration-500", bar)} style={{ width: `${pct}%` }} />
+            <div className="flex justify-between items-start mb-2 gap-2">
+                <div className={clsx("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", bg)}>
+                    <Icon className={clsx("w-4 h-4", color)} />
                 </div>
-            )}
+                <p className="text-xl sm:text-2xl font-black text-gray-900 tabular-nums leading-none mt-1">{value}</p>
+            </div>
+            <div className="mt-auto">
+                <p className="text-[10px] sm:text-xs font-semibold text-gray-500 line-clamp-1 leading-tight mb-2 mt-1 truncate" title={label}>{label}</p>
+                {total != null && (
+                    <div className="w-full bg-gray-200 h-1 sm:h-1.5 rounded-full overflow-hidden">
+                        <div className={clsx("h-full rounded-full transition-all duration-500", bar)} style={{ width: `${pct}%` }} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

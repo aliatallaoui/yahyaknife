@@ -194,7 +194,7 @@ export default function KnifeDashboard() {
                 </div>
                 <button
                     onClick={handleNew}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-2xl shadow transition-colors"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-2xl shadow transition-colors w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" /> {t('knives.newCard', 'New Knife Card')}
                 </button>
@@ -220,16 +220,21 @@ export default function KnifeDashboard() {
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 max-w-xs">
-                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        className="w-full ps-9 pe-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        placeholder={t('knives.searchBy', 'Search by name or ID...')}
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
+                <div className="flex gap-2 w-full sm:w-auto sm:max-w-xs">
+                    <div className="relative flex-1">
+                        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            className="w-full ps-9 pe-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            placeholder={t('knives.searchBy', 'Search by name or ID...')}
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                    </div>
+                    <button onClick={fetchAll} className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-400 shrink-0">
+                        <RefreshCw className="w-4 h-4" />
+                    </button>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 flex-1">
                     {FILTER_OPTIONS.map(opt => (
                         <button
                             key={opt}
@@ -243,9 +248,6 @@ export default function KnifeDashboard() {
                         </button>
                     ))}
                 </div>
-                <button onClick={fetchAll} className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-400">
-                    <RefreshCw className="w-4 h-4" />
-                </button>
             </div>
 
             {/* Cards grid */}

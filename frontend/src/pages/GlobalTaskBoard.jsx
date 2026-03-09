@@ -47,22 +47,22 @@ export default function GlobalTaskBoard() {
         <div className="flex flex-col gap-6">
 
             {/* Header Controls */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                        <Target className="w-6 h-6 text-indigo-600" />
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                        <Target className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                         {t('gtbTitle')}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">{t('gtbSubtitle')}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('gtbSubtitle')}</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="relative">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:flex-none">
                         <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-gray-400", isAr ? "right-3" : "left-3")} />
                         <input
                             type="text"
                             placeholder={t('gtbSearch')}
-                            className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 pr-4 text-sm w-64", isAr ? "pr-9 pl-4" : "pl-9")}
+                            className={clsx("bg-gray-50 border border-transparent focus:border-gray-200 outline-none rounded-lg py-2 text-sm w-full sm:w-64", isAr ? "pr-9 pl-4" : "pl-9 pr-4")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -143,56 +143,58 @@ export default function GlobalTaskBoard() {
             ) : (
                 /* LIST VIEW */
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[600px]">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
-                                <th className={clsx("p-4 font-semibold w-24", isAr ? "text-right" : "text-left")}>{t('thTaskId')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thTitle')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thProject')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thAssignee')}</th>
-                                <th className="p-4 font-semibold text-center w-28">{t('thPriority')}</th>
-                                <th className="p-4 font-semibold text-center w-32">{t('thStatus')}</th>
-                                <th className={clsx("p-4 font-semibold w-32", isAr ? "text-left" : "text-right")}>{t('thDeadline')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 text-sm">
-                            {filteredTasks.map((task) => (
-                                <tr key={task._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer group">
-                                    <td className="p-4 font-mono text-[11px] text-gray-400">{task.taskId}</td>
-                                    <td className="p-4">
-                                        <div className="font-bold text-gray-900">{task.title}</div>
-                                        {task.linkedEntity && <div className="text-xs text-indigo-500 mt-0.5">{t('linkedContext')}</div>}
-                                    </td>
-                                    <td className="p-4 text-gray-600 font-medium text-[13px]">{task.project?.name}</td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                                                {task.assignee?.name?.charAt(0) || '?'}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
+                                    <th className={clsx("p-4 font-semibold w-24", isAr ? "text-right" : "text-left")}>{t('thTaskId')}</th>
+                                    <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thTitle')}</th>
+                                    <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thProject')}</th>
+                                    <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thAssignee')}</th>
+                                    <th className="p-4 font-semibold text-center w-28">{t('thPriority')}</th>
+                                    <th className="p-4 font-semibold text-center w-32">{t('thStatus')}</th>
+                                    <th className={clsx("p-4 font-semibold w-32", isAr ? "text-left" : "text-right")}>{t('thDeadline')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 text-sm">
+                                {filteredTasks.map((task) => (
+                                    <tr key={task._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer group">
+                                        <td className="p-4 font-mono text-[11px] text-gray-400">{task.taskId}</td>
+                                        <td className="p-4">
+                                            <div className="font-bold text-gray-900">{task.title}</div>
+                                            {task.linkedEntity && <div className="text-xs text-indigo-500 mt-0.5">{t('linkedContext')}</div>}
+                                        </td>
+                                        <td className="p-4 text-gray-600 font-medium text-[13px]">{task.project?.name}</td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                                                    {task.assignee?.name?.charAt(0) || '?'}
+                                                </div>
+                                                <span className="text-gray-700 text-xs font-semibold">{task.assignee?.name || t('unassignedPM')}</span>
                                             </div>
-                                            <span className="text-gray-700 text-xs font-semibold">{task.assignee?.name || t('unassignedPM')}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <span className={clsx("text-[10px] px-2.5 py-1 rounded-full font-semibold", PRIORITY_COLORS[task.priority])}>{t(`priority${task.priority}`)}</span>
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-full w-28 justify-center">
-                                            <span className={clsx("w-1.5 h-1.5 rounded-full", TASK_STATUS_CONFIG[task.status].dot)}></span>
-                                            {t(`status${task.status.replace(' ', '')}`)}
-                                        </span>
-                                    </td>
-                                    <td className={clsx("p-4 font-medium text-xs", task.deadline && new Date(task.deadline) < new Date() && task.status !== 'Done' ? "text-rose-600" : "text-gray-500", isAr ? "text-left" : "text-right")}>
-                                        {task.deadline ? moment(task.deadline).format('MMM D, YYYY') : '--'}
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredTasks.length === 0 && (
-                                <tr>
-                                    <td colSpan="7" className="p-8 text-center text-gray-500 text-sm">{t('noTasksFound')}</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <span className={clsx("text-[10px] px-2.5 py-1 rounded-full font-semibold", PRIORITY_COLORS[task.priority])}>{t(`priority${task.priority}`)}</span>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-full w-28 justify-center">
+                                                <span className={clsx("w-1.5 h-1.5 rounded-full", TASK_STATUS_CONFIG[task.status].dot)}></span>
+                                                {t(`status${task.status.replace(' ', '')}`)}
+                                            </span>
+                                        </td>
+                                        <td className={clsx("p-4 font-medium text-xs", task.deadline && new Date(task.deadline) < new Date() && task.status !== 'Done' ? "text-rose-600" : "text-gray-500", isAr ? "text-left" : "text-right")}>
+                                            {task.deadline ? moment(task.deadline).format('MMM D, YYYY') : '--'}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredTasks.length === 0 && (
+                                    <tr>
+                                        <td colSpan="7" className="p-8 text-center text-gray-500 text-sm">{t('noTasksFound')}</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>

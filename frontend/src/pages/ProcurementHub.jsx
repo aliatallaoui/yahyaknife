@@ -51,19 +51,19 @@ export default function ProcurementHub() {
 
     return (
         <div className="p-8 pb-32">
-            <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-gray-200 pb-5 gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <Truck className="w-8 h-8 text-indigo-600" />
-                        {t('procurement.title')}
+                    <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600 shrink-0" />
+                        <span className="leading-tight">{t('procurement.title')}</span>
                     </h1>
-                    <p className="text-gray-500 mt-2 font-medium">{t('procurement.subtitle')}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-2 font-medium">{t('procurement.subtitle')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-indigo-700 hover:border-indigo-300 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors">
+                <div className="flex gap-3 flex-col min-[400px]:flex-row w-full sm:w-auto">
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:text-indigo-700 hover:border-indigo-300 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors whitespace-nowrap">
                         <Users className="w-4 h-4" /> {t('procurement.addSupplier')}
                     </button>
-                    <button className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-700 transition-colors">
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-700 transition-colors whitespace-nowrap">
                         <Plus className="w-4 h-4" /> {t('procurement.newPo')}
                     </button>
                 </div>
@@ -138,104 +138,108 @@ export default function ProcurementHub() {
                 ) : (
                     <div className="p-0">
                         {activeTab === 'orders' && (
-                            <table className="w-full text-start text-sm">
-                                <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
-                                    <tr>
-                                        <th className="p-4">{t('procurement.colPoNumber')}</th>
-                                        <th className="p-4">{t('procurement.colSupplier')}</th>
-                                        <th className="p-4">{t('procurement.colExpectedTarget')}</th>
-                                        <th className="p-4">{t('procurement.colTotalAmount')}</th>
-                                        <th className="p-4">{t('procurement.colStatus')}</th>
-                                        <th className="p-4">{t('procurement.colActions')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {orders.length === 0 ? (
-                                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noPosFound')}</td></tr>
-                                    ) : orders.map(order => (
-                                        <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                                            <td className="p-4 font-bold text-gray-900">{order.poNumber}</td>
-                                            <td className="p-4">
-                                                <div className="font-medium text-gray-900">{order.supplier?.name}</div>
-                                                <div className="text-xs text-gray-500">{t('procurement.trustScore')}: {order.supplier?.performanceMetrics?.reliabilityScore}%</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-3 h-3 text-gray-400" />
-                                                    <span className={moment().isAfter(moment(order.expectedDeliveryDate)) && ['Sent', 'Partial'].includes(order.status) ? 'text-red-600 font-bold' : 'text-gray-600'}>
-                                                        {moment(order.expectedDeliveryDate).format('MMM Do, YYYY')}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 font-bold text-gray-900">{order.totalAmount.toLocaleString()}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-1 text-xs font-bold rounded-full border ${getOrderStatusColor(order.status)} border-opacity-20`}>
-                                                    {order.status === 'Draft' ? t('procurement.statusDraft') : order.status === 'Sent' ? t('procurement.statusSent') : order.status === 'Partial' ? t('procurement.statusPartial') : order.status === 'Received' ? t('procurement.statusReceived') : t('procurement.statusCancelled')}
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <button className="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-                                                    {t('procurement.manageDelivery')}
-                                                </button>
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-start text-sm min-w-[900px]">
+                                    <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                                        <tr>
+                                            <th className="p-4">{t('procurement.colPoNumber')}</th>
+                                            <th className="p-4">{t('procurement.colSupplier')}</th>
+                                            <th className="p-4">{t('procurement.colExpectedTarget')}</th>
+                                            <th className="p-4">{t('procurement.colTotalAmount')}</th>
+                                            <th className="p-4">{t('procurement.colStatus')}</th>
+                                            <th className="p-4">{t('procurement.colActions')}</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {orders.length === 0 ? (
+                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noPosFound')}</td></tr>
+                                        ) : orders.map(order => (
+                                            <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                                                <td className="p-4 font-bold text-gray-900">{order.poNumber}</td>
+                                                <td className="p-4">
+                                                    <div className="font-medium text-gray-900">{order.supplier?.name}</div>
+                                                    <div className="text-xs text-gray-500">{t('procurement.trustScore')}: {order.supplier?.performanceMetrics?.reliabilityScore}%</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-1">
+                                                        <Clock className="w-3 h-3 text-gray-400" />
+                                                        <span className={moment().isAfter(moment(order.expectedDeliveryDate)) && ['Sent', 'Partial'].includes(order.status) ? 'text-red-600 font-bold' : 'text-gray-600'}>
+                                                            {moment(order.expectedDeliveryDate).format('MMM Do, YYYY')}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 font-bold text-gray-900">{order.totalAmount.toLocaleString()}</td>
+                                                <td className="p-4">
+                                                    <span className={`px-2.5 py-1 text-xs font-bold rounded-full border ${getOrderStatusColor(order.status)} border-opacity-20`}>
+                                                        {order.status === 'Draft' ? t('procurement.statusDraft') : order.status === 'Sent' ? t('procurement.statusSent') : order.status === 'Partial' ? t('procurement.statusPartial') : order.status === 'Received' ? t('procurement.statusReceived') : t('procurement.statusCancelled')}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <button className="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
+                                                        {t('procurement.manageDelivery')}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
 
                         {activeTab === 'suppliers' && (
-                            <table className="w-full text-start text-sm">
-                                <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
-                                    <tr>
-                                        <th className="p-4">{t('procurement.colVendorName')}</th>
-                                        <th className="p-4">{t('procurement.category', 'Category')}</th>
-                                        <th className="p-4">{t('procurement.colContactPerson')}</th>
-                                        <th className="p-4">{t('procurement.colAvgLeadTime')}</th>
-                                        <th className="p-4">{t('procurement.colReliabilityScore')}</th>
-                                        <th className="p-4">{t('procurement.colStatus')}</th>
-                                        <th className="p-4">{t('procurement.colActions')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {suppliers.length === 0 ? (
-                                        <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noSuppliersFound')}</td></tr>
-                                    ) : suppliers.map(sup => (
-                                        <tr key={sup._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                                            <td className="p-4 font-bold text-gray-900">
-                                                {sup.name}
-                                                <div className="text-xs text-gray-400 font-normal mt-0.5">{sup.address?.city}, {sup.address?.country}</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-sm font-bold text-gray-800">{sup.supplierCategory || 'General Hardware'}</div>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    {(sup.materialsSupplied || []).map(mat => (
-                                                        <span key={mat} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded">{mat}</span>
-                                                    ))}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="text-gray-900">{sup.contactPerson?.name || '-'}</div>
-                                                <div className="text-gray-500 text-xs">{sup.contactPerson?.email || '-'}</div>
-                                            </td>
-                                            <td className="p-4 text-gray-600">{sup.performanceMetrics?.averageLeadTimeDays} {t('procurement.daysText')}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-1 text-xs font-bold rounded border ${getSupplierScoreColor(sup.performanceMetrics?.reliabilityScore)}`}>
-                                                    {sup.performanceMetrics?.reliabilityScore}%
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 text-xs font-bold rounded-full ${sup.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                                                    {sup.status === 'Active' ? t('warehouses.statusActive') : t('warehouses.statusInactive')}
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <button className="text-gray-600 hover:text-gray-900 font-bold text-sm">{t('procurement.editProfile')}</button>
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-start text-sm min-w-[900px]">
+                                    <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                                        <tr>
+                                            <th className="p-4">{t('procurement.colVendorName')}</th>
+                                            <th className="p-4">{t('procurement.category', 'Category')}</th>
+                                            <th className="p-4">{t('procurement.colContactPerson')}</th>
+                                            <th className="p-4">{t('procurement.colAvgLeadTime')}</th>
+                                            <th className="p-4">{t('procurement.colReliabilityScore')}</th>
+                                            <th className="p-4">{t('procurement.colStatus')}</th>
+                                            <th className="p-4">{t('procurement.colActions')}</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {suppliers.length === 0 ? (
+                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noSuppliersFound')}</td></tr>
+                                        ) : suppliers.map(sup => (
+                                            <tr key={sup._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                                                <td className="p-4 font-bold text-gray-900">
+                                                    {sup.name}
+                                                    <div className="text-xs text-gray-400 font-normal mt-0.5">{sup.address?.city}, {sup.address?.country}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-sm font-bold text-gray-800">{sup.supplierCategory || 'General Hardware'}</div>
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {(sup.materialsSupplied || []).map(mat => (
+                                                            <span key={mat} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded">{mat}</span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-gray-900">{sup.contactPerson?.name || '-'}</div>
+                                                    <div className="text-gray-500 text-xs">{sup.contactPerson?.email || '-'}</div>
+                                                </td>
+                                                <td className="p-4 text-gray-600">{sup.performanceMetrics?.averageLeadTimeDays} {t('procurement.daysText')}</td>
+                                                <td className="p-4">
+                                                    <span className={`px-2.5 py-1 text-xs font-bold rounded border ${getSupplierScoreColor(sup.performanceMetrics?.reliabilityScore)}`}>
+                                                        {sup.performanceMetrics?.reliabilityScore}%
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${sup.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                        {sup.status === 'Active' ? t('warehouses.statusActive') : t('warehouses.statusInactive')}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <button className="text-gray-600 hover:text-gray-900 font-bold text-sm">{t('procurement.editProfile')}</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </div>
                 )}

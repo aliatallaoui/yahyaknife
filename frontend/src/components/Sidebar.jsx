@@ -1,25 +1,41 @@
-import { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     Search, HelpCircle, Settings, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen,
     LayoutDashboard, ShoppingBag, Box, LineChart, FileText, RefreshCw, Layers, PackageOpen, Truck,
-    Users, Briefcase, Flag, Archive, Sword
+    Users, Briefcase, Flag, Archive, Sword, X
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
-function NavSection({ title, icon: Icon, activePrefixes = [], children, sidebarOpen }) {
+function NavSection({ title, icon: Icon, activePrefixes = [], children, sidebarOpen, searchTerm = '' }) {
     const location = useLocation();
     const isActive = activePrefixes.some(prefix => location.pathname.startsWith(prefix));
     const [isOpen, setIsOpen] = useState(false);
+
+    const filteredChildren = React.Children.toArray(children).filter(child => {
+        if (!searchTerm) return true;
+        const text = child.props.children;
+        return typeof text === 'string' && text.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    const isMatch = !searchTerm || title.toLowerCase().includes(searchTerm.toLowerCase()) || filteredChildren.length > 0;
 
     useEffect(() => {
         if (isActive) setIsOpen(true);
     }, [isActive]);
 
+    useEffect(() => {
+        if (searchTerm && filteredChildren.length > 0) setIsOpen(true);
+        if (!searchTerm && !isActive) setIsOpen(false);
+    }, [searchTerm, isActive, filteredChildren.length]);
+
+    if (!isMatch) return null;
+
     return (
-        <div className="mb-0.5">
+        <div className="mb-0.5 animate-in fade-in duration-300">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(
@@ -38,7 +54,7 @@ function NavSection({ title, icon: Icon, activePrefixes = [], children, sidebarO
             <div className={clsx("grid transition-all duration-300 ease-in-out", isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
                 <div className="overflow-hidden">
                     <div className="flex flex-col py-1 ms-7 ps-4 border-s-2 border-gray-100 mt-1 mb-2 gap-0.5">
-                        {children}
+                        {filteredChildren}
                     </div>
                 </div>
             </div>
@@ -50,6 +66,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     const location = useLocation();
     const { user, logout } = useContext(AuthContext);
     const { t } = useTranslation();
+    const [searchTerm, setSearchTerm] = useState('');
 
     const hasAccess = (allowedRoles) => {
         if (!user) return false;
@@ -58,6 +75,8 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     };
 
     const isPath = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+    const searchMatch = (text) => !searchTerm || (typeof text === 'string' && text.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const mainLink = ({ isActive }) => clsx(
         "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
@@ -68,6 +87,16 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
         isActive ? "text-blue-700 bg-blue-50 font-semibold" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50 hover:translate-x-0.5 rtl:hover:-translate-x-0.5"
     );
+
+    const handleLinkClick = () => {
+        if (setMobileOpen) setMobileOpen(false);
+    };
+
+    const handleSignOut = () => {
+        if (window.confirm(t('sidebar.confirmLogout', 'Are you sure you want to sign out?'))) {
+            logout();
+        }
+    };
 
     return (
         <>
@@ -84,36 +113,48 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 mobileOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full md:translate-x-0 md:rtl:translate-x-0"
             )}>
                 {/* 1) Mini Strip */}
-                <div className="w-[72px] flex flex-col items-center py-5 border-e border-gray-100 flex-shrink-0 bg-gray-50/50">
+                <div className="hidden md:flex w-[72px] flex-col items-center py-5 border-e border-gray-100 flex-shrink-0 bg-gray-50/50 z-20 relative">
                     {/* Logo */}
-                    <div className="w-11 h-11 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 rounded-xl flex items-center justify-center text-white mb-8 shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                    <Link to="/" onClick={handleLinkClick} className="w-11 h-11 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 rounded-xl flex items-center justify-center text-white mb-8 shadow-lg cursor-pointer hover:scale-105 transition-transform shrink-0">
                         <Layers className="w-5 h-5" />
-                    </div>
+                    </Link>
 
                     {/* Icon Links */}
-                    <div className="flex flex-col gap-3 flex-1 items-center">
+                    <div className="flex flex-col gap-3 flex-1 items-center w-full overflow-y-auto styled-scrollbar py-2">
                         {[
-                            { Icon: LayoutDashboard, path: '_dashboard' },
-                            { Icon: ShoppingBag, path: '/sales' },
-                            { Icon: Archive, path: '/inventory' },
-                            { Icon: Box, path: '/warehouses' },
-                            { Icon: LineChart, path: '/financial' },
-                        ].map(({ Icon, path }, i) => (
-                            <div key={i} className={clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-200", i === 0 ? "bg-blue-600 text-white shadow-md shadow-blue-200" : isPath(path) ? "bg-blue-50 text-blue-600" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
-                                <Icon className="w-5 h-5" />
-                            </div>
-                        ))}
+                            { Icon: LayoutDashboard, path: '/', title: t('sidebar.dashboard', 'لوحة التحكم') },
+                            { Icon: ShoppingBag, path: '/sales', title: t('sidebar.sales', 'محرك المبيعات') },
+                            { Icon: Archive, path: '/inventory', title: t('sidebar.inventory', 'تتبع المخزون') },
+                            { Icon: Box, path: '/warehouses', title: t('sidebar.warehouses', 'المستودعات والخدمات اللوجستية') },
+                            { Icon: LineChart, path: '/financial', title: t('sidebar.financial', 'المالية') },
+                        ].map(({ Icon, path, title }, i) => {
+                            const active = isPath(path) && (path === '/' ? location.pathname === '/' : true);
+                            return (
+                                <NavLink
+                                    to={path}
+                                    key={i}
+                                    title={title}
+                                    onClick={handleLinkClick}
+                                    className={clsx(
+                                        "w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-200 shrink-0",
+                                        active ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                                    )}
+                                >
+                                    <Icon className="w-5 h-5" />
+                                </NavLink>
+                            );
+                        })}
                     </div>
 
                     {/* Bottom Utils */}
-                    <div className="flex flex-col gap-3 mt-auto items-center">
-                        <div className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer transition-all">
+                    <div className="flex flex-col gap-3 mt-auto items-center pt-2">
+                        <div title={t('sidebar.help', 'المساعدة')} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer transition-all shrink-0">
                             <HelpCircle className="w-5 h-5" />
                         </div>
-                        <NavLink to="/settings/users" className={({ isActive }) => clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all", isActive ? "text-blue-600 bg-blue-50 shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
+                        <NavLink to="/settings/users" title={t('sidebar.settings', 'الإعدادات')} onClick={handleLinkClick} className={({ isActive }) => clsx("w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all shrink-0", isActive ? "text-blue-600 bg-blue-50 shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100")}>
                             <Settings className="w-5 h-5" />
                         </NavLink>
-                        <button onClick={logout} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer transition-all">
+                        <button onClick={handleSignOut} title={t('sidebar.logout', 'تسجيل الخروج')} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer transition-all shrink-0">
                             <LogOut className="w-5 h-5" />
                         </button>
                         {/* Toggle button */}
@@ -121,7 +162,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                             <button
                                 onClick={() => setOpen(!open)}
                                 title={open ? 'Collapse sidebar' : 'Expand sidebar'}
-                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl cursor-pointer transition-all"
+                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl cursor-pointer transition-all shrink-0"
                             >
                                 {open ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
                             </button>
@@ -131,15 +172,32 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
 
                 {/* 2) Main Nav Drawer — collapses when sidebar is closed */}
                 <div
-                    className="flex flex-col pt-5 pb-4 bg-white/60 overflow-hidden transition-all duration-300"
-                    style={{ width: open ? '248px' : '0px', opacity: open ? 1 : 0 }}
+                    className={clsx(
+                        "flex flex-col pt-5 pb-4 bg-white shadow-[inset_1px_0_0_0_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 z-10",
+                        mobileOpen ? "w-[280px] opacity-100" : open ? "w-0 opacity-0 md:w-[248px] md:opacity-100" : "w-0 opacity-0"
+                    )}
                 >
+                    {/* Mobile Header */}
+                    <div className="md:hidden flex items-center justify-between px-4 mb-5">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0">
+                                <Layers className="w-4 h-4" />
+                            </div>
+                            <span className="font-bold text-gray-900 tracking-tight text-sm">{t('app_name', 'TechCorp OS')}</span>
+                        </div>
+                        <button onClick={() => setMobileOpen?.(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors shrink-0">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
                     {/* Search */}
                     <div className="px-4 mb-7">
                         <div className="relative group">
                             <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                             <input
                                 type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder={t('sidebar.searchMenu', 'البحث في القائمة')}
                                 className="w-full bg-gray-100/80 hover:bg-gray-100 focus:bg-white border border-transparent focus:border-blue-300 focus:ring-4 focus:ring-blue-50 outline-none rounded-xl py-2.5 ps-10 pe-4 text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all"
                             />
@@ -153,38 +211,40 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-2">{t('sidebar.mainMenu', 'نظرة عامة')}</p>
                             <div className="flex flex-col gap-0.5">
-                                <NavLink to="/" end className={mainLink}>
-                                    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/') && location.pathname === '/' ? "bg-blue-100" : "bg-gray-100")}><LayoutDashboard className={clsx("w-4 h-4", isPath('/') && location.pathname === '/' ? "text-blue-600" : "text-gray-500")} /></div>
-                                    {t('sidebar.dashboard', 'لوحة التحكم')}
-                                </NavLink>
-                                {hasAccess(['Finance Controller', 'Super Admin']) && (
-                                    <NavLink to="/financial" className={mainLink}>
+                                {searchMatch(t('sidebar.dashboard', 'لوحة التحكم')) && (
+                                    <NavLink to="/" end className={mainLink} onClick={handleLinkClick}>
+                                        <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/') && location.pathname === '/' ? "bg-blue-100" : "bg-gray-100")}><LayoutDashboard className={clsx("w-4 h-4", isPath('/') && location.pathname === '/' ? "text-blue-600" : "text-gray-500")} /></div>
+                                        {t('sidebar.dashboard', 'لوحة التحكم')}
+                                    </NavLink>
+                                )}
+                                {hasAccess(['Finance Controller', 'Super Admin']) && searchMatch(t('sidebar.financial', 'المالية')) && (
+                                    <NavLink to="/financial" className={mainLink} onClick={handleLinkClick}>
                                         <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/financial') ? "bg-blue-100" : "bg-gray-100")}><FileText className={clsx("w-4 h-4", isPath('/financial') ? "text-blue-600" : "text-gray-500")} /></div>
                                         {t('sidebar.financial', 'المالية')}
                                     </NavLink>
                                 )}
-                                {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
-                                    <NavLink to="/sales" className={mainLink}>
+                                {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && searchMatch(t('sidebar.sales', 'محرك المبيعات')) && (
+                                    <NavLink to="/sales" className={mainLink} onClick={handleLinkClick}>
                                         <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/sales') ? "bg-blue-100" : "bg-gray-100")}><RefreshCw className={clsx("w-4 h-4", isPath('/sales') ? "text-blue-600" : "text-gray-500")} /></div>
                                         {t('sidebar.sales', 'محرك المبيعات')}
                                     </NavLink>
                                 )}
-                                {hasAccess(['Finance Controller', 'Warehouse Supervisor', 'Production Lead', 'Sales Representative', 'Super Admin']) && (
-                                    <NavLink to="/inventory" className={mainLink}>
+                                {hasAccess(['Finance Controller', 'Warehouse Supervisor', 'Production Lead', 'Sales Representative', 'Super Admin']) && searchMatch(t('sidebar.inventory', 'تتبع المخزون')) && (
+                                    <NavLink to="/inventory" className={mainLink} onClick={handleLinkClick}>
                                         <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/inventory') ? "bg-blue-100" : "bg-gray-100")}><Box className={clsx("w-4 h-4", isPath('/inventory') ? "text-blue-600" : "text-gray-500")} /></div>
                                         {t('sidebar.inventory', 'تتبع المخزون')}
                                     </NavLink>
                                 )}
-                                {hasAccess(['Warehouse Supervisor', 'Production Lead', 'Super Admin']) && (
-                                    <NavLink to="/warehouses" className={mainLink}>
+                                {hasAccess(['Warehouse Supervisor', 'Production Lead', 'Super Admin']) && searchMatch(t('sidebar.warehouses', 'المستودعات والخدمات اللوجستية')) && (
+                                    <NavLink to="/warehouses" className={mainLink} onClick={handleLinkClick}>
                                         <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center", isPath('/warehouses') ? "bg-blue-100" : "bg-gray-100")}><Layers className={clsx("w-4 h-4", isPath('/warehouses') ? "text-blue-600" : "text-gray-500")} /></div>
                                         {t('sidebar.warehouses', 'المستودعات والخدمات اللوجستية')}
                                     </NavLink>
                                 )}
                                 {hasAccess(['Warehouse Supervisor', 'Sales Representative', 'Super Admin']) && (
-                                    <NavSection title={t('sidebar.logistics', 'اللوجستيات والشحن')} icon={Truck} activePrefixes={['/couriers']} sidebarOpen={open}>
-                                        <NavLink to="/couriers" end className={subLink}>{t('sidebar.logistics_analytics', 'تحليلات التوصيل')}</NavLink>
-                                        <NavLink to="/couriers/dispatch" className={subLink}>{t('sidebar.logistics_dispatch', 'مركز الإرسال')}</NavLink>
+                                    <NavSection title={t('sidebar.logistics', 'اللوجستيات والشحن')} icon={Truck} activePrefixes={['/couriers']} sidebarOpen={open} searchTerm={searchTerm}>
+                                        <NavLink to="/couriers" end className={subLink} onClick={handleLinkClick}>{t('sidebar.logistics_analytics', 'تحليلات التوصيل')}</NavLink>
+                                        <NavLink to="/couriers/dispatch" className={subLink} onClick={handleLinkClick}>{t('sidebar.logistics_dispatch', 'مركز الإرسال')}</NavLink>
                                     </NavSection>
                                 )}
                             </div>
@@ -195,36 +255,36 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-2">{t('sidebar.departments', 'الأقسام والتشغيل')}</p>
                             <div className="flex flex-col gap-0.5">
                                 {hasAccess(['Finance Controller', 'Sales Representative', 'Super Admin']) && (
-                                    <NavSection title={t('sidebar.crm', 'دعم العملاء')} icon={Users} activePrefixes={['/customers', '/support']}>
-                                        <NavLink to="/customers" className={subLink}>{t('sidebar.crm_acquisition', 'الاستحواذ والملاحظات')}</NavLink>
-                                        <NavLink to="/support" className={subLink}>{t('sidebar.crm_support', 'الدعم والمرتجعات')}</NavLink>
+                                    <NavSection title={t('sidebar.crm', 'دعم العملاء')} icon={Users} activePrefixes={['/customers', '/support']} searchTerm={searchTerm}>
+                                        <NavLink to="/customers" className={subLink} onClick={handleLinkClick}>{t('sidebar.crm_acquisition', 'الاستحواذ والملاحظات')}</NavLink>
+                                        <NavLink to="/support" className={subLink} onClick={handleLinkClick}>{t('sidebar.crm_support', 'الدعم والمرتجعات')}</NavLink>
                                     </NavSection>
                                 )}
                                 {/* ── Knife Workshop ── */}
-                                <NavSection title={`🗡️ ${t('knives.workshop', 'Knife Workshop')}`} icon={Sword} activePrefixes={['/knives', '/production/tools']} sidebarOpen={open}>
-                                    <NavLink to="/knives" end className={subLink}>{t('knives.cards', 'Knife Cards')}</NavLink>
-                                    <NavLink to="/knives/library" className={subLink}>{t('knives.library', 'Knife Library')}</NavLink>
-                                    <NavLink to="/knives/production" className={subLink}>{t('knives.production', 'Production Kanban')}</NavLink>
-                                    <NavLink to="/production/tools" className={subLink}>{t('tools.management', 'Tool Management')}</NavLink>
+                                <NavSection title={`🗡️ ${t('knives.workshop', 'Knife Workshop')}`} icon={Sword} activePrefixes={['/knives', '/production/tools']} sidebarOpen={open} searchTerm={searchTerm}>
+                                    <NavLink to="/knives" end className={subLink} onClick={handleLinkClick}>{t('knives.cards', 'Knife Cards')}</NavLink>
+                                    <NavLink to="/knives/library" className={subLink} onClick={handleLinkClick}>{t('knives.library', 'Knife Library')}</NavLink>
+                                    <NavLink to="/knives/production" className={subLink} onClick={handleLinkClick}>{t('knives.production', 'Production Kanban')}</NavLink>
+                                    <NavLink to="/production/tools" className={subLink} onClick={handleLinkClick}>{t('tools.management', 'Tool Management')}</NavLink>
                                 </NavSection>
                                 {hasAccess(['Production Lead', 'Warehouse Supervisor', 'Super Admin']) && (
-                                    <NavSection title={t('sidebar.manufacturing', 'أرضية التصنيع')} icon={PackageOpen} activePrefixes={['/production', '/procurement']}>
-                                        <NavLink to="/production" className={subLink}>{t('sidebar.mfg_production', 'الإنتاج وقوائم المواد')}</NavLink>
-                                        <NavLink to="/procurement" className={subLink}>{t('sidebar.procurement', 'مركز المشتريات')}</NavLink>
+                                    <NavSection title={t('sidebar.manufacturing', 'أرضية التصنيع')} icon={PackageOpen} activePrefixes={['/production', '/procurement']} searchTerm={searchTerm}>
+                                        <NavLink to="/production" className={subLink} onClick={handleLinkClick}>{t('sidebar.mfg_production', 'الإنتاج وقوائم المواد')}</NavLink>
+                                        <NavLink to="/procurement" className={subLink} onClick={handleLinkClick}>{t('sidebar.procurement', 'مركز المشتريات')}</NavLink>
                                     </NavSection>
                                 )}
                                 {hasAccess(['HR Manager', 'Super Admin']) && (
-                                    <NavSection title={t('sidebar.hr', 'الموارد البشرية')} icon={Briefcase} activePrefixes={['/hr']}>
-                                        <NavLink to="/hr" end className={subLink}>{t('sidebar.hr_directory', 'الدليل والإجازات')}</NavLink>
-                                        <NavLink to="/hr/attendance" className={subLink}>{t('sidebar.hr_attendance', 'الحضور اليومي')}</NavLink>
-                                        <NavLink to="/hr/payroll" className={subLink}>{t('sidebar.hr_payroll', 'الرواتب الشهرية')}</NavLink>
-                                        <NavLink to="/hr/reports" className={subLink}>{t('sidebar.hr_reports', 'التقارير والبيانات')}</NavLink>
+                                    <NavSection title={t('sidebar.hr', 'الموارد البشرية')} icon={Briefcase} activePrefixes={['/hr']} searchTerm={searchTerm}>
+                                        <NavLink to="/hr" end className={subLink} onClick={handleLinkClick}>{t('sidebar.hr_directory', 'الدليل والإجازات')}</NavLink>
+                                        <NavLink to="/hr/attendance" className={subLink} onClick={handleLinkClick}>{t('sidebar.hr_attendance', 'الحضور اليومي')}</NavLink>
+                                        <NavLink to="/hr/payroll" className={subLink} onClick={handleLinkClick}>{t('sidebar.hr_payroll', 'الرواتب الشهرية')}</NavLink>
+                                        <NavLink to="/hr/reports" className={subLink} onClick={handleLinkClick}>{t('sidebar.hr_reports', 'التقارير والبيانات')}</NavLink>
                                     </NavSection>
                                 )}
                                 {hasAccess(['Production Lead', 'Super Admin']) && (
-                                    <NavSection title={t('sidebar.projects', 'حالة المشاريع')} icon={Flag} activePrefixes={['/projects']}>
-                                        <NavLink to="/projects" end className={subLink}>{t('sidebar.projects_portfolio', 'المحفظة النشطة')}</NavLink>
-                                        <NavLink to="/projects/tasks" className={subLink}>{t('sidebar.projects_tasks', 'لوحة المهام العالمية')}</NavLink>
+                                    <NavSection title={t('sidebar.projects', 'حالة المشاريع')} icon={Flag} activePrefixes={['/projects']} searchTerm={searchTerm}>
+                                        <NavLink to="/projects" end className={subLink} onClick={handleLinkClick}>{t('sidebar.projects_portfolio', 'المحفظة النشطة')}</NavLink>
+                                        <NavLink to="/projects/tasks" className={subLink} onClick={handleLinkClick}>{t('sidebar.projects_tasks', 'لوحة المهام العالمية')}</NavLink>
                                     </NavSection>
                                 )}
                             </div>

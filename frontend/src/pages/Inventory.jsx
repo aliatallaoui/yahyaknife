@@ -169,21 +169,21 @@ export default function Inventory() {
         <div className="flex flex-col gap-6">
 
             {/* Top Header */}
-            <div className="flex justify-between items-center bg-white/80 backdrop-blur-md p-6 rounded-3xl border border-gray-100/50 shadow-sm relative overflow-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 bg-white/80 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-gray-100/50 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 end-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-blue-50/20 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
                 <div>
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">{t('inventory.title', 'Inventory Tracking')}</h2>
-                    <p className="text-sm text-gray-500 mt-1 font-medium">{t('inventory.subtitle', 'Manage product catalog, track stock levels, and monitor supplier flow.')}</p>
+                    <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">{t('inventory.title', 'Inventory Tracking')}</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">{t('inventory.subtitle', 'Manage product catalog, track stock levels, and monitor supplier flow.')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 hover:shadow-sm hover:-translate-y-0.5 font-bold rounded-xl text-sm transition-all duration-200">
-                        <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <button onClick={() => setIsPOModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 hover:shadow-sm hover:-translate-y-0.5 font-bold rounded-xl text-xs sm:text-sm transition-all duration-200">
+                        <Package className="w-4 h-4 shrink-0" /> {t('inventory.receivePoBtn', 'Receive PO')}
                     </button>
-                    <button onClick={handleCreateCategory} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-sm shadow-sm hover:shadow hover:border-gray-300 hover:-translate-y-0.5 transition-all duration-200">
-                        <Plus className="w-4 h-4" /> {t('inventory.addCategoryBtn', 'Add Category')}
+                    <button onClick={handleCreateCategory} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow hover:border-gray-300 hover:-translate-y-0.5 transition-all duration-200">
+                        <Plus className="w-4 h-4 shrink-0" /> {t('inventory.addCategoryBtn', 'Add Category')}
                     </button>
-                    <button onClick={handleCreateClick} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-b from-gray-800 to-gray-900 text-white font-bold rounded-xl text-sm shadow-md hover:shadow-lg hover:from-gray-700 hover:to-gray-800 hover:-translate-y-0.5 transition-all duration-200 ring-1 ring-gray-900/50 ring-offset-1">
-                        <Plus className="w-4 h-4" /> {t('inventory.addProductBtn', 'Add New Product')}
+                    <button onClick={handleCreateClick} className="w-full md:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-b from-gray-800 to-gray-900 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg hover:from-gray-700 hover:to-gray-800 hover:-translate-y-0.5 transition-all duration-200 ring-1 ring-gray-900/50 ring-offset-1">
+                        <Plus className="w-4 h-4 shrink-0" /> {t('inventory.addProductBtn', 'Add New Product')}
                     </button>
                 </div>
             </div>
@@ -219,33 +219,33 @@ export default function Inventory() {
 
                 {/* Product Catalog Table — full width */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-6 border-b border-gray-100 pb-4 gap-4">
-                        <div className="flex gap-2 bg-gray-50/80 p-1.5 rounded-xl border border-gray-100 shadow-inner w-fit">
+                    <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 sm:p-6 border-b border-gray-100 pb-4 gap-4">
+                        <div className="flex flex-wrap gap-1 bg-gray-50/80 p-1.5 rounded-xl border border-gray-100 shadow-inner w-full xl:w-auto">
                             <button
                                 onClick={() => setActiveTab('finished')}
-                                className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200", activeTab === 'finished' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
+                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'finished' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
                             >
                                 {t('inventory.tabFinished', 'Finished Goods')}
                             </button>
                             <button
                                 onClick={() => setActiveTab('raw')}
-                                className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200", activeTab === 'raw' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
+                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'raw' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
                             >
                                 {t('inventory.tabRaw', 'Workshop Materials')}
                             </button>
                             <button
                                 onClick={() => setActiveTab('categories')}
-                                className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200", activeTab === 'categories' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
+                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'categories' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
                             >
                                 {t('inventory.tabCategories', 'Categories')}
                             </button>
                         </div>
-                        <div className="relative group">
+                        <div className="relative group w-full xl:w-72">
                             <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type="text"
                                 placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name...')}
-                                className="bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none rounded-xl py-2.5 ps-10 pe-4 text-sm w-full sm:w-72 transition-all duration-200 font-medium placeholder:text-gray-400"
+                                className="bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none rounded-xl py-2.5 ps-10 pe-4 text-sm w-full transition-all duration-200 font-medium placeholder:text-gray-400"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />

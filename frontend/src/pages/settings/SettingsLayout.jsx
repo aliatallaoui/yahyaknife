@@ -38,13 +38,13 @@ export default function SettingsLayout() {
 
                 {/* Settings Sidebar */}
                 <div className="w-full md:w-64 shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sticky top-6">
-                    <nav className="space-y-1">
+                    <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 styled-scrollbar">
                         {tabs.map(tab => (
                             <NavLink
                                 key={tab.name}
                                 to={tab.path}
                                 className={({ isActive }) => clsx(
-                                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
+                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap shrink-0",
                                     isActive ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                 )}
                             >

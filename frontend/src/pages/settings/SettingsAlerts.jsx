@@ -54,22 +54,24 @@ export default function SettingsAlerts() {
                     <p className="text-xs text-gray-500 mb-4">{t('notificationsDesc')}</p>
 
                     <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                        <table className={clsx("w-full bg-white", isAr ? "text-right" : "text-left")}>
-                            <thead className="bg-gray-50/80 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                <tr>
-                                    <th className="px-5 py-3">{t('thColEvent')}</th>
-                                    <th className="px-5 py-3 text-center"><DashboardIcon label={t('thColDashboard')} /></th>
-                                    <th className="px-5 py-3 text-center"><EmailIcon label={t('thColEmail')} /></th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                <ToggleRow title={t('salesRows')} desc={t('salesDesc')} defaultInApp={true} defaultEmail={false} />
-                                <ToggleRow title={t('invRows')} desc={t('invDesc')} defaultInApp={true} defaultEmail={true} />
-                                <ToggleRow title={t('prodRows')} desc={t('prodDesc')} defaultInApp={true} defaultEmail={false} />
-                                <ToggleRow title={t('taskRows')} desc={t('taskDesc')} defaultInApp={true} defaultEmail={true} />
-                                <ToggleRow title={t('courierRows')} desc={t('courierDesc')} defaultInApp={false} defaultEmail={false} />
-                            </tbody>
-                        </table>
+                        <div className="overflow-x-auto">
+                            <table className={clsx("w-full bg-white min-w-[500px]", isAr ? "text-right" : "text-left")}>
+                                <thead className="bg-gray-50/80 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                    <tr>
+                                        <th className="px-5 py-3">{t('thColEvent')}</th>
+                                        <th className="px-5 py-3 text-center"><DashboardIcon label={t('thColDashboard')} /></th>
+                                        <th className="px-5 py-3 text-center"><EmailIcon label={t('thColEmail')} /></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    <ToggleRow title={t('salesRows')} desc={t('salesDesc')} defaultInApp={true} defaultEmail={false} />
+                                    <ToggleRow title={t('invRows')} desc={t('invDesc')} defaultInApp={true} defaultEmail={true} />
+                                    <ToggleRow title={t('prodRows')} desc={t('prodDesc')} defaultInApp={true} defaultEmail={false} />
+                                    <ToggleRow title={t('taskRows')} desc={t('taskDesc')} defaultInApp={true} defaultEmail={true} />
+                                    <ToggleRow title={t('courierRows')} desc={t('courierDesc')} defaultInApp={false} defaultEmail={false} />
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div className={clsx("pt-4 flex gap-3", isAr ? "justify-start" : "justify-end")}>

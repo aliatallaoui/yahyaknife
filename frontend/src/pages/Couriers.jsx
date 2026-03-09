@@ -56,63 +56,57 @@ export default function Couriers() {
 
             {/* Top KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('couriers.successRate', 'Delivery Success Rate')}</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.kpis.successRate}%</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                            <TrendingUp className="w-5 h-5 text-green-600" />
-                        </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.successRate', 'Delivery Success Rate')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.successRate}%</h3>
+                        <p className="mt-1 text-xs text-gray-400 font-medium truncate">
+                            {stats.kpis.delivered} Delivered out of {stats.kpis.totalShipments} Total
+                        </p>
                     </div>
-                    <div className="mt-4 text-xs text-gray-500">
-                        {stats.kpis.delivered} Delivered out of {stats.kpis.totalShipments} Total
+                    <div className="h-16 w-16 bg-green-50 rounded-2xl flex items-center justify-center border border-green-100 shrink-0">
+                        <TrendingUp className="w-8 h-8 text-green-600" />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('couriers.returnRate', 'Return Rate')}</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.kpis.returnRate}%</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-                            <PackageX className="w-5 h-5 text-red-600" />
-                        </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.returnRate', 'Return Rate')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.returnRate}%</h3>
+                        <p className="mt-1 text-xs text-red-500 font-medium truncate">
+                            {stats.kpis.returned} Packages Failed / Returned
+                        </p>
                     </div>
-                    <div className="mt-4 text-xs text-red-500 border-t border-red-50 pt-2 font-medium">
-                        {stats.kpis.returned} Packages Failed / Returned
+                    <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100 shrink-0">
+                        <PackageX className="w-8 h-8 text-red-600" />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('couriers.avgTime', 'Avg Delivery Speed')}</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.kpis.avgDeliveryTimeDays} <span className="text-lg font-normal text-gray-400">Days</span></p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-blue-600" />
-                        </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.avgTime', 'Avg Delivery Speed')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.avgDeliveryTimeDays} <span className="text-sm font-medium text-gray-400">Days</span></h3>
+                        <p className="mt-1 text-xs text-gray-400 font-medium truncate">
+                            From Verification to Client Handshake
+                        </p>
                     </div>
-                    <div className="mt-4 text-xs text-gray-500">
-                        From Verification to Client Handshake
+                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                        <Clock className="w-8 h-8 text-blue-600" />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('couriers.pendingCash', 'Pending Courier Clearance')}</p>
-                            <p className="mt-2 text-2xl font-bold tracking-tight text-gray-900">{stats.financials.pendingCourierClearance.toLocaleString()} DZD</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center shrink-0">
-                            <DollarSign className="w-5 h-5 text-yellow-600" />
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.pendingCash', 'Pending Courier Clearance')}</p>
+                        <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">
+                            {stats.financials.pendingCourierClearance.toLocaleString()} <span className="text-sm font-medium text-gray-400">DZD</span>
+                        </h3>
+                        <div className="mt-2 text-[10px] sm:text-xs bg-green-50 text-green-700 font-bold px-2 py-1 rounded w-fit truncate">
+                            Settled: {stats.financials.settledToBank.toLocaleString()}
                         </div>
                     </div>
-                    <div className="mt-4 flex gap-2">
-                        <span className="text-xs bg-green-50 text-green-700 font-medium px-2 py-1 rounded">Settled: {stats.financials.settledToBank.toLocaleString()}</span>
+                    <div className="h-16 w-16 bg-yellow-50 rounded-2xl flex items-center justify-center border border-yellow-100 shrink-0">
+                        <DollarSign className="w-8 h-8 text-yellow-600" />
                     </div>
                 </div>
             </div>

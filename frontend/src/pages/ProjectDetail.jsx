@@ -57,10 +57,10 @@ export default function ProjectDetail() {
                     <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-gray-100 text-gray-700 border-gray-200">{project.projectId}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">{t(`status${project.status.replace(' ', '')}`)}</span>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
+                        <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border bg-gray-100 text-gray-700 border-gray-200">{project.projectId}</span>
+                        <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">{t(`status${project.status.replace(' ', '')}`)}</span>
                     </div>
                 </div>
             </div>
@@ -127,12 +127,12 @@ export default function ProjectDetail() {
             {/* Deep Tabs */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
 
-                <div className="flex border-b border-gray-100 bg-gray-50/50">
+                <div className="flex flex-nowrap overflow-x-auto border-b border-gray-100 bg-gray-50/50 styled-scrollbar">
                     {TAB_OPTIONS.map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={clsx("px-6 py-4 text-sm font-bold transition-all border-b-2", activeTab === tab ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100/50")}
+                            className={clsx("px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap", activeTab === tab ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100/50")}
                         >
                             {tab}
                         </button>

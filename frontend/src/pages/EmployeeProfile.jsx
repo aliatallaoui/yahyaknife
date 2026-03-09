@@ -254,7 +254,7 @@ export default function EmployeeProfile() {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm shrink-0">
+                    <div className="flex flex-wrap bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm shrink-0 w-full xl:w-auto overflow-x-auto gap-1">
                         <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Clock} label={t('hr.tabTimesheets')} />
                         <TabButton active={activeTab === 'payroll'} onClick={() => setActiveTab('payroll')} icon={FileText} label={t('hr.tabPayrollHistory')} />
                         <TabButton active={activeTab === 'leaves'} onClick={() => setActiveTab('leaves')} icon={Calendar} label={t('hr.tabLeaveHistory')} />
@@ -467,7 +467,7 @@ function TabButton({ active, onClick, icon: Icon, label }) {
         <button
             onClick={onClick}
             className={clsx(
-                "flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all",
+                "flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 xl:flex-none whitespace-nowrap",
                 active ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             )}
         >

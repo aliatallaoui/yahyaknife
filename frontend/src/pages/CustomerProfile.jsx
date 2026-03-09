@@ -184,22 +184,42 @@ export default function CustomerProfile() {
                         <Package className="w-5 h-5 text-indigo-500" /> {t('crm.opValueTitle', 'Operational & Value Footprint')}
                     </h3>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <p className="text-xs font-bold text-gray-400 uppercase mb-1">{t('crm.colLTV', 'Lifetime Value')}</p>
-                            <p className="text-2xl font-black text-gray-900 tabular-nums">{(customer.lifetimeValue || 0).toLocaleString()} <span className="text-sm">DZ</span></p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">{t('crm.colLTV', 'Lifetime Value')}</p>
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter truncate">{(customer.lifetimeValue || 0).toLocaleString()} <span className="text-sm">DZ</span></h3>
+                            </div>
+                            <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
+                                <TrendingUp className="w-6 h-6 text-gray-600" />
+                            </div>
                         </div>
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <p className="text-xs font-bold text-gray-400 uppercase mb-1">{t('crm.avgOrderValue', 'Avg Order Value')}</p>
-                            <p className="text-2xl font-black text-gray-900 tabular-nums">{Math.round(customer.averageOrderValue || 0).toLocaleString()} <span className="text-sm">DZ</span></p>
+                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">{t('crm.avgOrderValue', 'Avg Order Value')}</p>
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter truncate">{Math.round(customer.averageOrderValue || 0).toLocaleString()} <span className="text-sm">DZ</span></h3>
+                            </div>
+                            <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
+                                <Package className="w-6 h-6 text-gray-600" />
+                            </div>
                         </div>
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                            <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">{t('crm.deliveredText', 'Delivered')}</p>
-                            <p className="text-2xl font-black text-emerald-700 tabular-nums">{customer.deliveredOrders || 0}</p>
+                        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between gap-4 bg-emerald-50/50">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">{t('crm.deliveredText', 'Delivered')}</p>
+                                <h3 className="text-2xl font-black text-emerald-700 tracking-tighter truncate">{customer.deliveredOrders || 0}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-emerald-100 rounded-2xl flex items-center justify-center border border-emerald-200 shrink-0">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                            </div>
                         </div>
-                        <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                            <p className="text-xs font-bold text-indigo-600/70 uppercase mb-1">{t('crm.ordersText', 'Total Orders')}</p>
-                            <p className="text-2xl font-black text-indigo-700 tabular-nums">{customer.totalOrders || 0}</p>
+                        <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm flex items-center justify-between gap-4 bg-indigo-50/50">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1 truncate">{t('crm.ordersText', 'Total Orders')}</p>
+                                <h3 className="text-2xl font-black text-indigo-700 tracking-tighter truncate">{customer.totalOrders || 0}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-indigo-100 rounded-2xl flex items-center justify-center border border-indigo-200 shrink-0">
+                                <Package className="w-6 h-6 text-indigo-600" />
+                            </div>
                         </div>
                     </div>
 

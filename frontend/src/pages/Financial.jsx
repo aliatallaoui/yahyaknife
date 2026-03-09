@@ -163,13 +163,13 @@ export default function Financial() {
         <div className="flex flex-col gap-6">
 
             {/* Header */}
-            <div className="flex justify-between items-center bg-emerald-900 text-white p-6 rounded-2xl shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-emerald-900 text-white p-5 sm:p-6 rounded-2xl shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">{t('finance.title', 'Financial Hub')}</h2>
-                    <p className="text-emerald-100 mt-1 text-sm font-medium">{t('finance.subtitle', 'Real-time COD revenue tracking and global P&L')}</p>
+                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t('finance.title', 'Financial Hub')}</h2>
+                    <p className="text-emerald-100 mt-1 text-xs sm:text-sm font-medium">{t('finance.subtitle', 'Real-time COD revenue tracking and global P&L')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-all shadow-sm">
+                <div className="flex gap-3 w-full sm:w-auto">
+                    <button onClick={() => handleOpenModal()} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-all shadow-sm">
                         <Plus className="w-4 h-4" /> {t('finance.addManual', 'Add Manual Transaction')}
                     </button>
                 </div>
@@ -190,17 +190,31 @@ export default function Financial() {
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-                    <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">{t('finance.profitMargin', 'Profit Margin')}</p>
-                    <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{profitMargin}%</h3>
-                    <ProgressBar progress={Math.max(0, Math.min(100, profitMargin))} color="bg-emerald-500" />
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('finance.profitMargin', 'Profit Margin')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-2 truncate">{profitMargin}%</h3>
+                        <div className="w-full">
+                            <ProgressBar progress={Math.max(0, Math.min(100, profitMargin))} color="bg-emerald-500" />
+                        </div>
+                    </div>
+                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                        <Activity className="w-8 h-8 text-blue-600" />
+                    </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-                    <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">{t('finance.recognizedRevenue', 'Recognized Revenue')}</p>
-                    <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{totalRecognizedRevenue.toLocaleString()} {t('common.currency', 'DZ')}</h3>
-                    <div className="flex items-center gap-1 mt-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit">
-                        <ArrowUpRight className="w-3 h-3" /> {t('finance.includesSettled', 'Includes COD Settled')}
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('finance.recognizedRevenue', 'Recognized Revenue')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">
+                            {totalRecognizedRevenue.toLocaleString()} <span className="text-sm font-medium text-gray-400">{t('common.currency', 'DZ')}</span>
+                        </h3>
+                        <div className="flex items-center gap-1 mt-2 text-[10px] sm:text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit truncate">
+                            <ArrowUpRight className="w-3 h-3 shrink-0" /> <span className="truncate">{t('finance.includesSettled', 'Includes COD Settled')}</span>
+                        </div>
+                    </div>
+                    <div className="h-16 w-16 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shrink-0">
+                        <Wallet className="w-8 h-8 text-indigo-600" />
                     </div>
                 </div>
             </div>
@@ -213,7 +227,7 @@ export default function Financial() {
                     <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <Activity className="w-5 h-5 text-indigo-500" /> {t('finance.pipelineTitle', 'COD Cash Pipeline')}
                     </h3>
-                    <div className="grid grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                         <PipelineNode label={t('finance.expected', 'Expected (Queued)')} value={pipeline.expectedRevenue} color="text-indigo-600" bg="bg-indigo-50" icon={Package} />
                         <PipelineNode label={t('finance.transit', 'Cash in Transit')} value={pipeline.transitRevenue} color="text-amber-600" bg="bg-amber-50" icon={Truck} />
                         <PipelineNode label={t('finance.delivered', 'Cash Delivered')} value={pipeline.deliveredRevenue} color="text-teal-600" bg="bg-teal-50" icon={TrendingUp} />
@@ -259,9 +273,9 @@ export default function Financial() {
 
             {/* Manual Ledger List */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                <div className="flex justify-between items-center p-5 border-b border-gray-100">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 p-5 border-b border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900">{t('finance.manualLedger', 'Manual Operating Ledger')}</h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                         <span className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{filteredTransactions.length} {t('finance.totalTx', 'Total Tx')}</span>
                         <button
                             onClick={() => handleOpenModal()}
@@ -287,7 +301,7 @@ export default function Financial() {
                     <select
                         value={filterType}
                         onChange={e => { setFilterType(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none"
+                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
                     >
                         <option value="all">All Types</option>
                         <option value="revenue">Revenue</option>
@@ -296,7 +310,7 @@ export default function Financial() {
                     <select
                         value={filterCategory}
                         onChange={e => { setFilterCategory(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none"
+                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
                     >
                         <option value="all">All Categories</option>
                         {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -558,12 +572,12 @@ export default function Financial() {
 
 function PipelineNode({ label, value, color, bg, icon: Icon }) {
     return (
-        <div className={clsx("p-4 rounded-xl border border-gray-100 flex flex-col gap-3", bg)}>
-            <div className="flex items-center gap-2">
-                <Icon className={clsx("w-4 h-4", color)} />
-                <span className={clsx("text-xs font-bold uppercase tracking-wider", color)}>{label}</span>
+        <div className={clsx("p-3 sm:p-4 rounded-xl border border-gray-100 flex flex-col gap-2 sm:gap-3", bg)}>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+                <Icon className={clsx("w-4 h-4 shrink-0", color)} />
+                <span className={clsx("text-[10px] sm:text-xs font-bold uppercase tracking-wider line-clamp-1", color)} title={label}>{label}</span>
             </div>
-            <span className="text-2xl font-black text-gray-900 tracking-tight">{value.toLocaleString()}</span>
+            <span className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight truncate">{value.toLocaleString()}</span>
         </div>
     );
 }

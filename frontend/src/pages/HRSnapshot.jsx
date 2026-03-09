@@ -134,29 +134,77 @@ export default function HRSnapshot() {
         <div className="flex flex-col gap-6">
 
             {/* Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t('hr.title')}</h2>
-                    <p className="text-sm text-gray-500 mt-1">{t('hr.subtitle')}</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{t('hr.title')}</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('hr.subtitle')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={fetchHRData} className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm transition-colors hover:bg-gray-200">
+                <div className="flex gap-3 w-full sm:w-auto">
+                    <button onClick={fetchHRData} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs sm:text-sm transition-colors hover:bg-gray-200">
                         {t('hr.btnRefresh')}
                     </button>
-                    <button onClick={() => { setSelectedEmployee(null); setIsModalOpen(true); }} className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm shadow-md transition-colors hover:bg-blue-700">
+                    <button onClick={() => { setSelectedEmployee(null); setIsModalOpen(true); }} className="flex-1 sm:flex-none justify-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition-colors hover:bg-blue-700">
                         {t('hr.btnAddEmployee')}
                     </button>
                 </div>
             </div>
 
             {/* KPIs */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <HRCard title={t('hr.totalHeadcount')} value={metrics?.totalEmployees || 0} icon={Users} color="text-blue-600" bg="bg-blue-50" />
-                <HRCard title={t('hr.presentToday')} value={metrics?.presentToday || 0} icon={UserCheck} color="text-emerald-600" bg="bg-emerald-50" />
-                <HRCard title={t('hr.lateToday')} value={metrics?.lateToday || 0} icon={Clock} color="text-amber-600" bg="bg-amber-50" />
-                <HRCard title={t('hr.absentToday')} value={metrics?.absentToday || 0} icon={XCircle} color="text-rose-600" bg="bg-rose-50" />
-                <HRCard title={t('hr.pendingLeaves')} value={pendingLeavesCount} icon={CalendarDays} color="text-purple-600" bg="bg-purple-50" highlight={pendingLeavesCount > 0} />
-                <HRCard title={t('hr.estPayroll')} value={`${((metrics?.estimatedPayrollDZD || 0) / 1000).toFixed(0)}k`} icon={Banknote} color="text-gray-800" bg="bg-gray-100" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.totalHeadcount')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{metrics?.totalEmployees || 0}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                        <Users className="w-8 h-8 text-blue-600" />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">{t('hr.presentToday')}</p>
+                        <h3 className="text-3xl font-black text-emerald-700 tracking-tighter truncate">{metrics?.presentToday || 0}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 shrink-0">
+                        <UserCheck className="w-8 h-8 text-emerald-600" />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-amber-600 uppercase tracking-wider mb-1 truncate">{t('hr.lateToday')}</p>
+                        <h3 className="text-3xl font-black text-amber-700 tracking-tighter truncate">{metrics?.lateToday || 0}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
+                        <Clock className="w-8 h-8 text-amber-600" />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">{t('hr.absentToday')}</p>
+                        <h3 className="text-3xl font-black text-rose-700 tracking-tighter truncate">{metrics?.absentToday || 0}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 shrink-0">
+                        <XCircle className="w-8 h-8 text-rose-600" />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-1 truncate">{t('hr.pendingLeaves')}</p>
+                        <h3 className="text-3xl font-black text-purple-700 tracking-tighter truncate">{pendingLeavesCount}</h3>
+                    </div>
+                    <div className={clsx("h-16 w-16 rounded-2xl flex items-center justify-center border shrink-0", pendingLeavesCount > 0 ? "bg-purple-100 border-purple-200 animate-pulse" : "bg-purple-50 border-purple-100")}>
+                        <CalendarDays className="w-8 h-8 text-purple-600" />
+                    </div>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.estPayroll')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{`${((metrics?.estimatedPayrollDZD || 0) / 1000).toFixed(0)}k`}</h3>
+                    </div>
+                    <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200 shrink-0">
+                        <Banknote className="w-8 h-8 text-gray-800" />
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -237,16 +285,16 @@ export default function HRSnapshot() {
             {/* Workforce Analytics Row */}
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.workforceUtilization')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-[280px]">
-                    <div className="h-full relative flex items-center justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-auto md:h-[280px]">
+                    <div className="h-[250px] md:h-full relative flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={utilizationData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={70}
-                                    outerRadius={100}
+                                    innerRadius="60%"
+                                    outerRadius="80%"
                                     paddingAngle={5}
                                     dataKey="value"
                                     stroke="none"
@@ -256,12 +304,12 @@ export default function HRSnapshot() {
                                     ))}
                                 </Pie>
                                 <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                             </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-5">
-                            <span className="text-3xl font-black text-gray-900">{metrics?.activeEmployees || 0}</span>
-                            <span className="text-xs font-bold text-gray-400">{t('hr.activeLabel')}</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8 sm:pb-5">
+                            <span className="text-2xl sm:text-3xl font-black text-gray-900">{metrics?.activeEmployees || 0}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-400">{t('hr.activeLabel')}</span>
                         </div>
                     </div>
 
@@ -608,13 +656,13 @@ function EmployeeModal({ employee, onClose, onSave }) {
 
 function HRCard({ title, value, icon: Icon, color, bg, highlight }) {
     return (
-        <div className={clsx("p-6 rounded-2xl border shadow-sm flex items-center gap-4 transition-colors", highlight ? "bg-purple-50/30 border-purple-100" : "bg-white border-gray-100")}>
-            <div className={clsx("w-14 h-14 rounded-xl flex items-center justify-center shrink-0", bg, color)}>
-                <Icon className="w-7 h-7" />
+        <div className={clsx("p-4 sm:p-6 rounded-2xl border shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 transition-colors", highlight ? "bg-purple-50/30 border-purple-100" : "bg-white border-gray-100")}>
+            <div className={clsx("w-10 h-10 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0", bg, color)}>
+                <Icon className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-                <h3 className="text-3xl font-black text-gray-900 tabular-nums tracking-tight leading-none">{value}</h3>
+                <p className="text-xs sm:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1">{title}</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight leading-none">{value}</h3>
             </div>
         </div>
     );

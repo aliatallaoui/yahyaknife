@@ -89,13 +89,13 @@ export default function CustomerInsight() {
         <div className="flex flex-col gap-6 max-w-[1600px]">
 
             {/* Top Control Bar */}
-            <div className="flex justify-between items-center bg-indigo-900 text-white p-6 rounded-2xl shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-indigo-900 text-white p-5 sm:p-6 rounded-2xl shadow-sm">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">{t('crm.title', 'Customer Intelligence OS')}</h2>
-                    <p className="text-indigo-200 mt-1 text-sm font-medium">{t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}</p>
+                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t('crm.title', 'Customer Intelligence OS')}</h2>
+                    <p className="text-indigo-200 mt-1 text-xs sm:text-sm font-medium">{t('crm.subtitle', 'Segments, Retention, and COD Risk Management')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={handleCreateClick} className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-sm">
+                <div className="flex gap-3 w-full md:w-auto">
+                    <button onClick={handleCreateClick} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-sm">
                         <Plus className="w-4 h-4" /> {t('crm.addCustomerBtn', 'Add Customer')}
                     </button>
                 </div>
@@ -199,9 +199,9 @@ export default function CustomerInsight() {
 
             {/* CRM Directory Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[500px]">
-                <div className="flex justify-between items-center p-5 border-b border-gray-100">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-5 border-b border-gray-100 gap-4">
                     <h3 className="text-lg font-bold text-gray-900">{t('crm.dirTitle', 'CRM Directory')}</h3>
-                    <div className="relative w-64">
+                    <div className="relative w-full sm:w-64">
                         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
