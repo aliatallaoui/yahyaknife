@@ -23,6 +23,7 @@ import ProductionFloor from './pages/ProductionFloor';
 import KnifeDashboard from './pages/KnifeDashboard';
 import KnifeLibrary from './pages/KnifeLibrary';
 import KnivesInProduction from './pages/KnivesInProduction';
+import KnifeBuilder from './pages/KnifeBuilder';
 import ToolManagement from './pages/ToolManagement';
 import ProcurementHub from './pages/ProcurementHub';
 import SettingsLayout from './pages/settings/SettingsLayout';
@@ -31,8 +32,10 @@ import SettingsGeneral from './pages/settings/SettingsGeneral';
 import SettingsSecurity from './pages/settings/SettingsSecurity';
 import SettingsAlerts from './pages/settings/SettingsAlerts';
 import SettingsUsers from './pages/settings/SettingsUsers';
+import SettingsRoles from './pages/settings/SettingsRoles'; // <== Added Roles import
 import CourierSettings from './pages/CourierSettings';
 import SupportDesk from './pages/SupportDesk';
+import CopilotWidget from './components/CopilotWidget';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -122,6 +125,7 @@ const Layout = () => {
               <Route path="/projects/tasks" element={<GlobalTaskBoard />} />
               <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/production" element={<ProductionFloor />} />
+              <Route path="/knife-builder" element={<KnifeBuilder />} />
               <Route path="/knives" element={<KnifeDashboard />} />
               <Route path="/knives/library" element={<KnifeLibrary />} />
               <Route path="/knives/production" element={<KnivesInProduction />} />
@@ -136,6 +140,7 @@ const Layout = () => {
                 <Route path="security" element={<SettingsSecurity />} />
                 <Route path="alerts" element={<SettingsAlerts />} />
                 <Route path="users" element={<SettingsUsers />} />
+                <Route path="roles" element={<SettingsRoles />} /> {/* <== Added Roles route */}
                 <Route path="couriers" element={<CourierSettings />} />
                 {/* Default redirect for /settings */}
                 <Route path="" element={<Navigate to="profile" replace />} />
@@ -146,6 +151,9 @@ const Layout = () => {
           </Routes>
         </div>
       </main>
+
+      {/* Global AI Copilot */}
+      {!isAuthPage && <CopilotWidget />}
     </div>
   );
 };

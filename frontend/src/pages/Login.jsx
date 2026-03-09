@@ -12,7 +12,7 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { login } = useContext(AuthContext);
-    const { t, i18n } = useTranslation('auth');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'auth' });
     const isAr = i18n.language === 'ar';
 
     const handleSubmit = async (e) => {

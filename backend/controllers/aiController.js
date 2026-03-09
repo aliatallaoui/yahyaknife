@@ -1,0 +1,377 @@
+const { GoogleGenAI } = require('@google/genai');
+
+// Initialize the SDK. It will automatically use the GEMINI_API_KEY environment variable.
+// Make sure to add GEMINI_API_KEY to your backend/.env file!
+let ai;
+try {
+    if (process.env.GEMINI_API_KEY) {
+        ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    }
+} catch (error) {
+    console.warn("GoogleGenAI initialized without API key. Please add GEMINI_API_KEY to .env");
+}
+
+const SYSTEM_PROMPT = `
+You are Cortex AI, the intelligent enterprise assistant for the MERN SaaS Operations Platform. 
+Your goal is to help the user manage their business operations, inventory, HR, sales, and manufacturing.
+You have access to tools that can fetch data or perform actions within the system.
+
+Always maintain a professional, helpful, and concise tone. You act as a seamless part of the user's dashboard.
+`;
+
+// Define the schema for the tools the AI can use.
+// For V1, we will implement simple read-only data fetching to prove the concept.
+const tools = [
+    {
+        name: "get_financial_summary",
+        description: "Returns the current financial overview, including revenue, expenses, and net profit.",
+    },
+    {
+        name: "get_active_shipments",
+        description: "Returns the count of active, in-transit, and delivered shipments from the dispatch center.",
+    },
+    {
+        name: "add_expense",
+        description: "Creates a new manual expense record in the financial ledger.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                description: { type: "STRING", description: "A short description of the expense." },
+                amount: { type: "NUMBER", description: "The cost of the expense in standard currency amounts." },
+                category: {
+                    type: "STRING",
+                    description: "The category of the expense (e.g., Office Supplies, Services, Logistics, Software). Default to 'General' if unsure."
+                }
+            },
+            required: ["description", "amount"]
+        }
+    },
+    {
+        name: "create_customer",
+        description: "Creates a new customer profile in the CRM.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                name: { type: "STRING", description: "The full name of the customer." },
+                phone: { type: "STRING", description: "The primary phone number of the customer." },
+                wilaya: { type: "STRING", description: "The province or state (Wilaya) in Algeria." },
+                commune: { type: "STRING", description: "The municipality or city (Commune) in Algeria." }
+            },
+            required: ["name", "phone"]
+        }
+    },
+    {
+        name: "add_employee",
+        description: "Creates a new employee record in the HR system.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                name: { type: "STRING", description: "Full name of the employee." },
+                department: { type: "STRING", description: "Department (e.g., Sales, Production, Marketing)." },
+                role: { type: "STRING", description: "Job title or role." },
+                salary: { type: "NUMBER", description: "Monthly salary in DZD." }
+            },
+            required: ["name", "department", "role"]
+        }
+    },
+    {
+        name: "get_production_analytics",
+        description: "Returns an overview of the manufacturing floor, including total orders, completed, and in-progress.",
+    },
+    {
+        name: "get_active_projects",
+        description: "Returns a list of all active projects in the company along with their completion percentage.",
+    },
+    {
+        name: "create_project_task",
+        description: "Creates a new task within a specific project. Requires the exact project name.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                projectName: { type: "STRING", description: "The name of the project to add the task to." },
+                title: { type: "STRING", description: "The title or description of the task." },
+                priority: { type: "STRING", description: "Priority level: Low, Medium, High, or Urgent." }
+            },
+            required: ["projectName", "title"]
+        }
+    },
+    {
+        name: "create_product",
+        description: "Creates a new product in the inventory systems. You can specify category, brand, price, and initial stock.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                name: { type: "STRING", description: "The name of the product." },
+                categoryName: { type: "STRING", description: "The category name. If it doesn't exist, it will be automatically created." },
+                brand: { type: "STRING", description: "The brand of the product (optional)." },
+                description: { type: "STRING", description: "A detailed product description." },
+                price: { type: "NUMBER", description: "Default selling price for the product variant." },
+                stock: { type: "NUMBER", description: "Initial stock level." }
+            },
+            required: ["name", "categoryName"]
+        }
+    }
+];
+
+// Combine definitions into the declaration format expected by Gemini
+const toolsDeclaration = {
+    functionDeclarations: tools
+};
+
+const Order = require('../models/Order');
+const Expense = require('../models/Expense');
+const Revenue = require('../models/Revenue');
+const Shipment = require('../models/Shipment');
+const Customer = require('../models/Customer');
+const Employee = require('../models/Employee');
+const ProductionOrder = require('../models/ProductionOrder');
+const Project = require('../models/Project');
+const ProjectTask = require('../models/ProjectTask');
+const Product = require('../models/Product');
+const ProductVariant = require('../models/ProductVariant');
+const Category = require('../models/Category');
+
+async function executeTool(call) {
+    try {
+        if (call.name === 'get_financial_summary') {
+            const expenses = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+            const revenues = await Revenue.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+            const manualExpenses = expenses.length > 0 ? expenses[0].total : 0;
+            const manualRevenue = revenues.length > 0 ? revenues[0].total : 0;
+
+            const orderAgg = await Order.aggregate([
+                { $match: { status: { $ne: 'Cancelled' } } },
+                { $group: { _id: null, totalSales: { $sum: '$totalAmount' } } }
+            ]);
+            const totalSales = orderAgg.length > 0 ? orderAgg[0].totalSales : 0;
+
+            return {
+                manualRevenue,
+                manualExpenses,
+                totalSales,
+                netProfitEstimate: (manualRevenue + totalSales) - manualExpenses
+            };
+        }
+
+        if (call.name === 'get_active_shipments') {
+            const active = await Shipment.countDocuments({ shipmentStatus: { $in: ['Created in Courier', 'In Transit', 'Out for Delivery'] } });
+            const delivered = await Shipment.countDocuments({ shipmentStatus: 'Delivered' });
+            const returned = await Shipment.countDocuments({ shipmentStatus: { $in: ['Returned', 'Return Initiated'] } });
+
+            return { active, delivered, returned };
+        }
+
+        if (call.name === 'add_expense') {
+            // args are provided as call.args in Gemini
+            const { description, amount, category } = call.args || {};
+            if (!description || !amount) return { error: "Missing required fields: description or amount" };
+
+            const newExpense = await Expense.create({
+                description,
+                amount: Number(amount),
+                category: category || 'General',
+                date: new Date()
+            });
+            return { success: true, message: `Expense logged successfully with ID: ${newExpense._id}`, expense: newExpense };
+        }
+
+        if (call.name === 'create_customer') {
+            const { name, phone, wilaya, commune } = call.args || {};
+            if (!name || !phone) return { error: "Missing required fields: name or phone" };
+
+            const newCust = await Customer.create({
+                name,
+                phone,
+                wilayaName: wilaya || '',
+                commune: commune || '',
+                status: 'Active',
+                totalSpent: 0,
+                ordersCount: 0
+            });
+            return { success: true, message: `Customer profile created successfully for ${name}.`, customerId: newCust._id };
+        }
+
+        if (call.name === 'add_employee') {
+            const { name, department, role, salary } = call.args || {};
+            if (!name || !department || !role) return { error: "Missing required fields: name, department, or role" };
+
+            const newEmp = await Employee.create({
+                name,
+                department,
+                role,
+                salary: Number(salary) || 0,
+                status: 'Active',
+                joinDate: new Date(),
+                leaveBalance: 30
+            });
+            return { success: true, message: `Employee ${name} added successfully to ${department}.`, employeeId: newEmp._id };
+        }
+
+        if (call.name === 'get_production_analytics') {
+            const allOrders = await ProductionOrder.find().populate('bom');
+            const completed = allOrders.filter(o => o.status === 'Completed');
+            const inProgress = allOrders.filter(o => ['In Progress', 'Quality Check'].includes(o.status));
+
+            const totalUnitsProduced = completed.reduce((sum, o) => sum + (o.quantityCompleted || 0), 0);
+            return {
+                totalOrders: allOrders.length,
+                completedOrders: completed.length,
+                inProgressOrders: inProgress.length,
+                totalUnitsProduced
+            };
+        }
+
+        if (call.name === 'get_active_projects') {
+            const projects = await Project.find({ status: { $ne: 'Completed' } }).select('name status completionPercentage deadline');
+            return {
+                count: projects.length,
+                projects: projects
+            };
+        }
+
+        if (call.name === 'create_project_task') {
+            const { projectName, title, priority } = call.args || {};
+            if (!projectName || !title) return { error: "Missing required fields: projectName or title" };
+
+            // Find the project by name (case-insensitive)
+            const project = await Project.findOne({ name: { $regex: new RegExp(`^${projectName}$`, 'i') } });
+            if (!project) {
+                return { error: `Project '${projectName}' not found. Please verify the project name.` };
+            }
+
+            const newTask = await ProjectTask.create({
+                project: project._id,
+                title,
+                priority: priority || 'Medium',
+                status: 'To Do',
+                taskId: `TSK-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`
+            });
+
+            return { success: true, message: `Task '${title}' added to project '${project.name}'.`, taskId: newTask.taskId };
+        }
+
+        if (call.name === 'create_product') {
+            const { name, categoryName, brand, description, price, stock } = call.args || {};
+            if (!name || !categoryName) return { error: "Missing required fields: name or categoryName" };
+
+            // Find or create category
+            let category = await Category.findOne({ name: { $regex: new RegExp(`^${categoryName}$`, 'i') } });
+            if (!category) {
+                category = await Category.create({ name: categoryName, description: 'Created via AI Copilot' });
+            }
+
+            const newProduct = await Product.create({
+                name,
+                category: category._id,
+                brand: brand || '',
+                description: description || ''
+            });
+
+            // Always create a default variant if adding a product
+            await ProductVariant.create({
+                productId: newProduct._id,
+                sku: `SKU-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+                price: Number(price) || 0,
+                cost: 0,
+                totalStock: Number(stock) || 0,
+                reorderLevel: 10
+            });
+
+            return { success: true, message: `Product '${name}' created successfully in category '${categoryName}'.`, productId: newProduct._id };
+        }
+
+        return { error: `Unknown tool: ${call.name}` };
+    } catch (e) {
+        return { error: e.message };
+    }
+}
+
+/**
+ * Handle incoming chat messages from the frontend Copilot Widget.
+ * Maintains conversation history and executes tool calls if requested by the LLM.
+ */
+const handleChat = async (req, res) => {
+    try {
+        const { messages } = req.body;
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({
+                error: "GEMINI_API_KEY is missing from environment variables.",
+                reply: "I cannot connect to my AI brain right now. Please tell the administrator to configure the GEMINI_API_KEY."
+            });
+        }
+
+        if (!ai) ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+        let formattedHistory = messages.map(msg => ({
+            role: msg.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+        }));
+
+        let response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: formattedHistory,
+            config: {
+                systemInstruction: { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
+                tools: [toolsDeclaration],
+                temperature: 0.2
+            }
+        });
+
+        // Loop to handle up to 3 chained function calls (e.g. if it wants to call multiple tools)
+        let callCount = 0;
+        while (response.functionCalls && response.functionCalls.length > 0 && callCount < 3) {
+            callCount++;
+
+            // Append model's function call request to history
+            formattedHistory.push({
+                role: 'model',
+                parts: response.functionCalls.map(call => ({ functionCall: call }))
+            });
+
+            // Execute all requested tools
+            const functionResponses = [];
+            for (const call of response.functionCalls) {
+                const result = await executeTool(call);
+                functionResponses.push({
+                    functionResponse: {
+                        name: call.name,
+                        response: result
+                    }
+                });
+            }
+
+            // Append tool results to history
+            formattedHistory.push({
+                role: 'user', // In Gemini, function responses are provided by the user role
+                parts: functionResponses
+            });
+
+            // Call the model again with the new history
+            response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: formattedHistory,
+                config: {
+                    systemInstruction: { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
+                    tools: [toolsDeclaration],
+                    temperature: 0.2
+                }
+            });
+        }
+
+        const replyText = response.text || "I processed your request but had nothing to say.";
+        res.json({ reply: replyText });
+
+    } catch (error) {
+        console.error("AI Controller Error:", error);
+        res.status(500).json({
+            error: "Failed to process AI request.",
+            reply: `Failed: ${error.message}\n\nStack:\n${error.stack}`,
+            details: error.message
+        });
+    }
+};
+
+module.exports = {
+    handleChat
+};

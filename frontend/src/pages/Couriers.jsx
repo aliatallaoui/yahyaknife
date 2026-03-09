@@ -38,7 +38,7 @@ export default function Couriers() {
     };
 
     if (loading) {
-        return <div className="p-8 text-center text-gray-500">Loading Logistic Metrics...</div>;
+        return <div className="p-8 text-center text-gray-500">{t('couriers.loading', 'Loading Logistic Metrics...')}</div>;
     }
 
     return (
@@ -61,7 +61,7 @@ export default function Couriers() {
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.successRate', 'Delivery Success Rate')}</p>
                         <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.successRate}%</h3>
                         <p className="mt-1 text-xs text-gray-400 font-medium truncate">
-                            {stats.kpis.delivered} Delivered out of {stats.kpis.totalShipments} Total
+                            {stats.kpis.delivered} {t('couriers.delivered_out_of', 'Delivered out of')} {stats.kpis.totalShipments} {t('couriers.total_lowercase', 'Total')}
                         </p>
                     </div>
                     <div className="h-16 w-16 bg-green-50 rounded-2xl flex items-center justify-center border border-green-100 shrink-0">
@@ -74,7 +74,7 @@ export default function Couriers() {
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.returnRate', 'Return Rate')}</p>
                         <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.returnRate}%</h3>
                         <p className="mt-1 text-xs text-red-500 font-medium truncate">
-                            {stats.kpis.returned} Packages Failed / Returned
+                            {t('couriers.packages_failed', 'Packages Failed / Returned')}
                         </p>
                     </div>
                     <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100 shrink-0">
@@ -85,9 +85,9 @@ export default function Couriers() {
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.avgTime', 'Avg Delivery Speed')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.avgDeliveryTimeDays} <span className="text-sm font-medium text-gray-400">Days</span></h3>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.avgDeliveryTimeDays} <span className="text-sm font-medium text-gray-400">{t('couriers.days', 'Days')}</span></h3>
                         <p className="mt-1 text-xs text-gray-400 font-medium truncate">
-                            From Verification to Client Handshake
+                            {t('couriers.from_verification', 'From Verification to Client Handshake')}
                         </p>
                     </div>
                     <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
@@ -99,10 +99,10 @@ export default function Couriers() {
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.pendingCash', 'Pending Courier Clearance')}</p>
                         <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">
-                            {stats.financials.pendingCourierClearance.toLocaleString()} <span className="text-sm font-medium text-gray-400">DZD</span>
+                            {stats.financials.pendingCourierClearance.toLocaleString()} <span className="text-sm font-medium text-gray-400">{t('common.dzd', 'DZD')}</span>
                         </h3>
                         <div className="mt-2 text-[10px] sm:text-xs bg-green-50 text-green-700 font-bold px-2 py-1 rounded w-fit truncate">
-                            Settled: {stats.financials.settledToBank.toLocaleString()}
+                            {t('couriers.settled', 'Settled:')} {stats.financials.settledToBank.toLocaleString()}
                         </div>
                     </div>
                     <div className="h-16 w-16 bg-yellow-50 rounded-2xl flex items-center justify-center border border-yellow-100 shrink-0">
@@ -118,7 +118,7 @@ export default function Couriers() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 lg:col-span-2 p-5">
                     <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
                         <Map className="w-5 h-5 mr-2 text-indigo-500" />
-                        Regional Success Distribution
+                        {t('couriers.regional_success', 'Regional Success Distribution')}
                     </h3>
                     <div className="h-80 w-full" dir="ltr">
                         <ResponsiveContainer>
@@ -139,8 +139,8 @@ export default function Couriers() {
                                     cursor={{ fill: '#F3F4F6' }}
                                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 />
-                                <Bar dataKey="delivered" name="Successful" stackId="a" fill="#10B981" radius={[0, 0, 4, 4]} barSize={32} />
-                                <Bar dataKey="returned" name="Failed/Return" stackId="a" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="delivered" name={t('couriers.successful', 'Successful')} stackId="a" fill="#10B981" radius={[0, 0, 4, 4]} barSize={32} />
+                                <Bar dataKey="returned" name={t('couriers.failed_return', 'Failed/Return')} stackId="a" fill="#EF4444" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -148,20 +148,20 @@ export default function Couriers() {
 
                 {/* COD Ledger Overview */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">Live Form COD Pipeline</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-6">{t('couriers.cod_pipeline', 'Live Form COD Pipeline')}</h3>
                     <div className="space-y-6">
                         <div className="p-4 rounded-xl border border-gray-100 bg-gray-50 flex justify-between items-center">
                             <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Delivered Package Value</p>
-                                <p className="text-xl font-bold text-gray-900 mt-1">{stats.financials.totalDeliveredCOD.toLocaleString()} DZD</p>
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('couriers.total_delivered_value', 'Total Delivered Package Value')}</p>
+                                <p className="text-xl font-bold text-gray-900 mt-1">{stats.financials.totalDeliveredCOD.toLocaleString()} {t('common.dzd', 'DZD')}</p>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div>
                                 <div className="flex justify-between items-end mb-1">
-                                    <span className="text-sm font-medium text-yellow-700">Pending Clearance</span>
-                                    <span className="text-sm font-bold text-gray-900">{stats.financials.pendingCourierClearance.toLocaleString()} DZD</span>
+                                    <span className="text-sm font-medium text-yellow-700">{t('couriers.pending_clearance', 'Pending Clearance')}</span>
+                                    <span className="text-sm font-bold text-gray-900">{stats.financials.pendingCourierClearance.toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                 </div>
                                 <div className="w-full bg-gray-100 rounded-full h-2">
                                     <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${stats.financials.totalDeliveredCOD > 0 ? (stats.financials.pendingCourierClearance / stats.financials.totalDeliveredCOD) * 100 : 0}%` }}></div>
@@ -170,8 +170,8 @@ export default function Couriers() {
 
                             <div>
                                 <div className="flex justify-between items-end mb-1">
-                                    <span className="text-sm font-medium text-green-700">Settled to Bank</span>
-                                    <span className="text-sm font-bold text-gray-900">{stats.financials.settledToBank.toLocaleString()} DZD</span>
+                                    <span className="text-sm font-medium text-green-700">{t('couriers.settled_to_bank', 'Settled to Bank')}</span>
+                                    <span className="text-sm font-bold text-gray-900">{stats.financials.settledToBank.toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                 </div>
                                 <div className="w-full bg-gray-100 rounded-full h-2">
                                     <div className="bg-green-500 h-2 rounded-full" style={{ width: `${stats.financials.totalDeliveredCOD > 0 ? (stats.financials.settledToBank / stats.financials.totalDeliveredCOD) * 100 : 0}%` }}></div>
@@ -180,8 +180,8 @@ export default function Couriers() {
 
                             <div>
                                 <div className="flex justify-between items-end mb-1">
-                                    <span className="text-sm font-medium text-orange-700">Delivered, No Money</span>
-                                    <span className="text-sm font-bold text-gray-900">{stats.financials.uncollectedFromCustomer.toLocaleString()} DZD</span>
+                                    <span className="text-sm font-medium text-orange-700">{t('couriers.delivered_no_money', 'Delivered, No Money')}</span>
+                                    <span className="text-sm font-bold text-gray-900">{stats.financials.uncollectedFromCustomer.toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                 </div>
                                 <div className="w-full bg-gray-100 rounded-full h-2">
                                     <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${stats.financials.totalDeliveredCOD > 0 ? (stats.financials.uncollectedFromCustomer / stats.financials.totalDeliveredCOD) * 100 : 0}%` }}></div>

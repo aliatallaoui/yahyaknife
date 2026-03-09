@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function SettingsAlerts() {
     const { user } = useContext(AuthContext);
-    const { t, i18n } = useTranslation('settingsAlerts');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsAlerts' });
     const isAr = i18n.language === 'ar';
 
     return (

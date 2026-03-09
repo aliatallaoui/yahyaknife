@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function SettingsGeneral() {
     const { user, token, updateContextPreferences } = useContext(AuthContext);
-    const { t, i18n } = useTranslation('settingsGeneral');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsGeneral' });
     const isAr = i18n.language === 'ar';
 
     // Form Local State

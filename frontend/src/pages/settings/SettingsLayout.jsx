@@ -5,17 +5,18 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function SettingsLayout() {
-    const { t, i18n } = useTranslation('settingsTab');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsTab' });
     const isAr = i18n.language === 'ar';
     const navigate = useNavigate();
 
     const tabs = [
-        { name: t('tabProfile'), path: '/settings/profile', icon: User },
-        { name: t('tabGeneral'), path: '/settings/general', icon: Settings },
-        { name: t('tabSecurity'), path: '/settings/security', icon: Shield },
-        { name: t('tabAlerts'), path: '/settings/alerts', icon: Bell },
+        { name: t('tabProfile', 'My Profile'), path: '/settings/profile', icon: User },
+        { name: t('tabGeneral', 'General Preferences'), path: '/settings/general', icon: Settings },
+        { name: t('tabSecurity', 'Security & Access'), path: '/settings/security', icon: Shield },
+        { name: t('tabAlerts', 'Alert Notifications'), path: '/settings/alerts', icon: Bell },
         { name: t('tabCouriers', 'Courier Integration'), path: '/settings/couriers', icon: Truck, adminOnly: true },
-        { name: t('tabUsers'), path: '/settings/users', icon: Users, adminOnly: true },
+        { name: t('tabUsers', 'Users & Roles'), path: '/settings/users', icon: Users, adminOnly: true },
+        { name: t('tabRoles', 'Roles & Permissions'), path: '/settings/roles', icon: Shield, adminOnly: true },
     ];
 
     return (
@@ -37,7 +38,7 @@ export default function SettingsLayout() {
             <div className="flex flex-col md:flex-row gap-8 items-start">
 
                 {/* Settings Sidebar */}
-                <div className="w-full md:w-64 shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sticky top-6">
+                <div className={clsx("w-full md:w-64 shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sticky top-6", isAr ? "md:ml-0" : "md:mr-0")}>
                     <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 styled-scrollbar">
                         {tabs.map(tab => (
                             <NavLink

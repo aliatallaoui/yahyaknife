@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function SettingsProfile() {
     const { user } = useContext(AuthContext);
-    const { t, i18n } = useTranslation('settingsProfile');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsProfile' });
     const isAr = i18n.language === 'ar';
 
     return (

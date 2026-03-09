@@ -22,20 +22,13 @@ const userSchema = new mongoose.Schema({
         select: false
     },
     role: {
-        type: String,
-        enum: [
-            'Super Admin',
-            'HR Manager',
-            'Finance Controller',
-            'Sales Representative',
-            'Warehouse Supervisor',
-            'Production Lead',
-            'user' // keeping 'user' for backwards compatibility/default
-        ],
-        default: 'user'
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role',
+        default: null
     },
-    permissions: [{
-        type: String
+    permissionOverrides: [{
+        permission: { type: String, required: true },
+        effect: { type: String, enum: ['allow', 'deny'], required: true }
     }],
     isActive: {
         type: Boolean,

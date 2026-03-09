@@ -62,19 +62,33 @@ exports.loginUser = async (req, res) => {
         const { email, password } = req.body;
 
         // Check for user email, importantly select password back so we can verify it
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ email }).select('+password').populate('role');
 
         if (user && (await user.matchPassword(password))) {
             if (!user.isActive) {
                 return res.status(401).json({ message: 'Account disabled. Contact Administrator.' });
             }
 
+            // Compute effective permissions for the frontend
+            let effectivePermissions = new Set(user.role ? user.role.permissions : []);
+            if (user.permissionOverrides && user.permissionOverrides.length > 0) {
+                user.permissionOverrides.forEach(override => {
+                    if (override.effect === 'allow') {
+                        effectivePermissions.add(override.permission);
+                    } else if (override.effect === 'deny') {
+                        effectivePermissions.delete(override.permission);
+                    }
+                });
+            }
+
             res.json({
                 _id: user.id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
-                permissions: user.permissions,
+                role: user.role ? user.role.name : 'user', // Backward compatible string
+                roleObject: user.role, // Full role object
+                permissions: Array.from(effectivePermissions), // Computed permissions list
+                permissionOverrides: user.permissionOverrides,
                 isActive: user.isActive,
                 preferences: user.preferences,
                 token: generateToken(user._id),
@@ -93,18 +107,31 @@ exports.loginUser = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id).populate('role');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+
+        let effectivePermissions = new Set(user.role ? user.role.permissions : []);
+        if (user.permissionOverrides && user.permissionOverrides.length > 0) {
+            user.permissionOverrides.forEach(override => {
+                if (override.effect === 'allow') {
+                    effectivePermissions.add(override.permission);
+                } else if (override.effect === 'deny') {
+                    effectivePermissions.delete(override.permission);
+                }
+            });
         }
 
         res.status(200).json({
             _id: user._id,
             name: user.name,
             email: user.email,
-            role: user.role,
-            permissions: user.permissions || [],
+            role: user.role ? user.role.name : 'user',
+            roleObject: user.role,
+            permissions: Array.from(effectivePermissions),
+            permissionOverrides: user.permissionOverrides,
             isActive: user.isActive,
             preferences: user.preferences || {}
         });

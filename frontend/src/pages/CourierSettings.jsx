@@ -77,8 +77,12 @@ export default function CourierSettings() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">{t('courier.title', 'Courier Integration Settings')}</h1>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-xl font-black text-gray-900 flex items-center gap-3">
+                        {t('courier.title', 'Courier Integration Settings')}
+                    </h1>
+                </div>
             </div>
 
             {message && (
@@ -92,11 +96,11 @@ export default function CourierSettings() {
                 <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900">ECOTRACK Integration</h2>
-                            <p className="text-sm text-gray-500 mt-1">Configure your ECOTRACK API credentials to enable automated dispatch.</p>
+                            <h2 className="text-lg font-semibold text-gray-900">{t('couriers.ecotrack', 'ECOTRACK Integration')}</h2>
+                            <p className="text-sm text-gray-500 mt-1">{t('couriers.ecotrackSub', 'Configure your ECOTRACK API credentials to enable automated dispatch.')}</p>
                         </div>
                         <div className="flex flex-col items-end">
-                            <span className="text-sm text-gray-500 mb-1">Live Status</span>
+                            <span className="text-sm text-gray-500 mb-1">{t('couriers.liveStatus', 'Live Status')}</span>
                             {renderStatusBadge(settings.connectionStatus)}
                         </div>
                     </div>
@@ -106,7 +110,7 @@ export default function CourierSettings() {
                     <form onSubmit={handleSave} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">API Gateway URL</label>
+                                <label className="block text-sm font-medium text-gray-700">{t('couriers.gatewayUrl', 'API Gateway URL')}</label>
                                 <input
                                     type="url"
                                     required
@@ -115,11 +119,11 @@ export default function CourierSettings() {
                                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2.5 transition-colors"
                                     placeholder="https://api.ecotrack.dz/v1"
                                 />
-                                <p className="mt-1.5 text-xs text-gray-500">Ensure this points to the active V1 environment.</p>
+                                <p className="mt-1.5 text-xs text-gray-500">{t('couriers.gatewaySub', 'Ensure this points to the active V1 environment.')}</p>
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700">Bearer Token</label>
+                                <label className="block text-sm font-medium text-gray-700">{t('couriers.bearerToken', 'Bearer Token')}</label>
                                 <div className="mt-1 relative rounded-md shadow-sm">
                                     <input
                                         type="password"
@@ -130,7 +134,7 @@ export default function CourierSettings() {
                                         placeholder="eyX..."
                                     />
                                 </div>
-                                <p className="mt-1.5 text-xs text-gray-500">Your secret API token. Keep this safe; it grants full access to create shipments.</p>
+                                <p className="mt-1.5 text-xs text-gray-500">{t('couriers.bearerSub', 'Your secret API token. Keep this safe; it grants full access to create shipments.')}</p>
                             </div>
                         </div>
 
@@ -143,7 +147,7 @@ export default function CourierSettings() {
                                 {saving ? (
                                     <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
                                 ) : (
-                                    <><Save className="-ml-1 mr-2 h-4 w-4" /> Save & Test Connection</>
+                                    <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveTest', 'Save & Test Connection')}</>
                                 )}
                             </button>
                         </div>
@@ -152,47 +156,93 @@ export default function CourierSettings() {
             </div>
 
             {/* API Usage & Rate Limits Module */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <RefreshCw className="w-5 h-5 mr-2 text-gray-400" />
-                    API Rate Limits & Usage Tracker
-                </h3>
+            <form onSubmit={handleSave} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="flex justify-between flex-wrap gap-4 items-center mb-6">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600 me-3">
+                            <RefreshCw className="w-5 h-5 shrink-0" />
+                        </div>
+                        {t('couriers.rateLimits', 'API Rate Limits & Usage Tracker')}
+                    </h3>
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="inline-flex items-center px-4 py-2 border border-indigo-200 rounded-lg shadow-sm text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                    >
+                        {saving ? (
+                            <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
+                        ) : (
+                            <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveLimits', 'Update Limits')}</>
+                        )}
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <p className="text-sm text-gray-500 font-medium">Requests Per Minute</p>
-                        <div className="mt-2 flex items-baseline">
-                            <span className="text-2xl font-bold text-gray-900">{settings.currentUsage?.minuteCount || 0}</span>
-                            <span className="ml-1 text-sm text-gray-500">/ {settings.rateLimits?.requestsPerMinute || 50}</span>
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600 font-bold">{t('couriers.reqMin', 'Requests / Minute')}</span>
+                                <span className="font-bold text-gray-900">{settings.currentUsage?.minuteCount || 0} used</span>
+                            </div>
+                            <div className="mt-3">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{t('couriers.limitConfig', 'Configuration Limit')}</label>
+                                <input
+                                    type="number"
+                                    value={settings.rateLimits?.requestsPerMinute || 50}
+                                    onChange={(e) => setSettings({ ...settings, rateLimits: { ...settings.rateLimits, requestsPerMinute: Number(e.target.value) } })}
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm font-bold"
+                                />
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-3">
-                            <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(((settings.currentUsage?.minuteCount || 0) / (settings.rateLimits?.requestsPerMinute || 50)) * 100, 100)}%` }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+                            <div className={clsx("h-2 rounded-full", ((settings.currentUsage?.minuteCount || 0) / (settings.rateLimits?.requestsPerMinute || 50)) > 0.8 ? "bg-rose-500" : "bg-indigo-500")} style={{ width: `${Math.min(((settings.currentUsage?.minuteCount || 0) / (settings.rateLimits?.requestsPerMinute || 50)) * 100, 100)}%` }}></div>
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <p className="text-sm text-gray-500 font-medium">Requests Per Hour</p>
-                        <div className="mt-2 flex items-baseline">
-                            <span className="text-2xl font-bold text-gray-900">{settings.currentUsage?.hourCount || 0}</span>
-                            <span className="ml-1 text-sm text-gray-500">/ {settings.rateLimits?.requestsPerHour || 1500}</span>
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600 font-bold">{t('couriers.reqHour', 'Requests / Hour')}</span>
+                                <span className="font-bold text-gray-900">{settings.currentUsage?.hourCount || 0} used</span>
+                            </div>
+                            <div className="mt-3">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{t('couriers.limitConfig', 'Configuration Limit')}</label>
+                                <input
+                                    type="number"
+                                    value={settings.rateLimits?.requestsPerHour || 1500}
+                                    onChange={(e) => setSettings({ ...settings, rateLimits: { ...settings.rateLimits, requestsPerHour: Number(e.target.value) } })}
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm font-bold"
+                                />
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-3">
-                            <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min(((settings.currentUsage?.hourCount || 0) / (settings.rateLimits?.requestsPerHour || 1500)) * 100, 100)}%` }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+                            <div className={clsx("h-2 rounded-full", ((settings.currentUsage?.hourCount || 0) / (settings.rateLimits?.requestsPerHour || 1500)) > 0.8 ? "bg-rose-500" : "bg-indigo-500")} style={{ width: `${Math.min(((settings.currentUsage?.hourCount || 0) / (settings.rateLimits?.requestsPerHour || 1500)) * 100, 100)}%` }}></div>
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <p className="text-sm text-gray-500 font-medium">Daily Quota</p>
-                        <div className="mt-2 flex items-baseline">
-                            <span className="text-2xl font-bold text-gray-900">{settings.currentUsage?.dayCount || 0}</span>
-                            <span className="ml-1 text-sm text-gray-500">/ {settings.rateLimits?.requestsPerDay || 15000}</span>
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600 font-bold">{t('couriers.dailyQuota', 'Daily Quota')}</span>
+                                <span className="font-bold text-gray-900">{settings.currentUsage?.dayCount || 0} used</span>
+                            </div>
+                            <div className="mt-3">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{t('couriers.limitConfig', 'Configuration Limit')}</label>
+                                <input
+                                    type="number"
+                                    value={settings.rateLimits?.requestsPerDay || 15000}
+                                    onChange={(e) => setSettings({ ...settings, rateLimits: { ...settings.rateLimits, requestsPerDay: Number(e.target.value) } })}
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm font-bold"
+                                />
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-3">
-                            <div className="bg-indigo-600 h-1.5 rounded-full" style={{ width: `${Math.min(((settings.currentUsage?.dayCount || 0) / (settings.rateLimits?.requestsPerDay || 15000)) * 100, 100)}%` }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+                            <div className={clsx("h-2 rounded-full", ((settings.currentUsage?.dayCount || 0) / (settings.rateLimits?.requestsPerDay || 15000)) > 0.8 ? "bg-rose-500" : "bg-purple-500")} style={{ width: `${Math.min(((settings.currentUsage?.dayCount || 0) / (settings.rateLimits?.requestsPerDay || 15000)) * 100, 100)}%` }}></div>
                         </div>
                     </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-4">API usage counters automatically reset based on calendar time boundaries. Bypassing limits will result in temporary suspension by the provider.</p>
-            </div>
+                <p className="text-xs text-gray-500 font-medium mt-5 bg-blue-50/50 p-3 rounded-lg border border-blue-100">{t('couriers.resetInfo', 'API usage counters automatically reset based on calendar time boundaries. Bypassing limits will result in temporary suspension by the provider.')}</p>
+            </form>
         </div>
     );
 }

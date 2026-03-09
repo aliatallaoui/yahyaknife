@@ -19,7 +19,17 @@ export const AuthProvider = ({ children }) => {
 
                     if (response.ok) {
                         const userData = await response.json();
-                        setUser(userData);
+                        setUser({
+                            _id: userData._id,
+                            name: userData.name,
+                            email: userData.email,
+                            role: userData.role,
+                            roleObject: userData.roleObject,
+                            permissions: userData.permissions || [],
+                            permissionOverrides: userData.permissionOverrides || [],
+                            isActive: userData.isActive,
+                            preferences: userData.preferences || {}
+                        });
                     } else {
                         logout();
                     }
@@ -52,7 +62,9 @@ export const AuthProvider = ({ children }) => {
                 name: data.name,
                 email: data.email,
                 role: data.role,
+                roleObject: data.roleObject,
                 permissions: data.permissions || [],
+                permissionOverrides: data.permissionOverrides || [],
                 isActive: data.isActive,
                 preferences: data.preferences || {} // capture incoming preferences
             });
@@ -103,8 +115,21 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    /**
+     * Checks if the current user has the required permission.
+     * Super Admins always return true.
+     * @param {string} action - The permission key to check (e.g. 'financial.read')
+     * @returns {boolean}
+     */
+    const hasPermission = (action) => {
+        if (!user) return false;
+        if (user.role === 'Super Admin') return true;
+        if (user.roleObject && user.roleObject.name === 'Super Admin') return true;
+        return Array.isArray(user.permissions) && user.permissions.includes(action);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateContextPreferences }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateContextPreferences, hasPermission }}>
             {children}
         </AuthContext.Provider>
     );

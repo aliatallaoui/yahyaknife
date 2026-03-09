@@ -6,7 +6,7 @@ import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 
 export default function SettingsUsers() {
-    const { t, i18n } = useTranslation('settingsUsers');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsUsers' });
     const isAr = i18n.language === 'ar';
     const { token, user: currentUser } = useContext(AuthContext);
     const [users, setUsers] = useState([]);
@@ -24,35 +24,30 @@ export default function SettingsUsers() {
         isActive: true
     });
 
-    const rolesAvailable = [
-        'Super Admin',
-        'HR Manager',
-        'Finance Controller',
-        'Sales Representative',
-        'Warehouse Supervisor',
-        'Production Lead',
-        'user'
-    ];
+    const [rolesAvailable, setRolesAvailable] = useState([]);
 
-    const fetchUsers = async () => {
+    const fetchData = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setUsers(await res.json());
+            const [usersRes, rolesRes] = await Promise.all([
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/users`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/roles`, { headers: { Authorization: `Bearer ${token}` } })
+            ]);
+
+            if (usersRes.ok && rolesRes.ok) {
+                setUsers(await usersRes.json());
+                setRolesAvailable(await rolesRes.json());
             } else {
-                setError('Failed to load users. You may not have permission.');
+                setError('Failed to load users or roles. You may not have permission.');
             }
         } catch (err) {
-            setError('Network error loading users.');
+            setError('Network error loading data.');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (token) fetchUsers();
+        if (token) fetchData();
     }, [token]);
 
     const handleOpenEdit = (user) => {
@@ -61,7 +56,7 @@ export default function SettingsUsers() {
             name: user.name,
             email: user.email,
             password: '', // Hidden by default, only for new users or forced reset
-            role: user.role,
+            role: user.role?._id || user.role, // Handle populated role or string ID
             isActive: user.isActive
         });
         setIsModalOpen(true);
@@ -73,7 +68,7 @@ export default function SettingsUsers() {
             name: '',
             email: '',
             password: '',
-            role: 'user',
+            role: rolesAvailable.length > 0 ? rolesAvailable[0]._id : 'user',
             isActive: true
         });
         setIsModalOpen(true);
@@ -96,7 +91,7 @@ export default function SettingsUsers() {
                 });
 
                 if (res.ok) {
-                    fetchUsers();
+                    fetchData();
                     setIsModalOpen(false);
                 } else {
                     const errorData = await res.json();
@@ -116,7 +111,7 @@ export default function SettingsUsers() {
                 });
 
                 if (res.ok) {
-                    fetchUsers();
+                    fetchData();
                     setIsModalOpen(false);
                 } else {
                     const errorData = await res.json();
@@ -160,39 +155,42 @@ export default function SettingsUsers() {
 
     return (
         <div className="max-w-6xl mx-auto">
-            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <Users className="w-6 h-6 text-indigo-500 shrink-0" />
-                        {t('title')}
-                    </h1>
-                    <p className="text-gray-500 mt-2">{t('subtitle')}</p>
-                </div>
-                <button
-                    onClick={handleOpenCreate}
-                    className="flex w-full sm:w-auto justify-center items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                    <UserPlus className="w-5 h-5" />
-                    {t('invite')}
-                </button>
-            </div>
-
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                {/* Unified Table Header */}
+                <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                                <Users className="w-5 h-5 shrink-0" />
+                            </div>
+                            {t('title')}
+                        </h1>
+                        <p className="text-gray-500 text-sm mt-1.5">{t('subtitle')}</p>
+                    </div>
+                    <button
+                        onClick={handleOpenCreate}
+                        className="flex w-full sm:w-auto justify-center items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        {t('invite')}
+                    </button>
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
-                                <th className={clsx("p-4 font-semibold", isAr ? "pr-6 text-right" : "pl-6 text-left")}>{t('thColIdentity')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColRole')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColStatus')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-right" : "text-left")}>{t('thColDate')}</th>
-                                <th className={clsx("p-4 font-semibold", isAr ? "text-left pl-6" : "text-right pr-6")}>{t('thColManage')}</th>
+                                <th className="p-4 font-semibold text-start px-6">{t('thColIdentity')}</th>
+                                <th className="p-4 font-semibold text-start">{t('thColRole')}</th>
+                                <th className="p-4 font-semibold text-start">{t('thColStatus')}</th>
+                                <th className="p-4 font-semibold text-start">{t('thColDate')}</th>
+                                <th className="p-4 font-semibold text-end px-6">{t('thColManage')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-sm">
                             {users.map((userObj) => (
                                 <tr key={userObj._id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className={clsx("p-4", isAr ? "pr-6" : "pl-6")}>
+                                    <td className="p-4 px-6 text-start">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center font-bold text-indigo-700">
                                                 {userObj.name.charAt(0).toUpperCase()}
@@ -203,19 +201,18 @@ export default function SettingsUsers() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="p-4">
+                                    <td className="p-4 text-start">
                                         <span className={clsx(
                                             "inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border flex items-center gap-1 w-max",
-                                            userObj.role === 'Super Admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                userObj.role === 'Finance Controller' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                    userObj.role === 'HR Manager' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                            userObj.role?.name === 'Super Admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                userObj.role?.isSystemRole ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                    'bg-gray-50 text-gray-700 border-gray-200'
                                         )}>
-                                            {userObj.role === 'Super Admin' && <Key className="w-3 h-3" />}
-                                            {t(`role${userObj.role.replace(' ', '')}`)}
+                                            {userObj.role?.name === 'Super Admin' && <Key className="w-3 h-3" />}
+                                            {userObj.role?.name || t(`role${(userObj.role || 'user').replace(' ', '')}`)}
                                         </span>
                                     </td>
-                                    <td className="p-4">
+                                    <td className="p-4 text-start">
                                         {userObj.isActive ? (
                                             <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded-md w-max">
                                                 <CheckCircle className="w-4 h-4" /> {t('lblActive')}
@@ -226,11 +223,11 @@ export default function SettingsUsers() {
                                             </div>
                                         )}
                                     </td>
-                                    <td className="p-4 text-gray-500 font-medium">
+                                    <td className="p-4 text-gray-500 font-medium text-start">
                                         {moment(userObj.createdAt).format('MMM DD, YYYY')}
                                     </td>
-                                    <td className={clsx("p-4", isAr ? "text-left pl-6" : "text-right pr-6")}>
-                                        <div className={clsx("flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity", isAr ? "justify-start" : "justify-end")}>
+                                    <td className="p-4 px-6 text-end">
+                                        <div className="flex items-center gap-2 justify-end">
                                             <button
                                                 onClick={() => handleOpenEdit(userObj)}
                                                 className="p-2 bg-gray-50 text-gray-600 rounded-lg border border-gray-200 hover:bg-white hover:text-indigo-600 hover:border-indigo-200 transition-all font-medium text-xs flex items-center gap-1"
@@ -319,7 +316,7 @@ export default function SettingsUsers() {
                                     className="w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none rounded-xl px-4 py-2.5 font-medium transition-all text-gray-700"
                                 >
                                     {rolesAvailable.map(r => (
-                                        <option key={r} value={r}>{t(`role${r.replace(' ', '')}`)}</option>
+                                        <option key={r._id} value={r._id}>{r.name}</option>
                                     ))}
                                 </select>
                             </div>

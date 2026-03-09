@@ -22,7 +22,8 @@ const HEALTH_COLORS = {
 };
 
 export default function ProjectStatus() {
-    const { t, i18n } = useTranslation('projects');
+    const { t: rootT, i18n } = useTranslation();
+    const t = (key, defaultStr) => rootT(`projects.${key}`, defaultStr);
     const isAr = i18n.language === 'ar';
     const { projects, analytics, loading, createProject } = useContext(ProjectContext);
     const [searchTerm, setSearchTerm] = useState('');

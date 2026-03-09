@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import RequireAction from '../components/Guards/RequireAction';
 import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
@@ -142,13 +143,15 @@ export default function DispatchCenter() {
                             <FileText className="w-4 h-4 mr-2" />
                             {t('dispatch.exportList', 'Export List')}
                         </button>
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="flex-1 md:flex-none inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-blue-500/20 transition-all active:scale-95"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t('dispatch.createShipment', 'New Shipment')}
-                        </button>
+                        <RequireAction permission="dispatch.create_shipment">
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 bg-blue-600 outline-none text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
+                            >
+                                <Plus className="w-5 h-5 font-black" />
+                                {t('dispatch.createShipment', 'New Shipment')}
+                            </button>
+                        </RequireAction>
                     </div>
                 }
             />

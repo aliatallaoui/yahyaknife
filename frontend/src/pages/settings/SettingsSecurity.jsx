@@ -5,7 +5,7 @@ import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 
 export default function SettingsSecurity() {
-    const { t, i18n } = useTranslation('settingsSecurity');
+    const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsSecurity' });
     const isAr = i18n.language === 'ar';
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 

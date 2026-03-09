@@ -4,18 +4,18 @@ const inventoryController = require('../controllers/inventoryController');
 const purchaseOrderController = require('../controllers/purchaseOrderController');
 const stockController = require('../controllers/stockController');
 const analyticsController = require('../controllers/analyticsController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 
 router.use(protect); // Protect all inventory routes
 
 // /api/inventory/products
 router.route('/products')
-    .get(inventoryController.getProducts)
-    .post(inventoryController.createProduct);
+    .get(requirePermission('inventory.read'), inventoryController.getProducts)
+    .post(requirePermission('inventory.create_product'), inventoryController.createProduct);
 
 router.route('/products/:id')
-    .put(inventoryController.updateProduct)
-    .delete(inventoryController.deleteProduct);
+    .put(requirePermission('inventory.update_product'), inventoryController.updateProduct)
+    .delete(requirePermission('inventory.export'), inventoryController.deleteProduct);
 
 // /api/inventory/metrics
 router.get('/metrics', inventoryController.getInventoryMetrics);

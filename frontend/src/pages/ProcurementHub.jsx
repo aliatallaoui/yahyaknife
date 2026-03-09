@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download } from 'lucide-react';
+import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
+import NewPOModal from '../components/NewPOModal';
+import NewSupplierModal from '../components/NewSupplierModal';
 
 export default function ProcurementHub() {
     const { t } = useTranslation();
@@ -12,6 +14,8 @@ export default function ProcurementHub() {
     const [suppliers, setSuppliers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isPOModalOpen, setIsPOModalOpen] = useState(false);
+    const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -69,10 +73,16 @@ export default function ProcurementHub() {
                                 className="ps-9 pe-4 py-2 bg-white border border-purple-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
                             />
                         </div>
-                        <button className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
-                            <Plus className="w-5 h-5" /> {t('procurement.newPo')}
+                        <button
+                            onClick={() => setIsPOModalOpen(true)}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none"
+                        >
+                            <Plus className="w-5 h-5" /> {t('procurement.newPo', 'New Purchase Order')}
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
+                        <button
+                            onClick={() => setIsSupplierModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none"
+                        >
                             <Users className="w-4 h-4" /> {t('procurement.addSupplier')}
                         </button>
                     </div>
@@ -266,6 +276,24 @@ export default function ProcurementHub() {
                     </div>
                 )}
             </div>
+
+            <NewPOModal
+                isOpen={isPOModalOpen}
+                onClose={() => setIsPOModalOpen(false)}
+                suppliers={suppliers}
+                onSuccess={() => {
+                    fetchData();
+                    setIsPOModalOpen(false);
+                }}
+            />
+            <NewSupplierModal
+                isOpen={isSupplierModalOpen}
+                onClose={() => setIsSupplierModalOpen(false)}
+                onSuccess={() => {
+                    fetchData();
+                    setIsSupplierModalOpen(false);
+                }}
+            />
         </div>
     );
 }

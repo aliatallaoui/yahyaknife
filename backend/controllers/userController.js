@@ -1,11 +1,12 @@
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private/SuperAdmin
 const getUsers = async (req, res) => {
     try {
-        const users = await User.find({}).select('-password');
+        const users = await User.find({}).select('-password').populate('role');
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server Error fetching users' });
@@ -17,7 +18,7 @@ const getUsers = async (req, res) => {
 // @access  Private/SuperAdmin
 const updateUserAccess = async (req, res) => {
     try {
-        const { role, isActive, permissions } = req.body;
+        const { role, isActive, permissionOverrides } = req.body;
 
         // Prevent modifying oneself
         if (req.user._id.toString() === req.params.id) {
@@ -27,18 +28,32 @@ const updateUserAccess = async (req, res) => {
         const user = await User.findById(req.params.id);
 
         if (user) {
-            user.role = role || user.role;
+            if (role !== undefined) user.role = role;
             if (isActive !== undefined) user.isActive = isActive;
-            if (permissions) user.permissions = permissions;
+            if (permissionOverrides !== undefined) user.permissionOverrides = permissionOverrides;
 
             const updatedUser = await user.save();
+            await updatedUser.populate('role');
+
+            // Log this security change
+            await AuditLog.create({
+                actor: req.user._id,
+                targetUser: updatedUser._id,
+                action: 'UPDATE_ACCESS',
+                module: 'users',
+                metadata: {
+                    newRole: role,
+                    isActive: isActive
+                }
+            });
+
             res.json({
                 _id: updatedUser._id,
                 name: updatedUser.name,
                 email: updatedUser.email,
                 role: updatedUser.role,
                 isActive: updatedUser.isActive,
-                permissions: updatedUser.permissions
+                permissionOverrides: updatedUser.permissionOverrides
             });
         } else {
             res.status(404).json({ message: 'User not found' });
@@ -62,6 +77,16 @@ const deleteUser = async (req, res) => {
 
         if (user) {
             await user.deleteOne();
+
+            // Log the deletion
+            await AuditLog.create({
+                actor: req.user._id,
+                targetUser: req.params.id,
+                action: 'DELETE_USER',
+                module: 'users',
+                metadata: { email: user.email }
+            });
+
             res.json({ message: 'User removed' });
         } else {
             res.status(404).json({ message: 'User not found' });

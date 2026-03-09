@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
     Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Briefcase, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
-    Star, Clock, ChevronDown, X, Layers, UserCircle
+    Star, Clock, ChevronDown, X, Layers, UserCircle, Hammer
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -218,7 +218,7 @@ function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onCl
 
 export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpen }) {
     const location = useLocation();
-    const { user, logout } = useContext(AuthContext);
+    const { user, logout, hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
@@ -238,10 +238,10 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         });
     };
 
-    const hasAccess = (allowedRoles) => {
+    const hasAnyPermission = (permissionsArr) => {
         if (!user) return false;
-        if (user.role === 'Super Admin' || allowedRoles.includes('*')) return true;
-        return allowedRoles.includes(user.role);
+        if (!permissionsArr || permissionsArr.length === 0) return true;
+        return permissionsArr.some(p => hasPermission(p));
     };
 
     const isCollapsed = !open && !mobileOpen;
@@ -250,83 +250,93 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         {
             title: t('sidebar.dashboard_domain', 'Dashboard'),
             icon: LayoutDashboard,
-            roles: ['*'],
+            permissions: ['overview.read'],
             items: [
-                { label: t('sidebar.dashboard', 'Overview'), path: '/', icon: LayoutDashboard }
+                { label: t('sidebar.dashboard', 'Overview'), path: '/', icon: LayoutDashboard, permission: 'overview.read' }
             ]
         },
         {
             title: t('sidebar.sales_logistics_domain', 'Sales & Logistics'),
             icon: ShoppingBag,
-            roles: ['*'],
+            permissions: ['sales.read', 'dispatch.read'],
             items: [
-                { label: t('sidebar.sales', 'Sales Orders'), path: '/sales', icon: ShoppingCart },
-                { label: t('sidebar.logistics_dispatch', 'Delivery Tracking'), path: '/couriers/dispatch', icon: Truck },
-                { label: t('sidebar.logistics_analytics', 'Shipping & Couriers'), path: '/couriers', icon: Truck }
+                { label: t('sidebar.sales', 'Sales Orders'), path: '/sales', icon: ShoppingCart, permission: 'sales.read' },
+                { label: t('sidebar.logistics_dispatch', 'Delivery Tracking'), path: '/couriers/dispatch', icon: Truck, permission: 'dispatch.read' },
+                { label: t('sidebar.logistics_analytics', 'Shipping & Couriers'), path: '/couriers', icon: Truck, permission: 'dispatch.read' }
             ]
         },
         {
             title: t('sidebar.hr_domain', 'Human Resources'),
             icon: UserCircle,
-            roles: ['*'],
+            permissions: ['hr.read', 'hr.manage_attendance', 'hr.manage_payroll', 'hr.view_reports'],
             items: [
-                { label: t('sidebar.hr_directory', 'Employees'), path: '/hr', icon: Users },
-                { label: t('sidebar.hr_attendance', 'Attendance'), path: '/hr/attendance', icon: Clock },
-                { label: t('sidebar.hr_payroll', 'Payroll'), path: '/hr/payroll', icon: Wallet },
-                { label: t('sidebar.hr_reports', 'HR Reports'), path: '/hr/reports', icon: Search }
+                { label: t('sidebar.hr_directory', 'Employees'), path: '/hr', icon: Users, permission: 'hr.read' },
+                { label: t('sidebar.hr_attendance', 'Attendance'), path: '/hr/attendance', icon: Clock, permission: 'hr.manage_attendance' },
+                { label: t('sidebar.hr_payroll', 'Payroll'), path: '/hr/payroll', icon: Wallet, permission: 'hr.manage_payroll' },
+                { label: t('sidebar.hr_reports', 'HR Reports'), path: '/hr/reports', icon: Search, permission: 'hr.view_reports' }
             ]
         },
         {
             title: t('sidebar.finance_domain', 'Finance'),
             icon: Wallet,
-            roles: ['*'],
+            permissions: ['financial.read'],
             items: [
-                { label: t('sidebar.financial', 'Financial Tracker'), path: '/financial', icon: Wallet }
+                { label: t('sidebar.financial', 'Financial Tracker'), path: '/financial', icon: Wallet, permission: 'financial.read' }
             ]
         },
         {
             title: t('sidebar.inventory_domain', 'Inventory'),
             icon: Box,
-            roles: ['*'],
+            permissions: ['inventory.read', 'warehouse.read', 'procurement.read'],
             items: [
-                { label: t('sidebar.inventory', 'Inventory Tracking'), path: '/inventory', icon: Box },
-                { label: t('sidebar.warehousing', 'Warehouse Control'), path: '/warehouses', icon: Factory }
+                { label: t('sidebar.inventory', 'Inventory Tracking'), path: '/inventory', icon: Box, permission: 'inventory.read' },
+                { label: t('sidebar.warehousing', 'Warehouse Control'), path: '/warehouses', icon: Factory, permission: 'warehouse.read' },
+                { label: t('sidebar.procurement', 'Purchase Center'), path: '/procurement', icon: ShoppingCart, permission: 'procurement.read' }
             ]
         },
         {
             title: t('sidebar.production_purchasing_domain', 'Production & Purchasing'),
             icon: Factory,
-            roles: ['*'],
+            permissions: ['manufacturing.read'],
             items: [
-                { label: t('sidebar.mfg_production', 'Production Floor'), path: '/production', icon: Factory },
-                { label: t('sidebar.procurement', 'Purchase Center'), path: '/procurement', icon: ShoppingCart },
-                { label: t('knives.cards', 'Work Orders'), path: '/knives', icon: Layers },
-                { label: t('knives.library', 'BOM / Library'), path: '/knives/library', icon: Search },
-                { label: t('knives.production', 'Manufacturing Status'), path: '/knives/production', icon: Layers },
-                { label: t('sidebar.production_tools', 'Tool Management'), path: '/production/tools', icon: Gear }
+                { label: t('knives.builder', 'Custom Knife Builder'), path: '/knife-builder', icon: Hammer, permission: 'manufacturing.read' },
+                { label: t('sidebar.mfg_production', 'Production Floor'), path: '/production', icon: Factory, permission: 'manufacturing.read' },
+                { label: t('knives.cards', 'Work Orders'), path: '/knives', icon: Layers, permission: 'manufacturing.read' },
+                { label: t('knives.library', 'BOM / Library'), path: '/knives/library', icon: Search, permission: 'manufacturing.read' },
+                { label: t('knives.production', 'Manufacturing Status'), path: '/knives/production', icon: Layers, permission: 'manufacturing.read' },
+                { label: t('sidebar.production_tools', 'Tool Management'), path: '/production/tools', icon: Gear, permission: 'manufacturing.read' }
             ]
         },
         {
             title: t('sidebar.customers_domain', 'Customers'),
             icon: Users,
-            roles: ['*'],
+            permissions: ['customer.read'],
             items: [
-                { label: t('sidebar.crm_acquisition', 'Customer Insights'), path: '/customers', icon: Users },
-                { label: t('sidebar.crm_support', 'Returns & Complaints'), path: '/support', icon: HelpCircle }
+                { label: t('sidebar.crm_acquisition', 'Customer Insights'), path: '/customers', icon: Users, permission: 'customer.read' },
+                { label: t('sidebar.crm_support', 'Returns & Complaints'), path: '/support', icon: HelpCircle, permission: 'customer.read' }
             ]
         },
         {
             title: t('sidebar.projects_domain', 'Projects'),
             icon: Briefcase,
-            roles: ['*'],
+            permissions: ['projects.read'],
             items: [
-                { label: t('sidebar.projects_portfolio', 'Project Status'), path: '/projects', icon: Briefcase },
-                { label: t('sidebar.projects_tasks', 'Active Projects'), path: '/projects/tasks', icon: Layers }
+                { label: t('sidebar.projects_portfolio', 'Project Status'), path: '/projects', icon: Briefcase, permission: 'projects.read' },
+                { label: t('sidebar.projects_tasks', 'Active Projects'), path: '/projects/tasks', icon: Layers, permission: 'projects.read' }
             ]
         }
     ], [t]);
 
-    const accessibleDomains = useMemo(() => DOMAINS.filter(d => hasAccess(d.roles)), [DOMAINS, user]);
+    // Filter domains & their internal children securely
+    const accessibleDomains = useMemo(() => {
+        return DOMAINS
+            .filter(d => hasAnyPermission(d.permissions))
+            .map(domain => ({
+                ...domain,
+                items: domain.items.filter(item => hasPermission(item.permission))
+            }))
+            .filter(domain => domain.items.length > 0);
+    }, [DOMAINS, user, hasPermission]);
 
     // Initialize Favorites
     useEffect(() => {
@@ -409,25 +419,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     )}
                 </div>
 
-                {/* Search Form (Hidden if collapsed) */}
-                {!isCollapsed && (
-                    <div className="px-4 py-4 shrink-0">
-                        <div className="relative group">
-                            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder={t('sidebar.searchMenu', 'Search...')}
-                                className="w-full bg-white border border-gray-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50/50 outline-none rounded-lg py-2 ps-9 pe-10 text-[13px] font-medium text-gray-800 placeholder:text-gray-400 transition-all shadow-sm"
-                            />
-                            <div className="absolute end-2 top-1/2 -translate-y-1/2 hidden group-focus-within:hidden sm:flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 border border-gray-200 rounded text-[10px] font-bold text-gray-400">
-                                <span className="text-[9px]">CTRL</span>
-                                <span>K</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
 
                 {/* Scrollable Nav Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar pb-6 pt-2">
@@ -498,13 +490,19 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
 
                 </div>
 
-
-                {/* Visual Spacer for UI Refinement */}
-                <div className="mt-2" />
-
-
                 {/* Footer / System Controls */}
                 <div className="mt-auto px-2 pb-4 pt-2 border-t border-gray-200/80 bg-white flex flex-col shrink-0">
+                    <SidebarItem
+                        icon={Gear}
+                        label={t('sidebar.settings_nav', 'Settings')}
+                        path="/settings"
+                        isCollapsed={isCollapsed}
+                        onClick={handleLinkClick}
+                    />
+
+                    {/* Visual Spacer */}
+                    <div className="my-1 border-t border-gray-100/50" />
+
                     {/* Collapse Toggle (Desktop only) */}
                     {setOpen && (
                         <button
