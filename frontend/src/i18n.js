@@ -796,13 +796,23 @@ const resources = {
                 priorityUrgent: "Urgent"
             },
             settingsTab: {
-                title: "Account Settings",
-                subtitle: "Manage your personal profile, security, and preferences.",
-                tabProfile: "Profile",
+                title: "System Settings",
+                subtitle: "Manage your preferences, security, and global cortex parameters.",
+                tabProfile: "My Profile",
                 tabGeneral: "General",
-                tabSecurity: "Security & Logins",
-                tabAlerts: "Alerts & Preferences",
-                tabUsers: "User Management"
+                tabSecurity: "Security",
+                tabAlerts: "Alerts",
+                tabCouriers: "Courier Integration",
+                tabUsers: "Users & Roles"
+            },
+            courier: {
+                title: "Courier Integration Settings",
+                settingsSaved: "Settings saved and connection tested successfully.",
+                settingsError: "Failed to save settings.",
+                statusValid: "Connected & Valid",
+                statusInvalid: "Invalid Token",
+                statusNotAllowed: "IP/Account Restricted",
+                statusUnreachable: "Unreachable"
             },
             settingsGeneral: {
                 title: "General Settings",
@@ -2406,28 +2416,38 @@ const resources = {
                 priorityUrgent: "عاجل"
             },
             settingsTab: {
-                title: "إعدادات الحساب",
-                subtitle: "إدارة تفاصيلك الشخصية، الأمان، والتفضيلات.",
-                tabProfile: "الملف الشخصي",
+                title: "إعدادات النظام",
+                subtitle: "إدارة تفضيلاتك، الأمان، ومعلمات النظام العالمية.",
+                tabProfile: "ملفي الشخصي",
                 tabGeneral: "عام",
-                tabSecurity: "الأمان والدخول",
-                tabAlerts: "التنبيهات والتفضيلات",
-                tabUsers: "إدارة المستخدمين"
+                tabSecurity: "الأمان",
+                tabAlerts: "التنبيهات",
+                tabCouriers: "تكامل التوصيل",
+                tabUsers: "المستخدمين والأدوار"
+            },
+            courier: {
+                title: "إعدادات تكامل التوصيل",
+                settingsSaved: "تم حفظ الإعدادات واختبار الاتصال بنجاح.",
+                settingsError: "فشل حفظ الإعدادات.",
+                statusValid: "متصل وصالح",
+                statusInvalid: "رمز غير صالح",
+                statusNotAllowed: "تم تقييد الـ IP أو الحساب",
+                statusUnreachable: "غير قابل للوصول"
             },
             settingsGeneral: {
-                title: "الإعدادات العامة",
-                localization: "التوطين واللغة",
-                language: "اللغة",
-                langDesc: "يغير ترجمات التسميات الداخلية.",
-                timezone: "المنطقة الزمنية",
-                tzDesc: "تؤثر على الطوابع الزمنية للطلبات وسجلات الإرسال.",
-                dateFormat: "صيغة التاريخ",
-                currency: "عرض العملة",
-                appearance: "المظهر",
-                themePref: "تفضيل السمة",
-                themeSystem: "النظام",
-                themeLight: "فاتح",
-                themeDark: "داكن",
+                title: "التفضيلات العامة",
+                localization: "التوطين والوقت",
+                language: "لغة المنصة",
+                langDesc: "يتحكم في لغة واجهة المستخدم واتجاه الواجهة (RTL/LTR).",
+                timezone: "المنطقة الزمنية التشغيلية",
+                tzDesc: "يؤثر على جميع الطوابع الزمنية والسجلات وحدود التقارير.",
+                dateFormat: "تنسيق التاريخ",
+                currency: "العملة الأساسية",
+                appearance: "مظهر الواجهة",
+                themePref: "تفضيل المظهر",
+                themeSystem: "مزامنة النظام",
+                themeLight: "الوضع المضيء",
+                themeDark: "الوضع المظلم",
                 saved: "تم حفظ التفضيلات",
                 saving: "جاري الحفظ...",
                 save: "حفظ التفضيلات"

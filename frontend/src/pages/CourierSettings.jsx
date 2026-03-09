@@ -27,7 +27,8 @@ export default function CourierSettings() {
             const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/courier-settings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setSettings(res.data);
+            // Ensure we merge defaults if backend returns partial data
+            setSettings(prev => ({ ...prev, ...res.data }));
             setLoading(false);
         } catch (error) {
             console.error('Error fetching courier settings:', error);
@@ -42,16 +43,18 @@ export default function CourierSettings() {
         try {
             const token = localStorage.getItem('token');
             const res = await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/courier-settings`, {
-                apiUrl: settings.apiUrl,
-                apiToken: settings.apiToken
+                apiUrl: settings.apiUrl.trim(),
+                apiToken: settings.apiToken.trim()
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSettings(res.data);
-            setMessage(t('courier.settingsSaved', 'Settings saved and connection tested successfully.'));
+            setMessage(t('courier.settingsSaved'));
+            // Refresh to ensure everything is in sync
+            setTimeout(() => setMessage(''), 5000);
         } catch (error) {
             console.error('Error saving courier settings:', error);
-            setMessage(error.response?.data?.message || t('courier.settingsError', 'Failed to save settings.'));
+            setMessage(error.response?.data?.message || t('courier.settingsError'));
         } finally {
             setSaving(false);
         }

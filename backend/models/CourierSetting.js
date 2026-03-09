@@ -14,7 +14,7 @@ const courierSettingSchema = new mongoose.Schema({
     },
     apiToken: {
         type: String,
-        required: true
+        default: ''
     },
     connectionStatus: {
         type: String,
