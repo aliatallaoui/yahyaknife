@@ -13,6 +13,18 @@ const orderSchema = new mongoose.Schema({
         unitPrice: { type: Number, required: true }
     }],
     totalAmount: { type: Number, required: true },
+    wilaya: {
+        type: String,
+        required: true
+    },
+    commune: {
+        type: String,
+        required: true
+    },
+    assignedAgent: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     channel: {
         type: String,
         required: true,

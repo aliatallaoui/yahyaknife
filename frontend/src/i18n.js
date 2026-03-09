@@ -198,6 +198,9 @@ const resources = {
                 confirmLogout: "Are you sure you want to sign out?",
                 dashboard_domain: "Dashboard",
                 sales_logistics_domain: "Sales & Logistics",
+                callcenter_domain: "Call Center Hub",
+                callcenter_agent: "Agent Workspace",
+                callcenter_manager: "Manager Analytics",
                 finance_domain: "Finance",
                 inventory_domain: "Inventory",
                 production_purchasing_domain: "Production & Purchasing",
@@ -228,6 +231,101 @@ const resources = {
                     cards: "Work Orders",
                     library: "BOM / Library",
                     production: "Manufacturing Status"
+                }
+            },
+            analytics: {
+                title: "Ecommerce Analytics",
+                subtitle: "Real-time performance and COD logistics oversight.",
+                date_today: "TODAY",
+                date_yesterday: "YESTERDAY",
+                date_7d: "7D",
+                date_30d: "30D",
+                refresh: "Refresh Data",
+                export: "Export",
+                kpi: {
+                    revenue: "Total Revenue",
+                    orders: "Total Orders",
+                    aov: "Avg Order Value",
+                    profit: "Net Profit",
+                    margin: "Profit Margin"
+                },
+                charts: {
+                    revenue_trend: "Revenue Trend",
+                    revenue_subtitle: "Daily revenue over the selected period",
+                    orders_trend: "Orders Volume",
+                    orders_subtitle: "Daily order count",
+                    funnel: "Order Funnel",
+                    categories: "Sales by Category",
+                    couriers: "Courier Performance",
+                    stock_health: "Global Stock Health"
+                },
+                tables: {
+                    top_products: "Top Selling Products",
+                    top_customers: "Top Customers (LTV)"
+                },
+                table: {
+                    courier: "Courier",
+                    orders: "Orders",
+                    delivered: "Delivered",
+                    returned: "Returned",
+                    success_rate: "Success Rate",
+                    product: "Product",
+                    units: "Units",
+                    revenue: "Revenue",
+                    conv: "Conv. Rate",
+                    customer: "Customer",
+                    aov: "AOV"
+                }
+            },
+            callcenter: {
+                agent_dashboard: "Agent Workspace",
+                agent_subtitle: "Manage your assigned orders and call logs.",
+                manager_title: "Call Center Hub",
+                manager_subtitle: "Monitor agent performance and workload.",
+                kpi: {
+                    awaiting: "Awaiting Action",
+                    confirmed_today: "Confirmed Today",
+                    calls_today: "Calls Made",
+                    commission: "Est. Commission",
+                    global_calls: "Global Calls",
+                    avg_confirm: "Avg Confirm Rate",
+                    avg_delivery: "Avg Delivery Rate",
+                    total_commissions: "Total Commissions"
+                },
+                queue: {
+                    title: "Active Queue",
+                    order: "Order #",
+                    customer: "Customer",
+                    location: "Location",
+                    amount: "Amount",
+                    time: "Time Wait",
+                    action: "Action",
+                    empty: "Inbox zero! You have processed all assigned orders."
+                },
+                action: {
+                    call: "Call",
+                    confirm: "Confirm",
+                    cancel: "Cancel",
+                    no_answer: "No Answer",
+                    edit_address: "Edit Address",
+                    auto_assign: "Auto-Assign Orders"
+                },
+                drawer: {
+                    title: "Process Order",
+                    items: "Order Items",
+                    total: "Total COD",
+                    edit_address: "Update Delivery Info",
+                    call_note: "Interaction Note (Optional)",
+                    note_placeholder: "Type note here..."
+                },
+                leaderboard: {
+                    title: "Agent Performance",
+                    agent: "Agent",
+                    assigned: "Assigned",
+                    calls: "Calls",
+                    confirmed: "Confirm Rate",
+                    delivered: "Delivered",
+                    commission: "Commission"
                 }
             },
             header: {
@@ -2013,6 +2111,9 @@ const resources = {
                 confirmLogout: "هل أنت متأكد من تسجيل الخروج؟",
                 dashboard_domain: "نظرة عامة",
                 sales_logistics_domain: "المبيعات واللوجستيك",
+                callcenter_domain: "مركز الاتصال",
+                callcenter_agent: "لوحة تحكم الوكيل",
+                callcenter_manager: "تحليلات الأداء",
                 finance_domain: "المالية",
                 inventory_domain: "المخزون والمشتريات",
                 production_purchasing_domain: "الإنتاج",
@@ -2041,8 +2142,103 @@ const resources = {
                 projects: "المشاريع",
                 knives: {
                     cards: "أوامر العمل",
-                    library: "قائمة المواد (BOM)",
-                    production: "حالة التصنيع"
+                    library: "مكتبة النماذج",
+                    production: "طابق الإنتاج"
+                }
+            },
+            analytics: {
+                title: "نظرة عامة على المنصة",
+                subtitle: "المقاييس الرئيسية لأداء الأعمال",
+                date_today: "اليوم",
+                date_yesterday: "الأمس",
+                date_7d: "آخر 7 أيام",
+                date_30d: "آخر 30 يوم",
+                refresh: "تحديث البيانات",
+                export: "تصدير",
+                kpi: {
+                    revenue: "إجمالي المبيعات",
+                    orders: "إجمالي الطلبات",
+                    aov: "متوسط قيمة الطلب",
+                    profit: "صافي الأرباح",
+                    margin: "هامش الربح"
+                },
+                charts: {
+                    revenue_trend: "مسار المبيعات",
+                    revenue_subtitle: "المبيعات اليومية خلال الفترة المحددة",
+                    orders_trend: "حجم الطلبات",
+                    orders_subtitle: "عدد الطلبات اليومي",
+                    funnel: "دورة حياة الطلب",
+                    categories: "المبيعات حسب الفئة",
+                    couriers: "أداء شركات التوصيل",
+                    stock_health: "حالة المخزون"
+                },
+                tables: {
+                    top_products: "أفضل المنتجات مبيعاً",
+                    top_customers: "أفضل العملاء (القيمة الدائمة)"
+                },
+                table: {
+                    courier: "الشركة",
+                    orders: "الطلبات",
+                    delivered: "مُسلمة",
+                    returned: "مُرتجعة",
+                    success_rate: "نسبة النجاح",
+                    product: "المنتج",
+                    units: "الوحدات",
+                    revenue: "الإيرادات",
+                    conv: "نسبة التحويل",
+                    customer: "العميل",
+                    aov: "متوسط الطلب"
+                }
+            },
+            callcenter: {
+                agent_dashboard: "لوحة تحكم الوكيل",
+                agent_subtitle: "إدارة طلباتك وتأكيد عمليات الشراء.",
+                manager_title: "مركز الاتصالات الأداء",
+                manager_subtitle: "متابعة أداء الموظفين وتوزيع المهام.",
+                kpi: {
+                    awaiting: "قيد الانتظار",
+                    confirmed_today: "مؤكدة اليوم",
+                    calls_today: "مكالمات اليوم",
+                    commission: "عمولة مقدرة",
+                    global_calls: "المكالمات الكلية",
+                    avg_confirm: "متوسط التأكيد",
+                    avg_delivery: "متوسط التوصيل",
+                    total_commissions: "إجمالي العمولات"
+                },
+                queue: {
+                    title: "الطلبات الحالية",
+                    order: "رقم الطلب",
+                    customer: "العميل",
+                    location: "المنطقة",
+                    amount: "المبلغ",
+                    time: "الانتظار",
+                    action: "إجراء",
+                    empty: "لا توجد طلبات. لقد أنهيت عملك!"
+                },
+                action: {
+                    call: "معالجة",
+                    confirm: "تأكيد",
+                    cancel: "إلغاء",
+                    no_answer: "لا يرد",
+                    edit_address: "تعديل العنوان",
+                    auto_assign: "توزيع تلقائي للطلبات"
+                },
+                drawer: {
+                    title: "معالجة الطلب",
+                    items: "محتويات الطلب",
+                    total: "المجموع COD",
+                    edit_address: "تحديث معلومات التوصيل",
+                    call_note: "ملاحظة الاتصال (اختياري)",
+                    note_placeholder: "اكتب ملاحظتك هنا..."
+                },
+                leaderboard: {
+                    title: "أداء موظفي الاتصال",
+                    agent: "الموظف",
+                    assigned: "مسندة",
+                    calls: "مكالمات",
+                    confirmed: "نسبة التأكيد",
+                    delivered: "مُسلمة",
+                    commission: "عمولة"
                 }
             },
             header: {

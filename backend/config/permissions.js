@@ -51,6 +51,9 @@ const PERMISSIONS = {
     settings: [
         'settings.read', 'settings.manage_profile', 'settings.manage_company',
         'settings.manage_integrations', 'settings.manage_courier_api', 'settings.manage_billing'
+    ],
+    callcenter: [
+        'callcenter.process_orders', 'callcenter.view_reports', 'callcenter.manage_assignments'
     ]
 };
 

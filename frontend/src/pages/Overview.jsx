@@ -1,45 +1,29 @@
 import { useEffect, useState } from 'react';
-import DashboardGrid from '../components/DashboardGrid';
+import EcommerceAnalytics from './EcommerceAnalytics';
 import PageHeader from '../components/PageHeader';
 import { useTranslation } from 'react-i18next';
 
 export default function Overview() {
     const { t } = useTranslation();
-    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Simulate initial mount loading to match previous behavior
     useEffect(() => {
-        // Fetch dashboard data
-        const fetchData = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/dashboard/metrics`);
-                const json = await response.json();
-                setData(json);
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+        const timer = setTimeout(() => setLoading(false), 500);
+        return () => clearTimeout(timer);
     }, []);
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin"></div>
+            <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col gap-8">
-            <PageHeader
-                title={t('dashboard.title', 'Operations Overview')}
-                subtitle={t('dashboard.subtitle', 'Real-time monitoring of sales, inventory, and workshop performance.')}
-                variant="finance"
-            />
-            <DashboardGrid data={data} />
+        <div className="animate-in fade-in duration-500">
+            <EcommerceAnalytics />
         </div>
     );
 }

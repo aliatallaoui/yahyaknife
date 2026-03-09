@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
     Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Briefcase, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
-    Star, Clock, ChevronDown, X, Layers, UserCircle, Hammer
+    Star, Clock, ChevronDown, X, Layers, UserCircle, Hammer, PhoneCall, Headset
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -263,6 +263,15 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 { label: t('sidebar.sales', 'Sales Orders'), path: '/sales', icon: ShoppingCart, permission: 'sales.read' },
                 { label: t('sidebar.logistics_dispatch', 'Delivery Tracking'), path: '/couriers/dispatch', icon: Truck, permission: 'dispatch.read' },
                 { label: t('sidebar.logistics_analytics', 'Shipping & Couriers'), path: '/couriers', icon: Truck, permission: 'dispatch.read' }
+            ]
+        },
+        {
+            title: t('sidebar.callcenter_domain', 'Call Center Hub'),
+            icon: Headset,
+            permissions: ['callcenter.process_orders', 'callcenter.view_reports', 'overview.read'],
+            items: [
+                { label: t('sidebar.callcenter_agent', 'Agent Workspace'), path: '/call-center', icon: PhoneCall, permission: 'overview.read' },
+                { label: t('sidebar.callcenter_manager', 'Manager Analytics'), path: '/call-center/manager', icon: LayoutDashboard, permission: 'overview.read' }
             ]
         },
         {

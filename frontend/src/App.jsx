@@ -35,6 +35,8 @@ import SettingsUsers from './pages/settings/SettingsUsers';
 import SettingsRoles from './pages/settings/SettingsRoles'; // <== Added Roles import
 import CourierSettings from './pages/CourierSettings';
 import SupportDesk from './pages/SupportDesk';
+import CallCenterDashboard from './pages/callcenter/CallCenterDashboard';
+import CallCenterManager from './pages/callcenter/CallCenterManager';
 import CopilotWidget from './components/CopilotWidget';
 
 import Login from './pages/Login';
@@ -132,6 +134,10 @@ const Layout = () => {
               <Route path="/procurement" element={<ProcurementHub />} />
               <Route path="/support" element={<SupportDesk />} />
               <Route path="/production/tools" element={<ToolManagement />} />
+
+              {/* Call Center Routes */}
+              <Route path="/call-center" element={<CallCenterDashboard />} />
+              <Route path="/call-center/manager" element={<CallCenterManager />} />
 
               {/* Settings Hub Nested Routing */}
               <Route path="/settings" element={<SettingsLayout />}>
