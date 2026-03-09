@@ -281,7 +281,7 @@ export default function Financial() {
                             onClick={() => handleOpenModal()}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
                         >
-                            <Plus className="w-4 h-4" /> Add
+                            <Plus className="w-4 h-4" /> {t('common.add', 'Add')}
                         </button>
                     </div>
                 </div>

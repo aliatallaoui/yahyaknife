@@ -1535,6 +1535,60 @@ const resources = {
             addKnife: "New Knife",
             unknownSteel: "? Steel",
             dropHere: "Drop here"
+        },
+        financial: {
+            title: "Financial Hub",
+            subtitle: "Real-time COD revenue tracking and global P&L",
+            addManual: "Add Manual Transaction",
+            trueNetProfit: "True Net Profit",
+            netProfitSub: "Revenue (Delivered+Settled) - COGS - Expenses",
+            profitMargin: "Profit Margin",
+            recognizedRevenue: "Recognized Revenue",
+            includesSettled: "Includes COD Settled",
+            pipelineTitle: "COD Cash Pipeline",
+            expected: "Expected (Queued)",
+            transit: "Cash in Transit",
+            delivered: "Cash Delivered",
+            settled: "Cash Settled",
+            costStructures: "Cost Structures",
+            cogs: "Cost of Goods (COGS)",
+            fulfillment: "Fulfillment & Gateway Fees",
+            manualExpenses: "Manual Operating Expenses",
+            totalDeductions: "Total Deductions",
+            manualLedger: "Manual Operating Ledger",
+            totalTx: "Total Tx",
+            date: "Date",
+            type: "Type",
+            category: "Category",
+            desc: "Description",
+            amount: "Amount (DZ)",
+            actions: "Actions",
+            noTransactions: "No manual transactions recorded yet."
+        },
+        dispatch: {
+            title: "Dispatch & Logistics Center",
+            subtitle: "Manage outbound ECOTRACK shipments, tracking statuses, and returns.",
+            exportList: "Export List",
+            createShipment: "New Shipment",
+            kpi: {
+                total: "Total Shipments",
+                active: "Active & In Transit",
+                delivered: "Successfully Delivered",
+                returns: "Returns & Exceptions"
+            },
+            search: "Search tracking ID, customer, order...",
+            table: {
+                tracking: "Tracking / Ref",
+                recipient: "Recipient",
+                destination: "Destination",
+                status: "Courier Status",
+                cod: "COD Amount",
+                actions: "Actions"
+            },
+            empty: {
+                title: "No shipments found",
+                subtitle: "Adjust filters or create a new dispatch order."
+            }
         }
     },
     ar: {
@@ -3146,6 +3200,60 @@ const resources = {
                 addKnife: "سكين جديد",
                 unknownSteel: "? صلب",
                 dropHere: "أسقط هنا"
+            },
+            financial: {
+                title: "المركز المالي",
+                subtitle: "تتبع إيرادات الدفع عند الاستلام في الوقت الفعلي وخسائر وأرباح النظام",
+                addManual: "إضافة معاملة يدوية",
+                trueNetProfit: "صافي الربح الحقيقي",
+                netProfitSub: "الإيرادات (تم التوصيل + تمت التسوية) - تكلفة البضائع المباعة - المصروفات",
+                profitMargin: "هامش الربح",
+                recognizedRevenue: "الإيرادات المعترف بها",
+                includesSettled: "يشمل الدفع عند الاستلام المسوى",
+                pipelineTitle: "مسار النقد للدفع عند الاستلام",
+                expected: "المتوقع (في قائمة الانتظار)",
+                transit: "نقد في الطريق",
+                delivered: "النقد المُسلَّم",
+                settled: "النقد المُسوَّى",
+                costStructures: "هياكل التكلفة",
+                cogs: "تكلفة البضائع المباعة (COGS)",
+                fulfillment: "رسوم التجهيز وبوابة الدفع",
+                manualExpenses: "مصروفات التشغيل اليدوية",
+                totalDeductions: "إجمالي الاستقطاعات",
+                manualLedger: "دفتر التشغيل اليدوي",
+                totalTx: "إجمالي المعاملات",
+                date: "التاريخ",
+                type: "النوع",
+                category: "الفئة",
+                desc: "الوصف",
+                amount: "المبلغ (د.ج)",
+                actions: "إجراءات",
+                noTransactions: "لم يتم تسجيل معاملات يدوية بعد."
+            },
+            dispatch: {
+                title: "مركز الإرسال والخدمات اللوجستية",
+                subtitle: "إدارة شحنات ECOTRACK الصادرة وتتبع الحالات والمرتجعات.",
+                exportList: "تصدير القائمة",
+                createShipment: "شحنة جديدة",
+                kpi: {
+                    total: "إجمالي الشحنات",
+                    active: "نشط وفي الطريق",
+                    delivered: "تم التوصيل بنجاح",
+                    returns: "المرتجعات والاستثناءات"
+                },
+                search: "البحث عن طريق رقم التتبع، العميل، الطلب...",
+                table: {
+                    tracking: "التتبع / المرجع",
+                    recipient: "المستلم",
+                    destination: "الوجهة",
+                    status: "حالة شركة الشحن",
+                    cod: "مبلغ الدفع عند الاستلام",
+                    actions: "إجراءات"
+                },
+                empty: {
+                    title: "لم يتم العثور على شحنات",
+                    subtitle: "قم بتعديل المرشحات أو إنشاء طلب إرسال جديد."
+                }
             }
         }
     }
