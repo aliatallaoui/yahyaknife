@@ -32,7 +32,6 @@ const PORT = process.env.PORT || 5000;
 
 // Determine which Mongo URI to use based on the environment
 const MONGO_URI = process.env.MONGO_URI || process.env.PROD_MONGO_URI || process.env.DEV_MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
-console.log(MONGO_URI);
 
 // Middleware
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
