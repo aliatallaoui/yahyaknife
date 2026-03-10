@@ -864,10 +864,48 @@ export default function OrderControlCenter() {
                             <div className="h-6 w-px bg-gray-200 shrink-0 hidden sm:block"></div>
 
                             <div className="relative flex items-center shrink-0">
-                                <Calendar className="w-[14px] h-[14px] text-gray-400 absolute left-3 pointer-events-none" />
-                                <input type="date" value={filters.dateFrom} onChange={e => handleFilterChange('dateFrom', e.target.value)} className="pl-9 pr-3 py-1.5 rounded-l-full border border-gray-200 bg-gray-50 text-gray-600 text-[11px] font-bold outline-none focus:ring-1 focus:ring-gray-300 w-32 border-r-0 hover:bg-gray-100/50 transition-colors" />
-                                <div className="bg-gray-50 border-y border-gray-200 py-1.5 px-1 text-[10px] text-gray-400 font-bold shrink-0">{t('ordersControl.filters.to')}</div>
-                                <input type="date" value={filters.dateTo} onChange={e => handleFilterChange('dateTo', e.target.value)} className="px-3 py-1.5 rounded-r-full border border-gray-200 bg-gray-50 text-gray-600 text-[11px] font-bold outline-none focus:ring-1 focus:ring-gray-300 w-28 hover:bg-gray-100/50 transition-colors" />
+                                <Calendar className="w-[14px] h-[14px] text-gray-500 absolute left-2.5 pointer-events-none z-10" />
+                                <select 
+                                    className="pl-8 pr-6 py-1.5 rounded-l-full border border-gray-200 bg-white text-gray-700 text-[11px] font-bold outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-gray-50 transition-colors border-r-0 relative z-0"
+                                    onChange={(e) => {
+                                        const preset = e.target.value;
+                                        if (!preset) return;
+                                        let from = '';
+                                        let to = moment().format('YYYY-MM-DD');
+                                        
+                                        if (preset === 'today') {
+                                            from = to;
+                                        } else if (preset === 'yesterday') {
+                                            from = moment().subtract(1, 'days').format('YYYY-MM-DD');
+                                            to = from;
+                                        } else if (preset === 'last7') {
+                                            from = moment().subtract(7, 'days').format('YYYY-MM-DD');
+                                        } else if (preset === 'last30') {
+                                            from = moment().subtract(30, 'days').format('YYYY-MM-DD');
+                                        } else if (preset === 'thisMonth') {
+                                            from = moment().startOf('month').format('YYYY-MM-DD');
+                                        } else if (preset === 'lastMonth') {
+                                            from = moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+                                            to = moment().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+                                        }
+                                        
+                                        setFilters(prev => ({ ...prev, dateFrom: from, dateTo: to }));
+                                        setPage(1);
+                                        e.target.value = ''; // Reset select after applying
+                                    }}
+                                    value=""
+                                >
+                                    <option value="" disabled>{t('ordersControl.filters.datePresets', { defaultValue: 'Date Presets' })}</option>
+                                    <option value="today">{t('ordersControl.filters.today', { defaultValue: 'Today' })}</option>
+                                    <option value="yesterday">{t('ordersControl.filters.yesterday', { defaultValue: 'Yesterday' })}</option>
+                                    <option value="last7">{t('ordersControl.filters.last7Days', { defaultValue: 'Last 7 Days' })}</option>
+                                    <option value="last30">{t('ordersControl.filters.last30Days', { defaultValue: 'Last 30 Days' })}</option>
+                                    <option value="thisMonth">{t('ordersControl.filters.thisMonth', { defaultValue: 'This Month' })}</option>
+                                    <option value="lastMonth">{t('ordersControl.filters.lastMonth', { defaultValue: 'Last Month' })}</option>
+                                </select>
+                                <input type="date" value={filters.dateFrom} onChange={e => handleFilterChange('dateFrom', e.target.value)} className="px-3 py-1.5 border border-l-0 border-r-0 border-gray-200 bg-gray-50 text-gray-600 text-[11px] font-bold outline-none focus:ring-1 focus:ring-gray-300 w-[115px] hover:bg-gray-100/50 transition-colors" />
+                                <div className="bg-gray-50 border-y border-gray-200 py-1.5 px-1.5 text-[10px] text-gray-400 font-bold shrink-0">{t('ordersControl.filters.to')}</div>
+                                <input type="date" value={filters.dateTo} onChange={e => handleFilterChange('dateTo', e.target.value)} className="px-3 py-1.5 rounded-r-full border border-gray-200 bg-gray-50 text-gray-600 text-[11px] font-bold outline-none focus:ring-1 focus:ring-gray-300 w-[115px] hover:bg-gray-100/50 transition-colors" />
                             </div>
 
                             <div className="relative flex items-center shrink-0">
