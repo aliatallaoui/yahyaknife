@@ -218,7 +218,10 @@ export default function OrderControlCenter() {
 
             // If the API returned a nextCursor, store it for the next page
             if (res.data.nextCursor) {
-                setCursorMap(prev => ({ ...prev, [page + 1]: res.data.nextCursor }));
+                setCursorMap(prev => {
+                    if (prev[page + 1] === res.data.nextCursor) return prev; // Bail out to prevent infinite re-renders
+                    return { ...prev, [page + 1]: res.data.nextCursor };
+                });
             }
 
             setOrders(res.data.orders || []);
