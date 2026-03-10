@@ -194,7 +194,7 @@ const OrderRow = React.memo(({
                         case 'actions':
                             return (
                                 <td key={col.id} className="px-4 py-2 text-right" onClick={e => e.stopPropagation()}>
-                                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                         <button onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(order); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })}>
                                             <Edit3 className="w-4 h-4" />
                                         </button>
