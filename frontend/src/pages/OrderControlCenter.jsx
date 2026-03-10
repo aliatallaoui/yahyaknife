@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen, ChevronUp, ChevronDown } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import PageHeader from '../components/PageHeader';
 import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
@@ -459,6 +459,19 @@ export default function OrderControlCenter() {
         setDraggedColumnId(null);
     };
 
+    // Touch-friendly column mover
+    const moveColumn = (index, direction) => {
+        if (direction === 'up' && index > 0) {
+            const newOrder = [...orderedColumnIds];
+            [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+            setOrderedColumnIds(newOrder);
+        } else if (direction === 'down' && index < orderedColumnIds.length - 1) {
+            const newOrder = [...orderedColumnIds];
+            [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+            setOrderedColumnIds(newOrder);
+        }
+    };
+
     // Helper to calculate age string (e.g. "2d 4h ago", "5h ago")
     const getAge = (dateString) => {
         const diff = moment().diff(moment(dateString));
@@ -553,17 +566,25 @@ export default function OrderControlCenter() {
                                                         isDragging ? "bg-blue-50/50 border-blue-200 shadow-sm scale-[1.02] opacity-80" : "bg-white border-transparent hover:bg-gray-50",
                                                     )}
                                                 >
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-2">
                                                         <div className="text-gray-300">
                                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
                                                         </div>
-                                                        <span className={clsx("font-semibold text-xs", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
+                                                        <div className="flex flex-col items-center gap-0.5">
+                                                            <button title="Move Up" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === 0} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'up'); }}>
+                                                                <ChevronUp className="w-3 h-3" />
+                                                            </button>
+                                                            <button title="Move Down" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === orderedColumnIds.length - 1} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'down'); }}>
+                                                                <ChevronDown className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                        <span className={clsx("font-semibold text-xs ml-1", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
                                                             {colDef.label || colId}
                                                         </span>
                                                     </div>
                                                     <div
                                                         className={clsx(
-                                                            "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors",
+                                                            "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors shrink-0",
                                                             !isHidden ? "bg-blue-500" : "bg-gray-200"
                                                         )}
                                                         onClick={(e) => {
