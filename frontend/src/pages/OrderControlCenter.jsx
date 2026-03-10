@@ -842,29 +842,6 @@ export default function OrderControlCenter() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="relative flex items-center shrink-0">
-                                <User className="w-[14px] h-[14px] text-blue-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.agent} onChange={e => handleFilterChange('agent', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-blue-200 bg-blue-50/60 text-blue-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 appearance-none cursor-pointer hover:bg-blue-100/80 transition-all shadow-sm">
-                                    <option value="">{t('ordersControl.filters.anyAgent')}</option>
-                                    <option value="unassigned">{t('ordersControl.filters.unassigned')}</option>
-                                    {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="relative flex items-center shrink-0">
-                                <Truck className="w-[14px] h-[14px] text-indigo-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.courier} onChange={e => handleFilterChange('courier', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-indigo-200 bg-indigo-50/60 text-indigo-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 appearance-none cursor-pointer hover:bg-indigo-100/80 transition-all shadow-sm">
-                                    <option value="">{t('ordersControl.filters.anyCourier')}</option>
-                                    <option value="unassigned">{t('ordersControl.filters.unassigned')}</option>
-                                    {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="relative flex items-center shrink-0">
-                                <Activity className="w-[14px] h-[14px] text-emerald-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.status} onChange={e => handleFilterChange('status', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-50/60 text-emerald-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 appearance-none cursor-pointer hover:bg-emerald-100/80 transition-all shadow-sm">
-                                    <option value="">{t('ordersControl.filters.status')}</option>
-                                    {COD_STATUSES.map(s => <option key={s} value={s}>{s === 'Delivered' || s === 'Refused' || s === 'Returned' || s === 'Cancelled' ? (t(`sales.status${s}`) || s) : s}</option>)}
-                                </select>
-                            </div>
 
                             <div className="h-6 w-px bg-gray-200 shrink-0 hidden sm:block"></div>
 
@@ -972,7 +949,7 @@ export default function OrderControlCenter() {
                                                 <select value={filters.status} onChange={e => handleFilterChange('status', e.target.value)} onClick={e => e.stopPropagation()} className="max-w-[140px] min-w-[110px] px-1 py-1 rounded border-transparent hover:border-gray-200 text-[11px] text-gray-500 hover:text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold bg-transparent focus:bg-white cursor-pointer w-full uppercase tracking-wider">
                                                     <option value="">{col.label}</option>
                                                     {COD_STATUSES.filter(s => {
-                                                        if (activeStage === 'pre-dispatch') return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'].includes(s);
+                                                        if (activeStage === 'pre-dispatch') return ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'].includes(s);
                                                         if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
                                                         if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
                                                         return true;

@@ -96,7 +96,7 @@ exports.getAdvancedOrders = async (req, res) => {
         // 0. Stage Splitting Logic (Pre-Dispatch vs Post-Dispatch)
         if (stage) {
             if (stage === 'pre-dispatch') {
-                query.status = { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] };
+                query.status = { $in: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'] };
             } else if (stage === 'post-dispatch') {
                 query.status = { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'] };
             } else if (stage === 'returns') {
