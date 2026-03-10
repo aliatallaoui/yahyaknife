@@ -351,6 +351,40 @@ export default function OrderControlCenter() {
         }
     }, [fetchOrders]);
 
+    const handleAgentChange = useCallback(async (orderId, agentId) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk-update`, {
+                orderIds: [orderId],
+                action: 'agent',
+                payload: { agentId: agentId === 'unassigned' ? null : agentId }
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchOrders]);
+
+    const handleCourierChange = useCallback(async (orderId, courierId) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk-update`, {
+                orderIds: [orderId],
+                action: 'courier',
+                payload: { courierId: courierId === 'unassigned' ? null : courierId }
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchOrders]);
+
     const onBulkActionConfirm = useCallback((orderId) => {
         setBulkActionType('status');
         setBulkActionValue('Confirmed');
@@ -955,6 +989,10 @@ export default function OrderControlCenter() {
                                             toggleRowExpansion={toggleRowExpansion}
                                             getAge={getAge}
                                             onStatusChange={handleStatusChange}
+                                            onAgentChange={handleAgentChange}
+                                            onCourierChange={handleCourierChange}
+                                            agents={agents}
+                                            couriers={couriers}
                                             setFocusedOrderId={setFocusedOrderId}
                                             onBulkActionConfirm={onBulkActionConfirm}
                                             onBulkActionCourier={onBulkActionCourier}

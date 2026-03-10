@@ -38,6 +38,10 @@ const OrderRow = React.memo(({
     toggleRowExpansion,
     getAge,
     onStatusChange,
+    onAgentChange,
+    onCourierChange,
+    agents,
+    couriers,
     setFocusedOrderId,
     onBulkActionConfirm,
     onBulkActionCourier,
@@ -323,20 +327,28 @@ const OrderRow = React.memo(({
                             );
                         case 'courier':
                             return (
-                                <td key={col.id} className="px-4 py-2">
-                                    {order.courier?.name ? (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100 text-[11px] font-black tracking-wide truncate max-w-[100px]">
-                                            {order.courier.name}
-                                        </span>
-                                    ) : <span className="text-[11px] text-gray-400 font-medium">—</span>}
+                                <td key={col.id} className="px-4 py-2" onClick={e => e.stopPropagation()}>
+                                    <select
+                                        value={order.courier?._id || 'unassigned'}
+                                        onChange={(e) => onCourierChange && onCourierChange(order._id, e.target.value)}
+                                        className="appearance-none cursor-pointer outline-none rounded text-xs font-bold border border-transparent hover:border-gray-200 bg-transparent hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2 py-1 transition-colors relative truncate max-w-[120px]"
+                                    >
+                                        <option value="unassigned">{t('ordersControl.filters.unassigned', { defaultValue: 'Unassigned' })}</option>
+                                        {couriers?.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                                    </select>
                                 </td>
                             );
                         case 'agent':
                             return (
-                                <td key={col.id} className="px-4 py-2">
-                                    {order.assignedAgent?.name ? (
-                                        <span className="text-xs font-bold text-gray-700 truncate max-w-[100px] block">{order.assignedAgent.name}</span>
-                                    ) : <span className="text-[11px] text-gray-400 font-medium block">Unassigned</span>}
+                                <td key={col.id} className="px-4 py-2" onClick={e => e.stopPropagation()}>
+                                    <select
+                                        value={order.assignedAgent?._id || 'unassigned'}
+                                        onChange={(e) => onAgentChange && onAgentChange(order._id, e.target.value)}
+                                        className="appearance-none cursor-pointer outline-none rounded text-[11px] font-bold border border-transparent hover:border-gray-200 bg-transparent hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2 py-1 transition-colors relative truncate max-w-[120px]"
+                                    >
+                                        <option value="unassigned">{t('ordersControl.filters.unassigned', { defaultValue: 'Unassigned' })}</option>
+                                        {agents?.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
+                                    </select>
                                 </td>
                             );
                         case 'date':
