@@ -472,192 +472,195 @@ export default function OrderControlCenter() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-gray-50/50 gap-4 -mx-4 sm:-mx-8 lg:-mx-10 xl:-mx-14 2xl:-mx-16 -mt-6">
-            {/* Premium One-Line Header */}
-            <div className="bg-white px-4 xl:px-6 py-3 border-b border-gray-100 shrink-0 flex flex-wrap xl:flex-nowrap items-center justify-between gap-y-3 gap-x-4 shadow-sm z-30">
+            {/* Premium Two-Row Header */}
+            <div className="bg-white px-4 xl:px-6 py-3 border-b border-gray-100 shrink-0 flex flex-col gap-3 shadow-sm z-30">
                 
-                {/* Title */}
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-900 to-indigo-800 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
-                        <PackageOpen className="w-4 h-4" />
+                {/* Top Row: Title & Primary Actions */}
+                <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-4">
+                    {/* Title */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-900 to-indigo-800 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
+                            <PackageOpen className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className="text-lg font-black text-gray-900 leading-none mb-1 tracking-tight">{t('ordersControl.title')}</h1>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 leading-none">{t('ordersControl.subtitle')}</p>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <h1 className="text-lg font-black text-gray-900 leading-none mb-1 tracking-tight">{t('ordersControl.title')}</h1>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 leading-none">{t('ordersControl.subtitle')}</p>
+
+                    {/* Sub-tools & Primary Actions */}
+                    <div className="flex items-center gap-1.5 xl:gap-2 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        <div className="relative shrink-0">
+                            <Search className="w-3.5 h-3.5 text-gray-400 absolute start-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder={t('ordersControl.searchPlaceholder')}
+                                value={searchTerm}
+                                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                className="bg-gray-50 border border-gray-200 text-xs font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-[140px] md:w-[150px] xl:w-[200px] ps-8 pe-2.5 py-1.5 xl:py-2 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
+                            />
+                            {searchTerm && (
+                                <button onClick={() => setSearchTerm('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={clsx("flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border transition-all h-[32px] xl:h-[36px] shrink-0", showFilters ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm")}
+                        >
+                            <SlidersHorizontal className="w-3.5 h-3.5" /> <span className="hidden lg:inline">{t('ordersControl.filtersBtn')}</span> {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
+                        </button>
+
+                        <div className="relative shrink-0">
+                            <button
+                                onClick={() => setShowColumnSettings(!showColumnSettings)}
+                                className={clsx(
+                                    "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 rounded-lg border font-bold text-xs transition-colors h-[32px] xl:h-[36px]",
+                                    showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                )}
+                            >
+                                <LayoutTemplate className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Column Settings Popover */}
+                            {showColumnSettings && (
+                                <div className="absolute top-full rtl:left-0 ltr:right-0 mt-2 w-64 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-gray-100 z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                        <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">{t('ordersControl.actions.manageColumns', { defaultValue: 'Manage Columns' })}</h3>
+                                        <button onClick={() => setShowColumnSettings(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <div className="p-2 max-h-[300px] overflow-y-auto">
+                                        <p className="text-[10px] text-gray-500 mb-2 px-2 italic">{t('ordersControl.actions.dragHint', { defaultValue: 'Drag to reorder' })}</p>
+                                        {orderedColumnIds.map((colId, index) => {
+                                            const colDef = columnDefinitions[colId];
+                                            if (!colDef) return null;
+                                            const isHidden = hiddenColumns.has(colId);
+                                            const isDragging = draggedColumnId === colId;
+
+                                            return (
+                                                <div
+                                                    key={colId}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, colId)}
+                                                    onDragOver={(e) => handleDragOver(e, index)}
+                                                    onDragEnd={handleDragEnd}
+                                                    className={clsx(
+                                                        "flex items-center justify-between p-2 rounded-lg cursor-grab active:cursor-grabbing border text-sm transition-all",
+                                                        isDragging ? "bg-blue-50/50 border-blue-200 shadow-sm scale-[1.02] opacity-80" : "bg-white border-transparent hover:bg-gray-50",
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="text-gray-300">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
+                                                        </div>
+                                                        <span className={clsx("font-semibold text-xs", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
+                                                            {colDef.label || colId}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        className={clsx(
+                                                            "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors",
+                                                            !isHidden ? "bg-blue-500" : "bg-gray-200"
+                                                        )}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleColumn(colId);
+                                                        }}
+                                                    >
+                                                        <div className={clsx(
+                                                            "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
+                                                            !isHidden ? "left-[14px]" : "left-[2px]"
+                                                        )}></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                setOrderedColumnIds(defaultColumnOrder);
+                                                setHiddenColumns(defaultHiddenColumns);
+                                            }}
+                                            className="text-[10px] uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors"
+                                        >
+                                            {t('ordersControl.actions.reset', { defaultValue: 'Reset Default' })}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0 hidden sm:block"></div>
+
+                        <button
+                            onClick={handleExportCSV}
+                            disabled={exportState.isExporting}
+                            className={clsx(
+                                "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border shadow-sm transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0",
+                                exportState.isExporting
+                                    ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
+                                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
+                            )}
+                        >
+                            {exportState.isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                            <span className="hidden sm:inline">{exportState.isExporting ? `${exportState.progress}%` : t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}</span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsOrderModalOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 xl:py-2 text-xs font-bold rounded-lg border bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 shadow-md shadow-indigo-600/20 transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0"
+                        >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            {t('ordersControl.actions.newOrder', { defaultValue: 'Add Order' })}
+                        </button>
+
+                        <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hidden sm:block shrink-0" title="Refresh Data Core">
+                            <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin text-indigo-500")} />
+                        </button>
                     </div>
                 </div>
 
-                {/* Elegant KPI Badges */}
+                {/* Bottom Row: Elegant KPI Badges */}
                 {kpis && (
-                    <div className="flex items-center gap-1.5 xl:gap-2 overflow-x-auto flex-nowrap flex-1 justify-start xl:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg border border-gray-100 bg-gray-50 shrink-0">
+                    <div className="flex items-center gap-1.5 xl:gap-2 overflow-x-auto flex-nowrap w-full justify-start [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-gray-100 bg-gray-50 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full relative bg-blue-500 animate-pulse"></span>
                             <span className="text-[9px] xl:text-[10px] font-bold text-gray-500 uppercase tracking-wider">{t('ordersControl.kpis.newToday')}</span>
                             <span className="text-xs xl:text-sm font-black text-gray-900 ml-1 rtl:mr-1">{kpis.newOrdersToday}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg border border-orange-100 bg-orange-50 shrink-0">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-orange-100 bg-orange-50 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                             <span className="text-[9px] xl:text-[10px] font-bold text-orange-600 uppercase tracking-wider">{t('ordersControl.kpis.pending')}</span>
                             <span className="text-xs xl:text-sm font-black text-orange-700 ml-1 rtl:mr-1">{kpis.pendingConfirmation}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 shrink-0">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             <span className="text-[9px] xl:text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{t('ordersControl.kpis.confirmed')}</span>
                             <span className="text-xs xl:text-sm font-black text-emerald-700 ml-1 rtl:mr-1">{kpis.confirmedOrders}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg border border-indigo-100 bg-indigo-50 shrink-0">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-indigo-100 bg-indigo-50 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
                             <span className="text-[9px] xl:text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{t('ordersControl.kpis.dispatched', { defaultValue: 'Dispatched' })}</span>
                             <span className="text-xs xl:text-sm font-black text-indigo-700 ml-1 rtl:mr-1">{kpis.sentToCourier}</span>
                         </div>
                         <div className="w-px h-4 bg-gray-200 mx-0.5 shrink-0 hidden md:block"></div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 shrink-0 hidden sm:flex">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 shrink-0 hidden sm:flex">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             <span className="text-[9px] xl:text-[10px] font-bold text-emerald-600 uppercase tracking-wider">DELIVERED</span>
                             <span className="text-xs xl:text-sm font-black text-emerald-700 ml-1 rtl:mr-1">{kpis.deliveredToday}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg border border-rose-100 bg-rose-50 shrink-0 hidden sm:flex">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-rose-100 bg-rose-50 shrink-0 hidden sm:flex">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                             <span className="text-[9px] xl:text-[10px] font-bold text-rose-600 uppercase tracking-wider">RETURNS</span>
                             <span className="text-xs xl:text-sm font-black text-rose-700 ml-1 rtl:mr-1">{kpis.returnRate}%</span>
                         </div>
                     </div>
                 )}
-
-                {/* Sub-tools & Primary Actions */}
-                <div className="flex items-center gap-1.5 xl:gap-2 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    <div className="relative shrink-0">
-                        <Search className="w-3.5 h-3.5 text-gray-400 absolute start-2.5 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="text"
-                            placeholder={t('ordersControl.searchPlaceholder')}
-                            value={searchTerm}
-                            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                            className="bg-gray-50 border border-gray-200 text-xs font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-[140px] md:w-[150px] xl:w-[200px] ps-8 pe-2.5 py-1.5 xl:py-2 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
-                        />
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                <X className="w-3.5 h-3.5" />
-                            </button>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={clsx("flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border transition-all h-[32px] xl:h-[36px] shrink-0", showFilters ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm")}
-                    >
-                        <SlidersHorizontal className="w-3.5 h-3.5" /> <span className="hidden lg:inline">{t('ordersControl.filtersBtn')}</span> {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
-                    </button>
-
-                    <div className="relative shrink-0">
-                        <button
-                            onClick={() => setShowColumnSettings(!showColumnSettings)}
-                            className={clsx(
-                                "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 rounded-lg border font-bold text-xs transition-colors h-[32px] xl:h-[36px]",
-                                showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
-                            )}
-                        >
-                            <LayoutTemplate className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Column Settings Popover */}
-                        {showColumnSettings && (
-                            <div className="absolute top-full rtl:left-0 ltr:right-0 mt-2 w-64 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-gray-100 z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2">
-                                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">{t('ordersControl.actions.manageColumns', { defaultValue: 'Manage Columns' })}</h3>
-                                    <button onClick={() => setShowColumnSettings(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="p-2 max-h-[300px] overflow-y-auto">
-                                    <p className="text-[10px] text-gray-500 mb-2 px-2 italic">{t('ordersControl.actions.dragHint', { defaultValue: 'Drag to reorder' })}</p>
-                                    {orderedColumnIds.map((colId, index) => {
-                                        const colDef = columnDefinitions[colId];
-                                        if (!colDef) return null;
-                                        const isHidden = hiddenColumns.has(colId);
-                                        const isDragging = draggedColumnId === colId;
-
-                                        return (
-                                            <div
-                                                key={colId}
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, colId)}
-                                                onDragOver={(e) => handleDragOver(e, index)}
-                                                onDragEnd={handleDragEnd}
-                                                className={clsx(
-                                                    "flex items-center justify-between p-2 rounded-lg cursor-grab active:cursor-grabbing border text-sm transition-all",
-                                                    isDragging ? "bg-blue-50/50 border-blue-200 shadow-sm scale-[1.02] opacity-80" : "bg-white border-transparent hover:bg-gray-50",
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="text-gray-300">
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
-                                                    </div>
-                                                    <span className={clsx("font-semibold text-xs", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
-                                                        {colDef.label || colId}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors",
-                                                        !isHidden ? "bg-blue-500" : "bg-gray-200"
-                                                    )}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleColumn(colId);
-                                                    }}
-                                                >
-                                                    <div className={clsx(
-                                                        "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
-                                                        !isHidden ? "left-[14px]" : "left-[2px]"
-                                                    )}></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-end">
-                                    <button
-                                        onClick={() => {
-                                            setOrderedColumnIds(defaultColumnOrder);
-                                            setHiddenColumns(defaultHiddenColumns);
-                                        }}
-                                        className="text-[10px] uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors"
-                                    >
-                                        {t('ordersControl.actions.reset', { defaultValue: 'Reset Default' })}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0 hidden sm:block"></div>
-
-                    <button
-                        onClick={handleExportCSV}
-                        disabled={exportState.isExporting}
-                        className={clsx(
-                            "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border shadow-sm transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0",
-                            exportState.isExporting
-                                ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
-                                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
-                        )}
-                    >
-                        {exportState.isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                        <span className="hidden sm:inline">{exportState.isExporting ? `${exportState.progress}%` : t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}</span>
-                    </button>
-
-                    <button
-                        onClick={() => setIsOrderModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 xl:py-2 text-xs font-bold rounded-lg border bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 shadow-md shadow-indigo-600/20 transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0"
-                    >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        {t('ordersControl.actions.newOrder', { defaultValue: 'Add Order' })}
-                    </button>
-
-                    <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hidden sm:block shrink-0" title="Refresh Data Core">
-                        <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin text-indigo-500")} />
-                    </button>
-                </div>
             </div>
 
             {/* Stage Navigation Tabs & Post-Dispatch Actions */}
