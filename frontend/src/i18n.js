@@ -221,7 +221,15 @@ const resources = {
                 pending_clearance: 'Pending Clearance',
                 settled_to_bank: 'Settled to Bank',
                 delivered_no_money: 'Delivered, No Money',
-                loading: 'Loading Logistic Metrics...'
+                loading: 'Loading Logistic Metrics...',
+                btnSyncing: 'Syncing API...',
+                btnSyncCoverage: 'Sync API Coverage',
+                confirmSync: 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds. Continue?',
+                add_region: 'Add Coverage Region',
+                wilayaCode: 'Wilaya Code',
+                commune: 'Commune',
+                coverage_info: 'Dynamic Area Validation',
+                coverage_desc: 'During Order Creation, the user will only see the Communes configured here if they select this courier. Furthermore, if they select "Stop Desk/Office", only communes with Office delivery checked will be displayed.'
             },
             rbac: {
                 roles_title: "Roles & Permissions",
@@ -2267,7 +2275,15 @@ const resources = {
                 pending_clearance: 'قيد التصفية',
                 settled_to_bank: 'مسواة في البنك',
                 delivered_no_money: 'مُسلمة، بدون تحصيل',
-                loading: 'جارِ تحميل مقاييس اللوجستيك...'
+                loading: 'جارِ تحميل مقاييس اللوجستيك...',
+                btnSyncing: 'جاري المزامنة...',
+                btnSyncCoverage: 'مزامنة التغطية عبر API',
+                confirmSync: 'سيؤدي هذا إلى جلب جميع الولايات والبلديات المدعومة من واجهة برمجة تطبيقات شركة التوصيل واستبدال/إضافة خريطة التغطية الحالية. قد يستغرق ذلك بضع ثوانٍ. هل تريد الاستمرار؟',
+                add_region: 'إضافة منطقة تغطية',
+                wilayaCode: 'رمز الولاية',
+                commune: 'البلدية',
+                coverage_info: 'التحقق الديناميكي للمنطقة',
+                coverage_desc: 'أثناء إنشاء الطلب، سيرى المستخدم فقط البلديات المهيأة هنا إذا حدد شركة التوصيل هذه. علاوة على ذلك، إذا اختار "مكتب/توقف مكتب"، سيتم عرض البلديات التي تم تنشيط توصيل المكتب فيها فقط.'
             },
             rbac: {
                 roles_title: "الأدوار والصلاحيات",

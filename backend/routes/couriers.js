@@ -29,7 +29,8 @@ const {
 const {
     getCoverage,
     upsertCoverage,
-    deleteCoverage
+    deleteCoverage,
+    syncEcotrackCoverage
 } = require('../controllers/courierCoverageController');
 
 router.route('/')
@@ -62,6 +63,7 @@ router.route('/:id/pricing/:ruleId')
 router.route('/:id/coverage')
     .get(getCoverage)
     .post(upsertCoverage);
+router.post('/:id/coverage/sync', syncEcotrackCoverage);
 router.route('/:id/coverage/:coverageId')
     .delete(deleteCoverage);
 

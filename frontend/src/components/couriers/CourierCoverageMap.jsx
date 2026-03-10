@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Plus, Trash2, Home, Building2, HelpCircle } from 'lucide-react';
+import { MapPin, Plus, Trash2, Home, Building2, HelpCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function CourierCoverageMap({ courierId }) {
@@ -10,6 +10,7 @@ export default function CourierCoverageMap({ courierId }) {
 
     const [coverage, setCoverage] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
 
     const [formData, setFormData] = useState({
         wilayaCode: '',
@@ -72,6 +73,25 @@ export default function CourierCoverageMap({ courierId }) {
         }
     };
 
+    const handleSync = async () => {
+        if (!window.confirm(t('couriers.confirmSync', 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds. Continue?'))) return;
+        
+        setSyncing(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage/sync`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert(res.data.message || 'Sync successful');
+            fetchCoverage();
+        } catch (error) {
+            console.error('Error syncing coverage:', error);
+            alert(error.response?.data?.message || error.response?.data?.error || 'Error syncing coverage. Check API credentials.');
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     if (loading) return <div className="p-8 text-center text-gray-500">Loading Regions...</div>;
 
     return (
@@ -87,10 +107,21 @@ export default function CourierCoverageMap({ courierId }) {
             </div>
 
             <div className="bg-white border text-start border-gray-200 rounded-xl p-5 shadow-sm">
-                <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-indigo-500" />
-                    {t('couriers.add_region', 'Add Coverage Region')}
-                </h3>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-indigo-500" />
+                        {t('couriers.add_region', 'Add Coverage Region')}
+                    </h3>
+                    
+                    <button
+                        onClick={handleSync}
+                        disabled={syncing}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold rounded-lg transition-colors border border-indigo-100 text-sm disabled:opacity-50"
+                    >
+                        <RefreshCw className={clsx("w-4 h-4", syncing && "animate-spin")} />
+                        {syncing ? t('couriers.btnSyncing', 'Syncing API...') : t('couriers.btnSyncCoverage', 'Sync API Coverage')}
+                    </button>
+                </div>
                 
                 <form onSubmit={handleAdd} className="flex flex-col md:flex-row items-end gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div className="w-full md:w-32">
