@@ -472,44 +472,88 @@ export default function OrderControlCenter() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-gray-50/50 gap-4 -mx-4 sm:-mx-8 lg:-mx-10 xl:-mx-14 2xl:-mx-16 -mt-6">
-            {/* Extremely compact header optimized for operation */}
-            <div className="flex items-center justify-between bg-white px-6 py-3 border-b border-gray-100 shrink-0">
-                <div className="flex flex-col">
-                    <h1 className="text-xl font-black text-gray-900 leading-none mb-1 tracking-tight">{t('ordersControl.title')}</h1>
-                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-none">{t('ordersControl.subtitle')}</p>
+            {/* Premium Split Header */}
+            <div className="bg-white px-6 py-4 border-b border-gray-100 shrink-0 flex flex-col gap-4 shadow-sm z-30">
+                
+                {/* Top Row: Title & Primary Actions */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-900 to-indigo-800 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
+                            <PackageOpen className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className="text-xl font-black text-gray-900 leading-none mb-1 tracking-tight">{t('ordersControl.title')}</h1>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 leading-none">{t('ordersControl.subtitle')}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 relative">
+                        <button
+                            onClick={handleExportCSV}
+                            disabled={exportState.isExporting}
+                            className={clsx(
+                                "flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-lg border shadow-sm transition-all whitespace-nowrap",
+                                exportState.isExporting
+                                    ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
+                                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
+                            )}
+                        >
+                            {exportState.isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                            <span className="hidden sm:inline">{exportState.isExporting ? `${exportState.progress}%` : t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}</span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsOrderModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg border bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 shadow-md shadow-indigo-600/20 transition-all whitespace-nowrap"
+                        >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            {t('ordersControl.actions.newOrder', { defaultValue: 'Add Order' })}
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                {/* Second Row: KPI Pills & Tools */}
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                    
+                    {/* Elegant KPI Badges */}
                     {kpis && (
-                        <div className="hidden lg:flex items-center gap-4 mr-4 divide-x divide-gray-100">
-                            <div className="flex flex-col pl-4 first:pl-0">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.kpis.newToday')}</span>
-                                <span className="text-sm font-black text-blue-600">{kpis.newOrdersToday}</span>
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full xl:w-auto">
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 bg-gray-50 shrink-0">
+                                <span className="w-2 h-2 rounded-full relative bg-blue-500 animate-pulse"></span>
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{t('ordersControl.kpis.newToday')}</span>
+                                <span className="text-sm font-black text-gray-900 ml-1 rtl:mr-1">{kpis.newOrdersToday}</span>
                             </div>
-                            <div className="flex flex-col pl-4">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.kpis.pending')}</span>
-                                <span className="text-sm font-black text-orange-500">{kpis.pendingConfirmation}</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-orange-100 bg-orange-50 shrink-0">
+                                <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">{t('ordersControl.kpis.pending')}</span>
+                                <span className="text-sm font-black text-orange-700 ml-1 rtl:mr-1">{kpis.pendingConfirmation}</span>
                             </div>
-                            <div className="flex flex-col pl-4">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.kpis.confirmed')}</span>
-                                <span className="text-sm font-black text-emerald-600">{kpis.confirmedOrders}</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 shrink-0">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{t('ordersControl.kpis.confirmed')}</span>
+                                <span className="text-sm font-black text-emerald-700 ml-1 rtl:mr-1">{kpis.confirmedOrders}</span>
                             </div>
-                            <div className="flex flex-col pl-4">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.kpis.dispatched', { defaultValue: 'Dispatched' })}</span>
-                                <span className="text-sm font-black text-indigo-600">{kpis.sentToCourier}</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-indigo-100 bg-indigo-50 shrink-0">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{t('ordersControl.kpis.dispatched', { defaultValue: 'Dispatched' })}</span>
+                                <span className="text-sm font-black text-indigo-700 ml-1 rtl:mr-1">{kpis.sentToCourier}</span>
                             </div>
-                            <div className="flex flex-col pl-4">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.kpis.deliveredToday', { defaultValue: 'Delivered (Today)' })}</span>
-                                <span className="text-sm font-black text-emerald-500">{kpis.deliveredToday}</span>
+                            <div className="w-px h-5 bg-gray-200 mx-1 shrink-0 hidden sm:block"></div>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 shrink-0 hidden sm:flex">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">DELIVERED</span>
+                                <span className="text-sm font-black text-emerald-700 ml-1 rtl:mr-1">{kpis.deliveredToday}</span>
                             </div>
-                            <div className="flex flex-col pl-4">
-                                <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">{t('ordersControl.kpis.returnRate')}</span>
-                                <span className="text-sm font-black text-red-600">{kpis.returnRate}%</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-100 bg-rose-50 shrink-0 hidden sm:flex">
+                                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                                <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">RETURNS</span>
+                                <span className="text-sm font-black text-rose-700 ml-1 rtl:mr-1">{kpis.returnRate}%</span>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-3">
+                    {/* Sub-tools: Search, Filters, Columns */}
+                    <div className="flex items-center gap-2 shrink-0">
                         <div className="relative">
                             <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
                             <input
@@ -517,7 +561,7 @@ export default function OrderControlCenter() {
                                 placeholder={t('ordersControl.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                                className="bg-gray-50 border border-gray-200 text-sm font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[240px] ps-9 pe-3 py-1.5 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
+                                className="bg-gray-50 border border-gray-200 text-sm font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-[160px] sm:w-[200px] xl:w-[240px] ps-9 pe-3 py-1.5 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
                             />
                             {searchTerm && (
                                 <button onClick={() => setSearchTerm('')} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -526,16 +570,22 @@ export default function OrderControlCenter() {
                             )}
                         </div>
 
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={clsx("flex items-center gap-2 px-3 py-1.5 text-sm font-bold rounded-lg border transition-all h-[34px]", showFilters ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm")}
+                        >
+                            <SlidersHorizontal className="w-4 h-4" /> <span className="hidden sm:inline">{t('ordersControl.filtersBtn')}</span> {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
+                        </button>
+
                         <div className="relative">
                             <button
                                 onClick={() => setShowColumnSettings(!showColumnSettings)}
                                 className={clsx(
                                     "flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-xs transition-colors h-[34px]",
-                                    showColumnSettings ? "bg-blue-50 border-blue-200 text-blue-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                    showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
                                 )}
                             >
                                 <LayoutTemplate className="w-4 h-4" />
-                                <span className="hidden sm:inline">{t('ordersControl.actions.columns', { defaultValue: 'Columns' })}</span>
                             </button>
 
                             {/* Column Settings Popover */}
@@ -608,55 +658,14 @@ export default function OrderControlCenter() {
                                 </div>
                             )}
                         </div>
+                        <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
 
-                        <button
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={clsx("flex items-center gap-2 px-3 py-1.5 text-sm font-bold rounded-lg border transition-all", showFilters ? "bg-blue-50 border-blue-200 text-blue-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm")}
-                        >
-                            <SlidersHorizontal className="w-4 h-4" /> {t('ordersControl.filtersBtn')} {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
-                        </button>
-
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleExportCSV}
-                                disabled={exportState.isExporting}
-                                className={clsx(
-                                    "flex items-center gap-2 px-3 py-1.5 text-sm font-bold rounded-lg border shadow-sm transition-all whitespace-nowrap",
-                                    exportState.isExporting
-                                        ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
-                                        : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                                )}
-                            >
-                                {exportState.isExporting ? (
-                                    <>
-                                        <RefreshCw className="w-4 h-4 outline-none animate-spin" />
-                                        {exportState.progress}%
-                                    </>
-                                ) : (
-                                    <>
-                                        <FileText className="w-4 h-4" />
-                                        {t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={() => setIsOrderModalOpen(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 shadow-sm transition-all whitespace-nowrap"
-                            >
-                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                {t('ordersControl.actions.newOrder', { defaultValue: 'Add Order' })}
-                            </button>
-                        </div>
-
-                        <div className="h-6 w-px bg-gray-200 mx-1"></div>
-
-                        <button onClick={() => fetchOrders()} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100" title="Refresh Data Core">
-                            <RefreshCw className={clsx("w-5 h-5", loading && "animate-spin text-blue-500")} />
+                        <button onClick={() => fetchOrders()} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hidden sm:block" title="Refresh Data Core">
+                            <RefreshCw className={clsx("w-5 h-5", loading && "animate-spin text-indigo-500")} />
                         </button>
                     </div>
-                </div >
-            </div >
+                </div>
+            </div>
 
             {/* Stage Navigation Tabs & Post-Dispatch Actions */}
             < div className="bg-white border-b border-gray-100 flex items-center justify-between px-6 pt-2 z-20 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.05)] shrink-0" >
