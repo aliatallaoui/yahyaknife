@@ -85,9 +85,16 @@ export default function Sales() {
     };
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_API_URL || ''}/api/couriers`)
-            .then(res => res.json())
-            .then(data => setCouriers(data))
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load couriers: ${res.status}`);
+                return res.json();
+            })
+            .then(data => setCouriers(Array.isArray(data) ? data : []))
             .catch(err => console.error("Error fetching couriers:", err));
     }, []);
 
