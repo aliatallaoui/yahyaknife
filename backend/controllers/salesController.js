@@ -347,6 +347,7 @@ exports.createOrder = async (req, res) => {
                 customer = await Customer.create({
                     name: customerName || 'Unknown',
                     phone: customerPhone,
+                    tenant: req.user.tenant,
                     acquisitionChannel: 'Direct Traffic'
                 });
             } else if (customerName && customerName !== customer.name) {
@@ -381,6 +382,7 @@ exports.createOrder = async (req, res) => {
 
         // 1. Create the Order document
         const newOrder = new Order({
+            tenant: req.user.tenant,
             orderId,
             customer: resolvedCustomerId,
             channel,
@@ -428,6 +430,7 @@ exports.createOrder = async (req, res) => {
 
         // 3. Create Status History snapshot
         await OrderStatusHistory.create({
+            tenant: req.user.tenant,
             orderId: savedOrder._id,
             status: mainStatus,
             changedBy: req.user?._id || null,
@@ -621,6 +624,17 @@ exports.updateOrder = async (req, res) => {
             if (courierCashDelta !== 0) {
                 await syncCourierCash(activeCourierId, courierCashDelta);
             }
+        }
+
+        // 4. Update underlying Customer details if provided from Edit Modal
+        if (existingOrder.customer && (updateData.customerName || updateData.customerPhone)) {
+            const customerUpdates = {};
+            if (updateData.customerName) customerUpdates.name = updateData.customerName;
+            if (updateData.customerPhone) customerUpdates.phone = updateData.customerPhone;
+            
+            await Customer.findByIdAndUpdate(existingOrder.customer, {
+                $set: customerUpdates
+            });
         }
 
         const updatedOrder = await Order.findByIdAndUpdate(

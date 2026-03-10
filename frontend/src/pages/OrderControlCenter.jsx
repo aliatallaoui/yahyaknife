@@ -269,6 +269,25 @@ export default function OrderControlCenter() {
         }
     };
 
+    // Handle update order from modal
+    const handleUpdateOrder = async (orderData) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${editOrderData._id}`, orderData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setIsOrderModalOpen(false);
+            setEditOrderData(null);
+            fetchOrders();
+            setSyncMessage(t('ordersControl.orderUpdated', { defaultValue: 'Order updated successfully!' }));
+            setTimeout(() => setSyncMessage(null), 3000);
+            return { success: true };
+        } catch (err) {
+            console.error("Failed to update order", err);
+            return { success: false, error: err.response?.data?.message || err.message };
+        }
+    };
+
     useEffect(() => {
         const debounce = setTimeout(fetchOrders, 400); // 400ms debounce on search typing
         return () => clearTimeout(debounce);
@@ -915,6 +934,7 @@ export default function OrderControlCenter() {
                                             onBulkActionCourier={onBulkActionCourier}
                                             onBulkActionCancel={onBulkActionCancel}
                                             onQuickDispatch={onQuickDispatch}
+                                            onEditClick={(o) => { setEditOrderData(o); setIsOrderModalOpen(true); }}
                                             virtualMeasureRef={rowVirtualizer.measureElement}
                                             virtualIndex={virtualRow.index}
                                         />
@@ -1048,8 +1068,9 @@ export default function OrderControlCenter() {
             {/* Create Order Modal */}
             <OrderModal
                 isOpen={isOrderModalOpen}
-                onClose={() => setIsOrderModalOpen(false)}
-                onSubmit={handleCreateOrder}
+                onClose={() => { setIsOrderModalOpen(false); setEditOrderData(null); }}
+                onSubmit={editOrderData ? handleUpdateOrder : handleCreateOrder}
+                initialData={editOrderData}
                 inventoryProducts={productsList}
                 couriers={couriers}
             />
