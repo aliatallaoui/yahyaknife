@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const salesController = require('../controllers/salesController');
+const { protect } = require('../middleware/authMiddleware');
+
+// Setup global protection for all sales routes (provides req.user and enforces tenant security)
+router.use(protect);
 
 // /api/sales/orders
 router.route('/orders')

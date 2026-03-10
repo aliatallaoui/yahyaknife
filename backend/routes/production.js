@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const productionController = require('../controllers/productionController');
+const { protect } = require('../middleware/authMiddleware');
+
+router.use(protect);
 
 // --- Raw Materials ---
 router.get('/raw-materials', productionController.getRawMaterials);

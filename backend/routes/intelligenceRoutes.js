@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
+
+router.use(protect);
 const intelligenceController = require('../controllers/intelligenceController');
 
 // AI Predictions & Optimizations

@@ -273,7 +273,8 @@ exports.getOrdersKPIs = async (req, res) => {
 
 exports.getSalesPerformance = async (req, res) => {
     try {
-        const tenantId = req.user.tenant;
+        console.log("DEBUG getSalesPerformance: req.user is", req.user);
+        const tenantId = req.user ? req.user.tenant : 'missing';
         const cacheKey = `tenant:${tenantId}:kpi:salesPerformance`;
 
         const cachedPerformance = await cacheService.getOrSet(cacheKey, async () => {
