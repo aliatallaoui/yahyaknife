@@ -69,6 +69,9 @@ export default function CourierDetails() {
             alert(error.response?.data?.message || 'Error saving courier');
         } finally {
             setSaving(false);
+            if (!isNew) {
+                alert(t('common.saved_successfully', 'Saved successfully!'));
+            }
         }
     };
 
@@ -189,7 +192,7 @@ export default function CourierDetails() {
 
                     {!isNew && activeTab !== 'general' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {activeTab === 'api' && <CourierApiSettings courier={courier} setCourier={setCourier} />}
+                            {activeTab === 'api' && <CourierApiSettings courier={courier} setCourier={setCourier} onSave={handleSave} saving={saving} />}
                             {activeTab === 'coverage' && <CourierCoverageMap courierId={courier._id} />}
                             {activeTab === 'pricing' && <CourierPricingEngine courierId={courier._id} />}
                             {activeTab === 'mapping' && <CourierStatusMapping courier={courier} setCourier={setCourier} />}

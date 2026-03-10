@@ -229,7 +229,13 @@ const resources = {
                 wilayaCode: 'Wilaya Code',
                 commune: 'Commune',
                 coverage_info: 'Dynamic Area Validation',
-                coverage_desc: 'During Order Creation, the user will only see the Communes configured here if they select this courier. Furthermore, if they select "Stop Desk/Office", only communes with Office delivery checked will be displayed.'
+                coverage_desc: 'During Order Creation, the user will only see the Communes configured here if they select this courier. Furthermore, if they select "Stop Desk/Office", only communes with Office delivery checked will be displayed.',
+                apiProvider: 'API Provider',
+                apiId: 'Yalidin API ID',
+                apiTokenYalidin: 'Yalidin API Token',
+                apiBaseUrl: 'API Base URL',
+                apiToken: 'API Token / Key',
+                authType: 'Authentication Type'
             },
             rbac: {
                 roles_title: "Roles & Permissions",
@@ -2283,7 +2289,13 @@ const resources = {
                 wilayaCode: 'رمز الولاية',
                 commune: 'البلدية',
                 coverage_info: 'التحقق الديناميكي للمنطقة',
-                coverage_desc: 'أثناء إنشاء الطلب، سيرى المستخدم فقط البلديات المهيأة هنا إذا حدد شركة التوصيل هذه. علاوة على ذلك، إذا اختار "مكتب/توقف مكتب"، سيتم عرض البلديات التي تم تنشيط توصيل المكتب فيها فقط.'
+                coverage_desc: 'أثناء إنشاء الطلب، سيرى المستخدم فقط البلديات المهيأة هنا إذا حدد شركة التوصيل هذه. علاوة على ذلك، إذا اختار "مكتب/توقف مكتب"، سيتم عرض البلديات التي تم تنشيط توصيل المكتب فيها فقط.',
+                apiProvider: 'مزود خدمة API',
+                apiId: 'Yalidin معرف API',
+                apiTokenYalidin: 'Yalidin رمز API',
+                apiBaseUrl: 'রابط الأساس للـ API (Base URL)',
+                apiToken: 'رمز / مفتاح API',
+                authType: 'نوع المصادقة'
             },
             rbac: {
                 roles_title: "الأدوار والصلاحيات",

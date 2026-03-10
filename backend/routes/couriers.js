@@ -5,7 +5,8 @@ const {
     createCourier,
     updateCourier,
     settleCourierCash,
-    assignOrdersToCourier
+    assignOrdersToCourier,
+    testCourierConnection
 } = require('../controllers/courierController');
 
 const {
@@ -39,6 +40,9 @@ router.route('/')
 
 router.get('/analytics/kpis', getCourierKPIs);
 router.get('/analytics/regions', getRegionalPerformance);
+
+// Test API connection proxy
+router.post('/test-connection', testCourierConnection);
 
 // Engine routes
 router.get('/engine/coverage', getCourierCoverage);

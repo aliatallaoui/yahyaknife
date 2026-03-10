@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Key, Globe, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Key, Globe, CheckCircle, XCircle, RefreshCw, Save } from 'lucide-react';
 import clsx from 'clsx';
 
-export default function CourierApiSettings({ courier, setCourier }) {
+export default function CourierApiSettings({ courier, setCourier, onSave, saving }) {
     const { t } = useTranslation();
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState(null);
@@ -13,21 +13,35 @@ export default function CourierApiSettings({ courier, setCourier }) {
         setTesting(true);
         setTestResult(null);
 
-        // Mock test connecting to their endpoint to check if valid
         try {
-            // Ideally we'd ping a backend endpoint like /api/couriers/:id/test-connection
-            // For now, let's simulate a success if API base URL and Token are populated
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const isYalidin = courier.apiProvider === 'Yalidin';
             
-            if (!courier.apiBaseUrl || !courier.apiToken) {
-                throw new Error('API Token and Base URL are required for connection test.');
+            if (isYalidin) {
+                if (!courier.apiId || !courier.apiToken) {
+                    throw new Error('API ID and API Token are required for Yalidin connection test.');
+                }
+            } else {
+                if (!courier.apiBaseUrl || !courier.apiToken) {
+                    throw new Error('API Token and Base URL are required for Ecotrack connection test.');
+                }
             }
+
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/test-connection`, {
+                apiProvider: courier.apiProvider || 'Ecotrack',
+                apiId: courier.apiId,
+                apiBaseUrl: courier.apiBaseUrl,
+                authType: courier.authType || 'Bearer Token',
+                apiToken: courier.apiToken
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Success' }));
             setTestResult({ success: true, message: 'Connection established successfully!' });
         } catch (error) {
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Failed' }));
-            setTestResult({ success: false, message: error.message || 'Connection failed. Please check credentials.' });
+            setTestResult({ success: false, message: error.response?.data?.message || error.message || 'Connection failed. Please check credentials.' });
         } finally {
             setTesting(false);
         }
@@ -56,31 +70,64 @@ export default function CourierApiSettings({ courier, setCourier }) {
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiBaseUrl', 'API Base URL')}</label>
-                        <input
-                            type="url"
-                            value={courier.apiBaseUrl || ''}
-                            onChange={e => setCourier({ ...courier, apiBaseUrl: e.target.value })}
-                            placeholder="https://api.ecotrack.dz/v1"
-                            className="w-full rounded-lg text-start ltr:text-left rtl:text-left border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
-                            dir="ltr"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.authType', 'Authentication Type')}</label>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiProvider', 'API Provider')}</label>
                         <select
-                            value={courier.authType || 'Bearer Token'}
-                            onChange={e => setCourier({ ...courier, authType: e.target.value })}
+                            value={courier.apiProvider || 'Ecotrack'}
+                            onChange={e => setCourier({ ...courier, apiProvider: e.target.value })}
                             className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                         >
-                            <option value="Bearer Token">Bearer Token</option>
-                            <option value="API Key">API Key</option>
-                            <option value="None">None</option>
+                            <option value="Ecotrack">ECOTRACK Compatible API</option>
+                            <option value="Yalidin">Yalidin Express</option>
+                            <option value="Other">Custom / Other</option>
                         </select>
                     </div>
+
+                    {courier.apiProvider !== 'Yalidin' && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiBaseUrl', 'API Base URL')}</label>
+                                <input
+                                    type="url"
+                                    value={courier.apiBaseUrl || ''}
+                                    onChange={e => setCourier({ ...courier, apiBaseUrl: e.target.value })}
+                                    placeholder="https://api.ecotrack.dz/v1"
+                                    className="w-full rounded-lg text-start ltr:text-left rtl:text-left border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                    dir="ltr"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.authType', 'Authentication Type')}</label>
+                                <select
+                                    value={courier.authType || 'Bearer Token'}
+                                    onChange={e => setCourier({ ...courier, authType: e.target.value })}
+                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                >
+                                    <option value="Bearer Token">Bearer Token</option>
+                                    <option value="API Key">API Key</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
+                        </>
+                    )}
+
+                    {courier.apiProvider === 'Yalidin' && (
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiId', 'Yalidin API ID')}</label>
+                            <input
+                                type="text"
+                                value={courier.apiId || ''}
+                                onChange={e => setCourier({ ...courier, apiId: e.target.value })}
+                                className="w-full rounded-lg text-start ltr:text-left rtl:text-left border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border font-mono text-sm"
+                                dir="ltr"
+                            />
+                        </div>
+                    )}
+
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiToken', 'API Token / Key')}</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {courier.apiProvider === 'Yalidin' ? t('couriers.apiTokenYalidin', 'Yalidin API Token') : t('couriers.apiToken', 'API Token / Key')}
+                        </label>
                         <input
                             type="password"
                             value={courier.apiToken || ''}
@@ -119,14 +166,24 @@ export default function CourierApiSettings({ courier, setCourier }) {
                         )}
                     </div>
 
-                    <button
-                        onClick={handleTestConnection}
-                        disabled={testing}
-                        className="flex items-center gap-2 px-5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg transition-colors border border-indigo-200 shadow-sm disabled:opacity-50"
-                    >
-                        <RefreshCw className={clsx("w-4 h-4", testing && "animate-spin")} />
-                        {testing ? t('common.testing', 'Testing...') : t('couriers.testConnection', 'Test Connection')}
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleTestConnection}
+                            disabled={testing}
+                            className="flex items-center gap-2 px-5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg transition-colors border border-indigo-200 shadow-sm disabled:opacity-50"
+                        >
+                            <RefreshCw className={clsx("w-4 h-4", testing && "animate-spin")} />
+                            {testing ? t('common.testing', 'Testing...') : t('couriers.testConnection', 'Test Connection')}
+                        </button>
+                        <button
+                            onClick={onSave}
+                            disabled={saving}
+                            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            <Save className={clsx("w-4 h-4", saving && "animate-pulse")} />
+                            {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save Changes')}
+                        </button>
+                    </div>
                 </div>
 
                 {testResult && (

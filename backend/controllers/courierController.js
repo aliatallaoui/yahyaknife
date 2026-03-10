@@ -180,3 +180,78 @@ exports.syncCourierCash = async (courierId, amountDelta) => {
         console.error("Error syncing courier cash:", error);
     }
 };
+
+// Test Courier API Connection
+exports.testCourierConnection = async (req, res) => {
+    try {
+        const { apiProvider, apiBaseUrl, authType, apiToken, apiId } = req.body;
+        const axios = require('axios');
+        
+        let provider = apiProvider || 'Ecotrack';
+
+        if (provider === 'Yalidin') {
+            if (!apiId || !apiToken) {
+                return res.status(400).json({ message: 'API ID and API Token are required for Yalidin.' });
+            }
+
+            const baseUrl = 'https://api.yalidine.com/v1';
+            
+            // Yalidin test: fetch wilayas
+            const wilayasRes = await axios.get(`${baseUrl}/wilayas`, {
+                headers: {
+                    'X-API-ID': apiId,
+                    'X-API-TOKEN': apiToken,
+                    'Accept': 'application/json'
+                },
+                timeout: 5000
+            });
+
+            if (wilayasRes.data && Array.isArray(wilayasRes.data.data)) {
+                 return res.json({ success: true, message: 'Yalidin connection established successfully.' });
+            } else {
+                 return res.status(400).json({ success: false, message: 'Invalid response format from Yalidin API.' });
+            }
+
+        } else {
+            // Ecotrack logic
+            if (!apiBaseUrl || !apiToken) {
+                return res.status(400).json({ message: 'Base URL and API Token are required for Ecotrack.' });
+            }
+
+            const baseUrl = apiBaseUrl.replace(/\/$/, "");
+            
+            // Let's attempt to fetch wilayas as a way to test auth and connectivity
+            const wilayasRes = await axios.get(`${baseUrl}/api/v1/get/wilayas`, {
+                headers: {
+                    ...(authType === 'Bearer Token' ? { Authorization: `Bearer ${apiToken}` } :
+                       authType === 'API Key' ? { 'x-api-key': apiToken } : {})
+                },
+                timeout: 5000 // 5 seconds timeout
+            });
+
+            if (Array.isArray(wilayasRes.data)) {
+                return res.json({ success: true, message: 'Ecotrack connection established successfully.' });
+            } else {
+                return res.status(400).json({ success: false, message: 'Invalid response format from API.' });
+            }
+        }
+    } catch (error) {
+        console.error('Test Connection Error:', error.response?.data || error.message);
+        
+        let errorMsg = error.message;
+        if (error.response?.data) {
+            if (error.response.data.error && typeof error.response.data.error === 'object') {
+                errorMsg = error.response.data.error.message || JSON.stringify(error.response.data.error);
+            } else if (error.response.data.message) {
+                errorMsg = error.response.data.message;
+            } else {
+                errorMsg = JSON.stringify(error.response.data);
+            }
+        }
+        
+        res.status(400).json({ 
+            success: false, 
+            message: errorMsg || 'Connection failed' 
+        });
+    }
+};

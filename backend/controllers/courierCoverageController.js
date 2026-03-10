@@ -64,56 +64,58 @@ exports.syncEcotrackCoverage = async (req, res) => {
         const courier = await Courier.findById(id);
 
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
-        if (courier.integrationType !== 'API' || !courier.apiBaseUrl || !courier.apiToken) {
+        if (courier.integrationType !== 'API') {
             return res.status(400).json({ message: 'Courier is not configured for API integration.' });
         }
 
-        const baseUrl = courier.apiBaseUrl.replace(/\/$/, ""); // Remove trailing slash if any
-        
-        // 1. Fetch Wilayas
-        const wilayasRes = await axios.get(`${baseUrl}/api/v1/get/wilayas`, {
-            headers: {
-                // Determine auth header formatting based on authType
-                ...(courier.authType === 'Bearer Token' ? { Authorization: `Bearer ${courier.apiToken}` } :
-                   courier.authType === 'API Key' ? { 'x-api-key': courier.apiToken } : {})
-            }
-        });
-
-        const wilayas = wilayasRes.data;
-        if (!Array.isArray(wilayas)) {
-             return res.status(400).json({ message: 'Invalid response from Ecotrack API for wilayas.' });
-        }
-
+        const provider = courier.apiProvider || 'Ecotrack';
         let totalAddedOrUpdated = 0;
         const operations = [];
 
-        // 2. Loop through wilayas and fetch communes
-        for (const w of wilayas) {
-            const wilayaId = w.wilaya_id;
-            const wilayaName = w.wilaya_name || w.name;
+        if (provider === 'Yalidin') {
+            if (!courier.apiId || !courier.apiToken) {
+                 return res.status(400).json({ message: 'Yalidin API ID and Token are not configured.' });
+            }
             
-            try {
-                const communesRes = await axios.get(`${baseUrl}/api/v1/get/communes?wilaya_id=${wilayaId}`, {
-                    headers: {
-                        ...(courier.authType === 'Bearer Token' ? { Authorization: `Bearer ${courier.apiToken}` } :
-                           courier.authType === 'API Key' ? { 'x-api-key': courier.apiToken } : {})
-                    }
+            
+            const baseUrl = 'https://api.yalidine.com/v1';
+            
+            let currentUrl = `${baseUrl}/communes`;
+            let hasMore = true;
+            
+            const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            let currentPage = 1;
+
+            while (hasMore) {
+                console.log(`[Yalidin Sync] Fetching page ${currentPage}: ${currentUrl}`);
+                const requestHeaders = {
+                    'X-API-ID': courier.apiId,
+                    'X-API-TOKEN': courier.apiToken,
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                };
+                
+                const communesRes = await axios.get(`${currentUrl}?page=${currentPage}`, {
+                    headers: requestHeaders
                 });
 
-                const communes = communesRes.data;
+                const pageData = communesRes.data;
+                const communes = pageData?.data;
+                
                 if (Array.isArray(communes)) {
+                    if (communes.length === 0) {
+                        hasMore = false;
+                        break;
+                    }
+                    
                     for (const c of communes) {
-                        const communeName = c.commune_name || c.name;
+                        const wilayaId = c.wilaya_id;
+                        const communeName = c.name;
                         
-                        // Default options
                         let homeSupported = true;
-                        let officeSupported = false; // Desk stop usually false by default unless specified
-
-                        if(c.has_stop_desk || c.is_stop_desk) {
-                            officeSupported = true;
-                        }
-
-                        // We will build bulk operations for speed
+                        let officeSupported = (c.has_stop_desk == 1 || c.has_stop_desk === true) ? true : false;
+    
                         operations.push({
                             updateOne: {
                                 filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName },
@@ -128,10 +130,77 @@ exports.syncEcotrackCoverage = async (req, res) => {
                         });
                         totalAddedOrUpdated++;
                     }
+                } else {
+                     return res.status(400).json({ message: 'Invalid response from Yalidin API for communes.' });
                 }
-            } catch (err) {
-                console.error(`Failed to fetch communes for wilaya ${wilayaId}:`, err.message);
-                // Continue with other wilayas
+                
+                hasMore = pageData?.has_more === true;
+                if (hasMore) {
+                    currentPage++;
+                    // Rate Limit Protection: 5 req / sec = 200ms min delay
+                    await delay(250);
+                }
+            }
+
+        } else {
+            // Ecotrack logic
+            if (!courier.apiBaseUrl || !courier.apiToken) {
+                return res.status(400).json({ message: 'Ecotrack API Base URL and Token are not configured.' });
+            }
+
+            const baseUrl = courier.apiBaseUrl.replace(/\/$/, ""); 
+            
+            // 1. Fetch Wilayas
+            const wilayasRes = await axios.get(`${baseUrl}/api/v1/get/wilayas`, {
+                headers: {
+                    ...(courier.authType === 'Bearer Token' ? { Authorization: `Bearer ${courier.apiToken}` } :
+                       courier.authType === 'API Key' ? { 'x-api-key': courier.apiToken } : {})
+                }
+            });
+
+            const wilayas = wilayasRes.data;
+            if (!Array.isArray(wilayas)) {
+                 return res.status(400).json({ message: 'Invalid response from Ecotrack API for wilayas.' });
+            }
+
+            // 2. Loop through wilayas and fetch communes
+            for (const w of wilayas) {
+                const wilayaId = w.wilaya_id;
+                
+                try {
+                    const communesRes = await axios.get(`${baseUrl}/api/v1/get/communes?wilaya_id=${wilayaId}`, {
+                        headers: {
+                            ...(courier.authType === 'Bearer Token' ? { Authorization: `Bearer ${courier.apiToken}` } :
+                               courier.authType === 'API Key' ? { 'x-api-key': courier.apiToken } : {})
+                        }
+                    });
+
+                    const communes = communesRes.data;
+                    if (Array.isArray(communes)) {
+                        for (const c of communes) {
+                            const communeName = c.commune_name || c.name;
+                            
+                            let homeSupported = true;
+                            let officeSupported = (c.has_stop_desk || c.is_stop_desk) ? true : false;
+
+                            operations.push({
+                                updateOne: {
+                                    filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName },
+                                    update: { 
+                                        $set: { 
+                                            homeSupported, 
+                                            officeSupported 
+                                        } 
+                                    },
+                                    upsert: true
+                                }
+                            });
+                            totalAddedOrUpdated++;
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Failed to fetch communes for wilaya ${wilayaId}:`, err.message);
+                }
             }
         }
 
@@ -146,6 +215,7 @@ exports.syncEcotrackCoverage = async (req, res) => {
         res.json({ message: `Successfully synced ${totalAddedOrUpdated} coverage combinations.`, count: totalAddedOrUpdated });
     } catch (error) {
         console.error('Ecotrack Sync Error:', error.response?.data || error.message);
+        console.error('Failed URL:', error.config?.url);
         res.status(500).json({ error: error.message });
     }
 };

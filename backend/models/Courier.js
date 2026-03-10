@@ -8,8 +8,10 @@ const courierSchema = new mongoose.Schema({
     
     // API & Integration Settings
     integrationType: { type: String, enum: ['Manual', 'API'], default: 'Manual' },
+    apiProvider: { type: String, enum: ['Ecotrack', 'Yalidin', 'Other'], default: 'Ecotrack' },
     apiBaseUrl: { type: String },
     authType: { type: String, enum: ['Bearer Token', 'API Key', 'None'], default: 'Bearer Token' },
+    apiId: { type: String }, // Used for Yalidin X-API-ID
     apiToken: { type: String },
     accountReference: { type: String },
     testConnectionStatus: { type: String, enum: ['Untested', 'Success', 'Failed'], default: 'Untested' },
