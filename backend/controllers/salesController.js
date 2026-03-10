@@ -9,6 +9,7 @@ const { updateCustomerMetrics } = require('./customerController');
 const { syncCourierCash, recalculateCourierKPIs } = require('./courierController');
 const { syncActiveShipments } = require('../cron/trackerSync');
 const cacheService = require('../services/cacheService');
+const KPISnapshot = require('../models/KPISnapshot');
 
 let lastEcotrackSyncTime = 0; // In-memory timestamp for rate limiting
 
@@ -223,49 +224,25 @@ exports.updateBulkOrders = async (req, res) => {
 exports.getOrdersKPIs = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        const cacheKey = `tenant:${tenantId}:kpi:operations`;
 
-        const cachedOperationsKPI = await cacheService.getOrSet(cacheKey, async () => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        // O(1) Fast Read from Materialized View Dashboard Analytics Cache Instead of O(N) Table Scan
+        const snapshot = await KPISnapshot.findOne({ tenant: tenantId, type: 'operations' }).lean();
 
-            const [
-                newOrdersToday,
-                pendingConfirmation,
-                confirmedOrders,
-                readyForDispatch,
-                sentToCourier,
-                shippedToday,
-                deliveredToday,
-                shippedEver,
-                returnedEver
-            ] = await Promise.all([
-                Order.countDocuments({ tenant: tenantId, date: { $gte: today }, status: 'New' }),
-                Order.countDocuments({ tenant: tenantId, status: 'New' }), // Pending confirmation
-                Order.countDocuments({ tenant: tenantId, status: 'Confirmed' }),
-                Order.countDocuments({ tenant: tenantId, status: { $in: ['Preparing', 'Ready for Pickup'] } }),
-                Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-                Order.countDocuments({ tenant: tenantId, date: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-                Order.countDocuments({ tenant: tenantId, 'deliveryStatus.deliveredAt': { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
-                Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
-                Order.countDocuments({ tenant: tenantId, status: { $in: ['Returned', 'Refused'] } })
-            ]);
+        if (snapshot && snapshot.metrics) {
+            return res.json(snapshot.metrics);
+        }
 
-            const returnRate = shippedEver > 0 ? ((returnedEver / shippedEver) * 100).toFixed(1) : 0;
-
-            return {
-                newOrdersToday,
-                pendingConfirmation,
-                confirmedOrders,
-                readyForDispatch,
-                sentToCourier,
-                shippedToday,
-                deliveredToday,
-                returnRate
-            };
-        }, 300); // 5 minutes TTL
-
-        res.json(cachedOperationsKPI);
+        // Fallback default if background worker hasn't run yet
+        res.json({
+            newOrdersToday: 0,
+            pendingConfirmation: 0,
+            confirmedOrders: 0,
+            readyForDispatch: 0,
+            sentToCourier: 0,
+            shippedToday: 0,
+            deliveredToday: 0,
+            returnRate: 0
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

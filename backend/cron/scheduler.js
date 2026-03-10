@@ -6,6 +6,7 @@ const Courier = require('../models/Courier');
 const Supplier = require('../models/Supplier');
 const moment = require('moment');
 const { initCronJobs } = require('./trackerSync');
+const { generateKPISnapshots } = require('../jobs/kpiGenerator');
 
 // Background Worker Scheduler
 const initJobs = () => {
@@ -81,6 +82,15 @@ const initJobs = () => {
 
     // 4. Ecotrack API Status Syncer
     initCronJobs();
+
+    // 5. High-Performance Dashboard Materialized View Generator (Runs every 5 minutes)
+    cron.schedule('*/5 * * * *', async () => {
+        // Also run it off-cycle to pre-warm the DB. In production we might detach this if workers scale horizontally.
+        await generateKPISnapshots();
+    });
+
+    // Run the KPI generator immediately on boot to pre-warm the dashboard
+    generateKPISnapshots();
 
     console.log("✅ Background Worker Scheduler Initialized.");
 };
