@@ -8,13 +8,16 @@ export const ProjectProvider = ({ children }) => {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const { token } = useContext(AuthContext);
+
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const [projRes, tasksRes, analyticsRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/tasks/global`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/analytics`)
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects`, { headers }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/tasks/global`, { headers }),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/analytics`, { headers })
             ]);
 
             setProjects(await projRes.json());
