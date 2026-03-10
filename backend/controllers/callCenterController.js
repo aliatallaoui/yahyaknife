@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const CallNote = require('../models/CallNote');
 const AgentProfile = require('../models/AgentProfile');
 const User = require('../models/User');
+const cacheService = require('../services/cacheService');
 
 // --- AGENT DASHBOARD ---
 
@@ -11,49 +12,50 @@ const User = require('../models/User');
 exports.getAgentDashboard = async (req, res) => {
     try {
         const agentId = req.user._id;
+        const tenantId = req.user.tenant;
+        const cacheKey = `tenant:${tenantId}:agent:${agentId}:dashboard`;
 
-        const assignedOrders = await Order.find({ assignedAgent: agentId });
+        const dashboardData = await cacheService.getOrSet(cacheKey, async () => {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
 
-        let awaitingConfirmation = 0;
-        let confirmedToday = 0;
-        let deliveredTotal = 0;
-
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-
-        assignedOrders.forEach(o => {
-            if (o.status === 'New') awaitingConfirmation++;
-            if (['Delivered', 'Paid'].includes(o.status)) deliveredTotal++;
-
-            // Note: In production, track 'confirmedToday' by checking the exact timestamp it changed to 'Confirmed',
-            // or by looking at the CallNotes. For now, we approximate based on the order's state.
-            if (o.status === 'Confirmed' && o.updatedAt >= todayStart) {
-                confirmedToday++;
-            }
-        });
-
-        // Calculate Commission Earned Today
-        const profile = await AgentProfile.findOne({ user: agentId });
-        const commissionRate = profile ? profile.commissionPerDelivery : 0;
-        const commissionEarnedToday = confirmedToday * commissionRate; // Rough estimation: assuming confirmed orders deliver eventually
-
-        // Get daily call volume from notes
-        const callsMadeToday = await CallNote.countDocuments({
-            agent: agentId,
-            createdAt: { $gte: todayStart }
-        });
-
-        res.json({
-            metrics: {
-                totalAssigned: assignedOrders.length,
+            // Fetch metrics directly from database using counts
+            const [
+                totalAssigned,
                 awaitingConfirmation,
-                confirmedToday,
                 deliveredTotal,
+                confirmedToday,
+                actionRequiredOrders,
                 callsMadeToday,
-                commissionEarnedToday
-            },
-            orders: assignedOrders.filter(o => o.status === 'New') // Only send action-required orders to the fast-grid
-        });
+                profile
+            ] = await Promise.all([
+                Order.countDocuments({ tenant: tenantId, assignedAgent: agentId }),
+                Order.countDocuments({ tenant: tenantId, assignedAgent: agentId, status: 'New' }),
+                Order.countDocuments({ tenant: tenantId, assignedAgent: agentId, status: { $in: ['Delivered', 'Paid'] } }),
+                Order.countDocuments({ tenant: tenantId, assignedAgent: agentId, status: 'Confirmed', updatedAt: { $gte: todayStart } }),
+                Order.find({ tenant: tenantId, assignedAgent: agentId, status: 'New' }).sort({ _id: -1 }).limit(50), // Limit to top 50 needed
+                CallNote.countDocuments({ agent: agentId, createdAt: { $gte: todayStart } }),
+                AgentProfile.findOne({ user: agentId })
+            ]);
+
+            // Calculate Commission Earned Today
+            const commissionRate = profile ? profile.commissionPerDelivery : 0;
+            const commissionEarnedToday = confirmedToday * commissionRate; // Rough estimation
+
+            return {
+                metrics: {
+                    totalAssigned,
+                    awaitingConfirmation,
+                    confirmedToday,
+                    deliveredTotal,
+                    callsMadeToday,
+                    commissionEarnedToday
+                },
+                orders: actionRequiredOrders
+            };
+        }, 60); // 60-second TTL for agents, needs to be reasonably fresh but immune to refresh spam
+
+        res.json(dashboardData);
     } catch (error) {
         console.error("Agent Dashboard Error", error);
         res.status(500).json({ message: 'Server Error loading agent dashboard' });

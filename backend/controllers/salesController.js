@@ -8,6 +8,7 @@ const { logStockMovement } = require('./stockController');
 const { updateCustomerMetrics } = require('./customerController');
 const { syncCourierCash, recalculateCourierKPIs } = require('./courierController');
 const { syncActiveShipments } = require('../cron/trackerSync');
+const cacheService = require('../services/cacheService');
 
 let lastEcotrackSyncTime = 0; // In-memory timestamp for rate limiting
 
@@ -35,26 +36,41 @@ exports.getOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
+        let skip = (page - 1) * limit;
 
-        const totalOrders = await Order.countDocuments();
-        const totalPages = Math.ceil(totalOrders / limit);
+        const query = { tenant: req.user.tenant };
 
-        const orders = await Order.find()
+        // Opt-in Cursor Pagination for massive datasets
+        if (req.query.lastId) {
+            query._id = { $lt: req.query.lastId };
+            skip = 0; // Disable offset when using cursor
+        }
+
+        // Use estimatedDocumentCount when there's no cursor to save total DB scan time
+        const totalOrdersQuery = req.query.lastId ? null : Order.countDocuments({ tenant: req.user.tenant });
+        
+        const ordersQuery = Order.find(query)
             .populate('customer', 'name email')
             .populate({
                 path: 'products.variantId',
                 populate: { path: 'productId' }
             })
-            .sort({ date: -1 })
+            .sort({ _id: -1 }) // Use _id sorting for index alignment (equivalent to date sort)
             .skip(skip)
             .limit(limit);
 
+        const [totalOrders, orders] = req.query.lastId 
+            ? [null, await ordersQuery]
+            : await Promise.all([totalOrdersQuery, ordersQuery]);
+
+        const totalPages = totalOrders ? Math.ceil(totalOrders / limit) : null;
+
         res.json({
             orders,
-            currentPage: page,
+            currentPage: req.query.lastId ? null : page,
             totalPages,
-            totalOrders
+            totalOrders,
+            nextCursor: orders.length > 0 ? orders[orders.length - 1]._id : null
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -65,11 +81,17 @@ exports.getAdvancedOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
-        const skip = (page - 1) * limit;
+        let skip = (page - 1) * limit;
 
-        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage } = req.query;
+        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, lastId } = req.query;
 
-        const query = {};
+        const query = { tenant: req.user.tenant };
+
+        if (lastId) {
+            // Assume sortOrder === 'desc' on _id/date for basic cursor pagination
+            query._id = { $lt: lastId };
+            skip = 0;
+        }
 
         // 0. Stage Splitting Logic (Pre-Dispatch vs Post-Dispatch)
         if (stage) {
@@ -97,30 +119,34 @@ exports.getAdvancedOrders = async (req, res) => {
             if (dateTo) query.date.$lte = new Date(dateTo);
         }
 
-        // 2. Search Logic (Order ID, Tracking, Customer Name/Phone)
+        // 2. Search Logic (Utilizing blazing fast $text indexes instead of regex table scans)
         if (search) {
-            const searchRegex = new RegExp(search, 'i');
-
-            // Find customers matching search
+            // Find customers matching search within this tenant using text index
             const matchingCustomers = await Customer.find({
-                $or: [{ name: searchRegex }, { phone: searchRegex }]
+                tenant: req.user.tenant,
+                $text: { $search: search }
             }).select('_id');
             const customerIds = matchingCustomers.map(c => c._id);
 
-            query.$or = [
-                { orderId: searchRegex },
-                { 'trackingInfo.trackingNumber': searchRegex },
-                { 'shipping.phone1': searchRegex },
-                { customer: { $in: customerIds } }
-            ];
+            if (customerIds.length > 0) {
+                // If customers match the query, we return their orders OR orders that text match the tracking numbers
+                query.$or = [
+                    { $text: { $search: search } },
+                    { customer: { $in: customerIds } }
+                ];
+            } else {
+                // If no customers match, rely purely on the Order text index (Tracking #, Order ID)
+                query.$text = { $search: search };
+            }
         }
 
-        const sortObj = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
+        const sortObj = { [sortField === 'date' ? '_id' : sortField]: sortOrder === 'desc' ? -1 : 1 }; // map date to _id for indexed sorting
 
-        const totalOrders = await Order.countDocuments(query);
-        const totalPages = Math.ceil(totalOrders / limit);
-
-        const orders = await Order.find(query)
+        // For heavy cursor pagination, we can skip total counts if we rely entirely on infinite scroll.
+        // For backwards compatibility, we calculate it if it's the first page.
+        const totalOrdersQuery = lastId ? null : Order.countDocuments(query);
+        
+        const ordersQuery = Order.find(query)
             .populate('customer', 'name phone email fraudProbability refusalRate totalOrders deliveredOrders totalRefusals trustScore')
             .populate('courier', 'name')
             .populate('assignedAgent', 'name')
@@ -132,24 +158,27 @@ exports.getAdvancedOrders = async (req, res) => {
             .skip(skip)
             .limit(limit);
 
+        const [totalOrders, orders] = lastId 
+            ? [null, await ordersQuery]
+            : await Promise.all([totalOrdersQuery, ordersQuery]);
+
+        const totalPages = totalOrders ? Math.ceil(totalOrders / limit) : null;
+
         // Compute Tab Counts
-        const [preDispatchCount, postDispatchCount, returnsCount] = await Promise.all([
-            Order.countDocuments({ ...query, status: { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] } }),
-            Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'] } }),
-            Order.countDocuments({ ...query, status: { $in: ['Returned', 'Refused'] } })
-        ]);
+        const stageCounts = lastId ? null : {
+            preDispatch: await Order.countDocuments({ ...query, status: { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] } }),
+            postDispatch: await Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'] } }),
+            returns: await Order.countDocuments({ ...query, status: { $in: ['Returned', 'Refused'] } }),
+            all: totalOrders // When stage filter is disabled
+        };
 
         res.json({
             orders,
-            currentPage: page,
+            currentPage: lastId ? null : page,
             totalPages,
             totalOrders,
-            stageCounts: {
-                preDispatch: preDispatchCount,
-                postDispatch: postDispatchCount,
-                returns: returnsCount,
-                all: totalOrders // When stage filter is disabled
-            }
+            stageCounts: stageCounts || undefined,
+            nextCursor: orders.length > 0 ? orders[orders.length - 1]._id : null
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -193,43 +222,50 @@ exports.updateBulkOrders = async (req, res) => {
 
 exports.getOrdersKPIs = async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const tenantId = req.user.tenant;
+        const cacheKey = `tenant:${tenantId}:kpi:operations`;
 
-        const [
-            newOrdersToday,
-            pendingConfirmation,
-            confirmedOrders,
-            readyForDispatch,
-            sentToCourier,
-            shippedToday,
-            deliveredToday,
-            shippedEver,
-            returnedEver
-        ] = await Promise.all([
-            Order.countDocuments({ date: { $gte: today }, status: 'New' }),
-            Order.countDocuments({ status: 'New' }), // Pending confirmation
-            Order.countDocuments({ status: 'Confirmed' }),
-            Order.countDocuments({ status: { $in: ['Preparing', 'Ready for Pickup'] } }),
-            Order.countDocuments({ status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-            Order.countDocuments({ date: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-            Order.countDocuments({ 'deliveryStatus.deliveredAt': { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
-            Order.countDocuments({ status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
-            Order.countDocuments({ status: { $in: ['Returned', 'Refused'] } })
-        ]);
+        const cachedOperationsKPI = await cacheService.getOrSet(cacheKey, async () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-        const returnRate = shippedEver > 0 ? ((returnedEver / shippedEver) * 100).toFixed(1) : 0;
+            const [
+                newOrdersToday,
+                pendingConfirmation,
+                confirmedOrders,
+                readyForDispatch,
+                sentToCourier,
+                shippedToday,
+                deliveredToday,
+                shippedEver,
+                returnedEver
+            ] = await Promise.all([
+                Order.countDocuments({ tenant: tenantId, date: { $gte: today }, status: 'New' }),
+                Order.countDocuments({ tenant: tenantId, status: 'New' }), // Pending confirmation
+                Order.countDocuments({ tenant: tenantId, status: 'Confirmed' }),
+                Order.countDocuments({ tenant: tenantId, status: { $in: ['Preparing', 'Ready for Pickup'] } }),
+                Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+                Order.countDocuments({ tenant: tenantId, date: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+                Order.countDocuments({ tenant: tenantId, 'deliveryStatus.deliveredAt': { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
+                Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
+                Order.countDocuments({ tenant: tenantId, status: { $in: ['Returned', 'Refused'] } })
+            ]);
 
-        res.json({
-            newOrdersToday,
-            pendingConfirmation,
-            confirmedOrders,
-            readyForDispatch,
-            sentToCourier,
-            shippedToday,
-            deliveredToday,
-            returnRate
-        });
+            const returnRate = shippedEver > 0 ? ((returnedEver / shippedEver) * 100).toFixed(1) : 0;
+
+            return {
+                newOrdersToday,
+                pendingConfirmation,
+                confirmedOrders,
+                readyForDispatch,
+                sentToCourier,
+                shippedToday,
+                deliveredToday,
+                returnRate
+            };
+        }, 300); // 5 minutes TTL
+
+        res.json(cachedOperationsKPI);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -237,29 +273,58 @@ exports.getOrdersKPIs = async (req, res) => {
 
 exports.getSalesPerformance = async (req, res) => {
     try {
-        // Top selling products, channels, volume
-        const orders = await Order.find();
+        const tenantId = req.user.tenant;
+        const cacheKey = `tenant:${tenantId}:kpi:salesPerformance`;
 
-        let totalSalesVolume = 0;
-        const channelDistribution = {};
+        const cachedPerformance = await cacheService.getOrSet(cacheKey, async () => {
+            const pipelineResult = await Order.aggregate([
+                { $match: { tenant: tenantId } },
+                {
+                    $facet: {
+                        totals: [
+                            {
+                                $group: {
+                                    _id: null,
+                                    totalOrders: { $sum: 1 },
+                                    totalSalesVolume: { $sum: "$totalAmount" }
+                                }
+                            }
+                        ],
+                        channels: [
+                            {
+                                $group: {
+                                    _id: "$channel",
+                                    count: { $sum: 1 },
+                                    revenue: { $sum: "$totalAmount" }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]);
 
-        orders.forEach(order => {
-            totalSalesVolume += order.totalAmount;
-            if (!channelDistribution[order.channel]) {
-                channelDistribution[order.channel] = { count: 0, revenue: 0 };
-            }
-            channelDistribution[order.channel].count += 1;
-            channelDistribution[order.channel].revenue += order.totalAmount;
-        });
+            const totals = pipelineResult[0]?.totals[0] || { totalOrders: 0, totalSalesVolume: 0 };
+            const { totalOrders, totalSalesVolume } = totals;
+            const averageOrderValue = totalOrders > 0 ? totalSalesVolume / totalOrders : 0;
 
-        const averageOrderValue = orders.length > 0 ? totalSalesVolume / orders.length : 0;
+            const channelDistribution = {};
+            pipelineResult[0]?.channels.forEach(ch => {
+                const channelName = ch._id || 'Unknown';
+                channelDistribution[channelName] = {
+                    count: ch.count,
+                    revenue: ch.revenue
+                };
+            });
 
-        res.json({
-            totalOrders: orders.length,
-            totalSalesVolume,
-            averageOrderValue,
-            channelDistribution
-        });
+            return {
+                totalOrders,
+                totalSalesVolume,
+                averageOrderValue,
+                channelDistribution
+            };
+        }, 3600); // 1-hour TTL for complex historical sales reports
+
+        res.json(cachedPerformance);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

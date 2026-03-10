@@ -12,6 +12,7 @@
   "dependencies": {
     "@dzcode-io/leblad": "^1.0.3",
     "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-virtual": "^3.13.21",
     "axios": "^1.13.6",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",

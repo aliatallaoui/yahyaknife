@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema({
         dateFormat: { type: String, default: 'DD/MM/YYYY' },
         currency: { type: String, default: 'DZD' },
         theme: { type: String, default: 'system' }
+    },
+    tenant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tenant'
     }
 }, {
     timestamps: true

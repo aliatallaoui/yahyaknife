@@ -26,6 +26,8 @@ const supportRoutes = require('./routes/support');
 const knifeRoutes = require('./routes/knives');
 const customOrderRoutes = require('./routes/customOrders');
 const aiRoutes = require('./routes/aiRoutes');
+const exportRoutes = require('./routes/exportRoutes');
+const path = require('path');
 const { initJobs } = require('./cron/scheduler');
 
 dotenv.config();
@@ -65,6 +67,8 @@ app.use('/api/tools', toolRoutes);
 app.use('/api/courier-settings', courierSettingsRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/exports', exportRoutes);
+app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

@@ -118,36 +118,53 @@ exports.assignOrdersToCourier = async (req, res) => {
     }
 };
 
-// Helper: Dynamically recalculate Courier KPIs based on entire Order history
 exports.recalculateCourierKPIs = async (courierId) => {
     try {
         const courier = await Courier.findById(courierId);
         if (!courier) return;
 
-        const allOrders = await Order.find({ courier: courierId });
-        if (allOrders.length === 0) return;
-
-        let totalDeliveries = 0;
-        let successfulDeliveries = 0;
-        let totalDeliveryTimeMinutes = 0;
-        let deliveriesWithTime = 0;
-
-        allOrders.forEach(o => {
-            if (['Delivered', 'Paid'].includes(o.status)) {
-                totalDeliveries++;
-                successfulDeliveries++;
-                if (o.deliveryStatus && o.deliveryStatus.deliveryTimeMinutes) {
-                    totalDeliveryTimeMinutes += o.deliveryStatus.deliveryTimeMinutes;
-                    deliveriesWithTime++;
+        const [kpiData] = await Order.aggregate([
+            { $match: { courier: courier._id } },
+            {
+                $group: {
+                    _id: null,
+                    successfulDeliveries: {
+                        $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, 1, 0] }
+                    },
+                    failedDeliveries: {
+                         $sum: { $cond: [{ $in: ["$status", ['Refused', 'Returned']] }, 1, 0] }
+                    },
+                    totalDeliveryTimeMinutes: {
+                        $sum: {
+                             $cond: [
+                                { $in: ["$status", ['Delivered', 'Paid']] },
+                                { $ifNull: ["$deliveryStatus.deliveryTimeMinutes", 0] },
+                                0
+                             ]
+                        }
+                    },
+                    deliveriesWithTime: {
+                        $sum: {
+                             $cond: [
+                                { $and: [
+                                    { $in: ["$status", ['Delivered', 'Paid']] },
+                                    { $ne: [{ $type: "$deliveryStatus.deliveryTimeMinutes" }, "missing"] },
+                                    { $ne: ["$deliveryStatus.deliveryTimeMinutes", null] }
+                                ]}, 1, 0
+                             ]
+                        }
+                    }
                 }
-            } else if (['Refused', 'Returned'].includes(o.status)) {
-                totalDeliveries++;
-                // They attempted it, so it counts as a total attempted delivery, but not successful
             }
-        });
+        ]);
 
-        const successRate = totalDeliveries > 0 ? (successfulDeliveries / totalDeliveries) * 100 : 0;
-        const averageDeliveryTimeMinutes = deliveriesWithTime > 0 ? totalDeliveryTimeMinutes / deliveriesWithTime : 0;
+        if (!kpiData) return; // No orders for this courier
+
+        const totalDeliveries = kpiData.successfulDeliveries + kpiData.failedDeliveries;
+        const successRate = totalDeliveries > 0 ? (kpiData.successfulDeliveries / totalDeliveries) * 100 : 0;
+        const averageDeliveryTimeMinutes = kpiData.deliveriesWithTime > 0 
+                                            ? kpiData.totalDeliveryTimeMinutes / kpiData.deliveriesWithTime 
+                                            : 0;
 
         courier.totalDeliveries = totalDeliveries;
         courier.successRate = successRate;

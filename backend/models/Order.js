@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-    orderId: { type: String, required: true, unique: true },
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
+    orderId: { type: String, required: true }, // Removed global unique constraint; uniqueness should be per tenant if needed
     date: { type: Date, default: Date.now },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     products: [{
@@ -104,5 +105,18 @@ const orderSchema = new mongoose.Schema({
     },
     notes: { type: String }
 }, { timestamps: true });
+
+// Tenant Execution Indexes
+orderSchema.index({ tenant: 1, _id: -1 }); // Fast Cursor Pagination
+orderSchema.index({ tenant: 1, status: 1, _id: -1 }); // Fast View Pagination
+orderSchema.index({ tenant: 1, 'shipping.phone1': 1 }); // Call Center Lookup
+orderSchema.index({ tenant: 1, courier: 1, 'deliveryStatus.deliveredAt': -1 }); // Courier KPI lookups
+
+// Text Search Index (Replaces slow Regex collection scans)
+// Weighted so Order ID matches rank higher than random tracking numbers
+orderSchema.index(
+    { orderId: 'text', 'trackingInfo.trackingNumber': 'text', 'shipping.phone1': 'text' },
+    { weights: { orderId: 10, 'trackingInfo.trackingNumber': 5, 'shipping.phone1': 2 }, name: "order_text_idx" }
+);
 
 module.exports = mongoose.model('Order', orderSchema);

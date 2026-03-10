@@ -1,74 +1,118 @@
 const Order = require('../models/Order');
 const moment = require('moment');
+const cacheService = require('../services/cacheService');
 
 exports.getCourierKPIs = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { dateRange = 30 } = req.query;
-        const startDate = moment().subtract(Number(dateRange), 'days').toDate();
+        const cacheKey = `tenant:${tenantId}:courier:kpis:days:${dateRange}`;
 
-        // 1. Overall Delivery Performance (Fleet-wide)
-        const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
-        const orders = await Order.find({
-            createdAt: { $gte: startDate },
-            status: { $in: dispatchStatuses }
-        });
+        const cachedKPIs = await cacheService.getOrSet(cacheKey, async () => {
+            const startDate = moment().subtract(Number(dateRange), 'days').toDate();
+            const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
 
-        const total = orders.length;
-        const delivered = orders.filter(o => ['Delivered', 'Paid'].includes(o.status)).length;
-        const returned = orders.filter(o => ['Returned', 'Refused'].includes(o.status)).length;
-        const inTransit = orders.filter(o => ['Dispatched', 'Shipped', 'Out for Delivery'].includes(o.status)).length;
-
-        const successRate = total > 0 ? ((delivered / total) * 100).toFixed(1) : 0;
-        const returnRate = total > 0 ? ((returned / total) * 100).toFixed(1) : 0;
-
-        // 2. Average Delivery Time
-        let totalDeliveryDays = 0;
-        let deliveredCount = 0;
-
-        orders.forEach(o => {
-            if (['Delivered', 'Paid'].includes(o.status) && o.deliveryStatus && o.deliveryStatus.deliveredAt) {
-                totalDeliveryDays += moment(o.deliveryStatus.deliveredAt).diff(moment(o.createdAt), 'days');
-                deliveredCount++;
-            }
-        });
-
-        const avgDeliveryTimeDays = deliveredCount > 0 ? (totalDeliveryDays / deliveredCount).toFixed(1) : 0;
-
-        // 3. Financial Reconciliation (COD)
-        let totalDeliveredCOD = 0;
-        let pendingCourierClearance = 0;
-        let settledToBank = 0;
-
-        orders.forEach(o => {
-            if (['Delivered', 'Paid'].includes(o.status)) {
-                const amount = o.financials?.codAmount || o.totalAmount;
-                totalDeliveredCOD += amount;
-                if (o.paymentStatus === 'Paid' || o.status === 'Paid') {
-                    settledToBank += amount;
-                } else {
-                    pendingCourierClearance += amount;
+            const [kpiResult] = await Order.aggregate([
+                {
+                    $match: {
+                        tenant: tenantId,
+                        createdAt: { $gte: startDate },
+                        status: { $in: dispatchStatuses }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalShipments: { $sum: 1 },
+                        delivered: {
+                            $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, 1, 0] }
+                        },
+                        returned: {
+                            $sum: { $cond: [{ $in: ["$status", ['Returned', 'Refused']] }, 1, 0] }
+                        },
+                        inTransit: {
+                            $sum: { $cond: [{ $in: ["$status", ['Dispatched', 'Shipped', 'Out for Delivery']] }, 1, 0] }
+                        },
+                        totalDeliveryDays: {
+                            $sum: {
+                                $cond: [
+                                    { $and: [
+                                        { $in: ["$status", ['Delivered', 'Paid']] },
+                                        { $ifNull: ["$deliveryStatus.deliveredAt", false] }
+                                    ]},
+                                    { $divide: [{ $subtract: ["$deliveryStatus.deliveredAt", "$createdAt"] }, 1000 * 60 * 60 * 24] },
+                                    0
+                                ]
+                            }
+                        },
+                        deliveriesWithTime: {
+                            $sum: {
+                                $cond: [
+                                    { $and: [
+                                        { $in: ["$status", ['Delivered', 'Paid']] },
+                                        { $ifNull: ["$deliveryStatus.deliveredAt", false] }
+                                    ]},
+                                    1, 0
+                                ]
+                            }
+                        },
+                        totalDeliveredCOD: {
+                            $sum: {
+                                $cond: [
+                                    { $in: ["$status", ['Delivered', 'Paid']] },
+                                    { $ifNull: ["$financials.codAmount", "$totalAmount"] },
+                                    0
+                                ]
+                            }
+                        },
+                        settledToBank: {
+                            $sum: {
+                                $cond: [
+                                    { $and: [
+                                        { $in: ["$status", ['Delivered', 'Paid']] },
+                                        { $in: ["$paymentStatus", ["Paid"]] } // If order is marked Paid, it's settled
+                                    ]},
+                                    { $ifNull: ["$financials.codAmount", "$totalAmount"] },
+                                    0
+                                ]
+                            }
+                        }
+                    }
                 }
-            }
-        });
+            ]);
 
-        res.json({
-            kpis: {
-                totalShipments: total,
-                delivered,
-                returned,
-                inTransit,
-                successRate: Number(successRate),
-                returnRate: Number(returnRate),
-                avgDeliveryTimeDays: Number(avgDeliveryTimeDays)
-            },
-            financials: {
-                totalDeliveredCOD,
-                pendingCourierClearance,
-                settledToBank,
-                uncollectedFromCustomer: 0
+            if (!kpiResult) {
+                return {
+                    kpis: { totalShipments: 0, delivered: 0, returned: 0, inTransit: 0, successRate: 0, returnRate: 0, avgDeliveryTimeDays: 0 },
+                    financials: { totalDeliveredCOD: 0, pendingCourierClearance: 0, settledToBank: 0, uncollectedFromCustomer: 0 }
+                };
             }
-        });
 
+            const successRate = kpiResult.totalShipments > 0 ? ((kpiResult.delivered / kpiResult.totalShipments) * 100).toFixed(1) : 0;
+            const returnRate = kpiResult.totalShipments > 0 ? ((kpiResult.returned / kpiResult.totalShipments) * 100).toFixed(1) : 0;
+            const avgDeliveryTimeDays = kpiResult.deliveriesWithTime > 0 ? (kpiResult.totalDeliveryDays / kpiResult.deliveriesWithTime).toFixed(1) : 0;
+            const pendingCourierClearance = kpiResult.totalDeliveredCOD - kpiResult.settledToBank;
+
+            return {
+                kpis: {
+                    totalShipments: kpiResult.totalShipments,
+                    delivered: kpiResult.delivered,
+                    returned: kpiResult.returned,
+                    inTransit: kpiResult.inTransit,
+                    successRate: Number(successRate),
+                    returnRate: Number(returnRate),
+                    avgDeliveryTimeDays: Number(avgDeliveryTimeDays)
+                },
+                financials: {
+                    totalDeliveredCOD: kpiResult.totalDeliveredCOD,
+                    pendingCourierClearance,
+                    settledToBank: kpiResult.settledToBank,
+                    uncollectedFromCustomer: 0
+                }
+            };
+        }, 300); // 5 minutes TTL
+
+        res.json(cachedKPIs);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -76,45 +120,49 @@ exports.getCourierKPIs = async (req, res) => {
 
 exports.getRegionalPerformance = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { dateRange = 30 } = req.query;
-        const startDate = moment().subtract(Number(dateRange), 'days').toDate();
+        const cacheKey = `tenant:${tenantId}:courier:regional:days:${dateRange}`;
 
-        const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
+        const cachedRegions = await cacheService.getOrSet(cacheKey, async () => {
+            const startDate = moment().subtract(Number(dateRange), 'days').toDate();
+            const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
 
-        const regions = await Order.aggregate([
-            { $match: { createdAt: { $gte: startDate }, status: { $in: dispatchStatuses } } },
-            {
-                $group: {
-                    _id: "$shipping.wilaya",
-                    total: { $sum: 1 },
-                    delivered: {
-                        $sum: { $cond: [{ $in: ["$status", ["Delivered", "Paid"]] }, 1, 0] }
-                    },
-                    returned: {
-                        $sum: { $cond: [{ $in: ["$status", ["Returned", "Refused"]] }, 1, 0] }
+            return await Order.aggregate([
+                { $match: { tenant: tenantId, createdAt: { $gte: startDate }, status: { $in: dispatchStatuses } } },
+                {
+                    $group: {
+                        _id: "$shipping.wilaya",
+                        total: { $sum: 1 },
+                        delivered: {
+                            $sum: { $cond: [{ $in: ["$status", ["Delivered", "Paid"]] }, 1, 0] }
+                        },
+                        returned: {
+                            $sum: { $cond: [{ $in: ["$status", ["Returned", "Refused"]] }, 1, 0] }
+                        }
                     }
-                }
-            },
-            {
-                $project: {
-                    wilaya: { $ifNull: ["$_id", "Unknown"] },
-                    total: 1,
-                    delivered: 1,
-                    returned: 1,
-                    successRate: {
-                        $cond: [
-                            { $eq: ["$total", 0] },
-                            0,
-                            { $multiply: [{ $divide: ["$delivered", "$total"] }, 100] }
-                        ]
+                },
+                {
+                    $project: {
+                        wilaya: { $ifNull: ["$_id", "Unknown"] },
+                        total: 1,
+                        delivered: 1,
+                        returned: 1,
+                        successRate: {
+                            $cond: [
+                                { $eq: ["$total", 0] },
+                                0,
+                                { $multiply: [{ $divide: ["$delivered", "$total"] }, 100] }
+                            ]
+                        }
                     }
-                }
-            },
-            { $sort: { total: -1 } },
-            { $limit: 10 }
-        ]);
+                },
+                { $sort: { total: -1 } },
+                { $limit: 10 }
+            ]);
+        }, 1800); // 30-minute TTL for historical regional aggregates
 
-        res.json(regions);
+        res.json(cachedRegions);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

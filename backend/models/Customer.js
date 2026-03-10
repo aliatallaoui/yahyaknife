@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 
 const customerSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
     name: { type: String, required: true },
-    phone: { type: String, unique: true, sparse: true }, // Primary identifier
-    email: { type: String, unique: true, sparse: true },
+    phone: { type: String }, // Primary identifier - uniqueness handled via compound index below
+    email: { type: String },
     joinDate: { type: Date, default: Date.now },
     acquisitionChannel: {
         type: String,
@@ -45,8 +46,24 @@ const customerSchema = new mongoose.Schema({
     returnRate: { type: Number, default: 0 },
     riskLevel: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Low' },
     requiresDeliveryVerification: { type: Boolean, default: false }, // Force manual call before dispatch
-    isSuspicious: { type: Boolean, default: false },
     blacklisted: { type: Boolean, default: false } // Auto-blocked from future orders
 }, { timestamps: true });
+
+// Tenant Isolating Unique Constraints & Speedy Lookups
+customerSchema.index(
+    { tenant: 1, phone: 1 }, 
+    { unique: true, partialFilterExpression: { phone: { $exists: true, $type: "string" } } }
+);
+customerSchema.index(
+    { tenant: 1, email: 1 }, 
+    { unique: true, partialFilterExpression: { email: { $exists: true, $type: "string" } } }
+);
+
+// Advanced Full-Text Index for instant global searches
+customerSchema.index(
+    { name: 'text', phone: 'text', email: 'text' },
+    { weights: { phone: 10, name: 5, email: 1 }, name: "customer_text_idx" }
+);
+customerSchema.index({ tenant: 1, riskLevel: 1, _id: -1 });
 
 module.exports = mongoose.model('Customer', customerSchema);
