@@ -819,7 +819,7 @@ export default function OrderControlCenter() {
                         <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                             <div className="relative flex items-center shrink-0">
                                 <AlertTriangle className="w-[14px] h-[14px] text-orange-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.priority} onChange={e => handleFilterChange('priority', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-orange-200 bg-orange-50 text-orange-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-orange-500/20 appearance-none cursor-pointer hover:bg-orange-100/70 transition-colors">
+                                <select value={filters.priority} onChange={e => handleFilterChange('priority', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-orange-200 bg-orange-50/60 text-orange-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 appearance-none cursor-pointer hover:bg-orange-100/80 transition-all shadow-sm">
                                     <option value="">{t('ordersControl.filters.priority')}</option>
                                     <option value="Normal">{t('ordersControl.filters.priorityNormal')}</option>
                                     <option value="High Priority">{t('ordersControl.filters.priorityHigh')}</option>
@@ -828,18 +828,23 @@ export default function OrderControlCenter() {
                             </div>
                             <div className="relative flex items-center shrink-0">
                                 <LayoutTemplate className="w-[14px] h-[14px] text-purple-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.channel} onChange={e => handleFilterChange('channel', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-purple-500/20 appearance-none cursor-pointer hover:bg-purple-100/70 transition-colors">
+                                <select value={filters.channel} onChange={e => handleFilterChange('channel', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-purple-200 bg-purple-50/60 text-purple-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400 appearance-none cursor-pointer hover:bg-purple-100/80 transition-all shadow-sm">
                                     <option value="">{t('ordersControl.filters.channel')}</option>
                                     {['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Manual Entry', 'Other'].map(ch => <option key={ch} value={ch}>{ch}</option>)}
                                 </select>
                             </div>
                             <div className="relative flex items-center shrink-0">
                                 <MapPin className="w-[14px] h-[14px] text-teal-500 absolute left-3 pointer-events-none" />
-                                <input type="text" placeholder={t('ordersControl.filters.wilayaHolder')} value={filters.wilaya} onChange={e => handleFilterChange('wilaya', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-teal-200 bg-teal-50 text-teal-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20 placeholder:text-teal-400/70 w-36 hover:bg-teal-100/70 transition-colors" />
+                                <select value={filters.wilaya} onChange={e => handleFilterChange('wilaya', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-teal-200 bg-teal-50/60 text-teal-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 appearance-none cursor-pointer hover:bg-teal-100/80 transition-all shadow-sm">
+                                    <option value="">{t('ordersControl.filters.wilayaHolder', { defaultValue: 'All Wilayas' })}</option>
+                                    {['Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar', 'Blida', 'Bouira', 'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou', 'Alger', 'Djelfa', 'Jijel', 'Sétif', 'Saïda', 'Skikda', 'Sidi Bel Abbès', 'Annaba', 'Guelma', 'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla', 'Oran', 'El Bayadh', 'Illizi', 'Bordj Bou Arreridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued', 'Khenchela', 'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent', 'Ghardaïa', 'Relizane', 'Timimoun', 'Bordj Badji Mokhtar', 'Ouled Djellal', 'Béni Abbès', 'In Salah', 'In Guezzam', 'Touggourt', 'Djanet', 'El M\'Ghair', 'El Meniaa'].map((w, i) => (
+                                        <option key={w} value={w}>{`${i + 1} - ${w}`}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="relative flex items-center shrink-0">
                                 <User className="w-[14px] h-[14px] text-blue-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.agent} onChange={e => handleFilterChange('agent', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer hover:bg-blue-100/70 transition-colors">
+                                <select value={filters.agent} onChange={e => handleFilterChange('agent', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-blue-200 bg-blue-50/60 text-blue-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 appearance-none cursor-pointer hover:bg-blue-100/80 transition-all shadow-sm">
                                     <option value="">{t('ordersControl.filters.anyAgent')}</option>
                                     <option value="unassigned">{t('ordersControl.filters.unassigned')}</option>
                                     {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
@@ -847,7 +852,7 @@ export default function OrderControlCenter() {
                             </div>
                             <div className="relative flex items-center shrink-0">
                                 <Truck className="w-[14px] h-[14px] text-indigo-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.courier} onChange={e => handleFilterChange('courier', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer hover:bg-indigo-100/70 transition-colors">
+                                <select value={filters.courier} onChange={e => handleFilterChange('courier', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-indigo-200 bg-indigo-50/60 text-indigo-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 appearance-none cursor-pointer hover:bg-indigo-100/80 transition-all shadow-sm">
                                     <option value="">{t('ordersControl.filters.anyCourier')}</option>
                                     <option value="unassigned">{t('ordersControl.filters.unassigned')}</option>
                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
@@ -855,7 +860,7 @@ export default function OrderControlCenter() {
                             </div>
                             <div className="relative flex items-center shrink-0">
                                 <Activity className="w-[14px] h-[14px] text-emerald-500 absolute left-3 pointer-events-none" />
-                                <select value={filters.status} onChange={e => handleFilterChange('status', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none cursor-pointer hover:bg-emerald-100/70 transition-colors">
+                                <select value={filters.status} onChange={e => handleFilterChange('status', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-50/60 text-emerald-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 appearance-none cursor-pointer hover:bg-emerald-100/80 transition-all shadow-sm">
                                     <option value="">{t('ordersControl.filters.status')}</option>
                                     {COD_STATUSES.map(s => <option key={s} value={s}>{s === 'Delivered' || s === 'Refused' || s === 'Returned' || s === 'Cancelled' ? (t(`sales.status${s}`) || s) : s}</option>)}
                                 </select>
@@ -863,10 +868,10 @@ export default function OrderControlCenter() {
 
                             <div className="h-6 w-px bg-gray-200 shrink-0 hidden sm:block"></div>
 
-                            <div className="relative flex items-center shrink-0">
-                                <Calendar className="w-[14px] h-[14px] text-gray-500 absolute left-2.5 pointer-events-none z-10" />
+                            <div className="relative flex items-center shrink-0 shadow-sm rounded-full overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-400 transition-all hover:border-gray-300 w-auto bg-white/60">
+                                <Calendar className="w-[14px] h-[14px] text-gray-500 absolute left-3 pointer-events-none z-10" />
                                 <select 
-                                    className="pl-8 pr-6 py-1.5 rounded-l-full border border-gray-200 bg-white text-gray-700 text-[11px] font-bold outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-gray-50 transition-colors border-r-0 relative z-0"
+                                    className="pl-9 pr-4 py-1.5 bg-transparent text-gray-700 text-[11px] font-bold outline-none appearance-none cursor-pointer hover:bg-gray-50 transition-colors border-r hover:border-gray-200 relative z-0"
                                     onChange={(e) => {
                                         const preset = e.target.value;
                                         if (!preset) return;
@@ -903,14 +908,14 @@ export default function OrderControlCenter() {
                                     <option value="thisMonth">{t('ordersControl.filters.thisMonth', { defaultValue: 'This Month' })}</option>
                                     <option value="lastMonth">{t('ordersControl.filters.lastMonth', { defaultValue: 'Last Month' })}</option>
                                 </select>
-                                <input type="date" value={filters.dateFrom} onChange={e => handleFilterChange('dateFrom', e.target.value)} className="px-3 py-1.5 border border-l-0 border-r-0 border-gray-200 bg-gray-50 text-gray-600 text-[11px] font-bold outline-none focus:ring-1 focus:ring-gray-300 w-[115px] hover:bg-gray-100/50 transition-colors" />
-                                <div className="bg-gray-50 border-y border-gray-200 py-1.5 px-1.5 text-[10px] text-gray-400 font-bold shrink-0">{t('ordersControl.filters.to')}</div>
-                                <input type="date" value={filters.dateTo} onChange={e => handleFilterChange('dateTo', e.target.value)} className="px-3 py-1.5 rounded-r-full border border-gray-200 bg-gray-50 text-gray-600 text-[11px] font-bold outline-none focus:ring-1 focus:ring-gray-300 w-[115px] hover:bg-gray-100/50 transition-colors" />
+                                <input type="date" value={filters.dateFrom} onChange={e => handleFilterChange('dateFrom', e.target.value)} className="px-3 py-1.5 bg-transparent text-gray-700 text-[11px] font-bold outline-none w-[115px] hover:bg-gray-50 transition-colors cursor-pointer" />
+                                <div className="bg-gray-50/50 py-1.5 px-2 text-[10px] text-gray-400 font-bold shrink-0 border-x border-gray-200">{t('ordersControl.filters.to')}</div>
+                                <input type="date" value={filters.dateTo} onChange={e => handleFilterChange('dateTo', e.target.value)} className="px-3 py-1.5 bg-transparent text-gray-700 text-[11px] font-bold outline-none w-[115px] hover:bg-gray-50 transition-colors cursor-pointer" />
                             </div>
 
                             <div className="relative flex items-center shrink-0">
                                 <Tag className="w-[14px] h-[14px] text-pink-500 absolute left-3 pointer-events-none" />
-                                <input type="text" placeholder={t('ordersControl.filters.tagsHolder')} value={filters.tags} onChange={e => handleFilterChange('tags', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-pink-200 bg-pink-50 text-pink-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-pink-500/20 placeholder:text-pink-400/70 w-32 hover:bg-pink-100/70 transition-colors" />
+                                <input type="text" placeholder={t('ordersControl.filters.tagsHolder')} value={filters.tags} onChange={e => handleFilterChange('tags', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-pink-200 bg-pink-50/60 text-pink-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-400 placeholder:text-pink-400/80 w-32 hover:bg-pink-100/80 transition-all shadow-sm" />
                             </div>
 
                             {/* Clear Filters Button */}
