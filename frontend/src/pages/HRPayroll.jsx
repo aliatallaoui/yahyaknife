@@ -164,7 +164,7 @@ export default function HRPayroll() {
                                     </td>
 
                                     <td className="px-6 py-4 text-end">
-                                        <span className="text-sm font-medium text-gray-600">{record.baseSalary.toLocaleString()}</span>
+                                        <span className="text-sm font-medium text-gray-600">{(record.baseSalary || 0).toLocaleString()}</span>
                                     </td>
 
                                     <td className="px-6 py-4 text-end">
@@ -183,12 +183,12 @@ export default function HRPayroll() {
                                     </td>
 
                                     <td className="px-6 py-4 text-right bg-gray-50/50">
-                                        <span className="text-lg font-black text-gray-900">{record.finalPayableSalary.toLocaleString()}</span> <span className="text-xs text-gray-500">{t('hr.dzdCurrency')}</span>
+                                        <span className="text-lg font-black text-gray-900">{(record.finalPayableSalary || 0).toLocaleString()}</span> <span className="text-xs text-gray-500">{t('hr.dzdCurrency')}</span>
                                         {(record.amountPaid > 0 && record.amountPaid < record.finalPayableSalary) && (
-                                            <div className="text-xs font-bold text-amber-600 mt-1 pb-1 border-b border-amber-200/50">{t('hr.lblPaid')} {record.amountPaid.toLocaleString()} {t('hr.dzdCurrency')}</div>
+                                            <div className="text-xs font-bold text-amber-600 mt-1 pb-1 border-b border-amber-200/50">{t('hr.lblPaid')} {(record.amountPaid || 0).toLocaleString()} {t('hr.dzdCurrency')}</div>
                                         )}
                                         {record.amountPaid > 0 && (
-                                            <div className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{t('hr.lblRemaining')} {(record.finalPayableSalary - record.amountPaid).toLocaleString()}</div>
+                                            <div className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{t('hr.lblRemaining')} {((record.finalPayableSalary || 0) - (record.amountPaid || 0)).toLocaleString()}</div>
                                         )}
                                     </td>
 
@@ -235,7 +235,7 @@ export default function HRPayroll() {
                         <div className="p-6">
                             <p className="text-sm text-gray-500 mb-4">
                                 {t('hr.issuingPaymentFor')} <strong className="text-gray-900">{paymentModal.empName}</strong>.
-                                <br />{t('hr.remainingDeficit')} <strong className="text-rose-600">{paymentModal.maxPayable.toLocaleString()} {t('hr.dzdCurrency')}</strong>
+                                <br />{t('hr.remainingDeficit')} <strong className="text-rose-600">{(paymentModal.maxPayable || 0).toLocaleString()} {t('hr.dzdCurrency')}</strong>
                             </p>
 
                             <label className="block text-sm font-bold text-gray-700 mb-2">{t('hr.lblPaymentAmount')}</label>

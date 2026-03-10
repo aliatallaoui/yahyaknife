@@ -483,6 +483,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
     const [formData, setFormData] = useState({
         name: employee?.name || '',
         email: employee?.email || '',
+        joinDate: employee?.joinDate ? moment(employee.joinDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         department: employee?.department || 'Manufacturing',
         role: employee?.role || '',
         workshopRole: employee?.workshopRole || 'None',
@@ -505,6 +506,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
         const payload = {
             name: formData.name,
             email: formData.email,
+            joinDate: formData.joinDate,
             department: formData.department,
             role: formData.role,
             workshopRole: formData.workshopRole,
@@ -551,7 +553,7 @@ function EmployeeModal({ employee, onClose, onSave }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblFullName')}</label>
                             <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.namePlaceholder')} />
@@ -559,6 +561,10 @@ function EmployeeModal({ employee, onClose, onSave }) {
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblEmail')}</label>
                             <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.emailPlaceholder')} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStartDate', 'تاريخ البداية العمل')}</label>
+                            <input required type="date" value={formData.joinDate} onChange={e => setFormData({ ...formData, joinDate: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
                         </div>
                     </div>
 

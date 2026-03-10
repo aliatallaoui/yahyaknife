@@ -109,10 +109,10 @@ export default function HRReports() {
                             {data.records.map((r, i) => (
                                 <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
-                                    <td className="px-5 py-3 text-end text-gray-600">{r.baseSalary.toLocaleString()}</td>
+                                    <td className="px-5 py-3 text-end text-gray-600">{(r.baseSalary || 0).toLocaleString()}</td>
                                     <td className="px-5 py-3 text-end text-red-600 font-bold">-{r.missingTimeDeductions + r.absenceDeductions}</td>
                                     <td className="px-5 py-3 text-end text-emerald-600 font-bold">+{r.overtimeAdditions}</td>
-                                    <td className="px-5 py-3 text-end text-lg font-black text-gray-900 ltr:border-l rtl:border-r border-gray-100 bg-gray-50/30">{r.finalPayableSalary.toLocaleString()} {t('hr.dzdCurrency')}</td>
+                                    <td className="px-5 py-3 text-end text-lg font-black text-gray-900 ltr:border-l rtl:border-r border-gray-100 bg-gray-50/30">{(r.finalPayableSalary || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -231,7 +231,7 @@ export default function HRReports() {
                 r.metricsTotal?.lateDays || 0,
                 r.metricsTotal?.absentDays || 0,
                 `${r.metricsTotal?.totalMissingMinutes || 0}${t('hr.lblMinutes')}`,
-                `${r.projectedSalary?.toLocaleString() || 0} ${t('hr.dzdCurrency')}`
+                `${(r.projectedSalary || 0).toLocaleString()} ${t('hr.dzdCurrency')}`
             ]);
         }
         else if (activeReport === 'payroll' && data?.records) {
