@@ -106,33 +106,33 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                     <div className="bg-white p-5 rounded-xl border border-blue-100 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10 opacity-50 pointer-events-none"></div>
                         <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2 mb-4">
-                            <CheckCircle2 className="w-4 h-4 text-blue-500" /> Operational Controls
+                            <CheckCircle2 className="w-4 h-4 text-blue-500" /> {t('ordersControl.drawer.operationalControls', { defaultValue: 'Operational Controls' })}
                         </h3>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Update Lifecycle</label>
+                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{t('ordersControl.drawer.updateLifecycle', { defaultValue: 'Update Lifecycle' })}</label>
                                 <select value={status} onChange={e => setStatus(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                                    {COD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    {COD_STATUSES.map(s => <option key={s} value={s}>{t(`sales.status${s.replace(/\s+/g, '')}`) || s}</option>)}
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Assign Call Center Agent</label>
+                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{t('ordersControl.drawer.assignAgent', { defaultValue: 'Assign Call Center Agent' })}</label>
                                 <select value={assignedAgent} onChange={e => setAssignedAgent(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 transition-colors">
-                                    <option value="">Unassigned</option>
+                                    <option value="">{t('ordersControl.bulk.unassignAgent', { defaultValue: 'Unassigned' })}</option>
                                     {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
                                 </select>
                             </div>
                         </div>
 
                         <div className="mt-4 flex flex-col gap-1.5">
-                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Internal Order Notes</label>
+                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{t('ordersControl.drawer.internalNotes', { defaultValue: 'Internal Order Notes' })}</label>
                             <textarea
                                 value={internalNotes}
                                 onChange={e => setInternalNotes(e.target.value)}
                                 rows={2}
                                 className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:border-blue-500 w-full resize-none transition-colors placeholder:text-gray-300"
-                                placeholder="Add instructions for courier or call center..."
+                                placeholder={t('ordersControl.drawer.notesPlaceholder', { defaultValue: 'Add instructions for courier or call center...' })}
                             />
                         </div>
                     </div>
@@ -141,7 +141,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-3">
                             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <UserCircle className="w-4 h-4 text-gray-400" /> Customer Identity
+                                <UserCircle className="w-4 h-4 text-gray-400" /> {t('ordersControl.details.customerInfo', { defaultValue: 'Customer Identity' })}
                             </h3>
                             <div>
                                 <p className="font-bold text-gray-900 text-sm">{order.customer?.name || order.shipping?.firstName || 'Walk-in'}</p>
@@ -159,11 +159,11 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
 
                         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-3">
                             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <MapPin className="w-4 h-4 text-gray-400" /> Location & Delivery
+                                <MapPin className="w-4 h-4 text-gray-400" /> {t('ordersControl.drawer.locationAndDelivery', { defaultValue: 'Location & Delivery' })}
                             </h3>
                             <div>
-                                <p className="font-bold text-gray-900 text-sm tracking-tight">{order.wilaya || 'Unspecified Wilaya'}</p>
-                                <p className="text-gray-500 text-xs mt-0.5">{order.commune || 'Unspecified Commune'}</p>
+                                <p className="font-bold text-gray-900 text-sm tracking-tight">{order.wilaya || order.shipping?.wilayaName || t('ordersControl.drawer.unspecifiedWilaya', { defaultValue: 'Unspecified Wilaya' })}</p>
+                                <p className="text-gray-500 text-xs mt-0.5">{order.commune || order.shipping?.commune || t('ordersControl.drawer.unspecifiedCommune', { defaultValue: 'Unspecified Commune' })}</p>
                                 {order.shipping?.address1 && (
                                     <p className="text-gray-600 text-xs mt-2 p-2 bg-gray-50 rounded-md border border-gray-100">{order.shipping.address1}</p>
                                 )}
@@ -174,14 +174,14 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                     {/* Products Included */}
                     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-3">
-                            <Package className="w-4 h-4 text-gray-400" /> Products Payload
+                            <Package className="w-4 h-4 text-gray-400" /> {t('ordersControl.drawer.productsPayload', { defaultValue: 'Products Payload' })}
                         </h3>
                         <div className="flex flex-col gap-2 divide-y divide-gray-50">
                             {order.products?.map((prod, idx) => (
                                 <div key={idx} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
                                     <div className="flex flex-col">
                                         <span className="font-bold text-gray-800 text-sm truncate max-w-[250px]">{prod.name}</span>
-                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Qty: {prod.quantity} × {(prod.unitPrice || 0).toLocaleString()} DZD</span>
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.grid.qty', { defaultValue: 'Qty' })}: {prod.quantity} × {(prod.unitPrice || 0).toLocaleString()} DZD</span>
                                     </div>
                                     <span className="font-black text-gray-900 text-sm">{(prod.quantity * (prod.unitPrice || 0)).toLocaleString()}</span>
                                 </div>
@@ -193,23 +193,23 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <CreditCard className="w-4 h-4 text-gray-400" /> Financials
+                                <CreditCard className="w-4 h-4 text-gray-400" /> {t('ordersControl.drawer.financials', { defaultValue: 'Financials' })}
                             </h3>
                             <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                {order.paymentStatus || 'Unpaid'}
+                                {t(`sales.payment${(order.paymentStatus || 'Unpaid').replace(/\s+/g, '')}`) || order.paymentStatus || 'Unpaid'}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-gray-500">Subtotal</span>
+                            <span className="font-medium text-gray-500">{t('ordersControl.drawer.subtotal', { defaultValue: 'Subtotal' })}</span>
                             <span className="font-bold text-gray-800">{(order.totalAmount - (order.shipping?.cost || 0)).toLocaleString()} DZD</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-gray-500">Delivery Fee</span>
+                            <span className="font-medium text-gray-500">{t('ordersControl.drawer.deliveryFee', { defaultValue: 'Delivery Fee' })}</span>
                             <span className="font-bold text-gray-800">{(order.shipping?.cost || 0).toLocaleString()} DZD</span>
                         </div>
                         <div className="pt-3 border-t border-dashed border-gray-200 flex items-center justify-between">
-                            <span className="font-black text-gray-900 uppercase tracking-widest">Total Value</span>
+                            <span className="font-black text-gray-900 uppercase tracking-widest">{t('ordersControl.grid.totalValue', { defaultValue: 'Total Value' })}</span>
                             <span className="font-black text-xl text-blue-600">{(order.totalAmount || 0).toLocaleString()} <span className="text-xs">DZD</span></span>
                         </div>
 
@@ -217,12 +217,12 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                         <div className="mt-2 pt-3 border-t border-gray-100 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Truck className="w-4 h-4 text-gray-400" />
-                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Aggregator</span>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{t('ordersControl.drawer.aggregator', { defaultValue: 'Aggregator' })}</span>
                             </div>
                             {order.courier ? (
                                 <span className="text-xs font-black text-gray-900 tracking-tight">{order.courier.name}</span>
                             ) : (
-                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 rounded uppercase border border-amber-100">Not Dispatched</span>
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 rounded uppercase border border-amber-100">{t('ordersControl.drawer.notDispatched', { defaultValue: 'Not Dispatched' })}</span>
                             )}
                         </div>
                     </div>
@@ -232,7 +232,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                 {/* Footer Action */}
                 <div className="bg-white px-6 py-4 border-t border-gray-100 shrink-0 flex items-center justify-between">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-100 transition-colors">
-                        Discard
+                        {t('ordersControl.bulk.cancel', { defaultValue: 'Discard' })}
                     </button>
                     <button
                         onClick={handleSavePrimary}
@@ -240,9 +240,9 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                         className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {saving ? (
-                            <><div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div> Saving...</>
+                            <><div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div> {t('ordersControl.grid.updating', { defaultValue: 'Saving...' })}</>
                         ) : (
-                            <><Save className="w-4 h-4" /> Save Operations</>
+                            <><Save className="w-4 h-4" /> {t('ordersControl.drawer.saveOperations', { defaultValue: 'Save Operations' })}</>
                         )}
                     </button>
                 </div>

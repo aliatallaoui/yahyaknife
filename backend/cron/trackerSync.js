@@ -138,14 +138,8 @@ const syncActiveShipments = async () => {
 
 // Initialize the cron routines
 const initCronJobs = () => {
-    // Run every 10 minutes in production, or every 2 minutes in dev for testing
-    const schedule = process.env.NODE_ENV === 'production' ? '*/10 * * * *' : '*/2 * * * *';
-
-    cron.schedule(schedule, () => {
-        syncActiveShipments();
-    });
-
-    console.log(`[CRON] Dispatch Tracking Sync initialized. Schedule: ${schedule}`);
+    // Cron scheduling disabled per user request, manual syncing only via Control Center
+    console.log(`[CRON] Dispatch Tracking Sync scheduling disabled. Awaiting manual triggers.`);
 };
 
 module.exports = {

@@ -16,6 +16,9 @@ router.get('/orders/operations-kpi', salesController.getOrdersKPIs);
 // /api/sales/orders/bulk/update
 router.post('/orders/bulk/update', salesController.updateBulkOrders);
 
+// /api/sales/orders/sync-ecotrack
+router.post('/orders/sync-ecotrack', salesController.triggerEcotrackSync);
+
 router.route('/orders/:id')
     .put(salesController.updateOrder)
     .delete(salesController.deleteOrder);

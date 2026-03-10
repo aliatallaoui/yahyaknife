@@ -5,6 +5,159 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
     en: {
         translation: {
+            ordersControl: {
+                title: 'Orders Control Center',
+                subtitle: 'High Volume Operations API',
+                kpis: {
+                    newToday: 'New Today',
+                    pending: 'Pending',
+                    confirmed: 'Confirmed',
+                    dispatched: 'Dispatched',
+                    returnRate: 'Return Rate'
+                },
+                searchPlaceholder: 'Search ID, Phone, Name...',
+                columnsBtn: 'Columns',
+                visibleColumnsTitle: 'Visible Columns',
+                filtersBtn: 'Filters',
+                refreshTitle: 'Refresh Data Core',
+                stages: {
+                    preDispatch: 'Pre Dispatch',
+                    postDispatch: 'Post Dispatch',
+                    returns: 'Returns & Refusals',
+                    all: 'All Orders'
+                },
+                filters: {
+                    priority: 'All Priorities',
+                    priorityNormal: 'Normal',
+                    priorityHigh: 'High Priority',
+                    priorityUrgent: 'Urgent',
+                    channel: 'All Channels',
+                    wilayaHolder: 'Wilaya (e.g. Alger)',
+                    anyAgent: 'Any Agent',
+                    unassigned: 'Unassigned',
+                    anyCourier: 'Any Courier',
+                    status: 'All Statuses',
+                    to: 'TO',
+                    tagsHolder: 'Tags (e.g. VIP)'
+                },
+                grid: {
+                    orderId: 'Order ID',
+                    customer: 'Customer',
+                    phone: 'Mobile Phone',
+                    location: 'Location',
+                    products: 'Products',
+                    total: 'Total Value',
+                    courier: 'Courier',
+                    agent: 'CS Agent',
+                    age: 'Age',
+                    status: 'Status',
+                    loading: 'Loading Order Grid...',
+                    empty: 'No logical orders matched your strict filters.',
+                    unassignedZone: 'Unspecified Zone',
+                    moreTypes: 'more types',
+                    qty: 'Qty',
+                    noItems: 'No Items',
+                    ago: 'ago',
+                    totalValue: 'Total Value',
+                    updating: 'Updating Grid...'
+                },
+                details: {
+                    customerInfo: 'Customer Identity',
+                    productInfo: 'Product Info',
+                    customerIntell: 'Customer Intelligence',
+                    deliveryTrack: 'Delivery Track',
+                    viewFull: 'View Full Order Details'
+                },
+                drawer: {
+                    operationalControls: 'Operational Controls',
+                    updateLifecycle: 'Update Lifecycle',
+                    assignAgent: 'Assign Call Center Agent',
+                    internalNotes: 'Internal Order Notes',
+                    notesPlaceholder: 'Add instructions for courier or call center...',
+                    locationAndDelivery: 'Location & Delivery',
+                    unspecifiedWilaya: 'Unspecified Wilaya',
+                    unspecifiedCommune: 'Unspecified Commune',
+                    productsPayload: 'Products Payload',
+                    financials: 'Financials',
+                    subtotal: 'Subtotal',
+                    deliveryFee: 'Delivery Fee',
+                    aggregator: 'Aggregator',
+                    notDispatched: 'Not Dispatched',
+                    saveOperations: 'Save Operations'
+                },
+                messages: {
+                    syncRateLimit: 'You can only sync once per hour. Please wait {{minutes}} minutes.',
+                    syncSuccess: 'ECOTRACK sequence manually fired and completed.',
+                    syncFailed: 'Failed to sync with courier aggregator.'
+                },
+                timeline: {
+                    title: 'Order Timeline',
+                    created: 'Created',
+                    processed: 'Processed',
+                    sentToCourier: 'Sent to Courier',
+                    assignedCourier: 'Assigned Courier',
+                    successfulDelivery: 'Successful Delivery',
+                    unsuccessful: 'Unsuccessful'
+                },
+                customerCard: {
+                    unknown: 'Unknown',
+                    lifetimeOrders: 'Lifetime Orders',
+                    trustScore: 'Trust Score',
+                    delivered: 'Delivered',
+                    returned: 'Returned'
+                },
+                actions: {
+                    call: 'Call Customer',
+                    confirm: 'Quick Confirm',
+                    assignCourier: 'Assign Courier',
+                    details: 'Open Details & Notes',
+                    cancel: 'Cancel Order'
+                },
+                expanded: {
+                    customerInfo: 'Customer Info',
+                    primaryPhone: 'Primary Phone:',
+                    secondaryPhone: 'Secondary Phone:',
+                    shippingAddress: 'Shipping Address:',
+                    productInfo: 'Product Info',
+                    qty: 'Qty:',
+                    noSku: 'NO-SKU',
+                    customerIntelligence: 'Customer Intelligence',
+                    totalOrders: 'Total Orders',
+                    delivered: 'Delivered',
+                    returns: 'Returns',
+                    returnRate: 'Return Rate',
+                    deliveryTrack: 'Delivery Track',
+                    provider: 'Provider:',
+                    trackingCode: 'Tracking Code:',
+                    timelineStage: 'Timeline Stage:',
+                    viewFull: 'View Full Order Details'
+                },
+                pagination: {
+                    showing: 'Showing',
+                    of: 'of',
+                    records: 'records',
+                    selected: 'Selected',
+                    perPage: '/ page',
+                    prev: 'Prev',
+                    next: 'Next',
+                    updating: 'Updating Grid'
+                },
+                bulk: {
+                    targeted: 'Orders targeted',
+                    selectStatus: 'Select Status...',
+                    selectAgent: 'Select Agent...',
+                    selectCourier: 'Select Courier...',
+                    unassignAgent: '-- Unassign Agent --',
+                    unassignCourier: '-- Unassign Courier --',
+                    applyAll: 'Apply All',
+                    cancel: 'Cancel',
+                    updateStatus: 'Update Delivery Status',
+                    changeCourier: 'Change Courier',
+                    assignCsr: 'Assign CSR',
+                    changeStatus: 'Change Status',
+                    sendToCourier: 'Send to Courier'
+                }
+            },
             knivesBuilder: {
                 title: 'Custom Knife Builder',
                 subtitle: 'Design bespoke blades and instantly generate production orders.',
@@ -474,8 +627,10 @@ const resources = {
                 statusConfirmed: "Confirmed",
                 statusPreparing: "Preparing",
                 statusReady: "Ready for Pickup",
+                statusReadyforPickup: "Ready for Pickup",
                 statusShipped: "Shipped",
                 statusOutForDelivery: "Out for Delivery",
+                statusOutforDelivery: "Out for Delivery",
                 statusDelivered: "Delivered",
                 statusPaid: "Paid (Settled)",
                 statusRefused: "Refused",
@@ -1937,6 +2092,160 @@ const resources = {
                 }
             },
 
+            ordersControl: {
+                title: 'نظرة عامة على لوحة الطلبات',
+                subtitle: 'واجهة العمليات ذات الحجم العالي',
+                kpis: {
+                    newToday: 'الجديدة اليوم',
+                    pending: 'قيد الانتظار',
+                    confirmed: 'مؤكدة',
+                    dispatched: 'تم إرسالها',
+                    returnRate: 'معدل الإرجاع'
+                },
+                searchPlaceholder: 'البحث عن الطلب، الهاتف، الاسم...',
+                columnsBtn: 'الأعمدة',
+                visibleColumnsTitle: 'الأعمدة المرئية',
+                filtersBtn: 'تصفية',
+                refreshTitle: 'تحديث البيانات الأساسية',
+                stages: {
+                    preDispatch: 'قبل الإرسال',
+                    postDispatch: 'بعد الإرسال',
+                    returns: 'المرتجعات والمرفوضة',
+                    all: 'جميع الطلبات'
+                },
+                filters: {
+                    priority: 'كل الأولويات',
+                    priorityNormal: 'عادية',
+                    priorityHigh: 'أولوية عالية',
+                    priorityUrgent: 'عاجل',
+                    channel: 'كل القنوات',
+                    wilayaHolder: 'الولاية (مثال: الجزائر)',
+                    anyAgent: 'أي وكيل',
+                    unassigned: 'غير مسند',
+                    anyCourier: 'أي شركة توصيل',
+                    status: 'جميع الحالات',
+                    to: 'إلى',
+                    tagsHolder: 'الوسوم (مثال: VIP)'
+                },
+                grid: {
+                    orderId: 'رقم الطلب',
+                    customer: 'العميل',
+                    phone: 'رقم الهاتف',
+                    location: 'الموقع',
+                    products: 'المنتجات',
+                    total: 'القيمة الإجمالية',
+                    courier: 'المندوب',
+                    agent: 'وكيل الدعم',
+                    age: 'العمر',
+                    status: 'الحالة',
+                    loading: 'جاري تحميل الطلبات...',
+                    empty: 'لم يتم العثور على طلبات تطابق معايير التصفية.',
+                    unassignedZone: 'منطقة غير محددة',
+                    moreTypes: 'أنواع أخرى',
+                    qty: 'الكمية',
+                    noItems: 'لا توجد عناصر',
+                    ago: 'مضت',
+                    totalValue: 'القيمة الإجمالية',
+                    updating: 'جاري تحديث البيانات...'
+                },
+                details: {
+                    customerInfo: 'معلومات العميل',
+                    productInfo: 'معلومات المنتج',
+                    customerIntell: 'ذكاء العميل',
+                    deliveryTrack: 'تتبع التوصيل',
+                    viewFull: 'عرض التفاصيل الكاملة للطلب'
+                },
+                drawer: {
+                    operationalControls: 'ضوابط التشغيل',
+                    updateLifecycle: 'تحديث حالة دورة الحياة',
+                    assignAgent: 'تعيين وكيل مركز الاتصال',
+                    internalNotes: 'ملاحظات الطلب الداخلية',
+                    notesPlaceholder: 'أضف تعليمات للمندوب أو مركز الاتصال...',
+                    locationAndDelivery: 'الموقع والتوصيل',
+                    unspecifiedWilaya: 'ولاية غير محددة',
+                    unspecifiedCommune: 'دائرة غير محددة',
+                    productsPayload: 'المنتجات المرفقة',
+                    financials: 'المالية',
+                    subtotal: 'المجموع الفرعي',
+                    deliveryFee: 'رسوم التوصيل',
+                    aggregator: 'المندوب',
+                    notDispatched: 'لم يتم الإرسال',
+                    saveOperations: 'حفظ التعديلات'
+                },
+                messages: {
+                    syncRateLimit: 'يمكنك المزامنة مرة واحدة فقط كل ساعة. يرجى الانتظار {{minutes}} دقيقة.',
+                    syncSuccess: 'اكتملت المزامنة بنجاح مع النظام اللوجيستي.',
+                    syncFailed: 'فشلت المزامنة مع شركة التوصيل.'
+                },
+                timeline: {
+                    title: 'التسلسل الزمني للطلب',
+                    created: 'تم الإنشاء',
+                    processed: 'تمت المعالجة',
+                    sentToCourier: 'أُرسل للمندوب',
+                    assignedCourier: 'المندوب المعين',
+                    successfulDelivery: 'توصيل ناجح',
+                    unsuccessful: 'غير ناجح'
+                },
+                customerCard: {
+                    unknown: 'مجهول',
+                    lifetimeOrders: 'الطلبات الدائمة',
+                    trustScore: 'نقاط الثقة',
+                    delivered: 'مُسلمة',
+                    returned: 'مُرتجعة'
+                },
+                actions: {
+                    call: 'الاتصال بالعميل',
+                    confirm: 'تأكيد سريع',
+                    assignCourier: 'تعيين مندوب',
+                    details: 'فتح التفاصيل والملاحظات',
+                    cancel: 'إلغاء الطلب'
+                },
+                expanded: {
+                    customerInfo: 'معلومات العميل',
+                    primaryPhone: 'الهاتف الأساسي:',
+                    secondaryPhone: 'الهاتف البديل:',
+                    shippingAddress: 'عنوان الشحن:',
+                    productInfo: 'معلومات المنتج',
+                    qty: 'الكمية:',
+                    noSku: 'بدون-SKU',
+                    customerIntelligence: 'ذكاء العميل',
+                    totalOrders: 'إجمالي الطلبات',
+                    delivered: 'المُسلمة',
+                    returns: 'المرتجعات',
+                    returnRate: 'معدل الإرجاع',
+                    deliveryTrack: 'تتبع التوصيل',
+                    provider: 'المزود:',
+                    trackingCode: 'رمز التتبع:',
+                    timelineStage: 'مرحلة التسلسل الزمني:',
+                    viewFull: 'عرض التفاصيل الكاملة للطلب'
+                },
+                pagination: {
+                    showing: 'عرض',
+                    of: 'من أصل',
+                    records: 'سجل',
+                    selected: 'محدد',
+                    perPage: 'لكل صفحة',
+                    prev: 'السابق',
+                    next: 'التالي',
+                    updating: 'جاري تحديث الشبكة'
+                },
+                bulk: {
+                    targeted: 'طلبات مستهدفة',
+                    selectStatus: 'اختر الحالة...',
+                    selectAgent: 'اختر وكيل...',
+                    selectCourier: 'اختر شركة توصيل...',
+                    unassignAgent: '-- إلغاء تعيين الوكيل --',
+                    unassignCourier: '-- إلغاء تعيين شركة التوصيل --',
+                    applyAll: 'تطبيق على الكل',
+                    cancel: 'إلغاء',
+                    updateStatus: 'تحديث حالة التوصيل',
+                    changeCourier: 'تغيير المندوب',
+                    assignCsr: 'تعيين وكيل الدعم',
+                    changeStatus: 'تغيير الحالة',
+                    sendToCourier: 'إرسال إلى شركة التوصيل'
+                }
+            },
+
             couriers: {
                 dashboardTitle: 'تحليلات التوصيل',
                 dashboardSubtitle: 'مراقبة أداء الأسطول وتزامن ECOTRACK.',
@@ -2427,8 +2736,10 @@ const resources = {
                 statusConfirmed: "تم التأكيد",
                 statusPreparing: "قيد التجهيز",
                 statusReady: "جاهز للاستلام",
+                statusReadyforPickup: "جاهز للاستلام",
                 statusShipped: "تم الشحن",
                 statusOutForDelivery: "في الطريق للتوصيل",
+                statusOutforDelivery: "في الطريق للتوصيل",
                 statusDelivered: "تم التوصيل",
                 statusPaid: "تم الدفع (مسوى)",
                 statusRefused: "مرفوض",

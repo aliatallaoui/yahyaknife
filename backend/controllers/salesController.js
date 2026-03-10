@@ -4,6 +4,29 @@ const ProductVariant = require('../models/ProductVariant');
 const { logStockMovement } = require('./stockController');
 const { updateCustomerMetrics } = require('./customerController');
 const { syncCourierCash, recalculateCourierKPIs } = require('./courierController');
+const { syncActiveShipments } = require('../cron/trackerSync');
+
+let lastEcotrackSyncTime = 0; // In-memory timestamp for rate limiting
+
+exports.triggerEcotrackSync = async (req, res) => {
+    try {
+        const now = Date.now();
+        const oneHourMs = 60 * 60 * 1000;
+
+        if (now - lastEcotrackSyncTime < oneHourMs) {
+            const timeLeft = Math.ceil((oneHourMs - (now - lastEcotrackSyncTime)) / 60000);
+            return res.status(429).json({ error: `You can only sync once per hour. Please wait ${timeLeft} minutes.` });
+        }
+
+        await syncActiveShipments();
+        lastEcotrackSyncTime = Date.now();
+
+        res.json({ message: 'ECOTRACK sync sequence manually fired and completed.', lastSync: lastEcotrackSyncTime });
+    } catch (error) {
+        console.error('Manual ECOTRACK Sync Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
 
 exports.getOrders = async (req, res) => {
     try {
