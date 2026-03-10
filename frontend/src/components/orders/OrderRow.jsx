@@ -198,23 +198,22 @@ const OrderRow = React.memo(({
                                         <button onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(order); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })}>
                                             <Edit3 className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => { const phone = order.customer?.phone || order.shipping?.phone1; if (phone) window.open(`tel:${phone}`); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.call')}>
-                                            <PhoneCall className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={(e) => { e.stopPropagation(); onBulkActionConfirm(order._id); }} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.confirm')}>
-                                            <CheckCircle2 className="w-4 h-4" />
-                                        </button>
                                         <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
                                             <PackageOpen className="w-4 h-4" />
                                         </button>
-                                        <button onClick={(e) => { e.stopPropagation(); onBulkActionCourier(order._id); }} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.assignCourier')}>
-                                            <Truck className="w-4 h-4" />
+                                        <button onClick={(e) => { e.stopPropagation(); const phone = order.customer?.phone || order.shipping?.phone1; if (phone) window.open(`tel:${phone}`); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.call', { defaultValue: 'Call' })}>
+                                            <PhoneCall className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => setFocusedOrderId(order._id)} className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.details')}>
-                                            <FileText className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={(e) => { e.stopPropagation(); onBulkActionCancel(order._id); }} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.cancel')}>
-                                            <Ban className="w-4 h-4" />
+                                        <button onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            const phone = order.customer?.phone || order.shipping?.phone1; 
+                                            if (phone) {
+                                                const cleanPhone = phone.replace(/[^0-9]/g, '');
+                                                const waPhone = cleanPhone.startsWith('0') ? '213' + cleanPhone.substring(1) : cleanPhone;
+                                                window.open(`https://wa.me/${waPhone}`, '_blank');
+                                            }
+                                        }} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.whatsapp', { defaultValue: 'WhatsApp' })}>
+                                            <MessageCircle className="w-4 h-4" />
                                         </button>
                                     </div>
                                 </td>
