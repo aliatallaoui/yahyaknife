@@ -11,6 +11,9 @@ export default function CourierCoverageMap({ courierId }) {
     const [coverage, setCoverage] = useState([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 50;
 
     const [formData, setFormData] = useState({
         wilayaCode: '',
@@ -89,6 +92,21 @@ export default function CourierCoverageMap({ courierId }) {
             alert(error.response?.data?.message || error.response?.data?.error || 'Error syncing coverage. Check API credentials.');
         } finally {
             setSyncing(false);
+        }
+    };
+
+    // Filter and Pagination Logic
+    const filteredCoverage = coverage.filter(c => 
+        (c.commune || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.wilayaCode || '').toString().includes(searchTerm)
+    );
+
+    const totalPages = Math.ceil(filteredCoverage.length / itemsPerPage);
+    const currentCoverage = filteredCoverage.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
         }
     };
 
@@ -177,7 +195,28 @@ export default function CourierCoverageMap({ courierId }) {
                     </button>
                 </form>
 
-                <div className="mt-8 border border-gray-200 rounded-lg overflow-hidden">
+                {/* Filter section */}
+                {coverage.length > 0 && (
+                    <div className="mt-8 mb-4 flex justify-between items-center">
+                        <div className="w-full md:w-1/3">
+                            <input
+                                type="text"
+                                placeholder={t('couriers.searchPlaceholder', 'Search by Commune or Wilaya Code...')}
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
+                                }}
+                                className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2.5 bg-gray-50 border focus:bg-white transition-colors"
+                            />
+                        </div>
+                        <div className="text-sm text-gray-500 font-bold">
+                            {filteredCoverage.length} {t('couriers.regionsFound', 'Regions')}
+                        </div>
+                    </div>
+                )}
+
+                <div className={clsx("border border-gray-200 rounded-lg overflow-hidden", coverage.length === 0 ? "mt-8" : "mt-2")}>
                     <table className="w-full text-start rtl:text-right whitespace-nowrap text-sm">
                         <thead className="bg-gray-50/80 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
                             <tr>
@@ -189,14 +228,16 @@ export default function CourierCoverageMap({ courierId }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {coverage.length === 0 ? (
+                            {currentCoverage.length === 0 ? (
                                 <tr>
                                     <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
-                                        No specific coverage configured. Default assumptions will apply depending on Courier integration level.
+                                        {coverage.length === 0 
+                                            ? "No specific coverage configured. Default assumptions will apply depending on Courier integration level."
+                                            : "No coverage matches your search."}
                                     </td>
                                 </tr>
                             ) : (
-                                coverage.map(c => (
+                                currentCoverage.map(c => (
                                     <tr key={c._id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-4 py-3 font-black text-gray-900 bg-gray-50/50 text-center">{c.wilayaCode}</td>
                                         <td className="px-4 py-3 font-bold text-gray-700">{c.commune}</td>
@@ -217,6 +258,62 @@ export default function CourierCoverageMap({ courierId }) {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <span className="text-sm text-gray-600 ml-2">
+                            {t('couriers.page_x_of_y', { x: currentPage, y: totalPages, defaultValue: `Page ${currentPage} of ${totalPages}` })}
+                        </span>
+                        
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 text-sm font-bold border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {t('common.prev', 'Previous')}
+                            </button>
+                            
+                            <div className="flex items-center gap-1 mx-2">
+                                {/* Only show a few page numbers to keep it clean */}
+                                {[...Array(Math.min(5, totalPages))].map((_, idx) => {
+                                    // Complex logic just to show the immediate surrounding pages. Simple way:
+                                    let pageNum = currentPage;
+                                    if (currentPage <= 3) pageNum = idx + 1;
+                                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + idx;
+                                    else pageNum = currentPage - 2 + idx;
+                                    
+                                    if (pageNum < 1 || pageNum > totalPages) return null;
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            className={clsx(
+                                                "w-8 h-8 flex items-center justify-center text-sm font-bold rounded",
+                                                currentPage === pageNum 
+                                                    ? "bg-indigo-600 text-white" 
+                                                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                            )}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 text-sm font-bold border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {t('common.next', 'Next')}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
 
             </div>
         </div>
