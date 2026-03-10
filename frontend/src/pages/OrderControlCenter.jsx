@@ -62,11 +62,12 @@ export default function OrderControlCenter() {
     const [draggedColumnId, setDraggedColumnId] = useState(null);
 
     // Filters and Pagination
-    const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(25);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [hasNextPage, setHasNextPage] = useState(false);
+    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const [limit, setLimit] = useState(50);
     const [sortField, setSortField] = useState('date');
     const [sortOrder, setSortOrder] = useState('desc');
-    const [cursorMap, setCursorMap] = useState({}); // Maps pageNumber -> lastId string
 
     // Filters State
     const [searchTerm, setSearchTerm] = useState('');
@@ -108,6 +109,29 @@ export default function OrderControlCenter() {
         estimateSize: () => 68, // Approximate height of a row
         overscan: 5, // Render a few rows outside the viewport for smooth scrolling
     });
+
+    // Infinite Scroll Intersection Trigger
+    useEffect(() => {
+        const [lastItem] = rowVirtualizer.getVirtualItems().slice(-1);
+        if (!lastItem) return;
+
+        // If we scrolled to the end of the array and there is a next page
+        if (
+            lastItem.index >= orders.length - 1 &&
+            hasNextPage &&
+            !isFetchingNextPage &&
+            !loading
+        ) {
+            fetchOrders(true);
+        }
+    }, [
+        hasNextPage,
+        fetchOrders,
+        orders.length,
+        isFetchingNextPage,
+        loading,
+        rowVirtualizer.getVirtualItems(),
+    ]);
 
     const handleExportCSV = async () => {
         try {
@@ -194,18 +218,21 @@ export default function OrderControlCenter() {
     }, []);
 
     // Main Fetch
-    const fetchOrders = useCallback(async () => {
-        setLoading(true);
+    const fetchOrders = useCallback(async (loadMore = false) => {
+        if (!loadMore) {
+            setLoading(true);
+        } else {
+            setIsFetchingNextPage(true);
+        }
         try {
             const token = localStorage.getItem('token');
             const params = {
-                page, targetLimit: limit, limit, sortField, sortOrder,
+                limit, sortField, sortOrder,
                 search: searchTerm, ...filters, stage: activeStage !== 'all' ? activeStage : undefined
             };
 
-            // Inject cursor if we have one and we're strictly sorting by default date descending
-            if (sortField === 'date' && sortOrder === 'desc' && cursorMap[page]) {
-                params.lastId = cursorMap[page];
+            if (loadMore && nextCursor) {
+                params.cursor = nextCursor;
             }
 
             // Clean empty strings from params
@@ -216,16 +243,15 @@ export default function OrderControlCenter() {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // If the API returned a nextCursor, store it for the next page
-            if (res.data.nextCursor) {
-                setCursorMap(prev => {
-                    if (prev[page + 1] === res.data.nextCursor) return prev; // Bail out to prevent infinite re-renders
-                    return { ...prev, [page + 1]: res.data.nextCursor };
-                });
+            if (loadMore) {
+                setOrders(prev => [...prev, ...(res.data.orders || [])]);
+            } else {
+                setOrders(res.data.orders || []);
             }
+            
+            setNextCursor(res.data.nextCursor || null);
+            setHasNextPage(res.data.hasNextPage || false);
 
-            setOrders(res.data.orders || []);
-            setTotalPages(res.data.totalPages || 1);
             if (res.data.totalOrders !== null && res.data.totalOrders !== undefined) {
                 setTotalOrders(res.data.totalOrders);
             }
@@ -248,8 +274,17 @@ export default function OrderControlCenter() {
             setError(err.response?.data?.message || "Failed to load orders");
         } finally {
             setLoading(false);
+            setIsFetchingNextPage(false);
         }
-    }, [page, limit, sortField, sortOrder, searchTerm, filters, activeStage, cursorMap]);
+    }, [limit, sortField, sortOrder, searchTerm, filters, activeStage, nextCursor]);
+
+    // Data Fetch Trigger
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchOrders();
+        }, 300);
+        return () => clearTimeout(delayDebounceFn);
+    }, [limit, sortField, sortOrder, searchTerm, filters, activeStage]);
 
     // Handle create order from modal
     const handleCreateOrder = async (orderData) => {
@@ -307,12 +342,10 @@ export default function OrderControlCenter() {
             setSortField(field);
             setSortOrder('desc');
         }
-        setPage(1);
     };
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-        setPage(1);
     };
 
     const toggleSelectAll = () => {
@@ -543,7 +576,7 @@ export default function OrderControlCenter() {
                                 type="text"
                                 placeholder={t('ordersControl.searchPlaceholder')}
                                 value={searchTerm}
-                                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                onChange={(e) => { setSearchTerm(e.target.value); }}
                                 className="bg-gray-50 border border-gray-200 text-xs font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-[140px] md:w-[150px] xl:w-[200px] ps-8 pe-2.5 py-1.5 xl:py-2 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
                             />
                             {searchTerm && (
@@ -729,7 +762,7 @@ export default function OrderControlCenter() {
                     ].map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => { setActiveStage(tab.id); setPage(1); }}
+                            onClick={() => { setActiveStage(tab.id); }}
                             className={clsx(
                                 "group relative flex items-center gap-2 pb-3 px-1 border-b-2 transition-all font-bold whitespace-nowrap",
                                 activeStage === tab.id
@@ -872,7 +905,6 @@ export default function OrderControlCenter() {
                                         }
                                         
                                         setFilters(prev => ({ ...prev, dateFrom: from, dateTo: to }));
-                                        setPage(1);
                                         e.target.value = ''; // Reset select after applying
                                     }}
                                     value=""
@@ -901,7 +933,6 @@ export default function OrderControlCenter() {
                                     onClick={() => {
                                         setFilters({ status: '', priority: '', channel: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' });
                                         setSearchTerm('');
-                                        setPage(1);
                                     }}
                                     className="ml-auto shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-full text-[11px] font-bold transition-colors group"
                                 >
@@ -1052,7 +1083,7 @@ export default function OrderControlCenter() {
                     </table>
                 </div>
 
-                {/* Footer Pagination Bar */}
+                {/* Infinite Scroll Footer */}
                 <div className="bg-white border-t border-gray-100 px-4 py-3 shrink-0 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-sm">
                         <span className="font-medium text-gray-500">
@@ -1066,26 +1097,19 @@ export default function OrderControlCenter() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <select value={limit} onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }} className="bg-gray-50 border border-gray-200 rounded-lg outline-none cursor-pointer py-1.5 px-3 text-xs font-bold text-gray-700 hover:border-blue-400 transition-colors">
-                            {[25, 50, 100, 250].map(v => <option key={v} value={v}>{v}</option>)}
-                        </select>
-
-                        <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                            <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-r border-gray-200">
-                                ‹ {t('ordersControl.pagination.prev')}
-                            </button>
-                            <span className="px-4 py-1.5 text-xs font-black text-gray-800 bg-white">
-                                {page} / {totalPages || 1}
-                            </span>
-                            <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-l border-gray-200">
-                                {t('ordersControl.pagination.next')} ›
-                            </button>
-                        </div>
+                        {isFetchingNextPage && (
+                            <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Fetching more...
+                            </div>
+                        )}
+                        {!hasNextPage && orders.length > 0 && !loading && (
+                            <span className="text-xs font-bold text-gray-400">End of results</span>
+                        )}
                     </div>
                 </div>
 
                 {/* Loading overlay overlaying just the table during transition, but not blocking immediate clicks */}
-                {loading && orders.length > 0 && (
+                {loading && !isFetchingNextPage && orders.length > 0 && (
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-50 pointer-events-none flex items-center justify-center">
                         <div className="bg-white px-4 py-2 rounded-full shadow-lg border border-blue-100 flex items-center gap-2 text-sm font-bold text-blue-700 animate-pulse">
                             <RefreshCw className="w-4 h-4 animate-spin" /> {t('ordersControl.pagination.updating')}
