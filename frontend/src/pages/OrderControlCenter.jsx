@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
 import OrderModal from '../components/OrderModal';
@@ -910,6 +910,9 @@ export default function OrderControlCenter() {
                                                                     </button>
                                                                     <button onClick={() => { setBulkActionType('status'); setBulkActionValue('Confirmed'); setSelectedIds(new Set([order._id])); }} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.confirm')}>
                                                                         <CheckCircle2 className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button onClick={() => handleStatusChange(order._id, 'Dispatched')} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
+                                                                        <PackageOpen className="w-4 h-4" />
                                                                     </button>
                                                                     <button onClick={() => { setBulkActionType('courier'); setSelectedIds(new Set([order._id])); }} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.assignCourier')}>
                                                                         <Truck className="w-4 h-4" />
