@@ -37,6 +37,7 @@ import CourierSettings from './pages/CourierSettings';
 import SupportDesk from './pages/SupportDesk';
 import CallCenterDashboard from './pages/callcenter/CallCenterDashboard';
 import CallCenterManager from './pages/callcenter/CallCenterManager';
+import OrderControlCenter from './pages/OrderControlCenter';
 import CopilotWidget from './components/CopilotWidget';
 
 import Login from './pages/Login';
@@ -111,6 +112,7 @@ const Layout = () => {
               <Route path="/" element={<Overview />} />
               <Route path="/financial" element={<Financial />} />
               <Route path="/sales" element={<Sales />} />
+              <Route path="/orders-hub" element={<OrderControlCenter />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/warehouses" element={<Warehouses />} />
               <Route path="/couriers" element={<Couriers />} />

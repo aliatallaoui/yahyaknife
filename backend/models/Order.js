@@ -41,6 +41,12 @@ const orderSchema = new mongoose.Schema({
         enum: ['Pending', 'Phone Confirmed', 'Auto-Verified'],
         default: 'Pending'
     },
+    priority: {
+        type: String,
+        enum: ['Normal', 'High Priority', 'Urgent'],
+        default: 'Normal'
+    },
+    tags: [{ type: String }],
     fraudRiskScore: { type: Number, default: 0 },
     // Courier relation for dispatch
     courier: { type: mongoose.Schema.Types.ObjectId, ref: 'Courier' },

@@ -35,6 +35,177 @@ exports.getOrders = async (req, res) => {
     }
 };
 
+exports.getAdvancedOrders = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage } = req.query;
+
+        const query = {};
+
+        // 0. Stage Splitting Logic (Pre-Dispatch vs Post-Dispatch)
+        if (stage) {
+            if (stage === 'pre-dispatch') {
+                query.status = { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] };
+            } else if (stage === 'post-dispatch') {
+                query.status = { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'] };
+            } else if (stage === 'returns') {
+                query.status = { $in: ['Returned', 'Refused'] };
+            }
+        }
+
+        // 1. Advanced Filters
+        if (status) query.status = status;
+        if (priority) query.priority = priority;
+        if (tags) query.tags = { $in: Array.isArray(tags) ? tags : [tags] };
+        if (courier) query.courier = courier === 'unassigned' ? null : courier;
+        if (agent) query.assignedAgent = agent === 'unassigned' ? null : agent;
+        if (wilaya) query.wilaya = wilaya;
+        if (channel) query.channel = channel;
+
+        if (dateFrom || dateTo) {
+            query.date = {};
+            if (dateFrom) query.date.$gte = new Date(dateFrom);
+            if (dateTo) query.date.$lte = new Date(dateTo);
+        }
+
+        // 2. Search Logic (Order ID, Tracking, Customer Name/Phone)
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+
+            // Find customers matching search
+            const matchingCustomers = await Customer.find({
+                $or: [{ name: searchRegex }, { phone: searchRegex }]
+            }).select('_id');
+            const customerIds = matchingCustomers.map(c => c._id);
+
+            query.$or = [
+                { orderId: searchRegex },
+                { 'trackingInfo.trackingNumber': searchRegex },
+                { 'shipping.phone1': searchRegex },
+                { customer: { $in: customerIds } }
+            ];
+        }
+
+        const sortObj = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
+
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        const orders = await Order.find(query)
+            .populate('customer', 'name phone email fraudProbability refusalRate totalOrders deliveredOrders totalRefusals trustScore')
+            .populate('courier', 'name')
+            .populate('assignedAgent', 'name')
+            .populate({
+                path: 'products.variantId',
+                populate: { path: 'productId' }
+            })
+            .sort(sortObj)
+            .skip(skip)
+            .limit(limit);
+
+        // Compute Tab Counts
+        const [preDispatchCount, postDispatchCount, returnsCount] = await Promise.all([
+            Order.countDocuments({ ...query, status: { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] } }),
+            Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'] } }),
+            Order.countDocuments({ ...query, status: { $in: ['Returned', 'Refused'] } })
+        ]);
+
+        res.json({
+            orders,
+            currentPage: page,
+            totalPages,
+            totalOrders,
+            stageCounts: {
+                preDispatch: preDispatchCount,
+                postDispatch: postDispatchCount,
+                returns: returnsCount,
+                all: totalOrders // When stage filter is disabled
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateBulkOrders = async (req, res) => {
+    try {
+        const { orderIds, action, payload } = req.body;
+
+        if (!Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ message: 'No orders selected' });
+        }
+
+        const updateDoc = {};
+
+        switch (action) {
+            case 'assign_agent':
+                updateDoc.assignedAgent = payload.agentId === 'unassigned' ? null : payload.agentId;
+                break;
+            case 'change_status':
+                updateDoc.status = payload.status;
+                break;
+            case 'assign_courier':
+                updateDoc.courier = payload.courierId === 'unassigned' ? null : payload.courierId;
+                break;
+            default:
+                return res.status(400).json({ message: 'Invalid bulk action' });
+        }
+
+        const result = await Order.updateMany(
+            { _id: { $in: orderIds } },
+            { $set: updateDoc }
+        );
+
+        res.json({ message: `${result.modifiedCount} orders updated successfully` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getOrdersKPIs = async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const [
+            newOrdersToday,
+            pendingConfirmation,
+            confirmedOrders,
+            readyForDispatch,
+            sentToCourier,
+            deliveredToday,
+            totalEver,
+            returnedEver
+        ] = await Promise.all([
+            Order.countDocuments({ date: { $gte: today }, status: 'New' }),
+            Order.countDocuments({ status: 'New' }), // Pending confirmation
+            Order.countDocuments({ status: 'Confirmed' }),
+            Order.countDocuments({ status: 'Ready for Pickup' }),
+            Order.countDocuments({ status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+            Order.countDocuments({ 'deliveryStatus.deliveredAt': { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
+            Order.countDocuments(),
+            Order.countDocuments({ status: 'Returned' })
+        ]);
+
+        const returnRate = totalEver > 0 ? ((returnedEver / totalEver) * 100).toFixed(1) : 0;
+
+        res.json({
+            newOrdersToday,
+            pendingConfirmation,
+            confirmedOrders,
+            readyForDispatch,
+            sentToCourier,
+            deliveredToday,
+            returnRate
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.getSalesPerformance = async (req, res) => {
     try {
         // Top selling products, channels, volume
