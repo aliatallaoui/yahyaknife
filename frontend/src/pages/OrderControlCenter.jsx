@@ -912,6 +912,21 @@ export default function OrderControlCenter() {
                                 <Tag className="w-[14px] h-[14px] text-pink-500 absolute left-3 pointer-events-none" />
                                 <input type="text" placeholder={t('ordersControl.filters.tagsHolder')} value={filters.tags} onChange={e => handleFilterChange('tags', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-pink-200 bg-pink-50 text-pink-700 text-[11px] font-bold outline-none focus:ring-2 focus:ring-pink-500/20 placeholder:text-pink-400/70 w-32 hover:bg-pink-100/70 transition-colors" />
                             </div>
+
+                            {/* Clear Filters Button */}
+                            {Object.values(filters).some(val => val !== '') && (
+                                <button 
+                                    onClick={() => {
+                                        setFilters({ status: '', priority: '', channel: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' });
+                                        setSearchTerm('');
+                                        setPage(1);
+                                    }}
+                                    className="ml-auto shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-full text-[11px] font-bold transition-colors group"
+                                >
+                                    <X className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                    {t('ordersControl.filters.clearAll', { defaultValue: 'Clear All Filters' })}
+                                </button>
+                            )}
                         </div>
                     </div>
                 )
