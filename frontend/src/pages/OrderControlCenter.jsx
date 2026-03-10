@@ -860,7 +860,7 @@ export default function OrderControlCenter() {
                                                     <option value="">{col.label}</option>
                                                     {COD_STATUSES.filter(s => {
                                                         if (activeStage === 'pre-dispatch') return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'].includes(s);
-                                                        if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'].includes(s);
+                                                        if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
                                                         if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
                                                         return true;
                                                     }).map(s => <option key={s} value={s}>{s === 'Delivered' || s === 'Refused' || s === 'Returned' || s === 'Cancelled' ? (t(`sales.status${s}`) || s) : s}</option>)}
@@ -1021,7 +1021,7 @@ export default function OrderControlCenter() {
                                     {bulkActionType === 'status' && (
                                         COD_STATUSES.filter(s => {
                                             if (activeStage === 'pre-dispatch') return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'].includes(s);
-                                            if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'].includes(s);
+                                            if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
                                             if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
                                             return true;
                                         }).map(s => <option key={s} value={s}>{s === 'Delivered' || s === 'Refused' || s === 'Returned' || s === 'Cancelled' ? (t(`sales.status${s}`) || s) : s}</option>)

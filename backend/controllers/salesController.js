@@ -98,7 +98,7 @@ exports.getAdvancedOrders = async (req, res) => {
             if (stage === 'pre-dispatch') {
                 query.status = { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] };
             } else if (stage === 'post-dispatch') {
-                query.status = { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'] };
+                query.status = { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'] };
             } else if (stage === 'returns') {
                 query.status = { $in: ['Returned', 'Refused'] };
             }
@@ -167,7 +167,7 @@ exports.getAdvancedOrders = async (req, res) => {
         // Compute Tab Counts
         const stageCounts = lastId ? null : {
             preDispatch: await Order.countDocuments({ ...query, status: { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] } }),
-            postDispatch: await Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned'] } }),
+            postDispatch: await Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'] } }),
             returns: await Order.countDocuments({ ...query, status: { $in: ['Returned', 'Refused'] } }),
             all: totalOrders // When stage filter is disabled
         };
