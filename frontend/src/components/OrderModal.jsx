@@ -1,15 +1,24 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, AlertCircle, Truck } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Plus, Trash2, AlertCircle, Truck, Save, RefreshCw, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import moment from 'moment';
 import * as leblad from '@dzcode-io/leblad';
+import axios from 'axios';
+import { useOrderFormStore } from '../stores/useOrderFormStore';
+import CustomerIntelligencePanel from './orders/CustomerIntelligencePanel';
 
-const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'];
-const STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
-const PAYMENT_STATUSES = ['Unpaid', 'Pending', 'Paid', 'Failed', 'Refunded'];
+// Assuming global api config or proxy is set up
+const api = axios.create({ baseURL: '/api' });
+api.interceptors.request.use(config => {
+    config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
+    return config;
+});
 
-// Helper to safely extract communes, bypassing the leblad 'wilaya déléguée' bug where daira.baladyiats is undefined
+const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'WhatsApp', 'Facebook', 'TikTok', 'Instagram', 'Manual', 'Other'];
+const STATUSES = ['New', 'Calling', 'No Answer', 'Postponed', 'Wrong Number', 'Confirmed'];
+const PRIORITIES = ['Normal', 'High', 'Urgent', 'VIP'];
+
 const getSafeCommunesForWilaya = (wilayaCode) => {
     if (!wilayaCode) return [];
     const w = leblad.getWilayaByCode(Number(wilayaCode));
@@ -20,47 +29,38 @@ const getSafeCommunesForWilaya = (wilayaCode) => {
             communes.push(...d.baladyiats);
         }
     });
-    // Optional: Sort alphabetically for better UX (as the library's function did)
     return communes.sort((a, b) => a.name.localeCompare(b.name));
 };
 
-export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], customers = [], couriers = [] }) {
+export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], couriers = [] }) {
     const { t } = useTranslation();
     const isEdit = !!initialData;
 
-    // Form state
-    const [orderId, setOrderId] = useState('');
-    const [customerName, setCustomerName] = useState('');
-    const [customerPhone, setCustomerPhone] = useState('');
-    const [courierId, setCourierId] = useState('');
-    const [channel, setChannel] = useState('Website');
-    const [status, setStatus] = useState('New');
-    const [paymentStatus, setPaymentStatus] = useState('Unpaid');
-    const [fulfillmentStatus, setFulfillmentStatus] = useState('Unfulfilled');
-    const [fulfillmentPipeline, setFulfillmentPipeline] = useState('Pending');
-    const [notes, setNotes] = useState('');
-    const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
-    const [codAmount, setCodAmount] = useState(0);
-    const [courierFee, setCourierFee] = useState(0);
-
-    // Shipping state (phone1 = customerPhone, recipientName = customerName)
-    const [shippingPhone2, setShippingPhone2] = useState('');
-    const [shippingWilayaCode, setShippingWilayaCode] = useState('');
-    const [shippingWilayaName, setShippingWilayaName] = useState('');
-    const [shippingCommune, setShippingCommune] = useState('');
-    const [shippingAddress, setShippingAddress] = useState('');
-    const [shippingWeight, setShippingWeight] = useState(1);
-    const [shippingFragile, setShippingFragile] = useState(false);
-    const [shippingDeliveryType, setShippingDeliveryType] = useState(0);
-
-    // Submission states
+    const store = useOrderFormStore();
     const [formError, setFormError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLookingUpPhone, setIsLookingUpPhone] = useState(false);
+    const [intelligenceData, setIntelligenceData] = useState(null);
+    const [availableCommunes, setAvailableCommunes] = useState([]);
+    
+    // Courier Engine State
+    const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+    const [recommendedCourier, setRecommendedCourier] = useState(null);
 
-    // Dynamic products array
-    const [products, setProducts] = useState([{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);
+    // Initialize Store
+    useEffect(() => {
+        if (isOpen) {
+            setFormError('');
+            setIntelligenceData(null);
+            if (isEdit) {
+                store.setInitialData(initialData);
+            } else {
+                store.resetForm();
+            }
+        }
+    }, [isOpen, isEdit, initialData]);
 
-    // Flatten inventory products to variants
+    // Flatten inventory products
     const availableVariants = inventoryProducts.flatMap(p => {
         if (!p.variants || p.variants.length === 0) return [];
         return p.variants.map(v => {
@@ -81,142 +81,191 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         });
     });
 
+    // 1. Phone Lookup Engine (Debounced)
     useEffect(() => {
-        if (isOpen) {
-            if (isEdit && initialData) {
-                setOrderId(initialData.orderId);
-                setCustomerName(initialData.customer?.name || '');
-                setCustomerPhone(initialData.customer?.phone || '');
-                setCourierId(initialData.courier?._id || initialData.courier || '');
-                setChannel(initialData.channel);
-                setStatus(initialData.status);
-                setPaymentStatus(initialData.paymentStatus || 'Unpaid');
-                setNotes(initialData.notes || '');
-                setDate(moment(initialData.date).format('YYYY-MM-DD'));
-                setCodAmount(initialData.financials?.codAmount || 0);
-                setCourierFee(initialData.financials?.courierFee || 0);
-                // Load shipping
-                setShippingPhone2(initialData.shipping?.phone2 || '');
-                setShippingWilayaCode(initialData.shipping?.wilayaCode || '');
-                setShippingWilayaName(initialData.shipping?.wilayaName || '');
-                setShippingCommune(initialData.shipping?.commune || '');
-                setShippingAddress(initialData.shipping?.address || '');
-                setShippingWeight(initialData.shipping?.weight || 1);
-                setShippingFragile(initialData.shipping?.fragile || false);
-                setShippingDeliveryType(initialData.shipping?.deliveryType || 0);
-                setProducts(
-                    initialData.products?.length > 0
-                        ? initialData.products.map(p => ({
-                            variantId: p.variantId?._id || p.variantId || '',
-                            name: p.name || 'Unknown Item',
-                            quantity: p.quantity,
-                            unitPrice: p.unitPrice,
-                            availableStock: null
-                        }))
-                        : [{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]
-                );
-            } else {
-                // Reset form for create
-                setOrderId(`ORD-${Math.floor(Math.random() * 100000)}`);
-                setCustomerName('');
-                setCustomerPhone('');
-                setCourierId('');
-                setChannel('Website');
-                setStatus('New');
-                setPaymentStatus('Unpaid');
-                setNotes('');
-                setDate(moment().format('YYYY-MM-DD'));
-                setCodAmount(0);
-                setCourierFee(0);
-                setProducts([{ variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);
-                setFormError('');
-                setIsSubmitting(false);
-                // Reset shipping
-                setShippingPhone2('');
-                setShippingWilayaCode('');
-                setShippingWilayaName('');
-                setShippingCommune('');
-                setShippingAddress('');
-                setShippingWeight(1);
-                setShippingFragile(false);
-                setShippingDeliveryType(0);
+        const phone = store.customerPhone;
+        // Basic Algerian length check before lookup
+        if (phone && phone.length >= 9) {
+            const timer = setTimeout(async () => {
+                setIsLookingUpPhone(true);
+                try {
+                    const { data } = await api.get(`/customers/lookup?phone=${encodeURIComponent(phone)}`);
+                    setIntelligenceData(data);
+                    
+                    // Autofill if new and found
+                    if (!isEdit && data.exists && data.customer) {
+                        if (!store.customerName) store.updateField('customerName', data.customer.name);
+                        store.updateField('customerId', data.customer._id);
+                    }
+                } catch (err) {
+                    console.error('Phone lookup failed', err);
+                } finally {
+                    setIsLookingUpPhone(false);
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        } else {
+            setIntelligenceData(null);
+        }
+    }, [store.customerPhone, isEdit]);
+
+    // 2. Dynamic Commune & Courier Coverage Logic
+    useEffect(() => {
+        const updateCoverage = async () => {
+            if (!store.shippingWilayaCode) {
+                setAvailableCommunes([]);
+                return;
             }
-        }
-    }, [isOpen, isEdit, initialData]);
 
-    if (!isOpen) return null;
+            let allCommunes = getSafeCommunesForWilaya(store.shippingWilayaCode);
 
-    const handleProductChange = (index, field, value) => {
-        const newProducts = [...products];
-        newProducts[index][field] = value;
-        setProducts(newProducts);
-    };
+            // If a courier is selected OR delivery type is Stop Desk, we need to verify coverage
+            if (store.courierId || store.shippingDeliveryType === 1) {
+                try {
+                    const query = new URLSearchParams({ 
+                        wilayaCode: store.shippingWilayaCode,
+                        deliveryType: String(store.shippingDeliveryType)
+                    });
+                    if (store.courierId) query.append('courierId', store.courierId);
+                    
+                    const { data } = await api.get(`/couriers/engine/coverage?${query.toString()}`);
+                    
+                    if (data && data.length > 0) {
+                        // Filter standard communes to only those covered by returned rules
+                        const coveredCommunes = data.map(c => c.commune.toLowerCase());
+                        
+                        // If there is a catch-all wilaya rule without specific commune limits
+                        const hasFullWilayaCoverage = data.some(c => !c.commune || c.commune.trim() === '');
+                        
+                        if (!hasFullWilayaCoverage) {
+                            allCommunes = allCommunes.filter(c => coveredCommunes.includes(c.name.toLowerCase()));
+                        }
+                    } else if (store.shippingDeliveryType === 1) {
+                        // If Stop Desk and no coverage rules returned, typically assume none supported unless defined
+                        allCommunes = [];
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch coverage", err);
+                }
+            }
 
-    const handleProductChangeMulti = (index, updates) => {
-        const newProducts = [...products];
-        newProducts[index] = { ...newProducts[index], ...updates };
-        setProducts(newProducts);
-    };
+            setAvailableCommunes(allCommunes);
+            
+            // Auto reset commune if the newly fetched list doesn't contain the currently selected commune
+            if (store.shippingCommune && !allCommunes.find(c => c.name === store.shippingCommune)) {
+                store.updateField('shippingCommune', '');
+            }
+        };
 
-    const addProductLine = () => {
-        setProducts([...products, { variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null }]);
-    };
+        if (isOpen) updateCoverage();
+    }, [store.shippingWilayaCode, store.courierId, store.shippingDeliveryType, isOpen]);
 
-    const removeProductLine = (index) => {
-        if (products.length > 1) {
-            setProducts(products.filter((_, i) => i !== index));
-        }
-    };
+    // 3. Dynamic Courier Recommendation & Pricing Engine
+    useEffect(() => {
+        const calculatePrice = async () => {
+            if (!store.shippingWilayaCode || !store.shippingCommune) {
+                if (!store.manualPricing) store.updateField('courierFee', 0);
+                setRecommendedCourier(null);
+                return;
+            }
 
-    const calculateTotal = () => {
-        return products.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0);
-    };
+            setIsCalculatingPrice(true);
+            try {
+                // First get recommendation
+                const recRes = await api.get('/couriers/engine/recommend', {
+                    params: {
+                        wilayaCode: store.shippingWilayaCode,
+                        commune: store.shippingCommune,
+                        deliveryType: store.shippingDeliveryType
+                    }
+                });
 
-    const handleSubmit = async (e) => {
+                if (recRes.data.recommended) {
+                    setRecommendedCourier(recRes.data.recommended);
+                } else {
+                    setRecommendedCourier(null);
+                }
+
+                // If courier is assigned, calculate exact price
+                if (store.courierId && !store.manualPricing) {
+                    const priceRes = await api.post('/couriers/engine/calculate-price', {
+                        courierId: store.courierId,
+                        wilayaCode: store.shippingWilayaCode,
+                        commune: store.shippingCommune,
+                        deliveryType: store.shippingDeliveryType,
+                        totalWeight: store.shippingWeight,
+                        productIds: store.products.map(p => p.variantId || p.baseProductId).filter(Boolean)
+                    });
+                    if (priceRes.data && priceRes.data.price !== undefined) {
+                        store.updateField('courierFee', priceRes.data.price);
+                    }
+                } else if (!store.courierId && recRes.data.recommended && !store.manualPricing) {
+                    // Auto suggest price if no courier selected but we have a recommendation
+                     store.updateField('courierFee', recRes.data.recommended.price);
+                }
+            } catch (err) {
+                console.error("Pricing calc failed", err);
+            } finally {
+                setIsCalculatingPrice(false);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            if (isOpen) calculatePrice();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [store.shippingWilayaCode, store.shippingCommune, store.courierId, store.shippingDeliveryType, store.manualPricing, isOpen]);
+
+
+    const handleSubmit = async (e, saveAndContinue = false) => {
         e.preventDefault();
         setFormError('');
 
-        // Filter out empty lines
-        const validProducts = products.filter(p => (p.variantId || p.name.trim() !== '') && Number(p.quantity) > 0 && Number(p.unitPrice) >= 0);
-
+        // Validations
+        const validProducts = store.products.filter(p => (p.variantId || p.name.trim() !== '') && Number(p.quantity) > 0 && Number(p.unitPrice) >= 0);
         if (validProducts.length === 0) {
-            setFormError("Order must contain at least one valid product.");
+            setFormError("Order must contain at least one valid product line.");
+            return;
+        }
+
+        if (store.shippingDeliveryType === 1 && !store.shippingCommune) {
+            setFormError("Office pickup requires a specific commune selection.");
+            return;
+        }
+
+        if (intelligenceData?.warning && !confirm(`WARNING: ${intelligenceData.warning}\nAre you sure you want to proceed saving this order?`)) {
             return;
         }
 
         const payload = {
-            orderId,
-            customerName,
-            customerPhone,
-            courier: courierId || null,
-            channel,
-            status,
-            paymentStatus,
-            notes,
+            orderId: store.orderId,
+            customerId: store.customerId,
+            customerName: store.customerName,
+            customerPhone: store.customerPhone,
+            channel: store.channel,
+            status: store.status,
+            priority: store.priority,
+            tags: store.tags,
+            notes: store.notes,
+            courier: store.courierId || null,
             financials: {
-                codAmount: Number(codAmount),
-                courierFee: Number(courierFee),
-                cogs: initialData?.financials?.cogs || 0,
-                marketplaceFees: initialData?.financials?.marketplaceFees || 0,
-                gatewayFees: initialData?.financials?.gatewayFees || 0
+                codAmount: Number(store.codAmount),
+                courierFee: Number(store.courierFee),
+                discount: Number(store.discount)
             },
-            date: new Date(date),
-            products: validProducts,
-            totalAmount: calculateTotal(),
-            wilaya: shippingWilayaCode + ' - ' + shippingWilayaName,
-            commune: shippingCommune,
             shipping: {
-                recipientName: customerName,
-                phone1: customerPhone,
-                phone2: shippingPhone2,
-                wilayaCode: shippingWilayaCode,
-                wilayaName: shippingWilayaName,
-                commune: shippingCommune,
-                address: shippingAddress,
-                weight: Number(shippingWeight),
-                fragile: shippingFragile,
-                deliveryType: Number(shippingDeliveryType)
-            }
+                recipientName: store.customerName,
+                phone1: store.customerPhone,
+                phone2: store.shippingPhone2,
+                wilayaCode: store.shippingWilayaCode,
+                wilayaName: store.shippingWilayaName,
+                commune: store.shippingCommune,
+                address: store.shippingAddress,
+                weight: Number(store.shippingWeight),
+                fragile: store.shippingFragile,
+                deliveryType: Number(store.shippingDeliveryType)
+            },
+            products: validProducts
         };
 
         setIsSubmitting(true);
@@ -225,237 +274,295 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
         if (result && result.success === false) {
             setFormError(result.error);
+        } else if (saveAndContinue) {
+            store.resetForm();
+        } else {
+            onClose();
         }
     };
 
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl flex flex-col max-h-[96vh]">
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900">
-                        {isEdit ? t('modals.orderTitleEdit') : t('modals.orderTitleNew')}
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
+                <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-blue-600 p-2 rounded-lg shadow-sm shadow-blue-600/20">
+                            <Plus className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">
+                                {isEdit ? 'Edit Order' : 'Create COD Order'}
+                            </h2>
+                            <p className="text-sm text-gray-500 font-medium tracking-wide">Enter customer details and assign operations.</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6 overflow-y-auto flex-1">
-                    <form id="orderForm" onSubmit={handleSubmit} className="space-y-6">
-
+                {/* Scrollable Body */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+                    <form id="orderForm" onSubmit={e => handleSubmit(e, false)} className="space-y-8">
+                        
                         {formError && (
-                            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium border border-red-200 break-words flex items-start gap-2">
-                                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                            <div className="p-4 bg-red-50/50 text-red-700 rounded-xl text-sm font-medium border border-red-200/50 flex items-start gap-3 shadow-sm animate-pulse-once">
+                                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
                                 <span>{formError}</span>
                             </div>
                         )}
 
-                        {/* Two column grid for basic info */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderIdLabel')}</label>
-                                <input required type="text" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={orderId} onChange={e => setOrderId(e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderDate')}</label>
-                                <input required type="date" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={date} onChange={e => setDate(e.target.value)} />
-                            </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            
+                            {/* Left Column (Customer & Config) */}
+                            <div className="lg:col-span-7 space-y-6">
+                                
+                                {/* Section A: Intelligence Panel */}
+                                <CustomerIntelligencePanel data={intelligenceData} isSearching={isLookingUpPhone} />
 
-                            {/* Customer & Delivery — unified section */}
-                            <div className="col-span-1 md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Truck className="w-4 h-4 text-blue-600" />
-                                    <h3 className="font-semibold text-gray-900">Customer & Delivery</h3>
-                                    <span className="text-[10px] text-gray-400 font-normal">Phone = customer identifier + shipping phone</span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
-                                        <input required type="text" placeholder="Customer name" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={customerName} onChange={e => setCustomerName(e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
-                                        <input required type="tel" placeholder="0770123456" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone 2 (Optional)</label>
-                                        <input type="tel" placeholder="" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={shippingPhone2} onChange={e => setShippingPhone2(e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Wilaya *</label>
-                                        <select className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm" value={shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); setShippingWilayaCode(wCode); setShippingWilayaName(w ? w.name : ''); setShippingCommune(''); }}>
-                                            <option value="">Select Wilaya...</option>
-                                            {leblad.getWilayaList().map(w => (
-                                                <option key={w.mattricule} value={w.mattricule}>{String(w.mattricule).padStart(2, '0')} - {w.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Commune *</label>
-                                        <select disabled={!shippingWilayaCode} className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={shippingCommune} onChange={e => setShippingCommune(e.target.value)}>
-                                            <option value="">{shippingWilayaCode ? 'Select Commune...' : 'Select Wilaya first'}</option>
-                                            {shippingWilayaCode && getSafeCommunesForWilaya(shippingWilayaCode).map(c => (
-                                                <option key={c.code} value={c.name}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Detailed Address</label>
-                                        <input type="text" placeholder="Street, building..." className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3 md:col-span-2">
+                                {/* Section B: Customer & Delivery */}
+                                <div className="bg-white border rounded-xl p-5 shadow-sm">
+                                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Truck className="w-4 h-4 text-blue-500" /> Customer Details
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">Weight (kg)</label>
-                                            <input type="number" step="0.1" min="0.1" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 shadow-sm" value={shippingWeight} onChange={e => setShippingWeight(e.target.value)} />
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Primary Phone *</label>
+                                            <input required autoFocus type="tel" placeholder="05/06/07..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerPhone} onChange={e => store.updateField('customerPhone', e.target.value)} />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">Delivery Type</label>
-                                            <select className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm" value={shippingDeliveryType} onChange={e => setShippingDeliveryType(Number(e.target.value))}>
-                                                <option value={0}>Home Delivery</option>
-                                                <option value={1}>Stop Desk</option>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Full Name *</label>
+                                            <input required type="text" placeholder="John Doe" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Wilaya *</label>
+                                            <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
+                                                <option value="" disabled>Select Wilaya...</option>
+                                                {leblad.getWilayaList().map(w => (
+                                                    <option key={w.mattricule} value={w.mattricule}>{String(w.mattricule).padStart(2, '0')} - {w.name}</option>
+                                                ))}
                                             </select>
                                         </div>
-                                        <div className="flex items-end pb-2">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input type="checkbox" checked={shippingFragile} onChange={e => setShippingFragile(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
-                                                <span className="text-sm font-medium text-gray-700">Fragile</span>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between uppercase tracking-wide">
+                                                <span>Commune *</span>
+                                                {store.shippingWilayaCode && <span className="text-[10px] text-blue-600 font-medium normal-case bg-blue-50 px-1.5 rounded">{availableCommunes.length} options</span>}
                                             </label>
+                                            <select required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
+                                                <option value="" disabled>{store.shippingWilayaCode ? 'Select Commune...' : 'Select Wilaya first'}</option>
+                                                {availableCommunes.map(c => (
+                                                    <option key={c.code} value={c.name}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Detailed Address</label>
+                                            <input type="text" placeholder="Street, landmark, building..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.shippingAddress} onChange={e => store.updateField('shippingAddress', e.target.value)} />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 md:col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Delivery Mode</label>
+                                                <div className="flex bg-white rounded-lg border border-gray-200 p-1">
+                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 0)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 0 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-50")}>Home</button>
+                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 1)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 1 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-50")}>Stop Desk</button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Courier Priority</label>
+                                                <select className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
+                                                    <option value="">System Recommended</option>
+                                                    {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                                                </select>
+                                                {!store.courierId && recommendedCourier && (
+                                                    <p className="text-[10px] text-green-600 font-medium mt-1 inline-flex items-center gap-1">
+                                                        <CheckCircle className="w-3 h-3"/> Suggested: {recommendedCourier.name}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Line Items Section */}
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3">
-                                    <h3 className="font-semibold text-gray-900">{t('modals.orderLineItems')}</h3>
-                                    <a href="/inventory" target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline font-medium">
-                                        {t('modals.orderManageProducts')}
-                                    </a>
+                            {/* Right Column (Products, Config, Pricing) */}
+                            <div className="lg:col-span-5 space-y-6 flex flex-col">
+                                
+                                {/* Section C: Meta */}
+                                <div className="bg-white border rounded-xl p-5 shadow-sm grid grid-cols-2 gap-4">
+                                     <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Order ID</label>
+                                        <input required type="text" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-600" value={store.orderId} onChange={e => store.updateField('orderId', e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Source / Channel</label>
+                                        <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
+                                            {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                                <button type="button" onClick={addProductLine} className="flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
-                                    <Plus className="w-3 h-3" /> {t('modals.orderAddProduct')}
-                                </button>
-                            </div>
-
-                            <div className="space-y-3">
-                                {products.map((product, index) => (
-                                    <div key={index} className="flex items-start gap-3 bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                                        <div className="flex-1">
-                                            {availableVariants.length > 0 ? (
-                                                <select
-                                                    required
-                                                    className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-blue-500 py-1 text-sm font-medium appearance-none"
-                                                    value={product.variantId || ''}
-                                                    onChange={e => {
-                                                        const selectedId = e.target.value;
-                                                        const selectedVariant = availableVariants.find(v => v.variantId === selectedId);
-                                                        if (selectedVariant) {
-                                                            handleProductChangeMulti(index, {
-                                                                variantId: selectedVariant.variantId,
-                                                                name: selectedVariant.displayName,
-                                                                unitPrice: selectedVariant.price,
-                                                                availableStock: selectedVariant.availableStock
-                                                            });
-                                                        }
-                                                    }}
-                                                >
-                                                    <option value="" disabled>{t('modals.orderSelectVariant')}</option>
-                                                    {availableVariants.map(v => (
-                                                        <option key={v.variantId} value={v.variantId}>
-                                                            {v.displayName} - ${v.price?.toFixed(2) || 0} ({t('modals.orderAvail')} {v.availableStock})
-                                                        </option>
-                                                    ))}
-                                                    {product.name && !product.variantId && (
-                                                        <option value="" disabled>{product.name} {t('modals.orderLegacy')}</option>
-                                                    )}
-                                                </select>
-                                            ) : (
-                                                <input required type="text" placeholder={t('modals.orderNoInventory')} className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-blue-500 py-1 text-sm font-medium" value={product.name} onChange={e => handleProductChangeMulti(index, { name: e.target.value })} />
-                                            )}
-                                        </div>
-                                        <div className="w-24">
-                                            <label className="text-xs text-gray-500 block mb-1">{t('modals.orderQuantity')}</label>
-                                            <input required type="number" min="1" max={product.availableStock !== null ? product.availableStock : undefined} className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 py-1 px-2 rounded text-sm" value={product.quantity} onChange={e => handleProductChange(index, 'quantity', e.target.value)} />
-                                            {product.availableStock !== null && (
-                                                <p className="text-[10px] text-gray-500 mt-1 font-medium">{t('modals.orderAvail')} {product.availableStock}</p>
-                                            )}
-                                        </div>
-                                        <div className="w-32">
-                                            <label className="text-xs text-gray-500 block mb-1">{t('modals.orderUnitPrice')}</label>
-                                            <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 py-1 px-2 rounded text-sm" value={product.unitPrice} onChange={e => handleProductChange(index, 'unitPrice', e.target.value)} />
-                                        </div>
-                                        <button type="button" onClick={() => removeProductLine(index)} disabled={products.length === 1} className="mt-5 p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded disabled:opacity-50 transition-colors">
-                                            <Trash2 className="w-4 h-4" />
+                                
+                                {/* Section D: Products */}
+                                <div className="bg-white border rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
+                                    <div className="p-4 border-b flex justify-between items-center bg-gray-50/50">
+                                        <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm uppercase tracking-wide">
+                                            Cart Items
+                                        </h3>
+                                        <button type="button" onClick={store.addProduct} className="flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors">
+                                            <Plus className="w-3 h-3" /> Add Item
                                         </button>
                                     </div>
-                                ))}
-                            </div>
-                            <div className="flex justify-end mt-4">
-                                <p className="text-sm text-gray-500 font-medium">{t('modals.orderTotal')} <span className="text-lg font-bold text-gray-900">${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+
+                                    <div className="p-4 space-y-3 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/20">
+                                        {store.products.map((product, index) => (
+                                            <div key={index} className="flex flex-col gap-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm relative group">
+                                                <div className="flex gap-2 w-full">
+                                                    <div className="flex-1">
+                                                        <select
+                                                            required
+                                                            className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 focus:bg-white rounded px-2 py-1.5 text-sm font-semibold appearance-none cursor-pointer transition-colors"
+                                                            value={product.variantId || ''}
+                                                            onChange={e => {
+                                                                const selectedId = e.target.value;
+                                                                const selectedVariant = availableVariants.find(v => v.variantId === selectedId);
+                                                                if (selectedVariant) {
+                                                                    store.updateProductMulti(index, {
+                                                                        variantId: selectedVariant.variantId,
+                                                                        name: selectedVariant.displayName,
+                                                                        unitPrice: selectedVariant.price,
+                                                                        sku: selectedVariant.sku,
+                                                                        availableStock: selectedVariant.availableStock
+                                                                    });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="" disabled>Select Product / Variant</option>
+                                                            {availableVariants.map(v => (
+                                                                <option key={v.variantId} value={v.variantId}>
+                                                                    {v.displayName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        {product.availableStock !== null && (
+                                                            <div className="flex items-center justify-between mt-1 px-1">
+                                                                <span className={clsx("text-[10px] font-medium", product.availableStock <= 5 ? "text-red-500" : "text-green-600")}>
+                                                                    {product.availableStock} in stock
+                                                                </span>
+                                                                {product.sku && <span className="text-[10px] text-gray-400 font-medium font-mono">{product.sku}</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 items-center">
+                                                    <div className="w-20">
+                                                        <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', Math.max(1, product.quantity - 1))} className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">-</button>
+                                                            <input required type="number" min="1" max={product.availableStock || undefined} className="w-full bg-white outline-none py-1 text-center text-sm font-bold appearance-none" value={product.quantity} onChange={e => store.updateProduct(index, 'quantity', Number(e.target.value))} />
+                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', product.quantity + 1)} className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">+</button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 relative">
+                                                        <span className="absolute left-2 top-1.5 text-gray-400 text-xs font-bold">$</span>
+                                                        <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 focus:bg-white py-1 pl-5 pr-2 rounded text-sm font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
+                                                    </div>
+                                                    <div className="w-20 text-right pr-2">
+                                                        <span className="text-sm font-bold text-gray-900">${(product.quantity * product.unitPrice).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onClick={() => store.removeProduct(index)} disabled={store.products.length === 1} className="absolute -right-2 -top-2 p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-500 rounded-full disabled:opacity-0 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Section E: Pricing Summary */}
+                                <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-800 rounded-xl p-5 text-white shadow-lg relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                                    
+                                    <div className="space-y-2 mb-4 relative z-10">
+                                        <div className="flex justify-between text-sm items-center">
+                                            <span className="text-gray-300 font-medium">Subtotal</span>
+                                            <span className="font-bold tracking-wide">${store.calculateSubtotal().toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm items-center">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-300 font-medium">Delivery</span>
+                                                {isCalculatingPrice && <RefreshCw className="w-3 h-3 text-blue-400 animate-spin" />}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <input type="checkbox" checked={store.manualPricing} onChange={e => store.updateField('manualPricing', e.target.checked)} className="rounded bg-gray-800 border-gray-600 text-blue-500 focus:ring-offset-gray-900 w-3 h-3" title="Override calculated fee" />
+                                                {store.manualPricing ? (
+                                                    <input type="number" className="w-16 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold" value={store.courierFee} onChange={e => store.updateField('courierFee', e.target.value)} />
+                                                ) : (
+                                                    <span className="font-bold text-blue-300 tracking-wide">${Number(store.courierFee).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between text-sm items-center">
+                                            <span className="text-gray-300 font-medium">Discount</span>
+                                            <input type="number" className="w-16 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold text-green-400 focus:bg-white/20 transition-colors" value={store.discount} onChange={e => store.updateField('discount', e.target.value)} placeholder="0" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="border-t border-gray-700 pt-3 mt-1 flex justify-between items-end relative z-10">
+                                        <div>
+                                            <span className="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-0.5">Final Collection</span>
+                                            <span className="text-2xl font-black text-white leading-none">${store.calculateFinalTotal().toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold block mb-1">Override COD</label>
+                                            <input type="number" className="w-20 bg-black/30 outline-none border border-gray-600 focus:border-blue-500 rounded px-2 py-1 text-right text-sm font-bold transition-colors" value={store.codAmount || store.calculateFinalTotal()} onChange={e => store.updateField('codAmount', e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Status Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                            <div className="flex flex-col justify-end h-full">
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCodStatus')}</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none font-bold text-blue-800" value={status} onChange={e => setStatus(e.target.value)}>
-                                    {STATUSES.map(st => <option key={st} value={st}>
-                                        {st === 'New' ? t('modals.stNew') :
-                                            st === 'Confirmed' ? t('modals.stConfirmed') :
-                                                st === 'Preparing' ? t('modals.stPreparing') :
-                                                    st === 'Ready for Pickup' ? t('modals.stReady') :
-                                                        st === 'Shipped' ? t('modals.stShipped') :
-                                                            st === 'Out for Delivery' ? t('modals.stOutForDelivery') :
-                                                                st === 'Delivered' ? t('modals.stDelivered') :
-                                                                    st === 'Paid' ? t('modals.stPaid') :
-                                                                        st === 'Refused' ? t('modals.stRefused') :
-                                                                            st === 'Returned' ? t('modals.stReturned') :
-                                                                                st === 'Cancelled' ? t('modals.stCancelled') : st}
-                                    </option>)}
+                         {/* Bottom Row (Notes & Initial Status) */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-gray-100">
+                             <div className="md:col-span-8">
+                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Call Center / Dispatch Notes</label>
+                                <textarea rows="2" placeholder="Customer availability, landmark info, fraud hints..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white resize-none transition-colors" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
+                            </div>
+                            <div className="md:col-span-4 flex flex-col justify-end">
+                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Save As Status</label>
+                                <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white transition-all font-bold text-blue-900 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
+                                    {STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
                                 </select>
-                            </div>
-                            <div className="flex flex-col justify-end h-full">
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderDispatchCourier')}</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none" value={courierId} onChange={e => setCourierId(e.target.value)}>
-                                    <option value="">{t('modals.orderUnassigned')}</option>
-                                    {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex flex-col justify-end h-full">
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderExpectedCod')}</label>
-                                <input type="number" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={codAmount} onChange={e => setCodAmount(e.target.value)} />
-                            </div>
-                            <div className="flex flex-col justify-end h-full">
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderCourierFee')}</label>
-                                <input type="number" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors" value={courierFee} onChange={e => setCourierFee(e.target.value)} />
                             </div>
                         </div>
 
-                        {/* Notes */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.orderInternalNotes')}</label>
-                            <textarea rows="3" placeholder={t('modals.orderNotesPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors resize-none" value={notes} onChange={e => setNotes(e.target.value)}></textarea>
-                        </div>
                     </form>
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
-                    <button type="button" onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50">
-                        {t('modals.orderBtnCancel')}
+                {/* Footer Controls */}
+                <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-between items-center">
+                    <button type="button" onClick={onClose} disabled={isSubmitting} className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
+                        Discard
                     </button>
-                    <button type="submit" form="orderForm" disabled={isSubmitting} className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
-                        {isSubmitting ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : null}
-                        {isEdit ? t('modals.orderBtnSave') : t('modals.orderBtnCreate')}
-                    </button>
+                    <div className="flex gap-3">
+                        {!isEdit && (
+                            <button type="submit" form="orderForm" disabled={isSubmitting} onClick={(e) => handleSubmit(e, true)} className="px-5 py-2 text-sm font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-2 border border-blue-200/50">
+                                {isSubmitting ? <div className="w-4 h-4 rounded-full border-2 border-blue-700/30 border-t-blue-700 animate-spin"></div> : <Save className="w-4 h-4 shrink-0" />}
+                                Save & Add Another
+                            </button>
+                        )}
+                        <button type="submit" form="orderForm" disabled={isSubmitting} onClick={(e) => handleSubmit(e, false)} className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shadow-blue-600/30 transition-colors flex items-center gap-2">
+                             {isSubmitting ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div> : <CheckCircle className="w-4 h-4 shrink-0" />}
+                             {isEdit ? 'Save Changes' : 'Confirm Order'}
+                        </button>
+                    </div>
                 </div>
+
             </div>
         </div>
     );

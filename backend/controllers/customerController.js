@@ -13,6 +13,47 @@ const getCustomers = async (req, res) => {
     }
 };
 
+// @desc    Lookup customer by phone for intelligence panel
+// @route   GET /api/customers/lookup
+// @access  Private
+const lookupCustomerByPhone = async (req, res) => {
+    try {
+        const { phone } = req.query;
+        if (!phone) {
+            return res.status(400).json({ message: 'Phone number is required' });
+        }
+
+        // 1. Find Customer
+        const customer = await Customer.findOne({ phone: phone });
+        
+        // 2. Find any active Duplicate Orders for this phone
+        const activeOrders = await Order.find({
+            'shipping.phone1': phone,
+            status: { $in: ['New', 'Calling', 'No Answer', 'Postponed', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery'] }
+        }).select('orderId status products totalAmount date');
+
+        if (!customer) {
+            return res.json({ 
+                exists: false, 
+                customer: null,
+                activeDuplicateOrders: activeOrders,
+                riskIndicator: activeOrders.length > 0 ? 'High' : 'Low',
+                warning: activeOrders.length > 0 ? 'Duplicate active orders found for this phone' : null
+            });
+        }
+
+        res.json({
+            exists: true,
+            customer: customer,
+            activeDuplicateOrders: activeOrders,
+            riskIndicator: customer.riskLevel || (customer.isSuspicious ? 'High' : 'Low'),
+            warning: activeOrders.length > 0 ? 'Duplicate active orders found for this phone' : (customer.isSuspicious ? 'High return risk customer' : null)
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Create a new customer
 // @route   POST /api/customers
 // @access  Private
@@ -254,6 +295,7 @@ const updateCustomerMetrics = async (customerId) => {
 
 module.exports = {
     getCustomers,
+    lookupCustomerByPhone,
     createCustomer,
     updateCustomer,
     deleteCustomer,

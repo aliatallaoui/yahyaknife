@@ -8,12 +8,15 @@ const {
     deleteCustomer,
     getCustomerOrders,
     getCustomerMetrics,
-    getFeedback
+    getFeedback,
+    lookupCustomerByPhone
 } = require('../controllers/customerController');
 
 router.route('/')
     .get(protect, getCustomers)
     .post(protect, createCustomer);
+
+router.get('/lookup', protect, lookupCustomerByPhone);
 
 router.route('/:id')
     .put(protect, updateCustomer)

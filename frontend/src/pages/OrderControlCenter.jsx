@@ -5,6 +5,7 @@ import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, Lay
 import PageHeader from '../components/PageHeader';
 import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
 import OrderModal from '../components/OrderModal';
+import OrderRow from '../components/orders/OrderRow';
 import clsx from 'clsx';
 import moment from 'moment';
 
@@ -85,6 +86,7 @@ export default function OrderControlCenter() {
     const [focusedOrderId, setFocusedOrderId] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [editOrderData, setEditOrderData] = useState(null);
 
     // Bulk Actions
     const [bulkActionType, setBulkActionType] = useState(null); // 'status' | 'agent' | 'courier'
@@ -220,6 +222,32 @@ export default function OrderControlCenter() {
         else next.add(id);
         setExpandedRows(next);
     };
+
+    const handleStatusChange = useCallback(async (orderId, newStatus) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${orderId}`, {
+                status: newStatus
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchOrders]);
+
+    const onBulkActionConfirm = useCallback((orderId) => {
+        setBulkActionType('status');
+        setBulkActionValue('Confirmed');
+        setSelectedIds(new Set([orderId]));
+    }, []);
+
+    const onBulkActionCourier = useCallback((orderId) => {
+        setBulkActionType('courier');
+        setSelectedIds(new Set([orderId]));
+    }, []);
 
     const toggleColumn = (colId) => {
         const next = new Set(hiddenColumns);
@@ -445,7 +473,7 @@ export default function OrderControlCenter() {
                                         <button
                                             onClick={() => {
                                                 setOrderedColumnIds(defaultColumnOrder);
-                                                setHiddenColumns(new Set());
+                                                setHiddenColumns(defaultHiddenColumns);
                                             }}
                                             className="text-[10px] uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors"
                                         >
@@ -646,7 +674,7 @@ export default function OrderControlCenter() {
 
                 {/* Scrollable Table Area */}
                 <div className="flex-1 overflow-auto">
-                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                    <table className="w-full text-start rtl:text-right border-collapse whitespace-nowrap">
                         <thead className="bg-gray-50/90 text-gray-500 text-[11px] uppercase tracking-wider sticky top-0 z-10 shadow-sm backdrop-blur-sm">
                             <tr>
                                 <th className="px-4 py-3 border-b border-gray-200 w-10 align-top pt-4">

@@ -13,6 +13,10 @@ const orderSchema = new mongoose.Schema({
         unitPrice: { type: Number, required: true }
     }],
     totalAmount: { type: Number, required: true },
+    subtotal: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 },
+    finalTotal: { type: Number, default: 0 }, // subtotal + courierFee - discount
+    amountToCollect: { type: Number, default: 0 },
     wilaya: {
         type: String,
         required: true
@@ -28,12 +32,12 @@ const orderSchema = new mongoose.Schema({
     channel: {
         type: String,
         required: true,
-        enum: ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Direct', 'Other']
+        enum: ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Direct', 'Manual', 'WhatsApp', 'Facebook', 'TikTok', 'Shopify', 'WooCommerce', 'Instagram', 'Marketplace', 'Other']
     },
     // Main COD Lifecycle Status
     status: {
         type: String,
-        enum: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'],
+        enum: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'],
         default: 'New'
     },
     verificationStatus: {
@@ -43,7 +47,7 @@ const orderSchema = new mongoose.Schema({
     },
     priority: {
         type: String,
-        enum: ['Normal', 'High Priority', 'Urgent'],
+        enum: ['Normal', 'High', 'Urgent', 'VIP', 'High Priority'],
         default: 'Normal'
     },
     tags: [{ type: String }],
@@ -91,8 +95,8 @@ const orderSchema = new mongoose.Schema({
         phone1: { type: String },
         phone2: { type: String },
         wilayaCode: { type: String },
-        wilayaName: { type: String },
         commune: { type: String },
+        neighborhood: { type: String },
         address: { type: String },
         weight: { type: Number, default: 1 },
         fragile: { type: Boolean, default: false },

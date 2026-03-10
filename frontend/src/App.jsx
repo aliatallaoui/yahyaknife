@@ -6,8 +6,10 @@ import Financial from './pages/Financial';
 import Sales from './pages/Sales';
 import Inventory from './pages/Inventory';
 import Couriers from './pages/Couriers';
+import CourierDetails from './pages/CourierDetails';
 import DispatchCenter from './pages/DispatchCenter';
 import CustomerInsight from './pages/CustomerInsight';
+// ... rest of imports are identical, so I'll target the route directly in App.jsx.
 import CustomerProfile from './pages/CustomerProfile';
 import Warehouses from './pages/Warehouses';
 import HRSnapshot from './pages/HRSnapshot';
@@ -116,6 +118,7 @@ const Layout = () => {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/warehouses" element={<Warehouses />} />
               <Route path="/couriers" element={<Couriers />} />
+              <Route path="/couriers/:id" element={<CourierDetails />} />
               <Route path="/couriers/dispatch" element={<DispatchCenter />} />
               <Route path="/customers" element={<CustomerInsight />} />
               <Route path="/customers/:id" element={<CustomerProfile />} />

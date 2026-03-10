@@ -41,6 +41,9 @@ const customerSchema = new mongoose.Schema({
     refusalRate: { type: Number, default: 0 },
     fraudProbability: { type: Number, default: 0, min: 0, max: 100 },
     repeatedRefusalFlag: { type: Boolean, default: false },
+    cancelledOrders: { type: Number, default: 0 },
+    returnRate: { type: Number, default: 0 },
+    riskLevel: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Low' },
     requiresDeliveryVerification: { type: Boolean, default: false }, // Force manual call before dispatch
     isSuspicious: { type: Boolean, default: false },
     blacklisted: { type: Boolean, default: false } // Auto-blocked from future orders

@@ -1,6 +1,9 @@
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const ProductVariant = require('../models/ProductVariant');
+const OrderItem = require('../models/OrderItem');
+const OrderStatusHistory = require('../models/OrderStatusHistory');
+const OrderNote = require('../models/OrderNote');
 const { logStockMovement } = require('./stockController');
 const { updateCustomerMetrics } = require('./customerController');
 const { syncCourierCash, recalculateCourierKPIs } = require('./courierController');
@@ -264,7 +267,7 @@ exports.getSalesPerformance = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
     try {
-        const { orderId, customerId, customerName, customerPhone, channel, products, status, paymentStatus, fulfillmentStatus, fulfillmentPipeline, notes, shipping } = req.body;
+        const { orderId, customerId, customerName, customerPhone, channel, products, status, paymentStatus, fulfillmentStatus, fulfillmentPipeline, notes, shipping, financials, courier, priority, tags, verificationStatus } = req.body;
 
         if (!orderId || !channel || !products || products.length === 0) {
             return res.status(400).json({ message: 'Missing required order fields or products array is empty' });
@@ -292,37 +295,95 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Customer phone number is required' });
         }
 
-        let totalAmount = 0;
+        // Calculate Subtotal and format products array
+        let subtotalAmt = 0;
         const processedProducts = products.map(item => {
-            if (!item.quantity || !item.unitPrice) {
+            if (!item.quantity || item.unitPrice === undefined) {
                 throw new Error('Each product must have a quantity and unitPrice');
             }
-            totalAmount += (item.quantity * item.unitPrice);
+            subtotalAmt += (item.quantity * item.unitPrice);
             return item;
         });
 
+        // Use incoming financials or calculate fallback
+        const codAmountIncoming = financials?.codAmount || 0;
+        const courierFeeIncoming = financials?.courierFee || 0;
+        const discountIncoming = financials?.discount || 0;
+        const finalTotalAmt = subtotalAmt + courierFeeIncoming - discountIncoming;
+
+        const mainStatus = status || 'New';
+
+        // 1. Create the Order document
         const newOrder = new Order({
             orderId,
             customer: resolvedCustomerId,
             channel,
             products: processedProducts,
-            totalAmount,
-            status: status || 'Pending',
+            subtotal: subtotalAmt,
+            discount: discountIncoming,
+            totalAmount: finalTotalAmt, // Legacy field sync
+            finalTotal: finalTotalAmt,
+            amountToCollect: codAmountIncoming || finalTotalAmt,
+            financials: {
+                ...financials,
+                codAmount: codAmountIncoming || finalTotalAmt,
+                courierFee: courierFeeIncoming
+            },
+            status: mainStatus,
             paymentStatus: paymentStatus || 'Unpaid',
             fulfillmentStatus: fulfillmentStatus || 'Unfulfilled',
             fulfillmentPipeline: fulfillmentPipeline || 'Pending',
+            verificationStatus: verificationStatus || 'Pending',
+            priority: priority || 'Normal',
+            tags: tags || [],
+            courier: courier || null,
             shipping: shipping || {},
-            notes
+            wilaya: shipping?.wilayaCode ? `${shipping.wilayaCode} - ${shipping.wilayaName}` : 'Unknown',
+            commune: shipping?.commune || 'Unknown',
+            notes: notes || ''
         });
 
         const savedOrder = await newOrder.save();
 
+        // 2. Create OrderItems strictly mapped
+        const orderItemDocs = processedProducts.map(p => ({
+            orderId: savedOrder._id,
+            productId: p.productId || null,
+            variantId: p.variantId || null,
+            sku: p.sku || '',
+            name: p.name || 'Unknown',
+            quantity: p.quantity,
+            unitPrice: p.unitPrice,
+            lineTotal: p.quantity * p.unitPrice
+        }));
+        if (orderItemDocs.length > 0) {
+            await OrderItem.insertMany(orderItemDocs);
+        }
+
+        // 3. Create Status History snapshot
+        await OrderStatusHistory.create({
+            orderId: savedOrder._id,
+            status: mainStatus,
+            changedBy: req.user?._id || null,
+            note: 'Order originally created via COD Flow'
+        });
+
+        // 4. Create structured notes if provided
+        if (notes) {
+            await OrderNote.create({
+                orderId: savedOrder._id,
+                type: 'Call Center', // Defaulting to call center for new COD orders
+                content: notes,
+                createdBy: req.user?._id || null
+            });
+        }
+
         // PHASE 9: Increment Customer Lifetime Value tracking if created instantly fulfilled
-        const isActive = !['Refused', 'Returned', 'Cancelled'].includes(savedOrder.status);
+        const isActive = !['Refused', 'Returned', 'Cancelled', 'Cancelled by Customer'].includes(savedOrder.status);
         const isFulfilled = ['Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(savedOrder.status);
 
         if (isFulfilled && savedOrder.customer) {
-            await Customer.findByIdAndUpdate(customerId, {
+            await Customer.findByIdAndUpdate(resolvedCustomerId, {
                 $inc: { lifetimeValue: savedOrder.totalAmount }
             });
         }
@@ -331,7 +392,6 @@ exports.createOrder = async (req, res) => {
         for (const item of savedOrder.products) {
             if (item.variantId) {
                 if (isFulfilled) {
-                    // Instantly deduct totalStock if created as fulfilled and increment totalSold
                     await ProductVariant.findByIdAndUpdate(item.variantId, {
                         $inc: { totalStock: -item.quantity, totalSold: item.quantity }
                     });
@@ -343,7 +403,6 @@ exports.createOrder = async (req, res) => {
                         savedOrder._id
                     );
                 } else if (isActive) {
-                    // Reserve stock for pending orders and increment totalSold
                     await ProductVariant.findByIdAndUpdate(item.variantId, {
                         $inc: { reservedStock: item.quantity, totalSold: item.quantity }
                     });
@@ -360,7 +419,7 @@ exports.createOrder = async (req, res) => {
 
         // Async update customer CRM metrics
         if (savedOrder.customer) {
-            updateCustomerMetrics(savedOrder.customer).catch(console.error);
+            updateCustomerMetrics(savedOrder.customer._id).catch(console.error);
         }
 
         res.status(201).json(savedOrder);
