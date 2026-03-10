@@ -973,7 +973,7 @@ export default function OrderControlCenter() {
 
                     <div className="flex items-center gap-2">
                         <select value={limit} onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }} className="bg-gray-50 border border-gray-200 rounded-lg outline-none cursor-pointer py-1.5 px-3 text-xs font-bold text-gray-700 hover:border-blue-400 transition-colors">
-                            {[25, 50, 100, 250].map(v => <option key={v} value={v}>{v} {t('ordersControl.pagination.perPage')}</option>)}
+                            {[25, 50, 100, 250].map(v => <option key={v} value={v}>{v}</option>)}
                         </select>
 
                         <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">

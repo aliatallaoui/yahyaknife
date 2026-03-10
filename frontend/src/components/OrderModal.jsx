@@ -284,11 +284,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl flex flex-col max-h-[96vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-gray-900/60 backdrop-blur-sm">
+            <div className="bg-white md:rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[100dvh] md:h-auto md:max-h-[96vh] overflow-hidden">
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+                <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="bg-blue-600 p-2 rounded-lg shadow-sm shadow-blue-600/20">
                             <Plus className="w-5 h-5 text-white" />
@@ -545,7 +545,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 </div>
 
                 {/* Footer Controls */}
-                <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-between items-center">
+                <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0 safe-bottom">
                     <button type="button" onClick={onClose} disabled={isSubmitting} className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
                         Discard
                     </button>
