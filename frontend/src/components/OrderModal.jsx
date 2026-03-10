@@ -9,6 +9,21 @@ const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'
 const STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 const PAYMENT_STATUSES = ['Unpaid', 'Pending', 'Paid', 'Failed', 'Refunded'];
 
+// Helper to safely extract communes, bypassing the leblad 'wilaya déléguée' bug where daira.baladyiats is undefined
+const getSafeCommunesForWilaya = (wilayaCode) => {
+    if (!wilayaCode) return [];
+    const w = leblad.getWilayaByCode(Number(wilayaCode));
+    if (!w || !w.dairats) return [];
+    const communes = [];
+    w.dairats.forEach(d => {
+        if (d.baladyiats && Array.isArray(d.baladyiats)) {
+            communes.push(...d.baladyiats);
+        }
+    });
+    // Optional: Sort alphabetically for better UX (as the library's function did)
+    return communes.sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], customers = [], couriers = [] }) {
     const { t } = useTranslation();
     const isEdit = !!initialData;
@@ -188,6 +203,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             date: new Date(date),
             products: validProducts,
             totalAmount: calculateTotal(),
+            wilaya: shippingWilayaCode + ' - ' + shippingWilayaName,
+            commune: shippingCommune,
             shipping: {
                 recipientName: customerName,
                 phone1: customerPhone,
@@ -280,7 +297,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         <label className="block text-xs font-medium text-gray-700 mb-1">Commune *</label>
                                         <select disabled={!shippingWilayaCode} className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 appearance-none shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed" value={shippingCommune} onChange={e => setShippingCommune(e.target.value)}>
                                             <option value="">{shippingWilayaCode ? 'Select Commune...' : 'Select Wilaya first'}</option>
-                                            {shippingWilayaCode && leblad.getBaladyiatsForWilaya(Number(shippingWilayaCode))?.map(c => (
+                                            {shippingWilayaCode && getSafeCommunesForWilaya(shippingWilayaCode).map(c => (
                                                 <option key={c.code} value={c.name}>{c.name}</option>
                                             ))}
                                         </select>

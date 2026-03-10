@@ -5,6 +5,20 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import * as leblad from '@dzcode-io/leblad';
 
+// Helper to safely extract communes, bypassing the leblad 'wilaya déléguée' bug where daira.baladyiats is undefined
+const getSafeCommunesForWilaya = (wilayaCode) => {
+    if (!wilayaCode) return [];
+    const w = leblad.getWilayaByCode(Number(wilayaCode));
+    if (!w || !w.dairats) return [];
+    const communes = [];
+    w.dairats.forEach(d => {
+        if (d.baladyiats && Array.isArray(d.baladyiats)) {
+            communes.push(...d.baladyiats);
+        }
+    });
+    return communes.sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
     const { t } = useTranslation();
 
@@ -282,7 +296,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     >
                                         <option value="">{formData.wilayaCode ? 'Select Commune...' : 'Select Wilaya first'}</option>
-                                        {formData.wilayaCode && leblad.getBaladyiatsForWilaya(Number(formData.wilayaCode))?.map(commune => (
+                                        {formData.wilayaCode && getSafeCommunesForWilaya(formData.wilayaCode).map(commune => (
                                             <option key={commune.code} value={commune.name}>
                                                 {commune.name}
                                             </option>

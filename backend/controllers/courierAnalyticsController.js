@@ -1,5 +1,4 @@
-const Shipment = require('../models/Shipment');
-const CourierSetting = require('../models/CourierSetting');
+const Order = require('../models/Order');
 const moment = require('moment');
 
 exports.getCourierKPIs = async (req, res) => {
@@ -7,26 +6,28 @@ exports.getCourierKPIs = async (req, res) => {
         const { dateRange = 30 } = req.query;
         const startDate = moment().subtract(Number(dateRange), 'days').toDate();
 
-        // 1. Overall Delivery Performance
-        const shipments = await Shipment.find({
-            createdAt: { $gte: startDate }
+        // 1. Overall Delivery Performance (Fleet-wide)
+        const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
+        const orders = await Order.find({
+            createdAt: { $gte: startDate },
+            status: { $in: dispatchStatuses }
         });
 
-        const total = shipments.length;
-        const delivered = shipments.filter(s => s.shipmentStatus === 'Delivered').length;
-        const returned = shipments.filter(s => ['Returned', 'Failed Attempt'].includes(s.shipmentStatus)).length;
-        const inTransit = shipments.filter(s => ['In Transit', 'Out for Delivery'].includes(s.shipmentStatus)).length;
+        const total = orders.length;
+        const delivered = orders.filter(o => ['Delivered', 'Paid'].includes(o.status)).length;
+        const returned = orders.filter(o => ['Returned', 'Refused'].includes(o.status)).length;
+        const inTransit = orders.filter(o => ['Dispatched', 'Shipped', 'Out for Delivery'].includes(o.status)).length;
 
-        const successRate = total > 0 ? ((delivered / (total - inTransit)) * 100).toFixed(1) : 0;
-        const returnRate = total > 0 ? ((returned / (total - inTransit)) * 100).toFixed(1) : 0;
+        const successRate = total > 0 ? ((delivered / total) * 100).toFixed(1) : 0;
+        const returnRate = total > 0 ? ((returned / total) * 100).toFixed(1) : 0;
 
         // 2. Average Delivery Time
         let totalDeliveryDays = 0;
         let deliveredCount = 0;
 
-        shipments.forEach(s => {
-            if (s.shipmentStatus === 'Delivered' && s.deliveredDate) {
-                totalDeliveryDays += moment(s.deliveredDate).diff(moment(s.createdAt), 'days');
+        orders.forEach(o => {
+            if (['Delivered', 'Paid'].includes(o.status) && o.deliveryStatus && o.deliveryStatus.deliveredAt) {
+                totalDeliveryDays += moment(o.deliveryStatus.deliveredAt).diff(moment(o.createdAt), 'days');
                 deliveredCount++;
             }
         });
@@ -34,24 +35,20 @@ exports.getCourierKPIs = async (req, res) => {
         const avgDeliveryTimeDays = deliveredCount > 0 ? (totalDeliveryDays / deliveredCount).toFixed(1) : 0;
 
         // 3. Financial Reconciliation (COD)
-        const financials = await Shipment.aggregate([
-            { $match: { createdAt: { $gte: startDate }, shipmentStatus: 'Delivered' } },
-            {
-                $group: {
-                    _id: "$paymentStatus",
-                    totalAmount: { $sum: "$codAmount" }
+        let totalDeliveredCOD = 0;
+        let pendingCourierClearance = 0;
+        let settledToBank = 0;
+
+        orders.forEach(o => {
+            if (['Delivered', 'Paid'].includes(o.status)) {
+                const amount = o.financials?.codAmount || o.totalAmount;
+                totalDeliveredCOD += amount;
+                if (o.paymentStatus === 'Paid' || o.status === 'Paid') {
+                    settledToBank += amount;
+                } else {
+                    pendingCourierClearance += amount;
                 }
             }
-        ]);
-
-        let pendingCash = 0;
-        let settledCash = 0;
-        let uncollected = 0;
-
-        financials.forEach(f => {
-            if (f._id === 'Collected_Not_Paid') pendingCash += f.totalAmount;
-            if (f._id === 'Paid_and_Settled') settledCash += f.totalAmount;
-            if (f._id === 'Delivered_Not_Collected') uncollected += f.totalAmount;
         });
 
         res.json({
@@ -65,10 +62,10 @@ exports.getCourierKPIs = async (req, res) => {
                 avgDeliveryTimeDays: Number(avgDeliveryTimeDays)
             },
             financials: {
-                totalDeliveredCOD: pendingCash + settledCash + uncollected,
-                pendingCourierClearance: pendingCash,
-                settledToBank: settledCash,
-                uncollectedFromCustomer: uncollected
+                totalDeliveredCOD,
+                pendingCourierClearance,
+                settledToBank,
+                uncollectedFromCustomer: 0
             }
         });
 
@@ -82,23 +79,25 @@ exports.getRegionalPerformance = async (req, res) => {
         const { dateRange = 30 } = req.query;
         const startDate = moment().subtract(Number(dateRange), 'days').toDate();
 
-        const regions = await Shipment.aggregate([
-            { $match: { createdAt: { $gte: startDate } } },
+        const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
+
+        const regions = await Order.aggregate([
+            { $match: { createdAt: { $gte: startDate }, status: { $in: dispatchStatuses } } },
             {
                 $group: {
-                    _id: "$wilayaName",
+                    _id: "$shipping.wilaya",
                     total: { $sum: 1 },
                     delivered: {
-                        $sum: { $cond: [{ $eq: ["$shipmentStatus", "Delivered"] }, 1, 0] }
+                        $sum: { $cond: [{ $in: ["$status", ["Delivered", "Paid"]] }, 1, 0] }
                     },
                     returned: {
-                        $sum: { $cond: [{ $in: ["$shipmentStatus", ["Returned", "Failed Attempt"]] }, 1, 0] }
+                        $sum: { $cond: [{ $in: ["$status", ["Returned", "Refused"]] }, 1, 0] }
                     }
                 }
             },
             {
                 $project: {
-                    wilaya: "$_id",
+                    wilaya: { $ifNull: ["$_id", "Unknown"] },
                     total: 1,
                     delivered: 1,
                     returned: 1,

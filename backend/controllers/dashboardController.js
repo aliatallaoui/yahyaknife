@@ -65,9 +65,10 @@ exports.getDashboardData = async (req, res) => {
         // --- DELIVERY METRICS ---
         const Courier = require('../models/Courier');
         const couriers = await Courier.find();
-        let globalDeliveryAttempts = deliveredOrders + refusedOrders;
-        let deliverySuccessRate = globalDeliveryAttempts > 0 ? (deliveredOrders / globalDeliveryAttempts) * 100 : 0;
-        let refusalRate = globalDeliveryAttempts > 0 ? (refusedOrders / globalDeliveryAttempts) * 100 : 0;
+        const dispatchAgg = await Order.countDocuments({ ...dateQuery, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } });
+
+        let deliverySuccessRate = dispatchAgg > 0 ? (deliveredOrders / dispatchAgg) * 100 : 0;
+        let refusalRate = dispatchAgg > 0 ? ((refusedOrders + returnedOrders) / dispatchAgg) * 100 : 0;
 
         // --- FINANCIAL METRICS ---
         let globalCashCollected = 0;

@@ -167,14 +167,14 @@ exports.getEcommerceAnalytics = async (req, res) => {
 
         orderAgg.forEach(status => {
             totalOrders += status.count;
-            if (['Delivered', 'Paid', 'Shipped', 'Out for Delivery'].includes(status._id)) {
+            if (['Delivered', 'Paid'].includes(status._id)) {
                 totalRevenue += status.revenue;
                 netProfit += status.profit;
             }
 
             if (status._id === 'New') pending += status.count;
             if (['Confirmed', 'Preparing', 'Ready for Pickup'].includes(status._id)) confirmed += status.count;
-            if (['Shipped', 'Out for Delivery'].includes(status._id)) shipped += status.count;
+            if (['Shipped', 'Out for Delivery', 'Dispatched'].includes(status._id)) shipped += status.count;
             if (['Delivered', 'Paid'].includes(status._id)) delivered += status.count;
             if (['Returned', 'Refused'].includes(status._id)) returned += status.count;
         });
@@ -199,13 +199,13 @@ exports.getEcommerceAnalytics = async (req, res) => {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
                     revenue: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ['Delivered', 'Paid', 'Shipped', 'Out for Delivery']] }, "$totalAmount", 0]
+                            $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$totalAmount", 0]
                         }
                     },
                     orders: { $sum: 1 },
                     profit: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ['Delivered', 'Paid', 'Shipped', 'Out for Delivery']] }, "$financials.netProfit", 0]
+                            $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$financials.netProfit", 0]
                         }
                     }
                 }
@@ -245,7 +245,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                     units: { $sum: "$items.quantity" },
                     revenue: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ['Delivered', 'Paid', 'Shipped', 'Out for Delivery']] }, { $multiply: ["$items.price", "$items.quantity"] }, 0]
+                            $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, { $multiply: ["$items.price", "$items.quantity"] }, 0]
                         }
                     }
                 }
@@ -269,15 +269,15 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 { $match: { "shipping.courierId": c._id, ...dateQuery } },
                 { $group: { _id: "$status", count: { $sum: 1 } } }
             ]);
-            let dec = 0, dlv = 0, ret = 0;
+            let dsp = 0, dlv = 0, ret = 0;
             cOrders.forEach(o => {
-                dec += o.count;
+                if (['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'].includes(o._id)) dsp += o.count;
                 if (['Delivered', 'Paid'].includes(o._id)) dlv += o.count;
                 if (['Returned', 'Refused'].includes(o._id)) ret += o.count;
             });
-            const succ = (dlv + ret) > 0 ? ((dlv / (dlv + ret)) * 100).toFixed(1) : 0;
+            const succ = dsp > 0 ? ((dlv / dsp) * 100).toFixed(1) : 0;
             return {
-                id: c._id, name: c.name, orders: dec, delivered: dlv, returned: ret, success: parseFloat(succ)
+                id: c._id, name: c.name, orders: dlv + ret + dsp, delivered: dlv, returned: ret, success: parseFloat(succ)
             };
         }));
 

@@ -199,21 +199,23 @@ exports.getOrdersKPIs = async (req, res) => {
             confirmedOrders,
             readyForDispatch,
             sentToCourier,
+            shippedToday,
             deliveredToday,
-            totalEver,
+            shippedEver,
             returnedEver
         ] = await Promise.all([
             Order.countDocuments({ date: { $gte: today }, status: 'New' }),
             Order.countDocuments({ status: 'New' }), // Pending confirmation
             Order.countDocuments({ status: 'Confirmed' }),
-            Order.countDocuments({ status: 'Ready for Pickup' }),
+            Order.countDocuments({ status: { $in: ['Preparing', 'Ready for Pickup'] } }),
             Order.countDocuments({ status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+            Order.countDocuments({ date: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
             Order.countDocuments({ 'deliveryStatus.deliveredAt': { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
-            Order.countDocuments(),
-            Order.countDocuments({ status: 'Returned' })
+            Order.countDocuments({ status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
+            Order.countDocuments({ status: { $in: ['Returned', 'Refused'] } })
         ]);
 
-        const returnRate = totalEver > 0 ? ((returnedEver / totalEver) * 100).toFixed(1) : 0;
+        const returnRate = shippedEver > 0 ? ((returnedEver / shippedEver) * 100).toFixed(1) : 0;
 
         res.json({
             newOrdersToday,
@@ -221,6 +223,7 @@ exports.getOrdersKPIs = async (req, res) => {
             confirmedOrders,
             readyForDispatch,
             sentToCourier,
+            shippedToday,
             deliveredToday,
             returnRate
         });

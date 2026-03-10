@@ -115,10 +115,27 @@ const syncActiveShipments = async () => {
 
                         // Mirror status back to Internal Order if appropriate
                         if (newShipmentStatus === 'Delivered' || newShipmentStatus === 'Returned') {
-                            const internalModel = shipment.internalOrderId.startsWith('CUST-') ? CustomOrder : Order;
-                            const order = await internalModel.findById(shipment.internalOrder);
+                            const internalModel = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-') ? CustomOrder : Order;
+
+                            // Find the order using the correct reference field
+                            const order = await internalModel.findById(shipment.internalOrderId || shipment.internalOrder);
+
                             if (order) {
-                                order.status = newShipmentStatus === 'Delivered' ? 'Completed' : 'Cancelled';
+                                // 1. Map to exact correct ERP statuses, not generic 'Completed' which breaks Finances
+                                if (newShipmentStatus === 'Delivered') {
+                                    order.status = 'Delivered';
+                                    if (!order.deliveryStatus) order.deliveryStatus = {};
+                                    order.deliveryStatus.deliveredAt = new Date();
+                                } else if (newShipmentStatus === 'Returned') {
+                                    order.status = 'Returned';
+                                }
+
+                                // 2. Map Payment COD statuses properly to Order financials
+                                if (newPaymentStatus === 'Paid_and_Settled') {
+                                    order.status = 'Paid';
+                                    order.paymentStatus = 'Paid';
+                                }
+
                                 await order.save();
                             }
                         }

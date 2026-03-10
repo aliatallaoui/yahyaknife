@@ -1,5 +1,6 @@
 const Courier = require('../models/Courier');
 const Order = require('../models/Order');
+const Revenue = require('../models/Revenue');
 
 // Get all couriers with calculated KPIs
 exports.getCouriers = async (req, res) => {
@@ -49,7 +50,42 @@ exports.settleCourierCash = async (req, res) => {
         courier.cashSettled += amountToSettle;
         await courier.save(); // pre-save hook updates pendingRemittance naturally
 
-        res.json({ message: 'Cash settled successfully', courier });
+        // CRITICAL DATA COHERENCE: Map the bulk cash back to specific individual Orders
+        // Otherwise, the Finance Hub has 'Delivered' orders that never flip to 'Paid' (Settled Revenue)
+        let remainingToSettle = amountToSettle;
+        const unpaidOrders = await Order.find({
+            courier: id,
+            status: 'Delivered',
+            paymentStatus: { $ne: 'Paid' }
+        }).sort({ date: 1 }); // Oldest first
+
+        const updatedOrders = [];
+
+        for (const order of unpaidOrders) {
+            if (remainingToSettle <= 0) break;
+
+            // Assume the full COD amount is what we need to clear this order
+            const orderAmount = order.financials?.codAmount || order.totalAmount;
+
+            if (remainingToSettle >= orderAmount) {
+                // Fully pay this order
+                order.paymentStatus = 'Paid';
+                order.status = 'Paid'; // Advance the ERP status as well
+                remainingToSettle -= orderAmount;
+                await order.save();
+                updatedOrders.push(order._id);
+            } else {
+                // Partial payment edge cases (Rare, but possible if they settle a weird amount)
+                // We'll leave it as unpaid but reduce the remaining pool to 0
+                remainingToSettle = 0;
+            }
+        }
+
+        res.json({
+            message: 'Cash settled successfully and pushed to Financial Ledger via Order Payment Status.',
+            courier,
+            ordersSettled: updatedOrders.length
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
