@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
-import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban } from 'lucide-react';
+import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus } from 'lucide-react';
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -29,6 +29,7 @@ const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Disp
 
 const OrderRow = React.memo(({
     order,
+    index,
     isSelected,
     isExpanded,
     visibleColumns,
@@ -48,17 +49,37 @@ const OrderRow = React.memo(({
     onBulkActionCancel,
     onQuickDispatch,
     onEditClick,
+    onTagUpdate,
+    onPriorityChange,
     virtualMeasureRef,
     virtualIndex
 }) => {
     const { t } = useTranslation();
+    const [isEditingTags, setIsEditingTags] = useState(false);
+    const [tagInput, setTagInput] = useState('');
+
+    const handleAddTag = (e) => {
+        if (e.key === 'Enter' && tagInput.trim()) {
+            e.stopPropagation();
+            onTagUpdate(order._id, [...(order.tags || []), tagInput.trim()]);
+            setTagInput('');
+            setIsEditingTags(false);
+        } else if (e.key === 'Escape') {
+            setTagInput('');
+            setIsEditingTags(false);
+        }
+    };
+
+    const handleRemoveTag = (e, tagToRemove) => {
+        e.stopPropagation();
+        onTagUpdate(order._id, (order.tags || []).filter(t => t !== tagToRemove));
+    };
 
     return (
         <tbody 
             ref={virtualMeasureRef} 
             data-index={virtualIndex} 
             className="text-sm border-b border-gray-100"
-            style={{ contentVisibility: 'auto', containIntrinsicSize: '68px' }}
         >
             <tr
                 onClick={() => toggleRowExpansion(order._id)}
@@ -75,6 +96,12 @@ const OrderRow = React.memo(({
                 {/* Dynamic Columns Rendering based on order */}
                 {visibleColumns.map((col) => {
                     switch (col.id) {
+                        case 'index':
+                            return (
+                                <td key={col.id} className="px-4 py-2 text-center text-xs font-black text-gray-300 w-12">
+                                    {index}
+                                </td>
+                            );
                         case 'orderId':
                             return (
                                 <td key={col.id} className="px-4 py-2">
@@ -139,11 +166,6 @@ const OrderRow = React.memo(({
                                             </div>
                                         </div>
 
-                                        {order.priority && order.priority !== 'Normal' && (
-                                            <span className={clsx("text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded animate-pulse mt-1", order.priority === 'Urgent' ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700")}>
-                                                {order.priority}
-                                            </span>
-                                        )}
                                     </div>
                                 </td>
                             );
@@ -183,18 +205,74 @@ const OrderRow = React.memo(({
                                                 {t(`sales.status${order.status.replace(/\s+/g, '')}`) || order.status}
                                             </span>
                                         )}
-                                        {order.tags && order.tags.length > 0 && (
-                                            <div className="flex items-center gap-1 flex-wrap max-w-[120px]">
-                                                {order.tags.map(tag_item => (
-                                                    <span key={tag_item} className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-gray-200 bg-gray-50 text-gray-600 truncate max-w-[80px]" title={tag_item}>
-                                                        {tag_item}
-                                                    </span>
-                                                ))}
+                                    </div>
+                                </td>
+                            );
+                        case 'tags': {
+                            const priorities = ['Normal', 'High Priority', 'Urgent'];
+                            const currentPriIdx = priorities.indexOf(order.priority || 'Normal');
+                            const nextPriority = priorities[(currentPriIdx + 1) % priorities.length];
+                            return (
+                                <td key={col.id} className="px-3 py-2" onClick={e => e.stopPropagation()}>
+                                    <div className="flex flex-wrap items-center gap-1 min-w-[110px]">
+                                        {/* Inline Priority Select */}
+                                        <select
+                                            value={order.priority || 'Normal'}
+                                            onChange={(e) => { e.stopPropagation(); onPriorityChange && onPriorityChange(order._id, e.target.value); }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={clsx(
+                                                "appearance-none cursor-pointer outline-none text-[10px] font-black uppercase tracking-wide border rounded-full px-2 py-0.5 pr-5 transition-colors shrink-0",
+                                                order.priority === 'Urgent'
+                                                    ? "bg-red-100 text-red-700 border-red-200 animate-pulse"
+                                                    : order.priority === 'High Priority'
+                                                        ? "bg-orange-100 text-orange-700 border-orange-200"
+                                                        : "bg-gray-100 text-gray-500 border-gray-200"
+                                            )}
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3e%3c/svg%3e")`,
+                                                backgroundPosition: 'right 0.2rem center',
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundSize: '1em 1em',
+                                            }}
+                                        >
+                                            <option value="Normal">— Normal</option>
+                                            <option value="High Priority">⚡ High</option>
+                                            <option value="Urgent">🔥 Urgent</option>
+                                        </select>
+                                        {/* Tags */}
+                                        {(order.tags || []).map(tag_item => (
+                                            <div key={tag_item} className="group/tag flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider pl-1.5 pr-0.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 truncate max-w-[90px]" title={tag_item}>
+                                                <span>{tag_item}</span>
+                                                <button onClick={(e) => handleRemoveTag(e, tag_item)} className="opacity-0 group-hover/tag:opacity-100 hover:text-red-500 transition-opacity ml-0.5">
+                                                    <X className="w-2.5 h-2.5" />
+                                                </button>
                                             </div>
+                                        ))}
+                                        {isEditingTags ? (
+                                            <input
+                                                type="text"
+                                                value={tagInput}
+                                                onChange={(e) => setTagInput(e.target.value)}
+                                                onKeyDown={handleAddTag}
+                                                onBlur={() => { setIsEditingTags(false); setTagInput(''); }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                autoFocus
+                                                className="w-16 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                                placeholder="TAG+"
+                                            />
+                                        ) : (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setIsEditingTags(true); }}
+                                                className="px-1 py-0.5 rounded border border-dashed border-gray-300 text-gray-400 hover:text-blue-500 hover:border-blue-300 text-[9px] font-black uppercase cursor-pointer transition-colors"
+                                                title="Add Tag"
+                                            >
+                                                <Plus className="w-2.5 h-2.5 inline-block" />
+                                            </button>
                                         )}
                                     </div>
                                 </td>
                             );
+                        }
                         case 'actions':
                             return (
                                 <td key={col.id} className="px-4 py-2 text-right" onClick={e => e.stopPropagation()}>
@@ -228,6 +306,13 @@ const OrderRow = React.memo(({
                                     <div className="flex flex-col relative group/customer">
                                         <div className="flex items-center gap-1.5">
                                             <span className="font-bold text-gray-900 truncate max-w-[150px]">{order.customer?.name || t('ordersControl.customerCard.unknown')}</span>
+                                            {/* Priority Icon beside name */}
+                                            {order.priority === 'Urgent' && (
+                                                <span title="URGENT" className="text-red-500 animate-pulse text-[11px]">🔥</span>
+                                            )}
+                                            {order.priority === 'High Priority' && (
+                                                <span title="High Priority" className="text-orange-500 text-[11px]">⚡</span>
+                                            )}
                                             {order.customer?.fraudProbability > 60 && (
                                                 <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" title="High Fraud Probability" />
                                             )}
@@ -441,19 +526,24 @@ const OrderRow = React.memo(({
         </tbody>
     );
 }, (prevProps, nextProps) => {
-    // Custom comparator for ultra performance
+    // Skip re-render only if nothing meaningful changed
     if (prevProps.isSelected !== nextProps.isSelected) return false;
     if (prevProps.isExpanded !== nextProps.isExpanded) return false;
     if (prevProps.activeStage !== nextProps.activeStage) return false;
-    if (prevProps.visibleColumns !== nextProps.visibleColumns) return false;
-    if (prevProps.hiddenColumns !== nextProps.hiddenColumns) return false;
-    
-    // Check if order object changed (deep enough for our needs)
+    if (prevProps.virtualIndex !== nextProps.virtualIndex) return false;
+
+    // Compare column configuration by serializing column ids — cheap and reliable
+    const prevColKey = prevProps.visibleColumns.map(c => c.id).join(',');
+    const nextColKey = nextProps.visibleColumns.map(c => c.id).join(',');
+    if (prevColKey !== nextColKey) return false;
+
+    // Check if order object changed
     if (prevProps.order._id !== nextProps.order._id) return false;
     if (prevProps.order.status !== nextProps.order.status) return false;
-    
-    // Virtualization Checks
-    if (prevProps.virtualIndex !== nextProps.virtualIndex) return false;
+    if (prevProps.order.priority !== nextProps.order.priority) return false;
+    if ((prevProps.order.tags || []).join(',') !== (nextProps.order.tags || []).join(',')) return false;
+    if (prevProps.order.agent?._id !== nextProps.order.agent?._id) return false;
+    if (prevProps.order.courier?._id !== nextProps.order.courier?._id) return false;
 
     return true;
 });

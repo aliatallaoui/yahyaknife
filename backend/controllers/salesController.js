@@ -80,18 +80,16 @@ exports.getOrders = async (req, res) => {
 
 exports.getAdvancedOrders = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        let skip = (page - 1) * limit;
+        const { limit = 50 } = req.query;
+        let queryLimit = parseInt(limit);
 
-        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, lastId } = req.query;
+        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
 
         const query = { tenant: req.user.tenant };
 
-        if (lastId) {
-            // Assume sortOrder === 'desc' on _id/date for basic cursor pagination
-            query._id = { $lt: lastId };
-            skip = 0;
+        if (cursor) {
+            const op = sortOrder === 'desc' ? '$lt' : '$gt';
+            query[sortField === 'date' ? '_id' : sortField] = { [op]: cursor };
         }
 
         // 0. Stage Splitting Logic (Pre-Dispatch vs Post-Dispatch)
@@ -144,9 +142,10 @@ exports.getAdvancedOrders = async (req, res) => {
         const sortObj = { [sortField === 'date' ? '_id' : sortField]: sortOrder === 'desc' ? -1 : 1 }; // map date to _id for indexed sorting
 
         // For heavy cursor pagination, we can skip total counts if we rely entirely on infinite scroll.
-        // For backwards compatibility, we calculate it if it's the first page.
-        const totalOrdersQuery = lastId ? null : Order.countDocuments(query);
+        // For backwards compatibility, we calculate it if it's the first page (no cursor).
+        const totalOrdersQuery = cursor ? null : Order.countDocuments(query);
         
+        // Fetch 1 extra to determine if there's a next page
         const ordersQuery = Order.find(query)
             .populate('customer', 'name phone email fraudProbability refusalRate totalOrders deliveredOrders totalRefusals trustScore')
             .populate('courier', 'name')
@@ -156,30 +155,36 @@ exports.getAdvancedOrders = async (req, res) => {
                 populate: { path: 'productId' }
             })
             .sort(sortObj)
-            .skip(skip)
-            .limit(limit);
+            .limit(queryLimit + 1);
 
-        const [totalOrders, orders] = lastId 
+        const [totalOrders, results] = cursor 
             ? [null, await ordersQuery]
             : await Promise.all([totalOrdersQuery, ordersQuery]);
 
-        const totalPages = totalOrders ? Math.ceil(totalOrders / limit) : null;
+        let hasNextPage = false;
+        let nextCursor = null;
+
+        if (results.length > queryLimit) {
+            hasNextPage = true;
+            results.pop(); // Remove the extra item
+            const lastItem = results[results.length - 1];
+            nextCursor = sortField === 'date' ? lastItem._id : lastItem[sortField];
+        }
 
         // Compute Tab Counts
-        const stageCounts = lastId ? null : {
-            preDispatch: await Order.countDocuments({ ...query, status: { $in: ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'] } }),
+        const stageCounts = cursor ? null : {
+            preDispatch: await Order.countDocuments({ ...query, status: { $in: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'] } }),
             postDispatch: await Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'] } }),
             returns: await Order.countDocuments({ ...query, status: { $in: ['Returned', 'Refused'] } }),
             all: totalOrders // When stage filter is disabled
         };
 
         res.json({
-            orders,
-            currentPage: lastId ? null : page,
-            totalPages,
+            orders: results,
+            nextCursor,
+            hasNextPage,
             totalOrders,
-            stageCounts: stageCounts || undefined,
-            nextCursor: orders.length > 0 ? orders[orders.length - 1]._id : null
+            stageCounts: stageCounts || undefined
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

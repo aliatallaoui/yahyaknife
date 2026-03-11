@@ -107,7 +107,7 @@ const Layout = () => {
         <Header setMobileMenuOpen={setMobileMenuOpen} />
 
         {/* Dashboard Content Pages */}
-        <div className="px-4 pt-10 pb-12 sm:px-8 lg:px-10 xl:px-14 2xl:px-16 w-full">
+        <div className="px-4 pt-10 pb-12 sm:px-8 lg:px-10 xl:px-14 2xl:px-16 w-full flex-1 flex flex-col">
           <Routes>
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

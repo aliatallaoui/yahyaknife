@@ -55,11 +55,57 @@ export default function OrderControlCenter() {
     const [expandedRows, setExpandedRows] = useState(new Set());
 
     // Column Visibility and Ordering
-    const defaultColumnOrder = ['orderId', 'customer', 'phone', 'location', 'products', 'total', 'courier', 'agent', 'date', 'status', 'actions'];
-    const [hiddenColumns, setHiddenColumns] = useState(new Set());
-    const [orderedColumnIds, setOrderedColumnIds] = useState(defaultColumnOrder);
+    const defaultColumnOrder = ['index', 'orderId', 'customer', 'phone', 'location', 'products', 'total', 'courier', 'agent', 'date', 'status', 'tags', 'actions'];
+    const [hiddenColumns, setHiddenColumns] = useState(() => {
+        try {
+            const saved = localStorage.getItem('orderControlHiddenColumns');
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
+    
+    const [orderedColumnIds, setOrderedColumnIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem('orderControlOrderedColumns');
+            if (!saved) return defaultColumnOrder;
+            const parsed = JSON.parse(saved);
+            // Merge: keep saved order but append any new columns from defaults that aren't saved
+            const newCols = defaultColumnOrder.filter(id => !parsed.includes(id));
+            return newCols.length > 0 ? [...parsed.slice(0, -1), ...newCols, parsed[parsed.length - 1]] : parsed;
+        } catch {
+            return defaultColumnOrder;
+        }
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('orderControlHiddenColumns', JSON.stringify(Array.from(hiddenColumns)));
+        } catch (e) { console.error('Failed to save hidden columns', e); }
+    }, [hiddenColumns]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('orderControlOrderedColumns', JSON.stringify(orderedColumnIds));
+        } catch (e) { console.error('Failed to save ordered columns', e); }
+    }, [orderedColumnIds]);
+    
     const [showColumnSettings, setShowColumnSettings] = useState(false);
     const [draggedColumnId, setDraggedColumnId] = useState(null);
+    const [showKPIs, setShowKPIs] = useState(() => {
+        try {
+            const saved = localStorage.getItem('orderControlShowKPIs');
+            return saved ? JSON.parse(saved) : false;
+        } catch {
+            return false;
+        }
+    }); // Hidden by default to save space
+    
+    useEffect(() => {
+        try {
+            localStorage.setItem('orderControlShowKPIs', JSON.stringify(showKPIs));
+        } catch (e) { console.error('Failed to save KPI state', e); }
+    }, [showKPIs]);
 
     // Filters and Pagination
     const [nextCursor, setNextCursor] = useState(null);
@@ -104,34 +150,11 @@ export default function OrderControlCenter() {
     // Virtualization Engine
     const parentRef = React.useRef(null);
     const rowVirtualizer = useVirtualizer({
-        count: orders.length,
+        count: hasNextPage ? orders.length + 1 : orders.length,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 68, // Approximate height of a row
-        overscan: 5, // Render a few rows outside the viewport for smooth scrolling
+        overscan: 15, // High overscan for completely smooth rendering
     });
-
-    // Infinite Scroll Intersection Trigger
-    useEffect(() => {
-        const [lastItem] = rowVirtualizer.getVirtualItems().slice(-1);
-        if (!lastItem) return;
-
-        // If we scrolled to the end of the array and there is a next page
-        if (
-            lastItem.index >= orders.length - 1 &&
-            hasNextPage &&
-            !isFetchingNextPage &&
-            !loading
-        ) {
-            fetchOrders(true);
-        }
-    }, [
-        hasNextPage,
-        fetchOrders,
-        orders.length,
-        isFetchingNextPage,
-        loading,
-        rowVirtualizer.getVirtualItems(),
-    ]);
 
     const handleExportCSV = async () => {
         try {
@@ -244,7 +267,11 @@ export default function OrderControlCenter() {
             });
 
             if (loadMore) {
-                setOrders(prev => [...prev, ...(res.data.orders || [])]);
+                setOrders(prev => {
+                    const existingIds = new Set(prev.map(o => o._id));
+                    const newUnique = (res.data.orders || []).filter(o => !existingIds.has(o._id));
+                    return [...prev, ...newUnique];
+                });
             } else {
                 setOrders(res.data.orders || []);
             }
@@ -277,6 +304,29 @@ export default function OrderControlCenter() {
             setIsFetchingNextPage(false);
         }
     }, [limit, sortField, sortOrder, searchTerm, filters, activeStage, nextCursor]);
+
+    // Infinite Scroll Intersection Trigger
+    useEffect(() => {
+        const [lastItem] = rowVirtualizer.getVirtualItems().slice(-1);
+        if (!lastItem) return;
+
+        // If we scrolled near the end of the array and there is a next page
+        if (
+            lastItem.index >= orders.length - 25 &&
+            hasNextPage &&
+            !isFetchingNextPage &&
+            !loading
+        ) {
+            fetchOrders(true);
+        }
+    }, [
+        hasNextPage,
+        fetchOrders,
+        orders.length,
+        isFetchingNextPage,
+        loading,
+        rowVirtualizer.getVirtualItems(),
+    ]);
 
     // Data Fetch Trigger
     useEffect(() => {
@@ -323,16 +373,6 @@ export default function OrderControlCenter() {
         }
     };
 
-    useEffect(() => {
-        const debounce = setTimeout(fetchOrders, 400); // 400ms debounce on search typing
-        return () => clearTimeout(debounce);
-    }, [fetchOrders]);
-
-    // Reset pagination and cursors if fundamental query parameters change
-    useEffect(() => {
-        setCursorMap({});
-        setPage(1);
-    }, [searchTerm, filters, activeStage, sortField, sortOrder, limit]);
 
     // Helpers
     const handleSort = (field) => {
@@ -381,6 +421,30 @@ export default function OrderControlCenter() {
             alert(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
+        }
+    }, [fetchOrders]);
+
+    const handleTagUpdate = useCallback(async (orderId, newTags) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${orderId}`, {
+                tags: newTags
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        }
+    }, [fetchOrders]);
+
+    const handlePriorityChange = useCallback(async (orderId, newPriority) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${orderId}`, {
+                priority: newPriority
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
         }
     }, [fetchOrders]);
 
@@ -478,6 +542,7 @@ export default function OrderControlCenter() {
 
     // Columns configuration (Static Definitions)
     const columnDefinitions = useMemo(() => ({
+        index: { id: 'index', label: '#' },
         orderId: { id: 'orderId', label: t('ordersControl.grid.orderId') },
         customer: { id: 'customer', label: t('ordersControl.grid.customer') },
         phone: { id: 'phone', label: t('ordersControl.grid.phone') },
@@ -488,6 +553,7 @@ export default function OrderControlCenter() {
         agent: { id: 'agent', label: t('ordersControl.grid.agent') },
         date: { id: 'date', label: t('ordersControl.grid.age') },
         status: { id: 'status', label: t('ordersControl.grid.status') },
+        tags: { id: 'tags', label: t('ordersControl.grid.tags', { defaultValue: 'Tags & Priority' }) },
         actions: { id: 'actions', label: t('ordersControl.expanded.actions', { defaultValue: 'Actions' }) },
     }), [t]);
 
@@ -551,24 +617,14 @@ export default function OrderControlCenter() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-gray-50/50 gap-4 -mx-4 sm:-mx-8 lg:-mx-10 xl:-mx-14 2xl:-mx-16 -mt-6">
-            {/* Premium Two-Row Header */}
-            <div className="bg-white px-4 xl:px-6 py-3 border-b border-gray-100 shrink-0 flex flex-col gap-3 shadow-sm z-30">
+        <div className="flex flex-col h-[calc(100vh-72px)] w-auto overflow-hidden bg-gray-50/50 gap-4 -mx-4 sm:-mx-8 lg:-mx-10 xl:-mx-14 2xl:-mx-16 -mt-10 -mb-12">
+            {/* Premium Compact Header */}
+            <div className="bg-white px-4 xl:px-6 py-2 border-b border-gray-100 shrink-0 flex flex-col gap-2 shadow-sm z-30">
                 
-                {/* Top Row: Title & Primary Actions */}
-                <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-4">
-                    {/* Title */}
-                    <div className="flex items-center gap-3 shrink-0">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-900 to-indigo-800 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
-                            <PackageOpen className="w-4 h-4" />
-                        </div>
-                        <div className="flex flex-col">
-                            <h1 className="text-lg font-black text-gray-900 leading-none mb-1 tracking-tight">{t('ordersControl.title')}</h1>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 leading-none">{t('ordersControl.subtitle')}</p>
-                        </div>
-                    </div>
-
-                    {/* Sub-tools & Primary Actions */}
+                {/* Top Row: Left: Search+Filter | Center: Column Settings (unclipped) | Right: Export+Add */}
+                <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 gap-x-2">
+                    
+                    {/* Left: Search + Filter (scrollable) */}
                     <div className="flex items-center gap-1.5 xl:gap-2 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="relative shrink-0">
                             <Search className="w-3.5 h-3.5 text-gray-400 absolute start-2.5 top-1/2 -translate-y-1/2" />
@@ -592,87 +648,107 @@ export default function OrderControlCenter() {
                         >
                             <SlidersHorizontal className="w-3.5 h-3.5" /> <span className="hidden lg:inline">{t('ordersControl.filtersBtn')}</span> {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
                         </button>
+                    </div>
 
-                        <div className="relative shrink-0">
-                            <button
-                                onClick={() => setShowColumnSettings(!showColumnSettings)}
-                                className={clsx(
-                                    "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 rounded-lg border font-bold text-xs transition-colors h-[32px] xl:h-[36px]",
-                                    showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
-                                )}
-                            >
-                                <LayoutTemplate className="w-3.5 h-3.5" />
-                            </button>
+                    {/* Center: Column Settings button — MUST be outside overflow containers to avoid popover clipping */}
+                    <div className="relative shrink-0">
+                        <button
+                            onClick={() => setShowColumnSettings(!showColumnSettings)}
+                            className={clsx(
+                                "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 rounded-lg border font-bold text-xs transition-colors h-[32px] xl:h-[36px]",
+                                showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                            )}
+                        >
+                            <LayoutTemplate className="w-3.5 h-3.5" />
+                        </button>
 
-                            {/* Column Settings Popover */}
-                            {showColumnSettings && (
-                                <div className="absolute top-full rtl:left-0 ltr:right-0 mt-2 w-64 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-gray-100 z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2">
-                                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                        <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">{t('ordersControl.actions.manageColumns', { defaultValue: 'Manage Columns' })}</h3>
-                                        <button onClick={() => setShowColumnSettings(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <div className="p-2 max-h-[300px] overflow-y-auto">
-                                        <p className="text-[10px] text-gray-500 mb-2 px-2 italic">{t('ordersControl.actions.dragHint', { defaultValue: 'Drag to reorder' })}</p>
-                                        {orderedColumnIds.map((colId, index) => {
-                                            const colDef = columnDefinitions[colId];
-                                            if (!colDef) return null;
-                                            const isHidden = hiddenColumns.has(colId);
-                                            const isDragging = draggedColumnId === colId;
+                        {/* Column Settings Popover — absolute to this relative wrapper, NOT clipped by overflow */}
+                        {showColumnSettings && (
+                            <div className="absolute top-[calc(100%+8px)] rtl:left-0 ltr:right-0 w-64 bg-white rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] border border-gray-100 z-[999] overflow-hidden">
+                                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">{t('ordersControl.actions.manageColumns', { defaultValue: 'Manage Columns' })}</h3>
+                                    <button onClick={() => setShowColumnSettings(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div className="p-2 max-h-[60vh] overflow-y-auto">
+                                    <p className="text-[10px] text-gray-500 mb-2 px-2 italic">{t('ordersControl.actions.dragHint', { defaultValue: 'Drag to reorder' })}</p>
+                                    {orderedColumnIds.map((colId, index) => {
+                                        const colDef = columnDefinitions[colId];
+                                        if (!colDef) return null;
+                                        const isHidden = hiddenColumns.has(colId);
+                                        const isDragging = draggedColumnId === colId;
 
-                                            return (
-                                                <div
-                                                    key={colId}
-                                                    draggable
-                                                    onDragStart={(e) => handleDragStart(e, colId)}
-                                                    onDragOver={(e) => handleDragOver(e, index)}
-                                                    onDragEnd={handleDragEnd}
-                                                    className={clsx(
-                                                        "flex items-center justify-between p-2 rounded-lg cursor-grab active:cursor-grabbing border text-sm transition-all",
-                                                        isDragging ? "bg-blue-50/50 border-blue-200 shadow-sm scale-[1.02] opacity-80" : "bg-white border-transparent hover:bg-gray-50",
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="text-gray-300">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
-                                                        </div>
-                                                        <div className="flex flex-col items-center gap-0.5">
-                                                            <button title="Move Up" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === 0} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'up'); }}>
-                                                                <ChevronUp className="w-3 h-3" />
-                                                            </button>
-                                                            <button title="Move Down" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === orderedColumnIds.length - 1} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'down'); }}>
-                                                                <ChevronDown className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
-                                                        <span className={clsx("font-semibold text-xs ml-1", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
-                                                            {colDef.label || colId}
-                                                        </span>
+                                        return (
+                                            <div
+                                                key={colId}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, colId)}
+                                                onDragOver={(e) => handleDragOver(e, index)}
+                                                onDragEnd={handleDragEnd}
+                                                className={clsx(
+                                                    "flex items-center justify-between p-2 rounded-lg cursor-grab active:cursor-grabbing border text-sm transition-all",
+                                                    isDragging ? "bg-blue-50/50 border-blue-200 shadow-sm scale-[1.02] opacity-80" : "bg-white border-transparent hover:bg-gray-50",
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-gray-300">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
                                                     </div>
-                                                    <div
-                                                        className={clsx(
-                                                            "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors shrink-0",
-                                                            !isHidden ? "bg-blue-500" : "bg-gray-200"
-                                                        )}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            toggleColumn(colId);
-                                                        }}
-                                                    >
-                                                        <div className={clsx(
-                                                            "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
-                                                            !isHidden ? "left-[14px]" : "left-[2px]"
-                                                        )}></div>
+                                                    <div className="flex flex-col items-center gap-0.5">
+                                                        <button title="Move Up" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === 0} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'up'); }}>
+                                                            <ChevronUp className="w-3 h-3" />
+                                                        </button>
+                                                        <button title="Move Down" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === orderedColumnIds.length - 1} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'down'); }}>
+                                                            <ChevronDown className="w-3 h-3" />
+                                                        </button>
                                                     </div>
+                                                    <span className={clsx("font-semibold text-xs ml-1", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
+                                                        {colDef.label || colId}
+                                                    </span>
                                                 </div>
-                                            );
-                                        })}
+                                                <div
+                                                    className={clsx(
+                                                        "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors shrink-0",
+                                                        !isHidden ? "bg-blue-500" : "bg-gray-200"
+                                                    )}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleColumn(colId);
+                                                    }}
+                                                >
+                                                    <div className={clsx(
+                                                        "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
+                                                        !isHidden ? "left-[14px]" : "left-[2px]"
+                                                    )}></div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="bg-gray-50 px-3 py-3 border-t border-gray-100 flex flex-col gap-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-gray-700">{t('ordersControl.actions.showKPIs', { defaultValue: 'Show Statistics' })}</span>
+                                        <div
+                                            className={clsx(
+                                                "w-8 h-4 rounded-full relative cursor-pointer outline-none transition-colors shrink-0",
+                                                showKPIs ? "bg-indigo-500" : "bg-gray-300"
+                                            )}
+                                            onClick={() => setShowKPIs(!showKPIs)}
+                                        >
+                                            <div className={clsx(
+                                                "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
+                                                showKPIs ? "rtl:right-[18px] ltr:left-[18px]" : "rtl:right-[2px] ltr:left-[2px]"
+                                            )}></div>
+                                        </div>
                                     </div>
-                                    <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-end">
+                                    <div className="flex justify-end pt-2 border-t border-gray-200">
                                         <button
                                             onClick={() => {
                                                 setOrderedColumnIds(defaultColumnOrder);
-                                                setHiddenColumns(defaultHiddenColumns);
+                                                setHiddenColumns(new Set());
+                                                localStorage.removeItem('orderControlHiddenColumns');
+                                                localStorage.removeItem('orderControlOrderedColumns');
                                             }}
                                             className="text-[10px] uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors"
                                         >
@@ -680,11 +756,12 @@ export default function OrderControlCenter() {
                                         </button>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+                    </div>
 
-                        <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0 hidden sm:block"></div>
-
+                    {/* Right: Export + Add Order + Refresh */}
+                    <div className="flex items-center gap-1.5 xl:gap-2 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <button
                             onClick={handleExportCSV}
                             disabled={exportState.isExporting}
@@ -714,7 +791,7 @@ export default function OrderControlCenter() {
                 </div>
 
                 {/* Bottom Row: Elegant KPI Badges */}
-                {kpis && (
+                {kpis && showKPIs && (
                     <div className="flex items-center gap-1.5 xl:gap-2 overflow-x-auto flex-nowrap w-full justify-start [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1">
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 xl:px-3 xl:py-1.5 rounded-lg border border-gray-100 bg-gray-50 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full relative bg-blue-500 animate-pulse"></span>
@@ -752,7 +829,7 @@ export default function OrderControlCenter() {
             </div>
 
             {/* Stage Navigation Tabs & Post-Dispatch Actions */}
-            < div className="bg-white border-b border-gray-100 flex items-center justify-between px-6 pt-2 z-20 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.05)] shrink-0" >
+            <div className="bg-white border-b border-gray-100 flex items-center justify-between px-6 pt-2 z-20 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.05)] shrink-0">
                 <div className="flex gap-6 overflow-x-auto scrollbar-none items-center">
                     {[
                         { id: 'pre-dispatch', label: t('ordersControl.stages.preDispatch'), count: stageCounts.preDispatch, color: 'text-blue-600', bg: 'bg-blue-600', icon: <PhoneCall className="w-3.5 h-3.5" /> },
@@ -956,7 +1033,7 @@ export default function OrderControlCenter() {
                                 <th className="px-4 py-3 border-b border-gray-200 w-10 align-top pt-4">
                                     <input type="checkbox" checked={orders.length > 0 && selectedIds.size === orders.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 cursor-pointer" />
                                 </th>
-                                {visibleColumns.filter(c => !hiddenColumns.has(c.id)).map(col => (
+                                {visibleColumns.map(col => (
                                     <th key={col.id} className={clsx("px-4 py-3 border-b border-gray-200 hover:bg-gray-100/50 transition-colors group select-none align-middle whitespace-nowrap", col.id !== 'actions' && "cursor-pointer")}>
                                         <div className="flex items-center justify-start gap-1">
                                             {/* Hide regular label if it has an integrated filter */}
@@ -1031,20 +1108,39 @@ export default function OrderControlCenter() {
                         ) : (
                             <>
                                 {rowVirtualizer.getVirtualItems().length > 0 && rowVirtualizer.getVirtualItems()[0].start > 0 && (
-                                    <tbody>
+                                    <tbody className="border-none">
                                         <tr>
-                                            <td style={{ height: rowVirtualizer.getVirtualItems()[0].start, padding: 0, border: 0 }} colSpan={visibleColumns.length + 1} />
+                                            <td colSpan={visibleColumns.length + 1} className="p-0 border-none">
+                                                <div style={{ height: rowVirtualizer.getVirtualItems()[0].start, width: '1px' }} />
+                                            </td>
                                         </tr>
                                     </tbody>
                                 )}
 
                                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                    const isLoaderRow = virtualRow.index > orders.length - 1;
+                                    
+                                    if (isLoaderRow) {
+                                        return (
+                                            <tbody key="loader-row" ref={virtualRow.measureElement} data-index={virtualRow.index}>
+                                                <tr>
+                                                    <td colSpan={visibleColumns.length + 1} className="py-8 text-center bg-gray-50/50 border-b border-gray-100">
+                                                        <div className="flex items-center justify-center gap-2 text-xs font-bold text-indigo-600">
+                                                            <RefreshCw className="w-5 h-5 animate-spin" /> Fetching more orders...
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        );
+                                    }
+
                                     const order = orders[virtualRow.index];
                                     if (!order) return null;
                                     
                                     return (
                                         <OrderRow
                                             key={order._id}
+                                            index={virtualRow.index + 1}
                                             order={order}
                                             isSelected={selectedIds.has(order._id)}
                                             isExpanded={expandedRows.has(order._id)}
@@ -1057,6 +1153,8 @@ export default function OrderControlCenter() {
                                             onStatusChange={handleStatusChange}
                                             onAgentChange={handleAgentChange}
                                             onCourierChange={handleCourierChange}
+                                            onTagUpdate={handleTagUpdate}
+                                            onPriorityChange={handlePriorityChange}
                                             agents={agents}
                                             couriers={couriers}
                                             setFocusedOrderId={setFocusedOrderId}
@@ -1072,9 +1170,11 @@ export default function OrderControlCenter() {
                                 })}
 
                                 {rowVirtualizer.getVirtualItems().length > 0 && rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end > 0 && (
-                                    <tbody>
+                                    <tbody className="border-none">
                                         <tr>
-                                            <td style={{ height: rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end, padding: 0, border: 0 }} colSpan={visibleColumns.length + 1} />
+                                            <td colSpan={visibleColumns.length + 1} className="p-0 border-none">
+                                                <div style={{ height: rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end, width: '1px' }} />
+                                            </td>
                                         </tr>
                                     </tbody>
                                 )}
