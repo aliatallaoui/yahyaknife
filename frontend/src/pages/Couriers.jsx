@@ -6,9 +6,11 @@ import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, La
 import PageHeader from '../components/PageHeader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
+import { AuthContext } from '../context/AuthContext';
 
 export default function Couriers() {
     const { t, i18n } = useTranslation();
+    const { hasPermission } = React.useContext(AuthContext);
     const navigate = useNavigate();
     const isRTL = i18n.language === 'ar';
     
@@ -63,12 +65,14 @@ export default function Couriers() {
                             {viewMode === 'list' ? <TrendingUp className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
                             {viewMode === 'list' ? t('couriers.viewAnalytics', 'Performance Metrics') : t('couriers.viewList', 'Couriers List')}
                         </button>
-                        <button 
-                            onClick={() => navigate('/couriers/new')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
-                        >
-                            <Plus className="w-5 h-5" /> {t('couriers.addCourier', 'Add Courier')}
-                        </button>
+                        {hasPermission('couriers.create') && (
+                            <button 
+                                onClick={() => navigate('/couriers/new')}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
+                            >
+                                <Plus className="w-5 h-5" /> {t('couriers.addCourier', 'Add Courier')}
+                            </button>
+                        )}
                     </div>
                 }
             />

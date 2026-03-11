@@ -4,9 +4,12 @@ import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
+import { useContext } from 'react';
 
 export default function SupportDesk() {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
     const [tickets, setTickets] = useState([]);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -116,9 +119,11 @@ export default function SupportDesk() {
                 subtitle={t('crm.subtitle', 'Live customer communication and issue resolution center.')}
                 variant="customers"
                 actions={
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 leading-none">
-                        <Plus className="w-5 h-5" /> {t('crm.newTicket', 'Manual Ticket')}
-                    </button>
+                    hasPermission('support.create_ticket') && (
+                        <button className="flex items-center gap-2 px-6 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 leading-none">
+                            <Plus className="w-5 h-5" /> {t('crm.newTicket', 'Manual Ticket')}
+                        </button>
+                    )
                 }
             />
 
@@ -231,11 +236,13 @@ export default function SupportDesk() {
                                         <button
                                             key={status}
                                             onClick={() => handleUpdateStatus(status)}
+                                            disabled={!hasPermission('support.update_status')}
                                             className={clsx(
                                                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
                                                 selectedTicket.status === status
                                                     ? "bg-white text-gray-900 shadow-sm border border-gray-200"
-                                                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100",
+                                                !hasPermission('support.update_status') && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
                                             {status}
@@ -302,18 +309,18 @@ export default function SupportDesk() {
                                     />
                                     <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex justify-between items-center mt-auto flex-wrap gap-2">
                                         <div className="flex gap-2">
-                                            <button className="text-xs font-bold text-gray-500 hover:text-gray-900 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm transition-colors">
+                                            <button disabled={!hasPermission('support.send_reply')} className="text-xs font-bold text-gray-500 hover:text-gray-900 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm transition-colors disabled:opacity-50">
                                                 {t('crm.btnInsertTemplate', 'Insert Template')}
                                             </button>
-                                            {selectedTicket.orderId && (
-                                                <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                                            {selectedTicket.orderId && hasPermission('support.process_rma') && (
+                                                <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
                                                     <ShieldAlert className="w-3.5 h-3.5" /> {t('crm.btnRmaOptions', 'RMA Options')}
                                                 </button>
                                             )}
                                         </div>
                                         <button
                                             onClick={handleSendReply}
-                                            disabled={!replyText.trim()}
+                                            disabled={!replyText.trim() || !hasPermission('support.send_reply')}
                                             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold shadow-md transition-all active:scale-95 whitespace-nowrap"
                                         >
                                             {t('crm.btnSendReply', 'Send Reply')} <Send className="w-4 h-4 rtl:-scale-x-100" />

@@ -3,9 +3,11 @@ import { Calculator, CheckCircle, ShieldAlert, Download, Clock, Plus } from 'luc
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 
 export default function HRPayroll() {
     const { t } = useTranslation();
+    const { hasPermission } = React.useContext(AuthContext);
     const defaultPeriod = moment().format('MM-YYYY');
     const [period, setPeriod] = useState(defaultPeriod);
     const [records, setRecords] = useState([]);
@@ -91,12 +93,14 @@ export default function HRPayroll() {
                             <option value={moment().format('MM-YYYY')} className="text-gray-900">{moment().format('MMMM YYYY')}</option>
                             <option value={moment().subtract(1, 'month').format('MM-YYYY')} className="text-gray-900">{moment().subtract(1, 'month').format('MMMM YYYY')}</option>
                         </select>
-                        <button
-                            onClick={handleGenerateRun}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
-                        >
-                            <Calculator className="w-5 h-5" /> {t('hr.btnGenerateRun', 'Generate Run')}
-                        </button>
+                        {hasPermission('hr.manage_payroll') && (
+                            <button
+                                onClick={handleGenerateRun}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
+                            >
+                                <Calculator className="w-5 h-5" /> {t('hr.btnGenerateRun', 'Generate Run')}
+                            </button>
+                        )}
                     </div>
                 }
             />
@@ -209,9 +213,11 @@ export default function HRPayroll() {
                                             <Download className="w-4 h-4" />
                                         </button>
                                         {record.status !== 'Paid' ? (
-                                            <button onClick={() => setPaymentModal({ id: record._id, maxPayable: record.finalPayableSalary - (record.amountPaid || 0), empName: record.employeeId?.name })} className="p-1.5 bg-gray-100 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition font-bold text-xs px-3" title={t('hr.processPayment')}>
-                                                {t('hr.btnPay')}
-                                            </button>
+                                            hasPermission('hr.approve_payroll') && (
+                                                <button onClick={() => setPaymentModal({ id: record._id, maxPayable: record.finalPayableSalary - (record.amountPaid || 0), empName: record.employeeId?.name })} className="p-1.5 bg-gray-100 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition font-bold text-xs px-3" title={t('hr.processPayment')}>
+                                                    {t('hr.btnPay')}
+                                                </button>
+                                            )
                                         ) : (
                                             <span className="p-1.5 text-emerald-400"><CheckCircle className="w-4 h-4" /></span>
                                         )}

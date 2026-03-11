@@ -14,7 +14,7 @@ const COLORS = ['#4361EE', '#3B82F6', '#60A5FA', '#93C5FD', '#111827', '#6B7280'
 const LTV_COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#94a3b8'];
 
 export default function CustomerInsight() {
-    const { token } = useContext(AuthContext);
+    const { token, hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
     const { customers, loading: contextLoading, createCustomer, updateCustomer, deleteCustomer } = useCustomer();
     const [metrics, setMetrics] = useState(null);
@@ -104,12 +104,14 @@ export default function CustomerInsight() {
                                 className="ps-9 pe-4 py-2 bg-white border border-sky-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
                             />
                         </div>
-                        <button
-                            onClick={handleCreateClick}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4B4BFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 leading-none"
-                        >
-                            <Plus className="w-5 h-5" /> {t('crm.addCustomerBtn', 'Add Customer')}
-                        </button>
+                        {hasPermission('customers.edit') && (
+                            <button
+                                onClick={handleCreateClick}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4B4BFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 leading-none"
+                            >
+                                <Plus className="w-5 h-5" /> {t('crm.addCustomerBtn', 'Add Customer')}
+                            </button>
+                        )}
                     </div>
                 }
             />

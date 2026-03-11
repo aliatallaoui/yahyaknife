@@ -8,6 +8,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
     try {
         const { period } = req.body; // e.g., "03-2026"
         if (!period) return res.status(400).json({ error: 'Period is required (MM-YYYY)' });
+        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
 
@@ -19,7 +20,6 @@ exports.generateMonthlyPayroll = async (req, res) => {
             const settings = emp.contractSettings || {};
             const baseSalary = settings.monthlySalary || emp.salary || 0; // Fallback to emp.salary if settings misses it
 
-            console.log(`\n⚙️ Calculating for ${emp.name} | Base: ${baseSalary} | Default Salary: ${emp.salary}`);
 
             // 1. Gather all attendance records for this month
             // We need dates matching 'YYYY-MM-DD' where YYYY-MM matches the period

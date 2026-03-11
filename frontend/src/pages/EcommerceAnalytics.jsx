@@ -8,6 +8,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
     ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, Legend
 } from 'recharts';
+import InsightFeed from '../components/InsightFeed';
 
 // No mock data needed anymore, dynamically fetching from API
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'];
@@ -110,6 +111,9 @@ export default function EcommerceAnalytics() {
                     </button>
                 </div>
             </div>
+
+            {/* AI Insight Feed */}
+            <InsightFeed />
 
             {/* 2. Top KPI Layer */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

@@ -17,10 +17,13 @@ const AppError = require('../../shared/errors/AppError');
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Resolve the internal order (regular or custom) */
-async function resolveOrder(orderId, isCustomOrder) {
+async function resolveOrder(orderId, isCustomOrder, tenantId) {
+    const query = { _id: orderId };
+    if (tenantId) query.tenant = tenantId; // Allow non-tenant models if needed, but enforce if passed
+    
     const doc = isCustomOrder
-        ? await CustomOrder.findById(orderId)
-        : await Order.findById(orderId);
+        ? await CustomOrder.findOne(query)
+        : await Order.findOne(query);
     if (!doc) throw AppError.notFound(isCustomOrder ? 'Custom order' : 'Order');
     return doc;
 }
@@ -32,11 +35,12 @@ function isCustomOrderId(internalOrderId) {
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
-exports.createShipment = async ({ orderId, isCustomOrder, shipmentData }) => {
-    const internalOrder = await resolveOrder(orderId, isCustomOrder);
+exports.createShipment = async ({ orderId, isCustomOrder, shipmentData, tenantId }) => {
+    const internalOrder = await resolveOrder(orderId, isCustomOrder, tenantId);
 
     const newShipment = new Shipment({
         ...shipmentData,
+        tenant: tenantId,
         internalOrder: orderId,
         internalOrderId: isCustomOrder ? internalOrder.customOrderId : internalOrder.orderId,
         shipmentStatus: 'Created in Courier',
@@ -59,8 +63,8 @@ exports.createShipment = async ({ orderId, isCustomOrder, shipmentData }) => {
 
 // ─── Quick Dispatch ───────────────────────────────────────────────────────────
 
-exports.quickDispatch = async (orderId) => {
-    const order = await Order.findById(orderId).populate('customer', 'name phone');
+exports.quickDispatch = async (orderId, tenantId) => {
+    const order = await Order.findOne({ _id: orderId, tenant: tenantId }).populate('customer', 'name phone');
     if (!order) throw AppError.notFound('Order');
 
     if (!order.shipping?.phone1 || !order.shipping?.wilayaName || !order.shipping?.commune) {
@@ -72,6 +76,7 @@ exports.quickDispatch = async (orderId) => {
     }
 
     const newShipment = new Shipment({
+        tenant: tenantId,
         internalOrder: order._id,
         internalOrderId: order.orderId,
         customerName:  order.shipping.recipientName || order.customer?.name || 'Unknown',
@@ -109,8 +114,8 @@ exports.quickDispatch = async (orderId) => {
 
 // ─── Validate ─────────────────────────────────────────────────────────────────
 
-exports.validateShipment = async (shipmentId, { askCollection = 1 } = {}) => {
-    const shipment = await Shipment.findById(shipmentId);
+exports.validateShipment = async (shipmentId, tenantId, { askCollection = 1 } = {}) => {
+    const shipment = await Shipment.findOne({ _id: shipmentId, tenant: tenantId });
     if (!shipment) throw AppError.notFound('Shipment');
 
     if (!['Created in Courier', 'Draft'].includes(shipment.shipmentStatus)) {
@@ -132,8 +137,8 @@ exports.validateShipment = async (shipmentId, { askCollection = 1 } = {}) => {
 
 // ─── Cancel ───────────────────────────────────────────────────────────────────
 
-exports.deleteShipment = async (shipmentId) => {
-    const shipment = await Shipment.findById(shipmentId);
+exports.deleteShipment = async (shipmentId, tenantId) => {
+    const shipment = await Shipment.findOne({ _id: shipmentId, tenant: tenantId });
     if (!shipment) throw AppError.notFound('Shipment');
 
     if (shipment.shipmentStatus === 'Delivered') {
@@ -160,15 +165,15 @@ exports.deleteShipment = async (shipmentId) => {
         await internalOrder.save();
     }
 
-    await Shipment.findByIdAndDelete(shipmentId);
+    await Shipment.findOneAndDelete({ _id: shipmentId, tenant: tenantId });
 
     return { courierCancelled, revertedStatus: 'Confirmed' };
 };
 
 // ─── Return ───────────────────────────────────────────────────────────────────
 
-exports.requestReturn = async (shipmentId) => {
-    const shipment = await Shipment.findById(shipmentId);
+exports.requestReturn = async (shipmentId, tenantId) => {
+    const shipment = await Shipment.findOne({ _id: shipmentId, tenant: tenantId });
     if (!shipment) throw AppError.notFound('Shipment');
 
     if (!['In Transit', 'Out for Delivery', 'Failed Attempt'].includes(shipment.shipmentStatus)) {
@@ -205,8 +210,8 @@ exports.requestReturn = async (shipmentId) => {
 
 // ─── Label ────────────────────────────────────────────────────────────────────
 
-exports.getShipmentLabel = async (shipmentId) => {
-    const shipment = await Shipment.findById(shipmentId);
+exports.getShipmentLabel = async (shipmentId, tenantId) => {
+    const shipment = await Shipment.findOne({ _id: shipmentId, tenant: tenantId });
     if (!shipment) throw AppError.notFound('Shipment');
     if (!shipment.externalTrackingId) {
         throw new AppError('No external tracking ID found to generate label.', 400, 'NO_TRACKING_ID');

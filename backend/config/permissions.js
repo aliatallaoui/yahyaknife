@@ -52,6 +52,10 @@ const PERMISSIONS = {
         'overview.read',
         'callcenter.process_orders', 'callcenter.view_reports', 'callcenter.manage_assignments'
     ],
+    // ── Support ───────────────────────────────────────────────────────────────
+    support: [
+        'support.view', 'support.create_ticket', 'support.send_reply', 'support.update_status', 'support.process_rma'
+    ],
     // ── Legacy / other domains (unchanged) ───────────────────────────────────
     financial: [
         'financial.read', 'financial.view_costs', 'financial.export',

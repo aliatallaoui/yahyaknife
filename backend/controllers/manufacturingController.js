@@ -174,7 +174,7 @@ exports.updateProductionOrderStatus = async (req, res) => {
             const variant = await ProductVariant.findById(order.variantId).session(session);
             if (!variant) throw new Error('Finished product variant not found');
 
-            variant.stock += order.quantityPlanned;
+            variant.totalStock += order.quantityPlanned;
             await variant.save({ session });
 
             order.quantityCompleted = order.quantityPlanned;

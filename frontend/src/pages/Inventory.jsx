@@ -3,6 +3,7 @@ import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, P
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { InventoryContext } from '../context/InventoryContext';
+import { AuthContext } from '../context/AuthContext';
 import ProductModal from '../components/ProductModal';
 import SupplierModal from '../components/SupplierModal';
 import CategoryModal from '../components/CategoryModal';
@@ -12,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function Inventory() {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
     const {
         products, rawMaterials, suppliers, categories, metrics, loading, completedKnives,
         createProduct, updateProduct, deleteProduct,
@@ -187,17 +189,23 @@ export default function Inventory() {
                             />
                         </div>
                         {activeTab === 'categories' ? (
-                            <button onClick={handleCreateCategory} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
-                                <Plus className="w-5 h-5" /> {t('inventory.addCategoryBtn', 'Add Category')}
-                            </button>
+                            hasPermission('inventory.create_product') && (
+                                <button onClick={handleCreateCategory} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                                    <Plus className="w-5 h-5" /> {t('inventory.addCategoryBtn', 'Add Category')}
+                                </button>
+                            )
                         ) : (
-                            <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
-                                <Plus className="w-5 h-5" /> {t('inventory.addProductBtn', 'Add New Product')}
+                            hasPermission('inventory.create_product') && (
+                                <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                                    <Plus className="w-5 h-5" /> {t('inventory.addProductBtn', 'Add New Product')}
+                                </button>
+                            )
+                        )}
+                        {hasPermission('inventory.update_product') && (
+                            <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
+                                <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
                             </button>
                         )}
-                        <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
-                            <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
-                        </button>
                     </div>
                 }
             />
@@ -327,27 +335,38 @@ export default function Inventory() {
                                                     </td>
                                                     <td className="p-4 text-end">
                                                         {/* Price — inline edit */}
-                                                        {editingVariant?.id === variant._id && editingVariant?.field === 'price' && !variant.isKnife ? (
-                                                            <input autoFocus type="number" step="0.01"
-                                                                value={editingVariant.value}
-                                                                onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
-                                                                onBlur={() => handleVariantInlineSave(variant)}
-                                                                onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
-                                                                className="w-24 border border-blue-400 rounded-lg px-2 py-1 text-sm font-bold text-end outline-none shadow-sm ml-auto block" />
+                                                        {hasPermission('inventory.update_product') ? (
+                                                            editingVariant?.id === variant._id && editingVariant?.field === 'price' && !variant.isKnife ? (
+                                                                <input autoFocus type="number" step="0.01"
+                                                                    value={editingVariant.value}
+                                                                    onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
+                                                                    onBlur={() => handleVariantInlineSave(variant)}
+                                                                    onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
+                                                                    className="w-24 border border-blue-400 rounded-lg px-2 py-1 text-sm font-bold text-end outline-none shadow-sm ml-auto block" />
+                                                            ) : (
+                                                                <div onClick={() => { if (!variant.isKnife) startVariantEdit(variant, 'price'); }} className={clsx("group/p", !variant.isKnife && "cursor-pointer")} title={!variant.isKnife ? "Click to edit price" : ""}>
+                                                                    <div className={clsx("font-bold text-gray-900 transition-colors", !variant.isKnife && "group-hover/p:text-blue-600")}>${variant.price?.toLocaleString()}</div>
+                                                                    {/* Cost — inline edit */}
+                                                                    {hasPermission('inventory.view_cost') && (
+                                                                        editingVariant?.id === variant._id && editingVariant?.field === 'cost' && !variant.isKnife ? (
+                                                                            <input autoFocus type="number" step="0.01"
+                                                                                value={editingVariant.value}
+                                                                                onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
+                                                                                onBlur={() => handleVariantInlineSave(variant)}
+                                                                                onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
+                                                                                onClick={e => e.stopPropagation()}
+                                                                                className="w-20 border border-blue-400 rounded-lg px-1 py-0.5 text-xs font-bold text-end outline-none shadow-sm mt-0.5 ml-auto block" />
+                                                                        ) : (
+                                                                            <div onClick={e => { e.stopPropagation(); if (!variant.isKnife) startVariantEdit(variant, 'cost'); }} className={clsx("text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5", !variant.isKnife && "cursor-pointer hover:text-blue-500")} title={!variant.isKnife ? "Click to edit cost" : ""}>{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                            )
                                                         ) : (
-                                                            <div onClick={() => { if (!variant.isKnife) startVariantEdit(variant, 'price'); }} className={clsx("group/p", !variant.isKnife && "cursor-pointer")} title={!variant.isKnife ? "Click to edit price" : ""}>
-                                                                <div className={clsx("font-bold text-gray-900 transition-colors", !variant.isKnife && "group-hover/p:text-blue-600")}>${variant.price?.toLocaleString()}</div>
-                                                                {/* Cost — inline edit */}
-                                                                {editingVariant?.id === variant._id && editingVariant?.field === 'cost' && !variant.isKnife ? (
-                                                                    <input autoFocus type="number" step="0.01"
-                                                                        value={editingVariant.value}
-                                                                        onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
-                                                                        onBlur={() => handleVariantInlineSave(variant)}
-                                                                        onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
-                                                                        onClick={e => e.stopPropagation()}
-                                                                        className="w-20 border border-blue-400 rounded-lg px-1 py-0.5 text-xs font-bold text-end outline-none shadow-sm mt-0.5 ml-auto block" />
-                                                                ) : (
-                                                                    <div onClick={e => { e.stopPropagation(); if (!variant.isKnife) startVariantEdit(variant, 'cost'); }} className={clsx("text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5", !variant.isKnife && "cursor-pointer hover:text-blue-500")} title={!variant.isKnife ? "Click to edit cost" : ""}>{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
+                                                            <div>
+                                                                <div className="font-bold text-gray-900">${variant.price?.toLocaleString()}</div>
+                                                                {hasPermission('inventory.view_cost') && (
+                                                                    <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5">{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
                                                                 )}
                                                             </div>
                                                         )}
@@ -379,12 +398,16 @@ export default function Inventory() {
                                                     </td>
                                                     <td className="p-4 text-end">
                                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button onClick={() => handleEditClick({ _id: variant.baseProductId })} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit Base Product">
-                                                                <Pencil className="w-4 h-4" />
-                                                            </button>
-                                                            <button onClick={() => handleDeleteClick(variant.baseProductId)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Archive Entire Product">
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
+                                                            {hasPermission('inventory.update_product') && (
+                                                                <button onClick={() => handleEditClick({ _id: variant.baseProductId })} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit Base Product">
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                            {hasPermission('inventory.export') && (
+                                                                <button onClick={() => handleDeleteClick(variant.baseProductId)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Archive Entire Product">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -462,12 +485,16 @@ export default function Inventory() {
                                                 <td colSpan="5" className="p-4 text-gray-500">{cat.description || t('inventory.noDescription', 'No description provided.')}</td>
                                                 <td className="p-4 text-end">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Category">
-                                                            <Pencil className="w-4 h-4" />
-                                                        </button>
-                                                        <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Archive Category">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
+                                                        {hasPermission('inventory.update_product') && (
+                                                            <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Category">
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('inventory.export') && (
+                                                            <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Archive Category">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -539,9 +566,11 @@ export default function Inventory() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
                     <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                         <h3 className="text-lg font-bold text-gray-900">{t('inventory.activeSuppliers', 'Active Suppliers')}</h3>
-                        <button onClick={handleCreateSupplier} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Add Supplier">
-                            <Plus className="w-5 h-5" />
-                        </button>
+                        {hasPermission('inventory.create_product') && (
+                            <button onClick={handleCreateSupplier} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Add Supplier">
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
                     <div className="flex-1 p-6 flex flex-col gap-4 max-h-[600px] overflow-y-auto">
                         {suppliers.length === 0 ? (
@@ -552,8 +581,12 @@ export default function Inventory() {
                                     <h4 className="font-bold text-gray-900">{supplier.name}</h4>
                                     <div className="flex items-center gap-2">
                                         <div className="hidden group-hover:flex items-center gap-1">
-                                            <button onClick={() => handleEditSupplier(supplier)} className="text-gray-400 hover:text-blue-600 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                                            <button onClick={() => handleDeleteSupplier(supplier._id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                            {hasPermission('inventory.update_product') && (
+                                                <button onClick={() => handleEditSupplier(supplier)} className="text-gray-400 hover:text-blue-600 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                                            )}
+                                            {hasPermission('inventory.export') && (
+                                                <button onClick={() => handleDeleteSupplier(supplier._id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                            )}
                                         </div>
                                         <span className={clsx("w-2 h-2 rounded-full", supplier.active ? "bg-green-400" : "bg-gray-300")}></span>
                                     </div>

@@ -5,9 +5,11 @@ import moment from 'moment';
 import axios from 'axios';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 
 export default function HRAttendance() {
     const { t } = useTranslation();
+    const { hasPermission } = React.useContext(AuthContext);
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -167,17 +169,17 @@ export default function HRAttendance() {
 
                                         <td className="px-6 py-4 text-center font-mono text-sm">
                                             <div className="flex items-center justify-center gap-2">
-                                                {att.morningIn ? <button onClick={() => openModal(emp._id, 'morningIn', moment(att.morningIn).format('HH:mm'))} className="text-gray-900 font-bold hover:text-indigo-600 transition-colors cursor-pointer">{moment(att.morningIn).format('HH:mm')}</button> : <button onClick={() => openModal(emp._id, 'morningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors">{t('hr.btnMarkIn')}</button>}
+                                                {att.morningIn ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'morningIn', moment(att.morningIn).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.morningIn).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'morningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkIn')}</button>}
                                                 <span className="text-gray-300">|</span>
-                                                {att.morningOut ? <button onClick={() => openModal(emp._id, 'morningOut', moment(att.morningOut).format('HH:mm'))} className="text-gray-900 font-bold hover:text-indigo-600 transition-colors cursor-pointer">{moment(att.morningOut).format('HH:mm')}</button> : <button onClick={() => openModal(emp._id, 'morningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors">{t('hr.btnMarkOutAtt')}</button>}
+                                                {att.morningOut ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'morningOut', moment(att.morningOut).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.morningOut).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'morningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkOutAtt')}</button>}
                                             </div>
                                         </td>
 
                                         <td className="px-6 py-4 text-center font-mono text-sm">
                                             <div className="flex items-center justify-center gap-2">
-                                                {att.eveningIn ? <button onClick={() => openModal(emp._id, 'eveningIn', moment(att.eveningIn).format('HH:mm'))} className="text-gray-900 font-bold hover:text-indigo-600 transition-colors cursor-pointer">{moment(att.eveningIn).format('HH:mm')}</button> : <button onClick={() => openModal(emp._id, 'eveningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors">{t('hr.btnMarkIn')}</button>}
+                                                {att.eveningIn ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'eveningIn', moment(att.eveningIn).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.eveningIn).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'eveningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkIn')}</button>}
                                                 <span className="text-gray-300">|</span>
-                                                {att.eveningOut ? <button onClick={() => openModal(emp._id, 'eveningOut', moment(att.eveningOut).format('HH:mm'))} className="text-gray-900 font-bold hover:text-indigo-600 transition-colors cursor-pointer">{moment(att.eveningOut).format('HH:mm')}</button> : <button onClick={() => openModal(emp._id, 'eveningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors">{t('hr.btnMarkOutAtt')}</button>}
+                                                {att.eveningOut ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'eveningOut', moment(att.eveningOut).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.eveningOut).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'eveningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkOutAtt')}</button>}
                                             </div>
                                         </td>
 

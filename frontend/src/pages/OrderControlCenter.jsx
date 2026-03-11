@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import PageHeader from '../components/PageHeader';
@@ -35,6 +36,7 @@ const PRIORITY_STYLES = {
 
 export default function OrderControlCenter() {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
 
     // Data State
     const [orders, setOrders] = useState([]);
@@ -751,19 +753,21 @@ export default function OrderControlCenter() {
 
                     {/* Right: Export + Add Order + Refresh */}
                     <div className="flex items-center gap-1.5 xl:gap-2 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        <button
-                            onClick={handleExportCSV}
-                            disabled={exportState.isExporting}
-                            className={clsx(
-                                "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border shadow-sm transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0",
-                                exportState.isExporting
-                                    ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
-                                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
-                            )}
-                        >
-                            {exportState.isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                            <span className="hidden sm:inline">{exportState.isExporting ? `${exportState.progress}%` : t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}</span>
-                        </button>
+                        {hasPermission('orders.export') && (
+                            <button
+                                onClick={handleExportCSV}
+                                disabled={exportState.isExporting}
+                                className={clsx(
+                                    "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border shadow-sm transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0",
+                                    exportState.isExporting
+                                        ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
+                                        : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
+                                )}
+                            >
+                                {exportState.isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                                <span className="hidden sm:inline">{exportState.isExporting ? `${exportState.progress}%` : t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}</span>
+                            </button>
+                        )}
 
                         {/* Column Settings — beside Export CSV */}
                         <div className="relative shrink-0">
@@ -864,13 +868,15 @@ export default function OrderControlCenter() {
                             )}
                         </div>
 
-                        <button
-                            onClick={() => setIsOrderModalOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 xl:py-2 text-xs font-bold rounded-lg border bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 shadow-md shadow-indigo-600/20 transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0"
-                        >
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            {t('ordersControl.actions.newOrder', { defaultValue: 'Add Order' })}
-                        </button>
+                        {hasPermission('orders.create') && (
+                            <button
+                                onClick={() => setIsOrderModalOpen(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 xl:py-2 text-xs font-bold rounded-lg border bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 shadow-md shadow-indigo-600/20 transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0"
+                            >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                {t('ordersControl.actions.newOrder', { defaultValue: 'Add Order' })}
+                            </button>
+                        )}
 
                         <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hidden sm:block shrink-0" title="Refresh Data Core">
                             <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin text-indigo-500")} />
@@ -957,26 +963,32 @@ export default function OrderControlCenter() {
                         <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">{selectedIds.size} selected</span>
                         {activeStage === 'trash' ? (
                             <>
-                                <button
-                                    onClick={handleBulkRestore}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 hover:border-emerald-600 rounded-lg transition-all shadow-sm"
-                                >
-                                    <RotateCcw className="w-3.5 h-3.5" /> Restore
-                                </button>
-                                <button
-                                    onClick={handleBulkPurge}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 hover:border-red-600 rounded-lg transition-all shadow-sm"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" /> Delete Forever
-                                </button>
+                                {hasPermission('orders.restore') && (
+                                    <button
+                                        onClick={handleBulkRestore}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 hover:border-emerald-600 rounded-lg transition-all shadow-sm"
+                                    >
+                                        <RotateCcw className="w-3.5 h-3.5" /> Restore
+                                    </button>
+                                )}
+                                {hasPermission('orders.purge') && (
+                                    <button
+                                        onClick={handleBulkPurge}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 hover:border-red-600 rounded-lg transition-all shadow-sm"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" /> Delete Forever
+                                    </button>
+                                )}
                             </>
                         ) : (
-                            <button
-                                onClick={handleBulkDelete}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 hover:border-red-600 rounded-lg transition-all shadow-sm"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" /> Move to Trash
-                            </button>
+                            hasPermission('orders.delete') && (
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 hover:border-red-600 rounded-lg transition-all shadow-sm"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> Move to Trash
+                                </button>
+                            )
                         )}
                     </div>
                 )}
@@ -1379,7 +1391,7 @@ export default function OrderControlCenter() {
 
             {/* STICKY BULK ACTION HUD */}
             {
-                selectedIds.size > 0 && (
+                selectedIds.size > 0 && hasPermission('orders.bulk') && (
                     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-[100] animate-in slide-in-from-bottom-5 border border-gray-700">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 font-black text-xs">{selectedIds.size}</span>

@@ -34,6 +34,7 @@ exports.getMonthlyReport = async (req, res) => {
     try {
         const { period } = req.query; // MM-YYYY
         if (!period) return res.status(400).json({ error: 'period required (MM-YYYY)' });
+        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
         const searchPrefix = `${year}-${month.padStart(2, '0')}`;
@@ -102,6 +103,7 @@ exports.getOvertimeReport = async (req, res) => {
     try {
         const { period } = req.query; // MM-YYYY
         if (!period) return res.status(400).json({ error: 'period required (MM-YYYY)' });
+        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
         const searchPrefix = `${year}-${month.padStart(2, '0')}`;

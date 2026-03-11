@@ -7,7 +7,7 @@ import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 
 export default function Warehouses() {
-    const { token } = useContext(AuthContext);
+    const { token, hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('warehouses'); // 'warehouses', 'ledger', 'suppliers'
 
@@ -76,12 +76,16 @@ export default function Warehouses() {
                         <button onClick={() => setActiveTab('warehouses')} className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'warehouses' ? 'bg-[#5D5DFF] text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                             {t('warehouses.tabWarehouses', 'Warehouses')}
                         </button>
-                        <button onClick={() => setActiveTab('ledger')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
-                            <ArrowRightLeft className="w-4 h-4 shrink-0" /> {t('warehouses.tabLedger', 'Ledger')}
-                        </button>
-                        <button onClick={() => setActiveTab('suppliers')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-[#10B981] text-white shadow-lg shadow-emerald-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
-                            <ShieldCheck className="w-4 h-4 shrink-0" /> {t('warehouses.tabSuppliers', 'Suppliers')}
-                        </button>
+                        {hasPermission('warehouse.view_ledger') && (
+                            <button onClick={() => setActiveTab('ledger')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
+                                <ArrowRightLeft className="w-4 h-4 shrink-0" /> {t('warehouses.tabLedger', 'Ledger')}
+                            </button>
+                        )}
+                        {hasPermission('inventory.view_supplier_data') && (
+                            <button onClick={() => setActiveTab('suppliers')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-[#10B981] text-white shadow-lg shadow-emerald-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
+                                <ShieldCheck className="w-4 h-4 shrink-0" /> {t('warehouses.tabSuppliers', 'Suppliers')}
+                            </button>
+                        )}
                     </div>
                 }
             />
@@ -94,9 +98,11 @@ export default function Warehouses() {
                     {activeTab === 'warehouses' && (
                         <div className="flex flex-col gap-6">
                             <div className="flex justify-end">
-                                <button onClick={() => setIsWarehouseModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all">
-                                    <Plus className="w-4 h-4" /> {t('warehouses.addWarehouseBtn', 'Add Warehouse')}
-                                </button>
+                                {hasPermission('warehouse.create') && (
+                                    <button onClick={() => setIsWarehouseModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all">
+                                        <Plus className="w-4 h-4" /> {t('warehouses.addWarehouseBtn', 'Add Warehouse')}
+                                    </button>
+                                )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {warehouses.length > 0 ? warehouses.map(w => (

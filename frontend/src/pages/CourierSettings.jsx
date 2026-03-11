@@ -3,9 +3,11 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Save, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
+import { AuthContext } from '../context/AuthContext';
 
 export default function CourierSettings() {
     const { t } = useTranslation();
+    const { hasPermission } = React.useContext(AuthContext);
     const [settings, setSettings] = useState({
         apiUrl: 'https://api.ecotrack.dz/v1',
         apiToken: '',
@@ -139,17 +141,19 @@ export default function CourierSettings() {
                         </div>
 
                         <div className="pt-6 border-t border-gray-100 flex justify-end">
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
-                            >
-                                {saving ? (
-                                    <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
-                                ) : (
-                                    <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveTest', 'Save & Test Connection')}</>
-                                )}
-                            </button>
+                            {hasPermission('couriers.api.connect') && (
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                                >
+                                    {saving ? (
+                                        <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
+                                    ) : (
+                                        <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveTest', 'Save & Test Connection')}</>
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </form>
                 </div>
@@ -164,17 +168,19 @@ export default function CourierSettings() {
                         </div>
                         {t('couriers.rateLimits', 'API Rate Limits & Usage Tracker')}
                     </h3>
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="inline-flex items-center px-4 py-2 border border-indigo-200 rounded-lg shadow-sm text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-                    >
-                        {saving ? (
-                            <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
-                        ) : (
-                            <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveLimits', 'Update Limits')}</>
-                        )}
-                    </button>
+                    {hasPermission('couriers.api.connect') && (
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="inline-flex items-center px-4 py-2 border border-indigo-200 rounded-lg shadow-sm text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                        >
+                            {saving ? (
+                                <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
+                            ) : (
+                                <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveLimits', 'Update Limits')}</>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

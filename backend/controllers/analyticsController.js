@@ -262,24 +262,27 @@ exports.getEcommerceAnalytics = async (req, res) => {
             conv: totalOrders > 0 ? ((p.units / totalOrders) * 100).toFixed(1) : 0 // Rough conversion substitute
         }));
 
-        // 5. Courier Analytics
+        // 5. Courier Analytics (single aggregation instead of N+1 per courier)
         const couriers = await Courier.find({ tenant: tenantId });
-        const courierData = await Promise.all(couriers.map(async c => {
-            const cOrders = await Order.aggregate([
-                { $match: { courier: c._id, ...dateQuery } },
-                { $group: { _id: "$status", count: { $sum: 1 } } }
-            ]);
-            let dsp = 0, dlv = 0, ret = 0;
-            cOrders.forEach(o => {
-                if (['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'].includes(o._id)) dsp += o.count;
-                if (['Delivered', 'Paid'].includes(o._id)) dlv += o.count;
-                if (['Returned', 'Refused'].includes(o._id)) ret += o.count;
-            });
-            const succ = dsp > 0 ? ((dlv / dsp) * 100).toFixed(1) : 0;
-            return {
-                id: c._id, name: c.name, orders: dlv + ret + dsp, delivered: dlv, returned: ret, success: parseFloat(succ)
-            };
-        }));
+        const courierIds = couriers.map(c => c._id);
+        const courierAgg = await Order.aggregate([
+            { $match: { ...dateQuery, courier: { $in: courierIds } } },
+            {
+                $group: {
+                    _id: '$courier',
+                    dispatched: { $sum: { $cond: [{ $in: ['$status', ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused']] }, 1, 0] } },
+                    delivered: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, 1, 0] } },
+                    returned: { $sum: { $cond: [{ $in: ['$status', ['Returned', 'Refused']] }, 1, 0] } }
+                }
+            }
+        ]);
+        const courierStatsMap = {};
+        courierAgg.forEach(r => { courierStatsMap[r._id.toString()] = r; });
+        const courierData = couriers.map(c => {
+            const s = courierStatsMap[c._id.toString()] || { dispatched: 0, delivered: 0, returned: 0 };
+            const succ = s.dispatched > 0 ? ((s.delivered / s.dispatched) * 100).toFixed(1) : 0;
+            return { id: c._id, name: c.name, orders: s.dispatched, delivered: s.delivered, returned: s.returned, success: parseFloat(succ) };
+        });
 
         // 6. Top Customers
         const topCustomersAgg = await Customer.find({ tenant: tenantId })

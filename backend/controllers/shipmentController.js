@@ -7,7 +7,7 @@ const ShipmentService = require('../domains/dispatch/shipment.service');
 exports.createShipment = async (req, res) => {
     try {
         const { orderId, isCustomOrder, ...shipmentData } = req.body;
-        const shipment = await ShipmentService.createShipment({ orderId, isCustomOrder, shipmentData });
+        const shipment = await ShipmentService.createShipment({ orderId, isCustomOrder, shipmentData, tenantId: req.user.tenant });
         res.status(201).json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
@@ -18,7 +18,7 @@ exports.createShipment = async (req, res) => {
 
 exports.quickDispatch = async (req, res) => {
     try {
-        const shipment = await ShipmentService.quickDispatch(req.params.orderId);
+        const shipment = await ShipmentService.quickDispatch(req.params.orderId, req.user.tenant);
         res.status(201).json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
@@ -86,7 +86,7 @@ exports.getAllShipments = async (req, res) => {
 
 exports.getShipmentById = async (req, res) => {
     try {
-        const shipment = await Shipment.findById(req.params.id);
+        const shipment = await Shipment.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
         res.json(shipment);
     } catch (error) {
@@ -122,7 +122,7 @@ exports.exportShipments = async (req, res) => {
 
 exports.updateShipment = async (req, res) => {
     try {
-        const shipment = await Shipment.findById(req.params.id);
+        const shipment = await Shipment.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
 
         if (['Validated', 'In Transit', 'Out for Delivery', 'Delivered'].includes(shipment.shipmentStatus)) {
@@ -143,7 +143,7 @@ exports.updateShipment = async (req, res) => {
 
 exports.deleteShipment = async (req, res) => {
     try {
-        const result = await ShipmentService.deleteShipment(req.params.id);
+        const result = await ShipmentService.deleteShipment(req.params.id, req.user.tenant);
         res.json({ message: 'Shipment successfully deleted', ...result });
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
@@ -156,7 +156,7 @@ exports.deleteShipment = async (req, res) => {
 exports.validateShipment = async (req, res) => {
     try {
         const { ask_collection = 1 } = req.body;
-        const shipment = await ShipmentService.validateShipment(req.params.id, { askCollection: ask_collection });
+        const shipment = await ShipmentService.validateShipment(req.params.id, req.user.tenant, { askCollection: ask_collection });
         res.json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
@@ -169,7 +169,7 @@ exports.validateShipment = async (req, res) => {
 
 exports.getShipmentLabel = async (req, res) => {
     try {
-        const url = await ShipmentService.getShipmentLabel(req.params.id);
+        const url = await ShipmentService.getShipmentLabel(req.params.id, req.user.tenant);
         res.json({ url });
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
@@ -181,7 +181,7 @@ exports.getShipmentLabel = async (req, res) => {
 
 exports.requestReturn = async (req, res) => {
     try {
-        const shipment = await ShipmentService.requestReturn(req.params.id);
+        const shipment = await ShipmentService.requestReturn(req.params.id, req.user.tenant);
         res.json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });

@@ -258,9 +258,9 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         {
             title: t('sidebar.sales_logistics_domain', 'Sales & Logistics'),
             icon: ShoppingBag,
-            permissions: ['sales.read', 'dispatch.read'],
+            permissions: ['sales.read', 'orders.view', 'dispatch.read'],
             items: [
-                { label: t('sidebar.orders_hub', 'Orders Control Center'), path: '/orders-hub', icon: Layers, permission: 'sales.read' },
+                { label: t('sidebar.orders_hub', 'Orders Control Center'), path: '/orders-hub', icon: Layers, permission: 'orders.view' },
                 { label: t('sidebar.sales', 'Sales CRM'), path: '/sales', icon: ShoppingCart, permission: 'sales.read' },
                 { label: t('sidebar.logistics_dispatch', 'Delivery Tracking'), path: '/couriers/dispatch', icon: Truck, permission: 'dispatch.read' },
                 { label: t('sidebar.logistics_analytics', 'Shipping & Couriers'), path: '/couriers', icon: Truck, permission: 'dispatch.read' }

@@ -11,6 +11,7 @@ import OrderModal from '../components/OrderModal';
 import BatchDispatchModal from '../components/BatchDispatchModal';
 import CustomOrdersTable from '../components/CustomOrdersTable';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../context/AuthContext';
 
 const COLORS = ['#4361EE', '#111827', '#6B7280', '#D1D5DB', '#F87171', '#34D399'];
 
@@ -33,6 +34,7 @@ const STATUS_STYLES = {
 
 export default function Sales() {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
     const {
         orders, performance, loading, createOrder, updateOrder, deleteOrder,
         currentPage, totalPages, fetchSalesData
@@ -282,12 +284,16 @@ export default function Sales() {
                                 className="ps-9 pe-4 py-2 bg-white border border-rose-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
                             />
                         </div>
-                        <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
-                            <Plus className="w-5 h-5" /> {t('sales.createOrderBtn', 'Create Order')}
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all border border-gray-200 shadow-sm active:scale-95 leading-none">
-                            <Download className="w-4 h-4 text-rose-500" /> {t('sales.exportBtn', 'Export')}
-                        </button>
+                        {hasPermission('orders.create') && (
+                            <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                                <Plus className="w-5 h-5" /> {t('sales.createOrderBtn', 'Create Order')}
+                            </button>
+                        )}
+                        {hasPermission('orders.export') && (
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all border border-gray-200 shadow-sm active:scale-95 leading-none">
+                                <Download className="w-4 h-4 text-rose-500" /> {t('sales.exportBtn', 'Export')}
+                            </button>
+                        )}
                     </div>
                 }
             />
@@ -376,14 +382,16 @@ export default function Sales() {
                                 <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
                                     <span className="text-sm font-bold text-blue-800">{selectedOrderIds.size} {t('sales.ordersSelected', 'Orders Selected')}</span>
                                     <div className="flex gap-2">
-                                        {activeTab === 'verification' && (
+                                        {activeTab === 'verification' && hasPermission('orders.edit') && (
                                             <button onClick={handleBatchVerify} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
                                                 <CheckSquare className="w-4 h-4" /> {t('sales.batchVerifyBtn', 'Batch Verify')}
                                             </button>
                                         )}
-                                        <button onClick={() => setIsBatchDispatchOpen(true)} className="flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm">
-                                            <Truck className="w-4 h-4" /> Dispatch ({selectedOrderIds.size})
-                                        </button>
+                                        {hasPermission('shipments.create') && (
+                                            <button onClick={() => setIsBatchDispatchOpen(true)} className="flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm">
+                                                <Truck className="w-4 h-4" /> Dispatch ({selectedOrderIds.size})
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )
@@ -472,7 +480,8 @@ export default function Sales() {
                                                             value={order.channel || ''}
                                                             onChange={e => handleInlineChannelChange(order._id, e.target.value)}
                                                             onClick={e => e.stopPropagation()}
-                                                            className="text-xs font-bold px-2.5 py-1.5 rounded-xl border border-blue-100 bg-blue-50 text-blue-700 appearance-none cursor-pointer outline-none w-full transition-colors hover:bg-blue-100"
+                                                            disabled={!hasPermission('orders.edit')}
+                                                            className="text-xs font-bold px-2.5 py-1.5 rounded-xl border border-blue-100 bg-blue-50 text-blue-700 appearance-none cursor-pointer outline-none w-full transition-colors hover:bg-blue-100 disabled:opacity-75 disabled:cursor-not-allowed"
                                                         >
                                                             {['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Other'].map(ch => (
                                                                 <option key={ch} value={ch}>{ch}</option>
@@ -492,7 +501,8 @@ export default function Sales() {
                                                                 } finally { setUpdatingOrderId(null); }
                                                             }}
                                                             onClick={e => e.stopPropagation()}
-                                                            className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-amber-100 bg-amber-50 text-amber-700 appearance-none cursor-pointer outline-none w-full transition-colors hover:bg-amber-100"
+                                                            disabled={!hasPermission('orders.edit')}
+                                                            className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-amber-100 bg-amber-50 text-amber-700 appearance-none cursor-pointer outline-none w-full transition-colors hover:bg-amber-100 disabled:opacity-75 disabled:cursor-not-allowed"
                                                         >
                                                             <option value="">Not assigned</option>
                                                             {couriers.map(c => (
@@ -520,11 +530,11 @@ export default function Sales() {
                                                             />
                                                         ) : (
                                                             <div
-                                                                onClick={e => { e.stopPropagation(); startOrderEdit(order, 'totalAmount'); }}
-                                                                className="cursor-pointer group/amt"
-                                                                title="Click to edit"
+                                                                onClick={e => { e.stopPropagation(); if (hasPermission('orders.edit')) startOrderEdit(order, 'totalAmount'); }}
+                                                                className={clsx("group/amt", hasPermission('orders.edit') ? "cursor-pointer" : "cursor-default")}
+                                                                title={hasPermission('orders.edit') ? "Click to edit" : ""}
                                                             >
-                                                                <p className="font-black text-gray-900 text-base tabular-nums group-hover/amt:text-blue-600 transition-colors">{order.totalAmount?.toLocaleString()}</p>
+                                                                <p className={clsx("font-black text-gray-900 text-base tabular-nums transition-colors", hasPermission('orders.edit') && "group-hover/amt:text-blue-600")}>{order.totalAmount?.toLocaleString()}</p>
                                                                 <p className="text-[10px] text-gray-400 font-medium">DZD</p>
                                                             </div>
                                                         )}
@@ -542,8 +552,10 @@ export default function Sales() {
                                                                     value={order.status}
                                                                     onChange={e => handleInlineStatusChange(order._id, e.target.value)}
                                                                     onClick={e => e.stopPropagation()}
+                                                                    disabled={!hasPermission('orders.status.change') && !hasPermission('orders.edit')}
                                                                     className={clsx(
-                                                                        'text-xs font-bold px-2.5 py-1.5 rounded-xl border appearance-none cursor-pointer outline-none w-full transition-colors',
+                                                                        'text-xs font-bold px-2.5 py-1.5 rounded-xl border appearance-none outline-none w-full transition-colors',
+                                                                        (hasPermission('orders.status.change') || hasPermission('orders.edit')) ? 'cursor-pointer' : 'cursor-not-allowed opacity-75',
                                                                         STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600 border-gray-200'
                                                                     )}
                                                                 >
@@ -558,8 +570,7 @@ export default function Sales() {
                                                     {/* Actions */}
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center justify-center gap-1.5">
-                                                            {/* Quick Dispatch button — for dispatchable statuses */}
-                                                            {['Confirmed', 'Preparing', 'Ready for Pickup'].includes(order.status) && (
+                                                            {['Confirmed', 'Preparing', 'Ready for Pickup'].includes(order.status) && hasPermission('shipments.create') && (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); handleQuickDispatch(order._id); }}
                                                                     disabled={dispatchingOrderId === order._id}
@@ -573,12 +584,16 @@ export default function Sales() {
                                                                     Dispatch
                                                                 </button>
                                                             )}
-                                                            <button onClick={(e) => { e.stopPropagation(); handleEditClick(order); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
-                                                                <Pencil className="w-3 h-3" /> Edit
-                                                            </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(order._id); }} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
+                                                            {hasPermission('orders.edit') && (
+                                                                <button onClick={(e) => { e.stopPropagation(); handleEditClick(order); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors border border-blue-100">
+                                                                    <Pencil className="w-3 h-3" /> Edit
+                                                                </button>
+                                                            )}
+                                                            {hasPermission('orders.delete') && (
+                                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(order._id); }} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, Truck, Key, MapPin, DollarSign, Activity, Settings2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
+import { AuthContext } from '../context/AuthContext';
 
 // Import sub-components for the tabs
 import CourierApiSettings from '../components/couriers/CourierApiSettings';
@@ -16,6 +17,7 @@ export default function CourierDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
+    const { hasPermission } = React.useContext(AuthContext);
     const isRTL = i18n.language === 'ar';
     const isNew = id === 'new';
 
@@ -77,7 +79,7 @@ export default function CourierDetails() {
 
     const tabs = [
         { id: 'general', label: t('couriers.tabs.general', 'General Info'), icon: <Truck className="w-4 h-4" /> },
-        { id: 'api', label: t('couriers.tabs.api', 'API Integration'), icon: <Key className="w-4 h-4" />, disabled: isNew },
+        { id: 'api', label: t('couriers.tabs.api', 'API Integration'), icon: <Key className="w-4 h-4" />, disabled: isNew || !hasPermission('couriers.api.connect') },
         { id: 'coverage', label: t('couriers.tabs.coverage', 'Coverage Regions'), icon: <MapPin className="w-4 h-4" />, disabled: isNew },
         { id: 'pricing', label: t('couriers.tabs.pricing', 'Pricing Engine'), icon: <DollarSign className="w-4 h-4" />, disabled: isNew },
         { id: 'mapping', label: t('couriers.tabs.mapping', 'Status Mapping'), icon: <Activity className="w-4 h-4" />, disabled: isNew }
@@ -99,14 +101,16 @@ export default function CourierDetails() {
                             <ArrowLeft className={clsx("w-4 h-4", isRTL ? "ml-2 rotate-180" : "mr-2")} />
                             {t('common.back', 'Back')}
                         </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm border border-transparent disabled:opacity-50 flex items-center transition-colors"
-                        >
-                            <Save className={clsx("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
-                            {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save Changes')}
-                        </button>
+                        {(isNew ? hasPermission('couriers.create') : hasPermission('couriers.edit')) && (
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm border border-transparent disabled:opacity-50 flex items-center transition-colors"
+                            >
+                                <Save className={clsx("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
+                                {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save Changes')}
+                            </button>
+                        )}
                     </div>
                 }
             />

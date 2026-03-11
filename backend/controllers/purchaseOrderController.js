@@ -28,8 +28,7 @@ exports.createPurchaseOrder = async (req, res) => {
         const { supplier, items, expectedDeliveryDate, notes } = req.body;
 
         if (!req.body || !supplier || !items || items.length === 0) {
-            console.log("Validation failed for PO payload:", req.body);
-            return res.status(400).json({ message: "Supplier and at least one item are required.", payload: req.body });
+            return res.status(400).json({ message: "Supplier and at least one item are required." });
         }
 
         const poNumber = `PO-${Math.floor(Math.random() * 1000000)}`;

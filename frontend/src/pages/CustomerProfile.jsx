@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { ArrowLeft, ArrowRight, User, Phone, MapPin, Mail, Calendar, ShieldAlert, CheckCircle2, Package, TrendingUp, AlertCircle, RefreshCw, MessageSquare } from 'lucide-react';
@@ -7,11 +7,13 @@ import moment from 'moment';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import PageHeader from '../components/PageHeader';
+import { AuthContext } from '../context/AuthContext';
 
 export default function CustomerProfile() {
     const { id } = useParams();
     const { t } = useTranslation();
     const { customers, deleteCustomer, updateCustomer } = useCustomer();
+    const { hasPermission } = useContext(AuthContext);
     const [customer, setCustomer] = useState(null);
     const [orders, setOrders] = useState([]);
     const [tickets, setTickets] = useState([]);
@@ -136,8 +138,9 @@ export default function CustomerProfile() {
                     </div>
 
                     <div className="flex gap-3">
-                        <button
-                            onClick={handleToggleBlacklist}
+                        {hasPermission('customers.blacklist') && (
+                            <button
+                                onClick={handleToggleBlacklist}
                             className={clsx(
                                 "flex items-center gap-2 px-4 py-2 font-bold rounded-xl transition-all shadow-sm text-sm border",
                                 customer.blacklisted
@@ -147,6 +150,7 @@ export default function CustomerProfile() {
                             <ShieldAlert className="w-4 h-4" />
                             {customer.blacklisted ? t('crm.removeBlacklist', 'Remove Blacklist') : t('crm.addBlacklist', 'Blacklist Customer')}
                         </button>
+                        )}
                     </div>
                 </div>
 

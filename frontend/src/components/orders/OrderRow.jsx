@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2 } from 'lucide-react';
+import { AuthContext } from '../../context/AuthContext';
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -67,6 +68,7 @@ const OrderRow = React.memo(({
     virtualIndex
 }) => {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
     const [isEditingTags, setIsEditingTags] = useState(false);
     const [tagInput, setTagInput] = useState('');
 
@@ -188,6 +190,7 @@ const OrderRow = React.memo(({
                                         {/* Editable — all pre-dispatch + cancelled statuses */}
                                         {!['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned'].includes(order.status) ? (
                                             <select
+                                                disabled={!hasPermission('orders.status.change')}
                                                 value={order.status}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
@@ -242,6 +245,7 @@ const OrderRow = React.memo(({
                                     <div className="flex flex-wrap items-center gap-1 min-w-[110px]">
                                         {/* Inline Priority Select */}
                                         <select
+                                            disabled={!hasPermission('orders.edit')}
                                             value={order.priority || 'Normal'}
                                             onChange={(e) => { e.stopPropagation(); onPriorityChange && onPriorityChange(order._id, e.target.value); }}
                                             onClick={(e) => e.stopPropagation()}
@@ -273,7 +277,7 @@ const OrderRow = React.memo(({
                                                 </button>
                                             </div>
                                         ))}
-                                        {isEditingTags ? (
+                                        {hasPermission('orders.edit') && (isEditingTags ? (
                                             <input
                                                 type="text"
                                                 value={tagInput}
@@ -293,7 +297,7 @@ const OrderRow = React.memo(({
                                             >
                                                 <Plus className="w-2.5 h-2.5 inline-block" />
                                             </button>
-                                        )}
+                                        ))}
                                     </div>
                                 </td>
                             );
@@ -302,12 +306,18 @@ const OrderRow = React.memo(({
                             return (
                                 <td key={col.id} className="px-4 py-2 text-right" onClick={e => e.stopPropagation()}>
                                     <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(order); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })}>
-                                            <Edit3 className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
-                                            <PackageOpen className="w-4 h-4" />
-                                        </button>
+                                        {hasPermission('orders.edit') && (
+                                            <>
+                                                <button onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(order); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })}>
+                                                    <Edit3 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                        {hasPermission('orders.status.change') && (
+                                            <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
+                                                <PackageOpen className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         <button onClick={(e) => { e.stopPropagation(); const phone = order.customer?.phone || order.shipping?.phone1; if (phone) window.open(`tel:${phone}`); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.call', { defaultValue: 'Call' })}>
                                             <PhoneCall className="w-4 h-4" />
                                         </button>
@@ -324,31 +334,37 @@ const OrderRow = React.memo(({
                                         </button>
                                         {activeStage === 'trash' ? (
                                             <>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onRestore && onRestore(order._id); }}
-                                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
-                                                    title="Restore Order"
-                                                >
-                                                    <RotateCcw className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onPurge && onPurge(order._id); }}
-                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-red-100 shadow-sm transition-colors"
-                                                    title="Delete Permanently"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {hasPermission('orders.restore') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onRestore && onRestore(order._id); }}
+                                                        className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
+                                                        title="Restore Order"
+                                                    >
+                                                        <RotateCcw className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {hasPermission('orders.purge') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onPurge && onPurge(order._id); }}
+                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-red-100 shadow-sm transition-colors"
+                                                        title="Delete Permanently"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </>
                                         ) : activeStage === 'post-dispatch' ? (
                                             // Post-dispatch: only allow recall if courier hasn't validated (no tracking number)
                                             !order.trackingNumber ? (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onStatusChange && onStatusChange(order._id, 'Ready for Pickup'); }}
-                                                    className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
-                                                    title="Recall to Pre-Dispatch (not yet validated by courier)"
-                                                >
-                                                    <Undo2 className="w-4 h-4" />
-                                                </button>
+                                                hasPermission('orders.status.change') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onStatusChange && onStatusChange(order._id, 'Ready for Pickup'); }}
+                                                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
+                                                        title="Recall to Pre-Dispatch (not yet validated by courier)"
+                                                    >
+                                                        <Undo2 className="w-4 h-4" />
+                                                    </button>
+                                                )
                                             ) : (
                                                 // Locked — validated by courier, cannot recall or delete
                                                 <span className="px-1.5 py-1 text-[9px] font-black uppercase tracking-wider text-gray-300 border border-gray-100 rounded" title="Locked: validated by courier">
@@ -356,13 +372,15 @@ const OrderRow = React.memo(({
                                                 </span>
                                             )
                                         ) : (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onDelete && onDelete(order._id); }}
-                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
-                                                title="Move to Trash"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            hasPermission('orders.delete') && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onDelete && onDelete(order._id); }}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
+                                                    title="Move to Trash"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )
                                         )}
                                     </div>
                                 </td>
@@ -481,6 +499,7 @@ const OrderRow = React.memo(({
                             return (
                                 <td key={col.id} className="px-4 py-2" onClick={e => e.stopPropagation()}>
                                     <select
+                                        disabled={!hasPermission('orders.edit')}
                                         value={order.courier?._id || 'unassigned'}
                                         onChange={(e) => onCourierChange && onCourierChange(order._id, e.target.value)}
                                         className="appearance-none cursor-pointer outline-none rounded text-xs font-bold border border-transparent hover:border-gray-200 bg-transparent hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2 py-1 transition-colors relative truncate max-w-[120px]"
@@ -494,6 +513,7 @@ const OrderRow = React.memo(({
                             return (
                                 <td key={col.id} className="px-4 py-2" onClick={e => e.stopPropagation()}>
                                     <select
+                                        disabled={!hasPermission('orders.edit')}
                                         value={order.assignedAgent?._id || 'unassigned'}
                                         onChange={(e) => onAgentChange && onAgentChange(order._id, e.target.value)}
                                         className="appearance-none cursor-pointer outline-none rounded text-[11px] font-bold border border-transparent hover:border-gray-200 bg-transparent hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-2 py-1 transition-colors relative truncate max-w-[120px]"
@@ -579,15 +599,17 @@ const OrderRow = React.memo(({
 
                             {/* Level 3 action trigger */}
                             <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDelete(order._id);
-                                    }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 text-[11px] font-black tracking-wider uppercase rounded border border-red-200 hover:border-red-600 transition-all"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" /> Move to Trash
-                                </button>
+                                {hasPermission('orders.delete') && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(order._id);
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 text-[11px] font-black tracking-wider uppercase rounded border border-red-200 hover:border-red-600 transition-all"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" /> Move to Trash
+                                    </button>
+                                )}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setFocusedOrderId(order._id); }}
                                     className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 text-white text-[11px] font-black tracking-wider uppercase rounded hover:bg-gray-800 transition-colors shadow-sm"

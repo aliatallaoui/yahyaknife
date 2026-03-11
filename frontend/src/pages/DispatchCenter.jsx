@@ -159,10 +159,12 @@ export default function DispatchCenter() {
                 variant="sales"
                 actions={
                     <div className="flex flex-wrap gap-3">
-                        <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-95">
-                            <FileText className="w-4 h-4 mr-2" />
-                            {t('dispatch.exportList', 'Export List')}
-                        </button>
+                        <RequireAction permission="dispatch.export">
+                            <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-95">
+                                <FileText className="w-4 h-4 mr-2" />
+                                {t('dispatch.exportList', 'Export List')}
+                            </button>
+                        </RequireAction>
                         <RequireAction permission="dispatch.create_shipment">
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
@@ -303,20 +305,26 @@ export default function DispatchCenter() {
                                             {/* Pre-validation Actions */}
                                             {['Created in Courier', 'Draft'].includes(shipment.shipmentStatus) && (
                                                 <>
-                                                    <button onClick={() => handleValidate(shipment._id)} title="Validate & Dispatch" className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-1.5 rounded-lg transition-colors">
-                                                        <CheckSquare className="w-4 h-4" />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(shipment._id)} title="Cancel/Delete" className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-lg transition-colors">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    <RequireAction permission="dispatch.validate_shipment">
+                                                        <button onClick={() => handleValidate(shipment._id)} title="Validate & Dispatch" className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-1.5 rounded-lg transition-colors">
+                                                            <CheckSquare className="w-4 h-4" />
+                                                        </button>
+                                                    </RequireAction>
+                                                    <RequireAction permission="shipments.cancel">
+                                                        <button onClick={() => handleDelete(shipment._id)} title="Cancel/Delete" className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-lg transition-colors">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </RequireAction>
                                                 </>
                                             )}
 
                                             {/* Post-validation Actions */}
                                             {!['Created in Courier', 'Draft', 'Cancelled'].includes(shipment.shipmentStatus) && (
-                                                <button onClick={() => handlePrintLabel(shipment._id)} title="Print Label" className="text-gray-600 hover:text-gray-900 bg-gray-100 p-1.5 rounded-lg transition-colors">
-                                                    <Printer className="w-4 h-4" />
-                                                </button>
+                                                <RequireAction permission="dispatch.generate_label">
+                                                    <button onClick={() => handlePrintLabel(shipment._id)} title="Print Label" className="text-gray-600 hover:text-gray-900 bg-gray-100 p-1.5 rounded-lg transition-colors">
+                                                        <Printer className="w-4 h-4" />
+                                                    </button>
+                                                </RequireAction>
                                             )}
 
                                             <button className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-2">{t('common.details', 'Details')}</button>

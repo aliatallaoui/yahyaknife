@@ -8,11 +8,13 @@ import {
 import clsx from 'clsx';
 import moment from 'moment';
 import { TransactionContext } from '../context/TransactionContext';
+import { AuthContext } from '../context/AuthContext';
 import TransactionModal from '../components/TransactionModal';
 import { useTranslation } from 'react-i18next';
 
 export default function Financial() {
     const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction, fetchTransactions } = useContext(TransactionContext);
+    const { hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(true);
@@ -169,9 +171,11 @@ export default function Financial() {
                 subtitle={t('finance.subtitle', 'Real-time COD revenue tracking and global P&L')}
                 variant="finance"
                 actions={
-                    <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
-                        <Plus className="w-5 h-5" /> {t('finance.addManual', 'Add Manual Transaction')}
-                    </button>
+                    hasPermission('financial.manage_manual_transactions') && (
+                        <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
+                            <Plus className="w-5 h-5" /> {t('finance.addManual', 'Add Manual Transaction')}
+                        </button>
+                    )
                 }
             />
 
@@ -277,12 +281,14 @@ export default function Financial() {
                     <h3 className="text-lg font-bold text-gray-900">{t('finance.manualLedger', 'Manual Operating Ledger')}</h3>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                         <span className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{filteredTransactions.length} {t('finance.totalTx', 'Total Tx')}</span>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
-                        >
-                            <Plus className="w-4 h-4" /> {t('common.add', 'Add')}
-                        </button>
+                        {hasPermission('financial.manage_manual_transactions') && (
+                            <button
+                                onClick={() => handleOpenModal()}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" /> {t('common.add', 'Add')}
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -326,7 +332,7 @@ export default function Financial() {
                 </div>
 
                 {/* Batch Action Bar */}
-                {selectedIds.size > 0 && (
+                {selectedIds.size > 0 && hasPermission('financial.manage_manual_transactions') && (
                     <div className="flex items-center justify-between px-5 py-3 bg-blue-50 border-b border-blue-100">
                         <span className="text-sm font-bold text-blue-800">{selectedIds.size} selected</span>
                         <button
@@ -344,20 +350,22 @@ export default function Financial() {
                     <table className="w-full text-start border-collapse min-w-[750px]">
                         <thead>
                             <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
-                                <th className="p-4 w-10">
-                                    <input
-                                        type="checkbox"
-                                        checked={isAllSelected}
-                                        onChange={toggleSelectAll}
-                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
-                                    />
-                                </th>
+                                {hasPermission('financial.manage_manual_transactions') && (
+                                    <th className="p-4 w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllSelected}
+                                            onChange={toggleSelectAll}
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                                        />
+                                    </th>
+                                )}
                                 <th className="p-4 font-semibold w-32">{t('finance.date', 'Date')}</th>
                                 <th className="p-4 font-semibold w-28">{t('finance.type', 'Type')}</th>
                                 <th className="p-4 font-semibold w-36">{t('finance.category', 'Category')}</th>
                                 <th className="p-4 font-semibold">{t('finance.desc', 'Description')}</th>
                                 <th className="p-4 font-semibold text-end w-36">{t('finance.amount', 'Amount (DZ)')}</th>
-                                <th className="p-4 font-semibold text-center w-20">{t('finance.actions', 'Actions')}</th>
+                                {hasPermission('financial.manage_manual_transactions') && <th className="p-4 font-semibold text-center w-20">{t('finance.actions', 'Actions')}</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
@@ -367,14 +375,16 @@ export default function Financial() {
                                 return (
                                     <tr key={tx._id} className={clsx("hover:bg-blue-50/20 transition-colors group", selectedIds.has(tx._id) && "bg-blue-50/40")}>
                                         {/* Checkbox */}
-                                        <td className="p-4">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.has(tx._id)}
-                                                onChange={() => toggleSelect(tx._id)}
-                                                className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
-                                            />
-                                        </td>
+                                        {hasPermission('financial.manage_manual_transactions') && (
+                                            <td className="p-4">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(tx._id)}
+                                                    onChange={() => toggleSelect(tx._id)}
+                                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                                                />
+                                            </td>
+                                        )}
                                         {/* Date — read-only */}
                                         <td className="p-4 text-gray-500 font-medium whitespace-nowrap">
                                             {moment(tx.date).format('MMM DD, YYYY')}
@@ -382,7 +392,7 @@ export default function Financial() {
 
                                         {/* Type — click to edit */}
                                         <td className="p-4">
-                                            {isEditing('type') ? (
+                                            {isEditing('type') && hasPermission('financial.manage_manual_transactions') ? (
                                                 <select
                                                     autoFocus
                                                     value={editingTx.value}
@@ -395,12 +405,13 @@ export default function Financial() {
                                                 </select>
                                             ) : (
                                                 <span
-                                                    onClick={() => startEdit(tx, 'type')}
+                                                    onClick={() => hasPermission('financial.manage_manual_transactions') && startEdit(tx, 'type')}
                                                     className={clsx(
-                                                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition-opacity hover:opacity-75',
+                                                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-opacity',
+                                                        hasPermission('financial.manage_manual_transactions') && 'cursor-pointer hover:opacity-75',
                                                         tx.type === 'revenue' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
                                                     )}
-                                                    title="Click to change"
+                                                    title={hasPermission('financial.manage_manual_transactions') ? "Click to change" : ""}
                                                 >
                                                     {tx.type === 'revenue' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                                                     {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
@@ -410,7 +421,7 @@ export default function Financial() {
 
                                         {/* Category — inline input */}
                                         <td className="p-4">
-                                            {isEditing('category') ? (
+                                            {isEditing('category') && hasPermission('financial.manage_manual_transactions') ? (
                                                 <input
                                                     autoFocus
                                                     value={editingTx.value}
@@ -421,16 +432,16 @@ export default function Financial() {
                                                 />
                                             ) : (
                                                 <span
-                                                    onClick={() => startEdit(tx, 'category')}
-                                                    className="font-semibold text-gray-700 cursor-pointer hover:text-blue-600 hover:underline underline-offset-2 block"
-                                                    title="Click to edit"
+                                                    onClick={() => hasPermission('financial.manage_manual_transactions') && startEdit(tx, 'category')}
+                                                    className={clsx("font-semibold text-gray-700 block", hasPermission('financial.manage_manual_transactions') && "cursor-pointer hover:text-blue-600 hover:underline underline-offset-2")}
+                                                    title={hasPermission('financial.manage_manual_transactions') ? "Click to edit" : ""}
                                                 >{tx.category || <span className="text-gray-300">—</span>}</span>
                                             )}
                                         </td>
 
                                         {/* Description — inline input */}
                                         <td className="p-4">
-                                            {isEditing('description') ? (
+                                            {isEditing('description') && hasPermission('financial.manage_manual_transactions') ? (
                                                 <input
                                                     autoFocus
                                                     value={editingTx.value}
@@ -441,16 +452,16 @@ export default function Financial() {
                                                 />
                                             ) : (
                                                 <span
-                                                    onClick={() => startEdit(tx, 'description')}
-                                                    className="text-gray-500 cursor-pointer hover:text-blue-600 hover:underline underline-offset-2 block truncate max-w-[220px]"
-                                                    title="Click to edit"
+                                                    onClick={() => hasPermission('financial.manage_manual_transactions') && startEdit(tx, 'description')}
+                                                    className={clsx("text-gray-500 block truncate max-w-[220px]", hasPermission('financial.manage_manual_transactions') && "cursor-pointer hover:text-blue-600 hover:underline underline-offset-2")}
+                                                    title={hasPermission('financial.manage_manual_transactions') ? "Click to edit" : ""}
                                                 >{tx.description || <span className="text-gray-300 italic">Add description…</span>}</span>
                                             )}
                                         </td>
 
                                         {/* Amount — inline number input */}
                                         <td className="p-4 text-end">
-                                            {isEditing('amount') ? (
+                                            {isEditing('amount') && hasPermission('financial.manage_manual_transactions') ? (
                                                 <input
                                                     autoFocus
                                                     type="number"
@@ -462,12 +473,13 @@ export default function Financial() {
                                                 />
                                             ) : (
                                                 <span
-                                                    onClick={() => startEdit(tx, 'amount')}
+                                                    onClick={() => hasPermission('financial.manage_manual_transactions') && startEdit(tx, 'amount')}
                                                     className={clsx(
-                                                        'font-bold tabular-nums cursor-pointer hover:underline underline-offset-2',
+                                                        'font-bold tabular-nums',
+                                                        hasPermission('financial.manage_manual_transactions') && 'cursor-pointer hover:underline underline-offset-2',
                                                         tx.type === 'revenue' ? 'text-emerald-700' : 'text-gray-900'
                                                     )}
-                                                    title="Click to edit"
+                                                    title={hasPermission('financial.manage_manual_transactions') ? "Click to edit" : ""}
                                                 >
                                                     {tx.type === 'revenue' ? '+' : '-'}{Number(tx.amount).toLocaleString()} DZ
                                                 </span>
@@ -475,16 +487,18 @@ export default function Financial() {
                                         </td>
 
                                         {/* Actions */}
-                                        <td className="p-4">
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                <button onClick={() => handleOpenModal(tx)} className="p-1.5 text-gray-400 hover:text-blue-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
-                                                    <Edit2 className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button onClick={() => deleteTransaction(tx._id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </td>
+                                        {hasPermission('financial.manage_manual_transactions') && (
+                                            <td className="p-4">
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <button onClick={() => handleOpenModal(tx)} className="p-1.5 text-gray-400 hover:text-blue-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
+                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => deleteTransaction(tx._id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}
