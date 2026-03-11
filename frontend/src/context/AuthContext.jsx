@@ -75,13 +75,13 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async (name, email, password) => {
+    const register = async (name, email, password, businessName) => {
         const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({ name, email, password, businessName })
         });
 
         const data = await response.json();
@@ -93,8 +93,12 @@ export const AuthProvider = ({ children }) => {
                 name: data.name,
                 email: data.email,
                 role: data.role,
+                roleObject: data.roleObject || null,
                 permissions: data.permissions || [],
-                isActive: data.isActive
+                permissionOverrides: data.permissionOverrides || [],
+                isActive: data.isActive,
+                preferences: data.preferences || {},
+                tenant: data.tenant
             });
             localStorage.setItem('token', data.token);
             return true;

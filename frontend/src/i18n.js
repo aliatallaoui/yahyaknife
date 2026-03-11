@@ -1423,10 +1423,12 @@ const resources = {
                 registerAlreadyHave: "Already have an account?",
                 registerSignInHere: "Sign in here",
                 fullName: "Full Name",
+                businessName: "Business / Workspace Name",
                 createAccount: "Create Account",
                 phEmail: "you@example.com",
                 phPassword: "••••••••",
                 phName: "John Doe",
+                phBusinessName: "e.g. Yahya Knives Workshop",
                 phWait: "Wait, it's at least 6 chars!"
             },
             modals: {
@@ -3619,10 +3621,12 @@ const resources = {
                 registerAlreadyHave: "لديك حساب بالفعل؟",
                 registerSignInHere: "سجل الدخول هنا",
                 fullName: "الاسم الكامل",
+                businessName: "اسم الشركة / مساحة العمل",
                 createAccount: "إنشاء حساب",
                 phEmail: "you@example.com",
                 phPassword: "••••••••",
                 phName: "فلان الفلاني",
+                phBusinessName: "مثال: ورشة يحيى للأسلحة",
                 phWait: "يجب أن تكون 6 أحرف على الأقل!"
             },
             modals: {

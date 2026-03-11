@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { KeyRound, Mail, User, ArrowRight, Loader2 } from 'lucide-react';
+import { KeyRound, Mail, User, Building2, ArrowRight, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
@@ -9,6 +9,7 @@ export default function Register() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [businessName, setBusinessName] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function Register() {
         setLoading(true);
 
         try {
-            await register(name, email, password);
+            await register(name, email, password, businessName);
             navigate('/');
         } catch (err) {
             setError(err.message);
@@ -68,6 +69,23 @@ export default function Register() {
                                     placeholder={t('phName')}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className={clsx("block text-sm font-medium text-gray-700", isAr ? "text-right" : "text-left")}>{t('businessName')}</label>
+                            <div className="mt-1 relative rounded-md shadow-sm">
+                                <div className={clsx("absolute inset-y-0 flex items-center pointer-events-none", isAr ? "right-0 pr-3" : "left-0 pl-3")}>
+                                    <Building2 className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    required
+                                    className={clsx("focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 border", isAr ? "pr-10 text-right" : "pl-10 text-left")}
+                                    placeholder={t('phBusinessName')}
+                                    value={businessName}
+                                    onChange={(e) => setBusinessName(e.target.value)}
                                 />
                             </div>
                         </div>
