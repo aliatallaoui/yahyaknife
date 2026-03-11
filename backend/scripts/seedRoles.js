@@ -26,16 +26,20 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             ...PERMISSIONS.overview,
-            ...PERMISSIONS.sales,
+            ...PERMISSIONS.orders,
+            ...PERMISSIONS.shipments,
+            ...PERMISSIONS.customers,
+            ...PERMISSIONS.couriers,
+            ...PERMISSIONS.sales_legacy,
             ...PERMISSIONS.inventory,
             ...PERMISSIONS.warehouse,
             ...PERMISSIONS.dispatch,
             ...PERMISSIONS.procurement,
             ...PERMISSIONS.manufacturing,
-            ...PERMISSIONS.customer,
+            ...PERMISSIONS.customer_legacy,
             ...PERMISSIONS.projects,
-            'financial.read', // Read summaries only
-            'hr.read' // Read basic HR but no payroll editing
+            'financial.read', 'finance.view', // Read summaries only
+            'hr.read', 'hr.employees.view' // Read basic HR but no payroll editing
         ]
     },
     {
@@ -44,9 +48,12 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             ...PERMISSIONS.overview,
-            ...PERMISSIONS.sales,
-            ...PERMISSIONS.customer,
-            'inventory.read' // Can view stock but not edit or see cost
+            ...PERMISSIONS.orders,
+            ...PERMISSIONS.customers,
+            ...PERMISSIONS.sales_legacy,
+            ...PERMISSIONS.customer_legacy,
+            'shipments.view',
+            'inventory.read', 'inventory.view' // Can view stock but not edit or see cost
         ]
     },
     {
@@ -107,11 +114,13 @@ const defaultRoles = [
         permissions: [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.financial,
-            'hr.read', 'hr.view_salary', 'hr.approve_payroll',
+            ...PERMISSIONS.finance,
+            'hr.read', 'hr.view_salary', 'hr.approve_payroll', 'hr.payroll.view', 'hr.payroll.approve',
             'dispatch.read', 'dispatch.view_courier_financials',
             'inventory.read', 'inventory.view_cost',
             'procurement.read',
-            'sales.read'
+            'sales.read', 'orders.view',
+            'couriers.view'
         ]
     },
     {
@@ -120,9 +129,10 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             ...PERMISSIONS.overview,
+            ...PERMISSIONS.shipments,
             'dispatch.read', 'dispatch.create_shipment', 'dispatch.update_shipment',
             'dispatch.validate_shipment', 'dispatch.generate_label', 'dispatch.request_return',
-            'sales.read' // To see what needs shipping
+            'sales.read', 'orders.view', 'couriers.view' // To see what needs shipping
         ]
     },
     {
@@ -131,9 +141,9 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             'overview.read',
-            'sales.read', 'sales.view_customer_details',
-            'customer.read',
-            'dispatch.read' // to update clients on tracking
+            'orders.view', 'sales.read', 'sales.view_customer_details',
+            'customers.view', 'customer.read',
+            'shipments.view', 'dispatch.read' // to update clients on tracking
         ]
     },
     {
@@ -141,7 +151,10 @@ const defaultRoles = [
         description: 'System-wide read-only access for auditing.',
         isSystemRole: true,
         permissions: [
-            'overview.read', 'financial.read', 'sales.read', 'inventory.read',
+            'overview.read',
+            'orders.view', 'shipments.view', 'finance.view', 'customers.view',
+            'couriers.view', 'hr.employees.view', 'hr.payroll.view',
+            'financial.read', 'sales.read', 'inventory.read',
             'warehouse.read', 'dispatch.read', 'procurement.read', 'manufacturing.read',
             'hr.read', 'projects.read', 'customer.read'
         ]
