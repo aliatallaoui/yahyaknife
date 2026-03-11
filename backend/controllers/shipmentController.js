@@ -10,7 +10,7 @@ exports.createShipment = async (req, res) => {
         const shipment = await ShipmentService.createShipment({ orderId, isCustomOrder, shipmentData });
         res.status(201).json(shipment);
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         console.error('createShipment error:', error);
         res.status(502).json({ message: 'Courier Integration Error: ' + (error.response?.data?.message || error.message) });
     }
@@ -21,7 +21,7 @@ exports.quickDispatch = async (req, res) => {
         const shipment = await ShipmentService.quickDispatch(req.params.orderId);
         res.status(201).json(shipment);
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         console.error('quickDispatch error:', error);
         res.status(502).json({ message: 'Courier Integration Error: ' + (error.response?.data?.message || error.message) });
     }
@@ -146,7 +146,7 @@ exports.deleteShipment = async (req, res) => {
         const result = await ShipmentService.deleteShipment(req.params.id);
         res.json({ message: 'Shipment successfully deleted', ...result });
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         res.status(500).json({ message: error.message });
     }
 };
@@ -159,7 +159,7 @@ exports.validateShipment = async (req, res) => {
         const shipment = await ShipmentService.validateShipment(req.params.id, { askCollection: ask_collection });
         res.json(shipment);
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         console.error('validateShipment error:', error);
         res.status(502).json({ message: 'Failed to validate shipment on courier gateway.' });
     }
@@ -172,7 +172,7 @@ exports.getShipmentLabel = async (req, res) => {
         const url = await ShipmentService.getShipmentLabel(req.params.id);
         res.json({ url });
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         res.status(500).json({ message: error.message });
     }
 };
@@ -184,7 +184,7 @@ exports.requestReturn = async (req, res) => {
         const shipment = await ShipmentService.requestReturn(req.params.id);
         res.json(shipment);
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         res.status(500).json({ message: error.message });
     }
 };

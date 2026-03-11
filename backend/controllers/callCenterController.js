@@ -107,7 +107,7 @@ exports.logCallAction = async (req, res) => {
 
         res.status(200).json({ message: 'Call logged successfully', order });
     } catch (error) {
-        if (error.isOperational) throw error;
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         console.error('Log Call Error', error);
         res.status(500).json({ message: 'Server Error logging call' });
     }
