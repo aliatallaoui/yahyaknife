@@ -63,11 +63,11 @@ const initJobs = () => {
             const [flagged, blacklisted] = await Promise.all([
                 Customer.updateMany(
                     { refusalRate: { $gt: 30, $lte: 50 }, totalRefusals: { $gte: 2 } },
-                    { $set: { isSuspicious: true, requiresDeliveryVerification: true } }
+                    { $set: { requiresDeliveryVerification: true } }
                 ),
                 Customer.updateMany(
                     { refusalRate: { $gt: 50 }, totalRefusals: { $gte: 3 } },
-                    { $set: { blacklisted: true, isSuspicious: true, segment: 'At Risk' } }
+                    { $set: { blacklisted: true, status: 'At Risk' } }
                 )
             ]);
 
