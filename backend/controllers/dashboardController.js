@@ -11,6 +11,7 @@ const moment = require('moment');
 
 exports.getDashboardData = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { startDate, endDate } = req.query;
         let startPeriod, endPeriod;
         if (startDate && endDate) {
@@ -22,7 +23,7 @@ exports.getDashboardData = async (req, res) => {
             endPeriod = now.clone().endOf('month');
         }
 
-        const dateQuery = { date: { $gte: startPeriod.toDate(), $lte: endPeriod.toDate() } };
+        const dateQuery = { tenant: tenantId, date: { $gte: startPeriod.toDate(), $lte: endPeriod.toDate() } };
 
         // --- ORDER METRICS ---
         const orderStatusAgg = await Order.aggregate([
@@ -64,7 +65,7 @@ exports.getDashboardData = async (req, res) => {
 
         // --- DELIVERY METRICS ---
         const Courier = require('../models/Courier');
-        const couriers = await Courier.find();
+        const couriers = await Courier.find({ tenant: tenantId });
         const dispatchAgg = await Order.countDocuments({ ...dateQuery, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } });
 
         let deliverySuccessRate = dispatchAgg > 0 ? (deliveredOrders / dispatchAgg) * 100 : 0;
@@ -92,6 +93,26 @@ exports.getDashboardData = async (req, res) => {
             if (v.lifecycleStatus === 'Dead Stock') deadStockVariants++;
         });
 
+        // --- REAL COMPUTED METRICS ---
+        // Average delivery time from orders that have a recorded deliveryTimeMinutes
+        const deliveryTimeAgg = await Order.aggregate([
+            { $match: { tenant: tenantId, date: dateQuery.date, 'deliveryStatus.deliveryTimeMinutes': { $gt: 0 } } },
+            { $group: { _id: null, avgMinutes: { $avg: '$deliveryStatus.deliveryTimeMinutes' }, count: { $sum: 1 } } }
+        ]);
+        const avgDeliveryMinutes = deliveryTimeAgg[0]?.avgMinutes || null;
+        const avgDeliveryTimeDisplay = avgDeliveryMinutes
+            ? avgDeliveryMinutes >= 1440
+                ? `${(avgDeliveryMinutes / 1440).toFixed(1)} days`
+                : `${Math.round(avgDeliveryMinutes / 60)} hours`
+            : null; // null = not enough data yet, never a fake value
+
+        // Inventory turnover = units sold this period / average inventory
+        const totalUnitsSoldThisPeriod = variants.reduce((sum, v) => sum + (v.analytics?.historicalDemand30Days || 0), 0);
+        const avgInventory = variants.reduce((sum, v) => sum + v.totalStock, 0);
+        const inventoryTurnoverRate = avgInventory > 0
+            ? parseFloat((totalUnitsSoldThisPeriod / avgInventory).toFixed(2))
+            : null;
+
         const data = {
             orderMetrics: {
                 totalOrders,
@@ -105,14 +126,14 @@ exports.getDashboardData = async (req, res) => {
             deliveryMetrics: {
                 deliverySuccessRate: deliverySuccessRate.toFixed(1),
                 refusalRate: refusalRate.toFixed(1),
-                averageDeliveryTime: "48 hours", // Placeholder for actual math
-                courierPerformanceScore: couriers.length > 0 ? (couriers.reduce((acc, c) => acc + c.reliabilityScore, 0) / couriers.length).toFixed(1) : 100
+                averageDeliveryTime: avgDeliveryTimeDisplay,
+                courierPerformanceScore: couriers.length > 0 ? (couriers.reduce((acc, c) => acc + (c.reliabilityScore || 0), 0) / couriers.length).toFixed(1) : null
             },
             financialMetrics: {
                 totalSalesVolume: totalRevenue,
                 averageOrderValue: totalOrders > 0 ? (totalRevenue / totalOrders) : 0,
-                expectedRevenue, // Revenue shipped but not delivered
-                deliveredRevenue, // Delivered but cash not settled
+                expectedRevenue,
+                deliveredRevenue,
                 cashCollected: globalCashCollected,
                 courierSettlementsPending: globalSettlementsPending,
                 realProfit
@@ -122,7 +143,7 @@ exports.getDashboardData = async (req, res) => {
                 reservedStock: totalReservedStock,
                 availableStock: totalAvailableStock,
                 deadStock: deadStockVariants,
-                inventoryTurnoverRate: 1.2 // Placeholder
+                inventoryTurnoverRate
             },
             workshopMetrics: {
                 activeProduction: 0,
@@ -151,7 +172,7 @@ exports.getDashboardData = async (req, res) => {
         // Leverage AI Intelligence summaries here
         const [criticalStock, suspiciousCustomers] = await Promise.all([
             ProductVariant.countDocuments({ status: 'Active', $expr: { $lte: [{ $subtract: ["$totalStock", "$reservedStock"] }, "$reorderLevel"] } }),
-            Customer.countDocuments({ isSuspicious: true })
+            Customer.countDocuments({ tenant: tenantId, isSuspicious: true })
         ]);
 
         const realInsights = [];

@@ -5,7 +5,7 @@ const Revenue = require('../models/Revenue');
 // Get all couriers with calculated KPIs
 exports.getCouriers = async (req, res) => {
     try {
-        const couriers = await Courier.find().sort({ name: 1 });
+        const couriers = await Courier.find({ tenant: req.user.tenant }).sort({ name: 1 });
         res.json(couriers);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -15,7 +15,7 @@ exports.getCouriers = async (req, res) => {
 // Create a new courier
 exports.createCourier = async (req, res) => {
     try {
-        const newCourier = await Courier.create(req.body);
+        const newCourier = await Courier.create({ ...req.body, tenant: req.user.tenant });
         res.status(201).json(newCourier);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -26,7 +26,11 @@ exports.createCourier = async (req, res) => {
 exports.updateCourier = async (req, res) => {
     try {
         const { id } = req.params;
-        const updated = await Courier.findByIdAndUpdate(id, req.body, { new: true });
+        const updated = await Courier.findOneAndUpdate(
+            { _id: id, tenant: req.user.tenant },
+            req.body,
+            { new: true }
+        );
         if (!updated) return res.status(404).json({ message: 'Courier not found' });
         res.json(updated);
     } catch (error) {
@@ -40,11 +44,15 @@ exports.settleCourierCash = async (req, res) => {
         const { id } = req.params;
         const { amountToSettle } = req.body;
 
-        const courier = await Courier.findById(id);
+        if (!amountToSettle || amountToSettle <= 0) {
+            return res.status(400).json({ message: 'Settlement amount must be a positive number' });
+        }
+
+        const courier = await Courier.findOne({ _id: id, tenant: req.user?.tenant });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         if (amountToSettle > courier.pendingRemittance) {
-            return res.status(400).json({ message: 'Settlement amount exceeds pending remittance' });
+            return res.status(400).json({ message: `Settlement amount (${amountToSettle}) exceeds pending remittance (${courier.pendingRemittance})` });
         }
 
         courier.cashSettled += amountToSettle;
@@ -52,34 +60,37 @@ exports.settleCourierCash = async (req, res) => {
 
         // CRITICAL DATA COHERENCE: Map the bulk cash back to specific individual Orders
         // Otherwise, the Finance Hub has 'Delivered' orders that never flip to 'Paid' (Settled Revenue)
-        let remainingToSettle = amountToSettle;
+        // Determine which orders are fully covered by this settlement (oldest first)
         const unpaidOrders = await Order.find({
+            tenant: req.user.tenant,
             courier: id,
             status: 'Delivered',
             paymentStatus: { $ne: 'Paid' }
-        }).sort({ date: 1 }); // Oldest first
+        }, { _id: 1, financials: 1, totalAmount: 1 }).sort({ date: 1 }).lean();
 
-        const updatedOrders = [];
+        let remainingToSettle = amountToSettle;
+        const settledOrderIds = [];
 
         for (const order of unpaidOrders) {
             if (remainingToSettle <= 0) break;
-
-            // Assume the full COD amount is what we need to clear this order
             const orderAmount = order.financials?.codAmount || order.totalAmount;
-
             if (remainingToSettle >= orderAmount) {
-                // Fully pay this order
-                order.paymentStatus = 'Paid';
-                order.status = 'Paid'; // Advance the ERP status as well
+                settledOrderIds.push(order._id);
                 remainingToSettle -= orderAmount;
-                await order.save();
-                updatedOrders.push(order._id);
             } else {
-                // Partial payment edge cases (Rare, but possible if they settle a weird amount)
-                // We'll leave it as unpaid but reduce the remaining pool to 0
-                remainingToSettle = 0;
+                break; // Partial — don't mark as paid
             }
         }
+
+        // Single batch update instead of N saves
+        if (settledOrderIds.length > 0) {
+            await Order.updateMany(
+                { _id: { $in: settledOrderIds }, tenant: req.user.tenant },
+                { $set: { paymentStatus: 'Paid', status: 'Paid' } }
+            );
+        }
+
+        const updatedOrders = settledOrderIds;
 
         res.json({
             message: 'Cash settled successfully and pushed to Financial Ledger via Order Payment Status.',
@@ -97,7 +108,7 @@ exports.assignOrdersToCourier = async (req, res) => {
         const { id } = req.params; // Courier ID
         const { orderIds } = req.body; // Array of Order ObjectIDs
 
-        const courier = await Courier.findById(id);
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         if (!Array.isArray(orderIds) || orderIds.length === 0) {
@@ -106,10 +117,8 @@ exports.assignOrdersToCourier = async (req, res) => {
 
         // Update orders: set courier flag, change status to 'Ready for Pickup' if 'Confirmed' or 'Preparing'
         const result = await Order.updateMany(
-            { _id: { $in: orderIds }, status: { $in: ['New', 'Confirmed', 'Preparing'] } },
-            {
-                $set: { courier: id, status: 'Ready for Pickup' }
-            }
+            { _id: { $in: orderIds }, tenant: req.user.tenant, status: { $in: ['New', 'Confirmed', 'Preparing'] } },
+            { $set: { courier: id, status: 'Ready for Pickup' } }
         );
 
         res.json({ message: 'Orders batched and dispatched successfully.', matched: result.matchedCount, modified: result.modifiedCount });

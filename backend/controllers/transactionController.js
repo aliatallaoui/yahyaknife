@@ -6,26 +6,21 @@ const Revenue = require('../models/Revenue');
 // @access  Private
 exports.getTransactions = async (req, res) => {
     try {
-        // Fetch all
-        const expenses = await Expense.find().lean();
-        const revenues = await Revenue.find().lean();
+        const tenantId = req.user.tenant;
+        const [expenses, revenues] = await Promise.all([
+            Expense.find({ tenant: tenantId }).lean(),
+            Revenue.find({ tenant: tenantId }).lean()
+        ]);
 
-        // Format and merge
-        const formattedExpenses = expenses.map(e => ({
-            ...e,
-            type: 'expense'
-        }));
-
+        const formattedExpenses = expenses.map(e => ({ ...e, type: 'expense' }));
         const formattedRevenues = revenues.map(r => ({
             ...r,
             type: 'revenue',
-            category: r.source // map source to category for uniform table rendering
+            category: r.source // map source → category for uniform table rendering
         }));
 
-        const allTransactions = [...formattedRevenues, ...formattedExpenses];
-
-        // Sort by date descending
-        allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const allTransactions = [...formattedRevenues, ...formattedExpenses]
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.json(allTransactions);
     } catch (error) {
@@ -39,6 +34,7 @@ exports.getTransactions = async (req, res) => {
 // @access  Private
 exports.addTransaction = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { type, amount, date, description, category } = req.body;
 
         if (!type || !amount || !date || !description || !category) {
@@ -47,18 +43,13 @@ exports.addTransaction = async (req, res) => {
 
         if (type === 'revenue') {
             const newRevenue = await Revenue.create({
-                amount,
-                date,
-                description,
-                source: category // map category back to source for Revenue model
+                tenant: tenantId, amount, date, description,
+                source: category
             });
             return res.status(201).json({ ...newRevenue.toObject(), type: 'revenue', category: newRevenue.source });
         } else if (type === 'expense') {
             const newExpense = await Expense.create({
-                amount,
-                date,
-                description,
-                category
+                tenant: tenantId, amount, date, description, category
             });
             return res.status(201).json({ ...newExpense.toObject(), type: 'expense' });
         } else {
@@ -75,20 +66,21 @@ exports.addTransaction = async (req, res) => {
 // @access  Private
 exports.updateTransaction = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { id } = req.params;
         const { type, amount, date, description, category } = req.body;
 
         if (type === 'revenue') {
-            const updated = await Revenue.findByIdAndUpdate(
-                id,
+            const updated = await Revenue.findOneAndUpdate(
+                { _id: id, tenant: tenantId },
                 { amount, date, description, source: category },
                 { new: true, runValidators: true }
             );
             if (!updated) return res.status(404).json({ message: 'Revenue not found' });
             return res.json({ ...updated.toObject(), type: 'revenue', category: updated.source });
         } else if (type === 'expense') {
-            const updated = await Expense.findByIdAndUpdate(
-                id,
+            const updated = await Expense.findOneAndUpdate(
+                { _id: id, tenant: tenantId },
                 { amount, date, description, category },
                 { new: true, runValidators: true }
             );
@@ -108,22 +100,23 @@ exports.updateTransaction = async (req, res) => {
 // @access  Private
 exports.deleteTransaction = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { id } = req.params;
         const { type } = req.query;
 
         if (type === 'revenue') {
-            const deleted = await Revenue.findByIdAndDelete(id);
+            const deleted = await Revenue.findOneAndDelete({ _id: id, tenant: tenantId });
             if (!deleted) return res.status(404).json({ message: 'Revenue not found' });
             return res.json({ message: 'Transaction removed' });
         } else if (type === 'expense') {
-            const deleted = await Expense.findByIdAndDelete(id);
+            const deleted = await Expense.findOneAndDelete({ _id: id, tenant: tenantId });
             if (!deleted) return res.status(404).json({ message: 'Expense not found' });
             return res.json({ message: 'Transaction removed' });
         } else {
             // No type specified — try both collections
-            const deletedExpense = await Expense.findByIdAndDelete(id);
+            const deletedExpense = await Expense.findOneAndDelete({ _id: id, tenant: tenantId });
             if (deletedExpense) return res.json({ message: 'Transaction removed' });
-            const deletedRevenue = await Revenue.findByIdAndDelete(id);
+            const deletedRevenue = await Revenue.findOneAndDelete({ _id: id, tenant: tenantId });
             if (deletedRevenue) return res.json({ message: 'Transaction removed' });
             return res.status(404).json({ message: 'Transaction not found in any collection' });
         }

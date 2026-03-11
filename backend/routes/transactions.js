@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 
 router.use(protect);
 const {
@@ -11,11 +11,11 @@ const {
 } = require('../controllers/transactionController');
 
 router.route('/')
-    .get(getTransactions)
-    .post(addTransaction);
+    .get(requirePermission('finance.view'), getTransactions)
+    .post(requirePermission('finance.view'), addTransaction);
 
 router.route('/:id')
-    .put(updateTransaction)
-    .delete(deleteTransaction);
+    .put(requirePermission('finance.view'), updateTransaction)
+    .delete(requirePermission('finance.view'), deleteTransaction);
 
 module.exports = router;

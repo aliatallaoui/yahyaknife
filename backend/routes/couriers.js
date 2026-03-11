@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 
 router.use(protect);
 const {
@@ -38,40 +38,40 @@ const {
 } = require('../controllers/courierCoverageController');
 
 router.route('/')
-    .get(getCouriers)
-    .post(createCourier);
+    .get(requirePermission('couriers.view'), getCouriers)
+    .post(requirePermission('couriers.create'), createCourier);
 
-router.get('/analytics/kpis', getCourierKPIs);
-router.get('/analytics/regions', getRegionalPerformance);
+router.get('/analytics/kpis', requirePermission('couriers.view'), getCourierKPIs);
+router.get('/analytics/regions', requirePermission('couriers.view'), getRegionalPerformance);
 
 // Test API connection proxy
-router.post('/test-connection', testCourierConnection);
+router.post('/test-connection', requirePermission('couriers.api.connect'), testCourierConnection);
 
 // Engine routes
-router.get('/engine/coverage', getCourierCoverage);
-router.post('/engine/calculate-price', calculateCourierPrice);
-router.get('/engine/recommend', recommendCourier);
+router.get('/engine/coverage', requirePermission('couriers.view'), getCourierCoverage);
+router.post('/engine/calculate-price', requirePermission('couriers.view'), calculateCourierPrice);
+router.get('/engine/recommend', requirePermission('couriers.view'), recommendCourier);
 
 router.route('/:id')
-    .put(updateCourier);
+    .put(requirePermission('couriers.edit'), updateCourier);
 
-router.post('/:id/settle', settleCourierCash);
-router.post('/:id/dispatch', assignOrdersToCourier);
+router.post('/:id/settle', requirePermission('finance.settle.courier'), settleCourierCash);
+router.post('/:id/dispatch', requirePermission('couriers.edit'), assignOrdersToCourier);
 
 // Pricing Rules
 router.route('/:id/pricing')
-    .get(getPricingRules)
-    .post(addPricingRule);
+    .get(requirePermission('couriers.view'), getPricingRules)
+    .post(requirePermission('couriers.edit'), addPricingRule);
 router.route('/:id/pricing/:ruleId')
-    .put(updatePricingRule)
-    .delete(deletePricingRule);
+    .put(requirePermission('couriers.edit'), updatePricingRule)
+    .delete(requirePermission('couriers.edit'), deletePricingRule);
 
 // Coverage Areas
 router.route('/:id/coverage')
-    .get(getCoverage)
-    .post(upsertCoverage);
-router.post('/:id/coverage/sync', syncEcotrackCoverage);
+    .get(requirePermission('couriers.view'), getCoverage)
+    .post(requirePermission('couriers.edit'), upsertCoverage);
+router.post('/:id/coverage/sync', requirePermission('couriers.edit'), syncEcotrackCoverage);
 router.route('/:id/coverage/:coverageId')
-    .delete(deleteCoverage);
+    .delete(requirePermission('couriers.edit'), deleteCoverage);
 
 module.exports = router;

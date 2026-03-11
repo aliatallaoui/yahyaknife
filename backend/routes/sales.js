@@ -1,42 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const salesController = require('../controllers/salesController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 
 // Setup global protection for all sales routes (provides req.user and enforces tenant security)
 router.use(protect);
 
 // /api/sales/orders
 router.route('/orders')
-    .get(salesController.getOrders)
-    .post(salesController.createOrder);
+    .get(requirePermission('orders.view'), salesController.getOrders)
+    .post(requirePermission('orders.create'), salesController.createOrder);
 
 // /api/sales/orders/advanced
-router.get('/orders/advanced', salesController.getAdvancedOrders);
+router.get('/orders/advanced', requirePermission('orders.view'), salesController.getAdvancedOrders);
 
 // /api/sales/orders/operations-kpi
-router.get('/orders/operations-kpi', salesController.getOrdersKPIs);
+router.get('/orders/operations-kpi', requirePermission('orders.view'), salesController.getOrdersKPIs);
 
 // /api/sales/orders/bulk/update
-router.post('/orders/bulk/update', salesController.updateBulkOrders);
+router.post('/orders/bulk/update', requirePermission('orders.bulk'), salesController.updateBulkOrders);
 
 // /api/sales/orders/bulk/delete  (soft delete → trash)
-router.post('/orders/bulk/delete', salesController.bulkDeleteOrders);
+router.post('/orders/bulk/delete', requirePermission('orders.delete'), salesController.bulkDeleteOrders);
 
 // /api/sales/orders/bulk/restore  (restore from trash)
-router.post('/orders/bulk/restore', salesController.restoreOrders);
+router.post('/orders/bulk/restore', requirePermission('orders.restore'), salesController.restoreOrders);
 
 // /api/sales/orders/bulk/purge  (permanent delete from trash)
-router.post('/orders/bulk/purge', salesController.purgeOrders);
+router.post('/orders/bulk/purge', requirePermission('orders.purge'), salesController.purgeOrders);
 
 // /api/sales/orders/sync-ecotrack
-router.post('/orders/sync-ecotrack', salesController.triggerEcotrackSync);
+router.post('/orders/sync-ecotrack', requirePermission('orders.bulk'), salesController.triggerEcotrackSync);
 
 router.route('/orders/:id')
-    .put(salesController.updateOrder)
-    .delete(salesController.deleteOrder);
+    .put(requirePermission('orders.edit'), salesController.updateOrder)
+    .delete(requirePermission('orders.delete'), salesController.deleteOrder);
 
 // /api/sales/performance
-router.get('/performance', salesController.getSalesPerformance);
+router.get('/performance', requirePermission('orders.view'), salesController.getSalesPerformance);
 
 module.exports = router;

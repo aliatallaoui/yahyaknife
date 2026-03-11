@@ -38,7 +38,7 @@ const orderSchema = new mongoose.Schema({
     // Main COD Lifecycle Status
     status: {
         type: String,
-        enum: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'],
+        enum: ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'],
         default: 'New'
     },
     verificationStatus: {
@@ -52,6 +52,7 @@ const orderSchema = new mongoose.Schema({
         default: 'Normal'
     },
     tags: [{ type: String }],
+    postponedUntil: { type: Date, default: null },
     deletedAt: { type: Date, default: null },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     fraudRiskScore: { type: Number, default: 0 },
@@ -98,6 +99,7 @@ const orderSchema = new mongoose.Schema({
         phone1: { type: String },
         phone2: { type: String },
         wilayaCode: { type: String },
+        wilayaName: { type: String },
         commune: { type: String },
         neighborhood: { type: String },
         address: { type: String },

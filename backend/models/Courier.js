@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const courierSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
     name: { type: String, required: true },
     phone: { type: String, required: true },
     logo: { type: String }, // URL or path
@@ -51,6 +52,8 @@ const courierSchema = new mongoose.Schema({
     averageDeliveryTimeMinutes: { type: Number, default: 0 },
     reliabilityScore: { type: Number, default: 100 }
 }, { timestamps: true });
+
+courierSchema.index({ tenant: 1, status: 1 });
 
 // Pre-save hook to calculate pending remittance
 courierSchema.pre('save', function () {

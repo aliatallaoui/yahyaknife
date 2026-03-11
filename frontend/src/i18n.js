@@ -638,10 +638,19 @@ const resources = {
                 noChannelData: "No channel data available.",
                 revenueText: "Revenue",
                 statusNew: "New",
+                statusCall1: "Call 1",
+                statusCall2: "Call 2",
+                statusCall3: "Call 3",
+                statusNoAnswer: "No Answer",
+                statusOutofCoverage: "Out of Coverage",
+                statusPostponed: "Postponed",
+                statusWrongNumber: "Wrong Number",
+                statusCancelledbyCustomer: "Cancelled by Customer",
                 statusConfirmed: "Confirmed",
                 statusPreparing: "Preparing",
                 statusReady: "Ready for Pickup",
                 statusReadyforPickup: "Ready for Pickup",
+                statusDispatched: "Dispatched",
                 statusShipped: "Shipped",
                 statusOutForDelivery: "Out for Delivery",
                 statusOutforDelivery: "Out for Delivery",
@@ -758,7 +767,16 @@ const resources = {
                     cancel: "Cancel",
                     submit: "Dispatch to Courier",
                     submitting: "Pushing to EcoTrack..."
-                }
+                },
+                statusCreatedInCourier: "Created in Courier",
+                statusValidated: "Validated",
+                statusInTransit: "In Transit",
+                statusOutForDelivery: "Out for Delivery",
+                statusDelivered: "Delivered",
+                statusReturnInitiated: "Return Initiated",
+                statusFailedAttempt: "Failed Attempt",
+                statusReturned: "Returned",
+                statusCancelled: "Cancelled"
             },
             inventory: {
                 title: "Inventory Tracking",
@@ -2260,6 +2278,29 @@ const resources = {
                 }
             },
 
+            sales: {
+                statusNew: 'جديد',
+                statusCall1: 'اتصال 1',
+                statusCall2: 'اتصال 2',
+                statusCall3: 'اتصال 3',
+                statusNoAnswer: 'لا إجابة',
+                statusOutofCoverage: 'خارج التغطية',
+                statusPostponed: 'مؤجل',
+                statusWrongNumber: 'رقم خاطئ',
+                statusCancelledbyCustomer: 'ملغى من العميل',
+                statusConfirmed: 'مؤكد',
+                statusPreparing: 'قيد التجهيز',
+                statusReadyforPickup: 'جاهز للاستلام',
+                statusDispatched: 'تم الإرسال',
+                statusShipped: 'تم الشحن',
+                statusOutforDelivery: 'في الطريق للتوصيل',
+                statusDelivered: 'تم التوصيل',
+                statusPaid: 'مدفوع',
+                statusRefused: 'مرفوض',
+                statusReturned: 'مرتجع',
+                statusCancelled: 'ملغى',
+            },
+
             couriers: {
                 dashboardTitle: 'تحليلات التوصيل',
                 dashboardSubtitle: 'مراقبة أداء الأسطول وتزامن ECOTRACK.',
@@ -2761,6 +2802,14 @@ const resources = {
                 noChannelData: "لا توجد بيانات قنوات متاحة.",
                 revenueText: "الإيرادات",
                 statusNew: "جديد",
+                statusCall1: "اتصال 1",
+                statusCall2: "اتصال 2",
+                statusCall3: "اتصال 3",
+                statusNoAnswer: "لا إجابة",
+                statusOutofCoverage: "خارج التغطية",
+                statusPostponed: "مؤجل",
+                statusWrongNumber: "رقم خاطئ",
+                statusCancelledbyCustomer: "ملغى من العميل",
                 statusConfirmed: "مؤكد",
                 statusPreparing: "جاري التجهيز",
                 statusReady: "جاهز للاستلام",
@@ -4194,7 +4243,16 @@ const resources = {
                 empty: {
                     title: "لم يتم العثور على شحنات",
                     subtitle: "قم بتعديل المرشحات أو إنشاء طلب إرسال جديد."
-                }
+                },
+                statusCreatedInCourier: "أُنشئت لدى المندوب",
+                statusValidated: "مُؤكدة",
+                statusInTransit: "في الطريق",
+                statusOutForDelivery: "مع الموزع",
+                statusDelivered: "تم التوصيل",
+                statusReturnInitiated: "بدء الإرجاع",
+                statusFailedAttempt: "محاولة فاشلة",
+                statusReturned: "مرتجع",
+                statusCancelled: "ملغى"
             }
         }
     }

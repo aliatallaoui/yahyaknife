@@ -7,7 +7,7 @@ const generateKPISnapshots = async () => {
     try {
         // Find all active tenants (or simply all tenants for now)
         // Note: For extreme scale, this would be chunked/paginated
-        const tenants = await Tenant.find({ status: 'active' }).select('_id');
+        const tenants = await Tenant.find({ isActive: true }).select('_id');
 
         for (const tenant of tenants) {
             try {

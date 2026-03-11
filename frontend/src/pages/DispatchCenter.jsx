@@ -8,6 +8,26 @@ import clsx from 'clsx';
 import moment from 'moment';
 import CreateShipmentModal from '../components/CreateShipmentModal';
 
+// Module-level i18n key map — single source of truth for all shipment status labels
+const SHIPMENT_STATUS_I18N = {
+    'All':                 'common.all',
+    'Created in Courier':  'dispatch.statusCreatedInCourier',
+    'Validated':           'dispatch.statusValidated',
+    'In Transit':          'dispatch.statusInTransit',
+    'Out for Delivery':    'dispatch.statusOutForDelivery',
+    'Delivered':           'dispatch.statusDelivered',
+    'Return Initiated':    'dispatch.statusReturnInitiated',
+    'Failed Attempt':      'dispatch.statusFailedAttempt',
+    'Returned':            'dispatch.statusReturned',
+    'Cancelled':           'dispatch.statusCancelled',
+};
+const getShipmentStatusLabel = (status, t) => {
+    const key = SHIPMENT_STATUS_I18N[status];
+    return key ? t(key, status) : status;
+};
+
+const FILTER_STATUSES = ['All', 'Created in Courier', 'Validated', 'In Transit', 'Out for Delivery', 'Delivered', 'Returned'];
+
 export default function DispatchCenter() {
     const { t } = useTranslation();
     const [shipments, setShipments] = useState([]);
@@ -209,7 +229,7 @@ export default function DispatchCenter() {
                     />
                 </div>
                 <div className="w-full md:w-auto flex gap-2 overflow-x-auto pb-2 md:pb-0 custom-scrollbar">
-                    {['All', 'Created in Courier', 'Validated', 'In Transit', 'Out for Delivery', 'Delivered', 'Returned'].map(status => (
+                    {FILTER_STATUSES.map(status => (
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
@@ -218,7 +238,7 @@ export default function DispatchCenter() {
                                 statusFilter === status ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             )}
                         >
-                            {status === 'All' ? t('common.all', 'All') : status}
+                            {getShipmentStatusLabel(status, t)}
                         </button>
                     ))}
                 </div>
@@ -269,7 +289,7 @@ export default function DispatchCenter() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={clsx("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border", getStatusStyle(shipment.shipmentStatus))}>
                                                 {getStatusIcon(shipment.shipmentStatus)}
-                                                {shipment.shipmentStatus}
+                                                {getShipmentStatusLabel(shipment.shipmentStatus, t)}
                                             </span>
                                             <div className="text-[10px] text-gray-400 mt-1">{moment(shipment.createdAt).format('MMM D, HH:mm')}</div>
                                         </td>

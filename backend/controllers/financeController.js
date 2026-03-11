@@ -7,23 +7,39 @@ const Payroll = require('../models/Payroll');
 // Get financial overview metrics (total revenue, total expenses, net profit, profit margin)
 exports.getFinancialOverview = async (req, res) => {
     try {
-        // 1. Manual Expenses & Revenues
-        const expenses = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
-        const revenues = await Revenue.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+        const tenantId = req.user?.tenant;
 
-        const manualExpenses = expenses.length > 0 ? expenses[0].total : 0;
-        const manualRevenue = revenues.length > 0 ? revenues[0].total : 0;
+        // 1. Manual Expenses & Revenues — scoped to tenant
+        const [expenseAgg, revenueAgg, payrollAgg] = await Promise.all([
+            Expense.aggregate([
+                { $match: { tenant: tenantId } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Revenue.aggregate([
+                { $match: { tenant: tenantId } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            // Payroll is workshop-internal (no tenant field) — aggregates all paid salary disbursements
+            Payroll.aggregate([
+                { $match: { status: 'Paid' } },
+                { $group: { _id: null, total: { $sum: '$netSalary' } } }
+            ])
+        ]);
+
+        const manualExpenses = expenseAgg[0]?.total || 0;
+        const manualRevenue = revenueAgg[0]?.total || 0;
+        const totalPayroll = payrollAgg[0]?.total || 0;
 
         // 2. Automated Orders P&L Pipeline
         const orderAgg = await Order.aggregate([
-            { $match: { status: { $ne: 'Cancelled' } } },
+            { $match: { tenant: tenantId, status: { $ne: 'Cancelled' } } },
             {
                 $group: {
                     _id: "$status",
                     grossSales: { $sum: '$totalAmount' },
                     cogs: { $sum: '$financials.cogs' },
-                    gatewayFees: { $sum: '$financials.paymentGatewayFee' },
-                    marketplaceFees: { $sum: '$financials.marketplaceFee' }
+                    gatewayFees: { $sum: '$financials.gatewayFees' },
+                    marketplaceFees: { $sum: '$financials.marketplaceFees' }
                 }
             }
         ]);
@@ -46,12 +62,8 @@ exports.getFinancialOverview = async (req, res) => {
             if (o._id === 'Paid') settledRevenue += o.grossSales;
         });
 
-        // 3. Payroll now synced as Expense entries (Human Resources category)
-        // No need to aggregate separately — they're included in manualExpenses above
-        const totalPayroll = 0;
-
-        // 4. Consolidated P&L
-        const totalRevenue = manualRevenue + deliveredRevenue + settledRevenue; // Only count delivered/paid as actual recognized revenue
+        // 3. Consolidated P&L — payroll aggregated from Payroll model (status: Paid)
+        const totalRevenue = manualRevenue + deliveredRevenue + settledRevenue; // Cash-basis: only delivered/paid recognized
         const totalOperatingExpenses = manualExpenses + totalGatewayFees + totalPayroll;
         const totalExpenses = totalCOGS + totalOperatingExpenses;
 
@@ -82,7 +94,7 @@ exports.getFinancialOverview = async (req, res) => {
 
 exports.getExpenses = async (req, res) => {
     try {
-        const expenses = await Expense.find().sort({ date: -1 });
+        const expenses = await Expense.find({ tenant: req.user.tenant }).sort({ date: -1 });
         res.json(expenses);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -91,7 +103,7 @@ exports.getExpenses = async (req, res) => {
 
 exports.getRevenues = async (req, res) => {
     try {
-        const revenues = await Revenue.find().sort({ date: -1 });
+        const revenues = await Revenue.find({ tenant: req.user.tenant }).sort({ date: -1 });
         res.json(revenues);
     } catch (error) {
         res.status(500).json({ error: error.message });

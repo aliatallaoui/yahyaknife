@@ -8,6 +8,8 @@ const axios = require('axios');
 exports.getCoverage = async (req, res) => {
     try {
         const { id } = req.params;
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
         const coverage = await CourierCoverage.find({ courierId: id })
             .sort({ wilayaCode: 1, commune: 1 });
         res.json(coverage);
@@ -24,7 +26,7 @@ exports.upsertCoverage = async (req, res) => {
         const { id } = req.params;
         const { wilayaCode, commune, homeSupported, officeSupported } = req.body;
         
-        const courier = await Courier.findById(id);
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const updated = await CourierCoverage.findOneAndUpdate(
@@ -46,6 +48,9 @@ exports.deleteCoverage = async (req, res) => {
     try {
         const { id, coverageId } = req.params;
 
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
+
         const deleted = await CourierCoverage.findOneAndDelete({ _id: coverageId, courierId: id });
         if (!deleted) return res.status(404).json({ message: 'Coverage area not found' });
 
@@ -61,7 +66,7 @@ exports.deleteCoverage = async (req, res) => {
 exports.syncEcotrackCoverage = async (req, res) => {
     try {
         const { id } = req.params;
-        const courier = await Courier.findById(id);
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
 
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         if (courier.integrationType !== 'API') {

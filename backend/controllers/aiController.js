@@ -131,16 +131,17 @@ const Product = require('../models/Product');
 const ProductVariant = require('../models/ProductVariant');
 const Category = require('../models/Category');
 
-async function executeTool(call) {
+async function executeTool(call, tenantId) {
     try {
         if (call.name === 'get_financial_summary') {
-            const expenses = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
-            const revenues = await Revenue.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+            const tenantFilter = tenantId ? { tenant: tenantId } : {};
+            const expenses = await Expense.aggregate([{ $match: tenantFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+            const revenues = await Revenue.aggregate([{ $match: tenantFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
             const manualExpenses = expenses.length > 0 ? expenses[0].total : 0;
             const manualRevenue = revenues.length > 0 ? revenues[0].total : 0;
 
             const orderAgg = await Order.aggregate([
-                { $match: { status: { $ne: 'Cancelled' } } },
+                { $match: { ...tenantFilter, status: { $ne: 'Cancelled' } } },
                 { $group: { _id: null, totalSales: { $sum: '$totalAmount' } } }
             ]);
             const totalSales = orderAgg.length > 0 ? orderAgg[0].totalSales : 0;
@@ -154,19 +155,20 @@ async function executeTool(call) {
         }
 
         if (call.name === 'get_active_shipments') {
-            const active = await Shipment.countDocuments({ shipmentStatus: { $in: ['Created in Courier', 'In Transit', 'Out for Delivery'] } });
-            const delivered = await Shipment.countDocuments({ shipmentStatus: 'Delivered' });
-            const returned = await Shipment.countDocuments({ shipmentStatus: { $in: ['Returned', 'Return Initiated'] } });
+            const tenantFilter = tenantId ? { tenant: tenantId } : {};
+            const active = await Shipment.countDocuments({ ...tenantFilter, shipmentStatus: { $in: ['Created in Courier', 'In Transit', 'Out for Delivery'] } });
+            const delivered = await Shipment.countDocuments({ ...tenantFilter, shipmentStatus: 'Delivered' });
+            const returned = await Shipment.countDocuments({ ...tenantFilter, shipmentStatus: { $in: ['Returned', 'Return Initiated'] } });
 
             return { active, delivered, returned };
         }
 
         if (call.name === 'add_expense') {
-            // args are provided as call.args in Gemini
             const { description, amount, category } = call.args || {};
             if (!description || !amount) return { error: "Missing required fields: description or amount" };
 
             const newExpense = await Expense.create({
+                ...(tenantId ? { tenant: tenantId } : {}),
                 description,
                 amount: Number(amount),
                 category: category || 'General',
@@ -180,6 +182,7 @@ async function executeTool(call) {
             if (!name || !phone) return { error: "Missing required fields: name or phone" };
 
             const newCust = await Customer.create({
+                ...(tenantId ? { tenant: tenantId } : {}),
                 name,
                 phone,
                 wilayaName: wilaya || '',
@@ -292,6 +295,7 @@ async function executeTool(call) {
  */
 const handleChat = async (req, res) => {
     try {
+        const tenantId = req.user?.tenant;
         const { messages } = req.body;
 
         if (!process.env.GEMINI_API_KEY) {
@@ -332,7 +336,7 @@ const handleChat = async (req, res) => {
             // Execute all requested tools
             const functionResponses = [];
             for (const call of response.functionCalls) {
-                const result = await executeTool(call);
+                const result = await executeTool(call, tenantId);
                 functionResponses.push({
                     functionResponse: {
                         name: call.name,

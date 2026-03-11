@@ -8,6 +8,7 @@ const shipmentActivitySchema = new mongoose.Schema({
 });
 
 const shipmentSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant' },
     // Internal Links
     internalOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     internalOrderId: { type: String, required: true }, // For quick reference/searching

@@ -6,7 +6,7 @@ const AuditLog = require('../models/AuditLog');
 // @access  Private/SuperAdmin
 const getUsers = async (req, res) => {
     try {
-        const users = await User.find({}).select('-password').populate('role');
+        const users = await User.find({ tenant: req.user.tenant }).select('-password').populate('role');
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server Error fetching users' });
@@ -25,7 +25,7 @@ const updateUserAccess = async (req, res) => {
             return res.status(400).json({ message: "Cannot modify your own access level" });
         }
 
-        const user = await User.findById(req.params.id);
+        const user = await User.findOne({ _id: req.params.id, tenant: req.user.tenant });
 
         if (user) {
             if (role !== undefined) user.role = role;
@@ -73,7 +73,7 @@ const deleteUser = async (req, res) => {
             return res.status(400).json({ message: "Cannot delete yourself" });
         }
 
-        const user = await User.findById(req.params.id);
+        const user = await User.findOne({ _id: req.params.id, tenant: req.user.tenant });
 
         if (user) {
             await user.deleteOne();

@@ -7,6 +7,8 @@ const Courier = require('../models/Courier');
 exports.getPricingRules = async (req, res) => {
     try {
         const { id } = req.params;
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
         const rules = await CourierPricing.find({ courierId: id })
             .populate('productIds', 'name sku')
             .sort({ priority: -1 });
@@ -23,7 +25,7 @@ exports.addPricingRule = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const courier = await Courier.findById(id);
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const ruleData = { ...req.body, courierId: id };
@@ -41,6 +43,9 @@ exports.addPricingRule = async (req, res) => {
 exports.updatePricingRule = async (req, res) => {
     try {
         const { id, ruleId } = req.params;
+
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const updatedRule = await CourierPricing.findOneAndUpdate(
             { _id: ruleId, courierId: id },
@@ -62,6 +67,9 @@ exports.updatePricingRule = async (req, res) => {
 exports.deletePricingRule = async (req, res) => {
     try {
         const { id, ruleId } = req.params;
+
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const deletedRule = await CourierPricing.findOneAndDelete({ _id: ruleId, courierId: id });
         if (!deletedRule) return res.status(404).json({ message: 'Pricing rule not found' });

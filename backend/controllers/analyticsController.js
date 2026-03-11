@@ -132,6 +132,7 @@ exports.getSupplierIntelligence = async (req, res) => {
 
 exports.getEcommerceAnalytics = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { range } = req.query; // e.g., 'today', 'yesterday', '7d', '30d'
         let startDate = moment().subtract(7, 'days').startOf('day');
         let endDate = moment().endOf('day');
@@ -145,7 +146,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
             startDate = moment().subtract(30, 'days').startOf('day');
         }
 
-        const dateQuery = { createdAt: { $gte: startDate.toDate(), $lte: endDate.toDate() } };
+        const dateQuery = { tenant: tenantId, createdAt: { $gte: startDate.toDate(), $lte: endDate.toDate() } };
 
         // 1. Overall KPIs & Funnel (from Orders)
         const orderAgg = await Order.aggregate([
@@ -235,17 +236,16 @@ exports.getEcommerceAnalytics = async (req, res) => {
         ];
 
         // 4. Products Table (Top by sales volume logic)
-        // Aggregate units and revenue from line items within the matched Orders
         const topProductsAgg = await Order.aggregate([
             { $match: dateQuery },
-            { $unwind: "$items" },
+            { $unwind: "$products" },
             {
                 $group: {
-                    _id: "$items.productName",
-                    units: { $sum: "$items.quantity" },
+                    _id: "$products.name",
+                    units: { $sum: "$products.quantity" },
                     revenue: {
                         $sum: {
-                            $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, { $multiply: ["$items.price", "$items.quantity"] }, 0]
+                            $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, { $multiply: ["$products.unitPrice", "$products.quantity"] }, 0]
                         }
                     }
                 }
@@ -263,10 +263,10 @@ exports.getEcommerceAnalytics = async (req, res) => {
         }));
 
         // 5. Courier Analytics
-        const couriers = await Courier.find();
+        const couriers = await Courier.find({ tenant: tenantId });
         const courierData = await Promise.all(couriers.map(async c => {
             const cOrders = await Order.aggregate([
-                { $match: { "shipping.courierId": c._id, ...dateQuery } },
+                { $match: { courier: c._id, ...dateQuery } },
                 { $group: { _id: "$status", count: { $sum: 1 } } }
             ]);
             let dsp = 0, dlv = 0, ret = 0;
@@ -282,7 +282,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
         }));
 
         // 6. Top Customers
-        const topCustomersAgg = await Customer.find(dateQuery ? { joinDate: dateQuery.createdAt } : {})
+        const topCustomersAgg = await Customer.find({ tenant: tenantId })
             .sort({ lifetimeValue: -1 })
             .limit(10);
 

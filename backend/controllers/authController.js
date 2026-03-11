@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Tenant = require('../models/Tenant');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -13,17 +14,32 @@ const generateToken = (id) => {
 // @access  Public
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password, role, tenantId, businessName } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Please add all required fields' });
         }
 
+        if (!tenantId && !businessName) {
+            return res.status(400).json({ message: 'Provide either tenantId (join existing) or businessName (create new workspace).' });
+        }
+
         // Check if user exists
         const userExists = await User.findOne({ email });
-
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
+        }
+
+        // Resolve tenant
+        let tenant;
+        if (tenantId) {
+            tenant = await Tenant.findById(tenantId);
+            if (!tenant || !tenant.isActive) {
+                return res.status(404).json({ message: 'Tenant not found or inactive.' });
+            }
+        } else {
+            // Create a new tenant (new business signup)
+            tenant = await Tenant.create({ name: businessName });
         }
 
         // Create user
@@ -31,7 +47,8 @@ exports.registerUser = async (req, res) => {
             name,
             email,
             password,
-            role: role || 'user'
+            role: role || null,
+            tenant: tenant._id
         });
 
         if (user) {
@@ -43,6 +60,7 @@ exports.registerUser = async (req, res) => {
                 permissions: user.permissions,
                 isActive: user.isActive,
                 preferences: user.preferences,
+                tenant: tenant._id,
                 token: generateToken(user._id),
             });
         } else {
@@ -91,6 +109,7 @@ exports.loginUser = async (req, res) => {
                 permissionOverrides: user.permissionOverrides,
                 isActive: user.isActive,
                 preferences: user.preferences,
+                tenant: user.tenant,
                 token: generateToken(user._id),
             });
         } else {
@@ -133,7 +152,8 @@ exports.getMe = async (req, res) => {
             permissions: Array.from(effectivePermissions),
             permissionOverrides: user.permissionOverrides,
             isActive: user.isActive,
-            preferences: user.preferences || {}
+            preferences: user.preferences || {},
+            tenant: user.tenant
         });
     } catch (error) {
         console.error(error);

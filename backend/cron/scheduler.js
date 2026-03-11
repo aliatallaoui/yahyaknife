@@ -59,19 +59,19 @@ const initJobs = () => {
     cron.schedule('0 1 * * *', async () => {
         console.log("[CRON] Running COD Fraud Sweep & Courier Sync...");
         try {
-            // A. Fraud Sweep: Flag customers with refusal rate > 30%, Blacklist > 50%
-            await Customer.updateMany(
-                { refusalRate: { $gt: 30 }, refusalRate: { $lte: 50 }, totalRefusals: { $gte: 2 } },
-                { $set: { isSuspicious: true, requiresDeliveryVerification: true } }
-            );
+            // A. Fraud Sweep: Flag customers with refusal rate 30–50%, Blacklist > 50%
+            const [flagged, blacklisted] = await Promise.all([
+                Customer.updateMany(
+                    { refusalRate: { $gt: 30, $lte: 50 }, totalRefusals: { $gte: 2 } },
+                    { $set: { isSuspicious: true, requiresDeliveryVerification: true } }
+                ),
+                Customer.updateMany(
+                    { refusalRate: { $gt: 50 }, totalRefusals: { $gte: 3 } },
+                    { $set: { blacklisted: true, isSuspicious: true, segment: 'At Risk' } }
+                )
+            ]);
 
-            const blacklisted = await Customer.updateMany(
-                { refusalRate: { $gt: 50 }, totalRefusals: { $gte: 3 } },
-                { $set: { blacklisted: true, isSuspicious: true, segment: 'At Risk' } }
-            );
-
-            console.log(`[CRON] Fraud Sweep complete. Auto-blacklisted ${blacklisted.modifiedCount} accounts.`);
-            console.log(`[CRON] Fraud Sweep complete. Processed suspicious flags.`);
+            console.log(`[CRON] Fraud Sweep complete. Flagged: ${flagged.modifiedCount}, Blacklisted: ${blacklisted.modifiedCount} accounts.`);
 
             // B. Mock Courier Assignment (e.g., auto assign based on region optimization)
             console.log(`[CRON] Recalculating Courier Regional performance weights for auto-dispatch.`);

@@ -118,7 +118,7 @@ const syncActiveShipments = async () => {
                             const internalModel = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-') ? CustomOrder : Order;
 
                             // Find the order using the correct reference field
-                            const order = await internalModel.findById(shipment.internalOrderId || shipment.internalOrder);
+                            const order = await internalModel.findById(shipment.internalOrder);
 
                             if (order) {
                                 // 1. Map to exact correct ERP statuses, not generic 'Completed' which breaks Finances

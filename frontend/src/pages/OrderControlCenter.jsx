@@ -420,6 +420,26 @@ export default function OrderControlCenter() {
         }
     }, [fetchOrders]);
 
+    // Postpone order — opens date picker modal
+    const [postponeOrderId, setPostponeOrderId] = useState(null);
+    const [postponeDate, setPostponeDate] = useState('');
+
+    const handlePostponeConfirm = useCallback(async () => {
+        if (!postponeOrderId || !postponeDate) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${postponeOrderId}`, {
+                status: 'Postponed',
+                postponedUntil: new Date(postponeDate).toISOString()
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            setPostponeOrderId(null);
+            setPostponeDate('');
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        }
+    }, [postponeOrderId, postponeDate, fetchOrders]);
+
     const handleTagUpdate = useCallback(async (orderId, newTags) => {
         try {
             const token = localStorage.getItem('token');
@@ -495,9 +515,9 @@ export default function OrderControlCenter() {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk-update`, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/update`, {
                 orderIds: [orderId],
-                action: 'agent',
+                action: 'assign_agent',
                 payload: { agentId: agentId === 'unassigned' ? null : agentId }
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
@@ -512,9 +532,9 @@ export default function OrderControlCenter() {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk-update`, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/update`, {
                 orderIds: [orderId],
-                action: 'courier',
+                action: 'assign_courier',
                 payload: { courierId: courierId === 'unassigned' ? null : courierId }
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
@@ -661,7 +681,43 @@ export default function OrderControlCenter() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-72px)] w-auto overflow-hidden bg-gray-50/50 gap-4 -mx-4 sm:-mx-8 lg:-mx-10 xl:-mx-14 2xl:-mx-16 -mt-10 -mb-12">
-            {/* Premium Compact Header */}
+
+            {/* Postpone Date Picker Modal */}
+            {postponeOrderId && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => { setPostponeOrderId(null); setPostponeDate(''); }} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 w-80 animate-in zoom-in-95 fade-in-0 duration-200">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-black text-gray-900 mb-1">📅 تأجيل الطلبية</h3>
+                            <p className="text-xs text-gray-500">اختر تاريخ العودة — ستظهر الطلبية في أعلى القائمة عند حلول هذا الموعد</p>
+                        </div>
+                        <input
+                            type="datetime-local"
+                            value={postponeDate}
+                            onChange={(e) => setPostponeDate(e.target.value)}
+                            min={new Date().toISOString().slice(0, 16)}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none mb-4 font-bold"
+                            autoFocus
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => { setPostponeOrderId(null); setPostponeDate(''); }}
+                                className="flex-1 px-3 py-2 text-xs font-black uppercase rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                                إلغاء
+                            </button>
+                            <button
+                                onClick={handlePostponeConfirm}
+                                disabled={!postponeDate}
+                                className="flex-1 px-3 py-2 text-xs font-black uppercase rounded-lg bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                تأجيل ✓
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white px-4 xl:px-6 py-2 border-b border-gray-100 shrink-0 flex flex-col gap-2 shadow-sm z-30">
                 
                 {/* Top Row: Left: Search+Filter | Center: Column Settings (unclipped) | Right: Export+Add */}
@@ -756,7 +812,7 @@ export default function OrderControlCenter() {
                                                         onDragOver={(e) => handleDragOver(e, index)}
                                                         onDragEnd={handleDragEnd}
                                                         className={clsx(
-                                                            "flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm transition-all mb-1 cursor-grab active:cursor-grabbing",
+                                                            "flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm transition-all mb-1 cursor-grab active:cursor-grabbing select-none",
                                                             isDragging ? "bg-indigo-50/60 border-indigo-200 shadow-sm scale-[1.01] opacity-80" : "bg-white border-gray-100 hover:bg-gray-50 hover:border-gray-200",
                                                         )}
                                                     >
@@ -1261,6 +1317,10 @@ export default function OrderControlCenter() {
                                                 } catch (err) {
                                                     alert(err.response?.data?.message || err.message);
                                                 }
+                                            }}
+                                            onPostpone={(orderId) => {
+                                                setPostponeOrderId(orderId);
+                                                setPostponeDate('');
                                             }}
                                             virtualMeasureRef={rowVirtualizer.measureElement}
                                             virtualIndex={virtualRow.index}

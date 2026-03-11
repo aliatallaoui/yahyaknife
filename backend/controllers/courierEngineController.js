@@ -86,7 +86,7 @@ const recommendCourier = async (req, res) => {
         const courierIds = coverages.map(c => c.courierId);
 
         // 2. Fetch those couriers with their stats
-        const activeCouriers = await Courier.find({ _id: { $in: courierIds }, status: 'Active' });
+        const activeCouriers = await Courier.find({ _id: { $in: courierIds }, status: 'Active', tenant: req.user.tenant });
 
         if (activeCouriers.length === 0) {
             return res.json({ recommended: null, available: [] });

@@ -12,6 +12,14 @@ const PRIORITY_STYLES = {
 
 const STATUS_STYLES = {
     'New': 'bg-gray-100 text-gray-700 border-gray-200',
+    'Call 1': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'Call 2': 'bg-violet-50 text-violet-700 border-violet-200',
+    'Call 3': 'bg-purple-50 text-purple-700 border-purple-200',
+    'No Answer': 'bg-slate-50 text-slate-600 border-slate-200',
+    'Out of Coverage': 'bg-slate-100 text-slate-500 border-slate-200',
+    'Wrong Number': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Postponed': 'bg-yellow-50 text-yellow-700 border-yellow-300',
+    'Cancelled by Customer': 'bg-gray-50 text-gray-400 border-gray-200',
     'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
     'Preparing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
     'Ready for Pickup': 'bg-violet-50 text-violet-700 border-violet-200',
@@ -25,7 +33,7 @@ const STATUS_STYLES = {
     'Cancelled': 'bg-gray-50 text-gray-400 border-gray-200 line-through',
 };
 
-const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
+const COD_STATUSES = ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 
 const OrderRow = React.memo(({
     order,
@@ -54,6 +62,7 @@ const OrderRow = React.memo(({
     onDelete,
     onRestore,
     onPurge,
+    onPostpone,
     virtualMeasureRef,
     virtualIndex
 }) => {
@@ -176,12 +185,20 @@ const OrderRow = React.memo(({
                             return (
                                 <td key={col.id} className="px-4 py-2" onClick={e => e.stopPropagation()}>
                                     <div className="flex flex-col gap-1.5 items-start">
-                                        {['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(order.status) ? (
+                                        {/* Editable — all pre-dispatch + cancelled statuses */}
+                                        {!['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned'].includes(order.status) ? (
                                             <select
                                                 value={order.status}
-                                                onChange={(e) => onStatusChange(order._id, e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Postponed') {
+                                                        onPostpone && onPostpone(order._id);
+                                                    } else {
+                                                        onStatusChange(order._id, val);
+                                                    }
+                                                }}
                                                 className={clsx(
-                                                    "appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 rounded-full text-[11px] font-black uppercase tracking-wide border px-2.5 py-1 transition-colors pr-6 relative",
+                                                    "appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 rounded-full text-[11px] font-black uppercase tracking-wide border px-2.5 py-1 transition-colors pr-6 relative max-w-[140px] truncate",
                                                     STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600 border-gray-200 focus:ring-gray-300'
                                                 )}
                                                 style={{
@@ -192,10 +209,15 @@ const OrderRow = React.memo(({
                                                 }}
                                             >
                                                 {COD_STATUSES.filter(s => {
-                                                    if (activeStage === 'pre-dispatch') return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(s);
-                                                    return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(s);
+                                                    if (activeStage === 'pre-dispatch') {
+                                                        return ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'].includes(s);
+                                                    }
+                                                    if (activeStage === 'returns') {
+                                                        return ['Refused', 'Returned', 'New', 'Confirmed'].includes(s);
+                                                    }
+                                                    return true; // 'all' stage shows everything
                                                 }).map(s => (
-                                                    <option key={s} value={s} className="bg-white text-gray-900 font-bold max-w-full">
+                                                    <option key={s} value={s} className="bg-white text-gray-900 font-bold">
                                                         {t(`sales.status${s.replace(/\s+/g, '')}`) || s}
                                                     </option>
                                                 ))}

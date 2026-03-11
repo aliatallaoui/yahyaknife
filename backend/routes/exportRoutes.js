@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const exportController = require('../controllers/exportController');
 
 // @route   POST /api/exports/orders
 // @desc    Trigger a background CSV export of orders
 // @access  Private
-router.post('/orders', protect, exportController.enqueueOrderExport);
+router.post('/orders', protect, requirePermission('orders.export'), exportController.enqueueOrderExport);
 
 // @route   GET /api/exports/:jobId/status
 // @desc    Poll the progress of an export job

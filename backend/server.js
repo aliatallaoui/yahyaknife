@@ -27,8 +27,10 @@ const knifeRoutes = require('./routes/knives');
 const customOrderRoutes = require('./routes/customOrders');
 const aiRoutes = require('./routes/aiRoutes');
 const exportRoutes = require('./routes/exportRoutes');
+const callCenterRoutes = require('./routes/callCenterRoutes');
 const path = require('path');
 const { initJobs } = require('./cron/scheduler');
+const errorHandler = require('./shared/errors/errorHandler');
 
 dotenv.config();
 
@@ -68,7 +70,11 @@ app.use('/api/courier-settings', courierSettingsRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/exports', exportRoutes);
+app.use('/api/call-center', callCenterRoutes);
 app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
+
+// Global error handler — must be last
+app.use(errorHandler);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
