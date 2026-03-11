@@ -21,8 +21,8 @@ exports.getFinancialOverview = async (req, res) => {
             ]),
             // Payroll is workshop-internal (no tenant field) — aggregates all paid salary disbursements
             Payroll.aggregate([
-                { $match: { status: 'Paid' } },
-                { $group: { _id: null, total: { $sum: '$netSalary' } } }
+                { $match: { status: { $in: ['Paid', 'Partially Paid'] } } },
+                { $group: { _id: null, total: { $sum: '$amountPaid' } } }
             ])
         ]);
 
