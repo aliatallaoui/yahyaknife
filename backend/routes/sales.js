@@ -20,6 +20,15 @@ router.get('/orders/operations-kpi', salesController.getOrdersKPIs);
 // /api/sales/orders/bulk/update
 router.post('/orders/bulk/update', salesController.updateBulkOrders);
 
+// /api/sales/orders/bulk/delete  (soft delete → trash)
+router.post('/orders/bulk/delete', salesController.bulkDeleteOrders);
+
+// /api/sales/orders/bulk/restore  (restore from trash)
+router.post('/orders/bulk/restore', salesController.restoreOrders);
+
+// /api/sales/orders/bulk/purge  (permanent delete from trash)
+router.post('/orders/bulk/purge', salesController.purgeOrders);
+
 // /api/sales/orders/sync-ecotrack
 router.post('/orders/sync-ecotrack', salesController.triggerEcotrackSync);
 

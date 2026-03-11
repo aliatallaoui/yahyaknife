@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import PageHeader from '../components/PageHeader';
 import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
@@ -288,13 +288,7 @@ export default function OrderControlCenter() {
 
             setError(null);
 
-            // Cleanup invalid selections
-            setSelectedIds(prev => {
-                const currentIds = new Set((res.data.orders || []).map(o => o._id));
-                const next = new Set();
-                prev.forEach(id => { if (currentIds.has(id)) next.add(id); });
-                return next;
-            });
+            // No selection reset — preserve user's selections across fetches
 
         } catch (err) {
             console.error("Order Fetch Error", err);
@@ -396,11 +390,13 @@ export default function OrderControlCenter() {
         }
     };
 
-    const toggleSelect = (id) => {
-        const current = new Set(selectedIds);
-        current.has(id) ? current.delete(id) : current.add(id);
-        setSelectedIds(current);
-    };
+    const toggleSelect = useCallback((id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    }, []);
 
     const toggleRowExpansion = (id) => {
         const next = new Set(expandedRows);
@@ -447,6 +443,53 @@ export default function OrderControlCenter() {
             alert(err.response?.data?.message || err.message);
         }
     }, [fetchOrders]);
+
+    const handleBulkDelete = useCallback(async () => {
+        if (selectedIds.size === 0) return;
+        if (!window.confirm(`Move ${selectedIds.size} order(s) to Trash?`)) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/delete`,
+                { orderIds: Array.from(selectedIds) },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedIds(new Set());
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        }
+    }, [selectedIds, fetchOrders]);
+
+    const handleBulkRestore = useCallback(async () => {
+        if (selectedIds.size === 0) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/restore`,
+                { orderIds: Array.from(selectedIds) },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedIds(new Set());
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        }
+    }, [selectedIds, fetchOrders]);
+
+    const handleBulkPurge = useCallback(async () => {
+        if (selectedIds.size === 0) return;
+        if (!window.confirm(`PERMANENTLY delete ${selectedIds.size} order(s)? This cannot be undone.`)) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/purge`,
+                { orderIds: Array.from(selectedIds) },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedIds(new Set());
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        }
+    }, [selectedIds, fetchOrders]);
 
     const handleAgentChange = useCallback(async (orderId, agentId) => {
         try {
@@ -648,117 +691,7 @@ export default function OrderControlCenter() {
                         >
                             <SlidersHorizontal className="w-3.5 h-3.5" /> <span className="hidden lg:inline">{t('ordersControl.filtersBtn')}</span> {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
                         </button>
-                    </div>
-
-                    {/* Center: Column Settings button — MUST be outside overflow containers to avoid popover clipping */}
-                    <div className="relative shrink-0">
-                        <button
-                            onClick={() => setShowColumnSettings(!showColumnSettings)}
-                            className={clsx(
-                                "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 rounded-lg border font-bold text-xs transition-colors h-[32px] xl:h-[36px]",
-                                showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
-                            )}
-                        >
-                            <LayoutTemplate className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Column Settings Popover — absolute to this relative wrapper, NOT clipped by overflow */}
-                        {showColumnSettings && (
-                            <div className="absolute top-[calc(100%+8px)] rtl:left-0 ltr:right-0 w-64 bg-white rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] border border-gray-100 z-[999] overflow-hidden">
-                                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">{t('ordersControl.actions.manageColumns', { defaultValue: 'Manage Columns' })}</h3>
-                                    <button onClick={() => setShowColumnSettings(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="p-2 max-h-[60vh] overflow-y-auto">
-                                    <p className="text-[10px] text-gray-500 mb-2 px-2 italic">{t('ordersControl.actions.dragHint', { defaultValue: 'Drag to reorder' })}</p>
-                                    {orderedColumnIds.map((colId, index) => {
-                                        const colDef = columnDefinitions[colId];
-                                        if (!colDef) return null;
-                                        const isHidden = hiddenColumns.has(colId);
-                                        const isDragging = draggedColumnId === colId;
-
-                                        return (
-                                            <div
-                                                key={colId}
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, colId)}
-                                                onDragOver={(e) => handleDragOver(e, index)}
-                                                onDragEnd={handleDragEnd}
-                                                className={clsx(
-                                                    "flex items-center justify-between p-2 rounded-lg cursor-grab active:cursor-grabbing border text-sm transition-all",
-                                                    isDragging ? "bg-blue-50/50 border-blue-200 shadow-sm scale-[1.02] opacity-80" : "bg-white border-transparent hover:bg-gray-50",
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <div className="text-gray-300">
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
-                                                    </div>
-                                                    <div className="flex flex-col items-center gap-0.5">
-                                                        <button title="Move Up" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === 0} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'up'); }}>
-                                                            <ChevronUp className="w-3 h-3" />
-                                                        </button>
-                                                        <button title="Move Down" className="text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:hover:text-gray-400 bg-gray-100 hover:bg-blue-50 rounded" disabled={index === orderedColumnIds.length - 1} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'down'); }}>
-                                                            <ChevronDown className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                    <span className={clsx("font-semibold text-xs ml-1", isHidden ? "text-gray-400 line-through" : "text-gray-700")}>
-                                                        {colDef.label || colId}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        "w-7 h-4 rounded-full relative cursor-pointer outline-none transition-colors shrink-0",
-                                                        !isHidden ? "bg-blue-500" : "bg-gray-200"
-                                                    )}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleColumn(colId);
-                                                    }}
-                                                >
-                                                    <div className={clsx(
-                                                        "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
-                                                        !isHidden ? "left-[14px]" : "left-[2px]"
-                                                    )}></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="bg-gray-50 px-3 py-3 border-t border-gray-100 flex flex-col gap-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-gray-700">{t('ordersControl.actions.showKPIs', { defaultValue: 'Show Statistics' })}</span>
-                                        <div
-                                            className={clsx(
-                                                "w-8 h-4 rounded-full relative cursor-pointer outline-none transition-colors shrink-0",
-                                                showKPIs ? "bg-indigo-500" : "bg-gray-300"
-                                            )}
-                                            onClick={() => setShowKPIs(!showKPIs)}
-                                        >
-                                            <div className={clsx(
-                                                "absolute top-[2px] w-3 h-3 bg-white rounded-full transition-transform shadow-sm",
-                                                showKPIs ? "rtl:right-[18px] ltr:left-[18px]" : "rtl:right-[2px] ltr:left-[2px]"
-                                            )}></div>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end pt-2 border-t border-gray-200">
-                                        <button
-                                            onClick={() => {
-                                                setOrderedColumnIds(defaultColumnOrder);
-                                                setHiddenColumns(new Set());
-                                                localStorage.removeItem('orderControlHiddenColumns');
-                                                localStorage.removeItem('orderControlOrderedColumns');
-                                            }}
-                                            className="text-[10px] uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors"
-                                        >
-                                            {t('ordersControl.actions.reset', { defaultValue: 'Reset Default' })}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    </div>{/* end left group */}
 
                     {/* Right: Export + Add Order + Refresh */}
                     <div className="flex items-center gap-1.5 xl:gap-2 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -775,6 +708,105 @@ export default function OrderControlCenter() {
                             {exportState.isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
                             <span className="hidden sm:inline">{exportState.isExporting ? `${exportState.progress}%` : t('ordersControl.actions.exportCsv', { defaultValue: 'Export CSV' })}</span>
                         </button>
+
+                        {/* Column Settings — beside Export CSV */}
+                        <div className="relative shrink-0">
+                            <button
+                                onClick={() => setShowColumnSettings(!showColumnSettings)}
+                                className={clsx(
+                                    "flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 rounded-lg border font-bold text-xs transition-colors h-[32px] xl:h-[36px] shrink-0",
+                                    showColumnSettings ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                )}
+                            >
+                                <LayoutTemplate className="w-3.5 h-3.5" />
+                                <span className="hidden lg:inline">{t('ordersControl.actions.manageColumns', { defaultValue: 'Columns' })}</span>
+                            </button>
+                            {showColumnSettings && (
+                                <div
+                                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                                    onClick={() => setShowColumnSettings(false)}
+                                >
+                                    {/* Backdrop */}
+                                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                                    {/* Modal panel */}
+                                    <div
+                                        className="relative w-80 max-h-[80vh] bg-white rounded-2xl shadow-[0_25px_80px_-15px_rgba(0,0,0,0.35)] border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="bg-gradient-to-r from-indigo-50 to-white px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+                                            <div>
+                                                <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">{t('ordersControl.actions.manageColumns', { defaultValue: 'Manage Columns' })}</h3>
+                                                <p className="text-[10px] text-gray-400 mt-0.5">{t('ordersControl.actions.dragHint', { defaultValue: 'Drag to reorder • toggle to show/hide' })}</p>
+                                            </div>
+                                            <button onClick={() => setShowColumnSettings(false)} className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="p-3 overflow-y-auto flex-1">
+                                            {orderedColumnIds.map((colId, index) => {
+                                                const colDef = columnDefinitions[colId];
+                                                if (!colDef) return null;
+                                                const isHidden = hiddenColumns.has(colId);
+                                                const isDragging = draggedColumnId === colId;
+                                                return (
+                                                    <div
+                                                        key={colId}
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, colId)}
+                                                        onDragOver={(e) => handleDragOver(e, index)}
+                                                        onDragEnd={handleDragEnd}
+                                                        className={clsx(
+                                                            "flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm transition-all mb-1 cursor-grab active:cursor-grabbing",
+                                                            isDragging ? "bg-indigo-50/60 border-indigo-200 shadow-sm scale-[1.01] opacity-80" : "bg-white border-gray-100 hover:bg-gray-50 hover:border-gray-200",
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-gray-300 shrink-0">
+                                                                <svg width="10" height="14" viewBox="0 0 10 18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="7" cy="3" r="1.5"/><circle cx="7" cy="9" r="1.5"/><circle cx="7" cy="15" r="1.5"/></svg>
+                                                            </div>
+                                                            <div className="flex flex-col items-center gap-0.5">
+                                                                <button className="text-gray-300 hover:text-indigo-500 disabled:opacity-20 transition-colors" disabled={index === 0} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'up'); }}>
+                                                                    <ChevronUp className="w-3 h-3" />
+                                                                </button>
+                                                                <button className="text-gray-300 hover:text-indigo-500 disabled:opacity-20 transition-colors" disabled={index === orderedColumnIds.length - 1} onClick={(e) => { e.stopPropagation(); moveColumn(index, 'down'); }}>
+                                                                    <ChevronDown className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                            <span className={clsx("font-semibold text-sm", isHidden ? "text-gray-300 line-through" : "text-gray-700")}>
+                                                                {colDef.label || colId}
+                                                            </span>
+                                                        </div>
+                                                        <div
+                                                            className={clsx("w-9 h-5 rounded-full relative cursor-pointer transition-all duration-200 shrink-0", !isHidden ? "bg-indigo-500 shadow-sm shadow-indigo-200" : "bg-gray-200")}
+                                                            onClick={(e) => { e.stopPropagation(); toggleColumn(colId); }}
+                                                        >
+                                                            <div className={clsx("absolute top-[3px] w-3.5 h-3.5 bg-white rounded-full transition-all duration-200 shadow-sm", !isHidden ? "left-[18px]" : "left-[3px]")} />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between shrink-0">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-bold text-gray-600">{t('ordersControl.actions.showKPIs', { defaultValue: 'Show Statistics' })}</span>
+                                                <div
+                                                    className={clsx("w-9 h-5 rounded-full relative cursor-pointer transition-all duration-200 shrink-0", showKPIs ? "bg-indigo-500 shadow-sm shadow-indigo-200" : "bg-gray-200")}
+                                                    onClick={() => setShowKPIs(!showKPIs)}
+                                                >
+                                                    <div className={clsx("absolute top-[3px] w-3.5 h-3.5 bg-white rounded-full transition-all duration-200 shadow-sm", showKPIs ? "left-[18px]" : "left-[3px]")} />
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => { setOrderedColumnIds(defaultColumnOrder); setHiddenColumns(new Set()); localStorage.removeItem('orderControlHiddenColumns'); localStorage.removeItem('orderControlOrderedColumns'); }}
+                                                className="text-[10px] uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors px-2 py-1 rounded hover:bg-rose-50"
+                                            >
+                                                {t('ordersControl.actions.reset', { defaultValue: 'Reset' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <button
                             onClick={() => setIsOrderModalOpen(true)}
@@ -836,6 +868,7 @@ export default function OrderControlCenter() {
                         { id: 'post-dispatch', label: t('ordersControl.stages.postDispatch'), count: stageCounts.postDispatch, color: 'text-indigo-600', bg: 'bg-indigo-600', icon: <Truck className="w-3.5 h-3.5" /> },
                         { id: 'returns', label: t('ordersControl.stages.returns'), count: stageCounts.returns, color: 'text-rose-600', bg: 'bg-rose-600', icon: <Ban className="w-3.5 h-3.5" /> },
                         { id: 'all', label: t('ordersControl.stages.all'), count: stageCounts.all, color: 'text-gray-600', bg: 'bg-gray-600', icon: <LayoutTemplate className="w-3.5 h-3.5" /> },
+                        { id: 'trash', label: 'Trash', count: stageCounts.trash || 0, color: 'text-red-600', bg: 'bg-red-500', icon: <Trash2 className="w-3.5 h-3.5" /> },
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -861,6 +894,36 @@ export default function OrderControlCenter() {
                         </button>
                     ))}
                 </div>
+
+                {/* Bulk Action Buttons — shown when rows are selected */}
+                {selectedIds.size > 0 && (
+                    <div className="flex items-center gap-2 mb-2 animate-in fade-in slide-in-from-right-2">
+                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">{selectedIds.size} selected</span>
+                        {activeStage === 'trash' ? (
+                            <>
+                                <button
+                                    onClick={handleBulkRestore}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 hover:border-emerald-600 rounded-lg transition-all shadow-sm"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" /> Restore
+                                </button>
+                                <button
+                                    onClick={handleBulkPurge}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 hover:border-red-600 rounded-lg transition-all shadow-sm"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete Forever
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 hover:border-red-600 rounded-lg transition-all shadow-sm"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" /> Move to Trash
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Ecotrack Manual Sync Trigger */}
                 {
@@ -1163,6 +1226,42 @@ export default function OrderControlCenter() {
                                             onBulkActionCancel={onBulkActionCancel}
                                             onQuickDispatch={onQuickDispatch}
                                             onEditClick={(o) => { setEditOrderData(o); setIsOrderModalOpen(true); }}
+                                            onDelete={async (orderId) => {
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/delete`,
+                                                        { orderIds: [orderId] },
+                                                        { headers: { Authorization: `Bearer ${token}` } }
+                                                    );
+                                                    fetchOrders();
+                                                } catch (err) {
+                                                    alert(err.response?.data?.message || err.message);
+                                                }
+                                            }}
+                                            onRestore={async (orderId) => {
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/restore`,
+                                                        { orderIds: [orderId] },
+                                                        { headers: { Authorization: `Bearer ${token}` } }
+                                                    );
+                                                    fetchOrders();
+                                                } catch (err) {
+                                                    alert(err.response?.data?.message || err.message);
+                                                }
+                                            }}
+                                            onPurge={async (orderId) => {
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/purge`,
+                                                        { orderIds: [orderId] },
+                                                        { headers: { Authorization: `Bearer ${token}` } }
+                                                    );
+                                                    fetchOrders();
+                                                } catch (err) {
+                                                    alert(err.response?.data?.message || err.message);
+                                                }
+                                            }}
                                             virtualMeasureRef={rowVirtualizer.measureElement}
                                             virtualIndex={virtualRow.index}
                                         />

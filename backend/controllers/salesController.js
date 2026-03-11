@@ -92,8 +92,13 @@ exports.getAdvancedOrders = async (req, res) => {
             query[sortField === 'date' ? '_id' : sortField] = { [op]: cursor };
         }
 
-        // 0. Stage Splitting Logic (Pre-Dispatch vs Post-Dispatch)
-        if (stage) {
+        // 0. Stage Splitting Logic
+        if (stage === 'trash') {
+            // Trash view: only show soft-deleted orders
+            query.deletedAt = { $ne: null };
+        } else {
+            // All normal views: exclude trashed orders
+            query.deletedAt = null;
             if (stage === 'pre-dispatch') {
                 query.status = { $in: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'] };
             } else if (stage === 'post-dispatch') {
@@ -118,25 +123,29 @@ exports.getAdvancedOrders = async (req, res) => {
             if (dateTo) query.date.$lte = new Date(dateTo);
         }
 
-        // 2. Search Logic (Utilizing blazing fast $text indexes instead of regex table scans)
+        // 2. Search Logic — regex for partial matching (orderId prefix, phone, tracking, customer name)
         if (search) {
-            // Find customers matching search within this tenant using text index
+            const searchRegex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+            // Find matching customers by name or phone
             const matchingCustomers = await Customer.find({
                 tenant: req.user.tenant,
-                $text: { $search: search }
+                $or: [
+                    { name: searchRegex },
+                    { phone: searchRegex }
+                ]
             }).select('_id');
             const customerIds = matchingCustomers.map(c => c._id);
 
+            const orConditions = [
+                { orderId: searchRegex },
+                { 'shipping.phone1': searchRegex },
+                { 'trackingInfo.trackingNumber': searchRegex },
+            ];
             if (customerIds.length > 0) {
-                // If customers match the query, we return their orders OR orders that text match the tracking numbers
-                query.$or = [
-                    { $text: { $search: search } },
-                    { customer: { $in: customerIds } }
-                ];
-            } else {
-                // If no customers match, rely purely on the Order text index (Tracking #, Order ID)
-                query.$text = { $search: search };
+                orConditions.push({ customer: { $in: customerIds } });
             }
+            query.$or = orConditions;
         }
 
         const sortObj = { [sortField === 'date' ? '_id' : sortField]: sortOrder === 'desc' ? -1 : 1 }; // map date to _id for indexed sorting
@@ -171,12 +180,14 @@ exports.getAdvancedOrders = async (req, res) => {
             nextCursor = sortField === 'date' ? lastItem._id : lastItem[sortField];
         }
 
-        // Compute Tab Counts
+        // Compute Tab Counts (always use base tenant query, not stage-filtered)
+        const baseQuery = { tenant: req.user.tenant };
         const stageCounts = cursor ? null : {
-            preDispatch: await Order.countDocuments({ ...query, status: { $in: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'] } }),
-            postDispatch: await Order.countDocuments({ ...query, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'] } }),
-            returns: await Order.countDocuments({ ...query, status: { $in: ['Returned', 'Refused'] } }),
-            all: totalOrders // When stage filter is disabled
+            preDispatch: await Order.countDocuments({ ...baseQuery, deletedAt: null, status: { $in: ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'] } }),
+            postDispatch: await Order.countDocuments({ ...baseQuery, deletedAt: null, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'] } }),
+            returns: await Order.countDocuments({ ...baseQuery, deletedAt: null, status: { $in: ['Returned', 'Refused'] } }),
+            all: await Order.countDocuments({ ...baseQuery, deletedAt: null }),
+            trash: await Order.countDocuments({ ...baseQuery, deletedAt: { $ne: null } })
         };
 
         res.json({
@@ -709,3 +720,59 @@ exports.deleteOrder = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+exports.bulkDeleteOrders = async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ message: 'orderIds array is required' });
+        }
+
+        // Soft delete: set deletedAt timestamp (keeps data, moves to trash)
+        const result = await Order.updateMany(
+            { _id: { $in: orderIds }, tenant: req.user.tenant, deletedAt: null },
+            { $set: { deletedAt: new Date(), deletedBy: req.user._id } }
+        );
+
+        res.json({ message: `${result.modifiedCount} order(s) moved to trash`, trashedCount: result.modifiedCount });
+    } catch (error) {
+        console.error("Error moving orders to trash:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.restoreOrders = async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ message: 'orderIds array is required' });
+        }
+
+        const result = await Order.updateMany(
+            { _id: { $in: orderIds }, tenant: req.user.tenant, deletedAt: { $ne: null } },
+            { $set: { deletedAt: null, deletedBy: null } }
+        );
+
+        res.json({ message: `${result.modifiedCount} order(s) restored`, restoredCount: result.modifiedCount });
+    } catch (error) {
+        console.error("Error restoring orders:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.purgeOrders = async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ message: 'orderIds array is required' });
+        }
+
+        // Only allow permanently deleting already-trashed orders
+        const result = await Order.deleteMany({ _id: { $in: orderIds }, tenant: req.user.tenant, deletedAt: { $ne: null } });
+        res.json({ message: `${result.deletedCount} order(s) permanently deleted`, deletedCount: result.deletedCount });
+    } catch (error) {
+        console.error("Error purging orders:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+

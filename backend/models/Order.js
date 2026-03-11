@@ -52,6 +52,8 @@ const orderSchema = new mongoose.Schema({
         default: 'Normal'
     },
     tags: [{ type: String }],
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     fraudRiskScore: { type: Number, default: 0 },
     // Courier relation for dispatch
     courier: { type: mongoose.Schema.Types.ObjectId, ref: 'Courier' },

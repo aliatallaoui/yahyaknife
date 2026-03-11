@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
-import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus } from 'lucide-react';
+import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2 } from 'lucide-react';
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -51,6 +51,9 @@ const OrderRow = React.memo(({
     onEditClick,
     onTagUpdate,
     onPriorityChange,
+    onDelete,
+    onRestore,
+    onPurge,
     virtualMeasureRef,
     virtualIndex
 }) => {
@@ -297,6 +300,48 @@ const OrderRow = React.memo(({
                                         }} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors" title={t('ordersControl.actions.whatsapp', { defaultValue: 'WhatsApp' })}>
                                             <MessageCircle className="w-4 h-4" />
                                         </button>
+                                        {activeStage === 'trash' ? (
+                                            <>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRestore && onRestore(order._id); }}
+                                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
+                                                    title="Restore Order"
+                                                >
+                                                    <RotateCcw className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onPurge && onPurge(order._id); }}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-red-100 shadow-sm transition-colors"
+                                                    title="Delete Permanently"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        ) : activeStage === 'post-dispatch' ? (
+                                            // Post-dispatch: only allow recall if courier hasn't validated (no tracking number)
+                                            !order.trackingNumber ? (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onStatusChange && onStatusChange(order._id, 'Ready for Pickup'); }}
+                                                    className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
+                                                    title="Recall to Pre-Dispatch (not yet validated by courier)"
+                                                >
+                                                    <Undo2 className="w-4 h-4" />
+                                                </button>
+                                            ) : (
+                                                // Locked — validated by courier, cannot recall or delete
+                                                <span className="px-1.5 py-1 text-[9px] font-black uppercase tracking-wider text-gray-300 border border-gray-100 rounded" title="Locked: validated by courier">
+                                                    Locked
+                                                </span>
+                                            )
+                                        ) : (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onDelete && onDelete(order._id); }}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
+                                                title="Move to Trash"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             );
@@ -511,7 +556,16 @@ const OrderRow = React.memo(({
                             </div>
 
                             {/* Level 3 action trigger */}
-                            <div className="flex items-center justify-end border-t border-gray-100 pt-3">
+                            <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(order._id);
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 text-[11px] font-black tracking-wider uppercase rounded border border-red-200 hover:border-red-600 transition-all"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> Move to Trash
+                                </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setFocusedOrderId(order._id); }}
                                     className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 text-white text-[11px] font-black tracking-wider uppercase rounded hover:bg-gray-800 transition-colors shadow-sm"
