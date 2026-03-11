@@ -282,8 +282,7 @@ exports.getOrdersKPIs = async (req, res) => {
 
 exports.getSalesPerformance = async (req, res) => {
     try {
-        console.log("DEBUG getSalesPerformance: req.user is", req.user);
-        const tenantId = req.user ? req.user.tenant : 'missing';
+        const tenantId = req.user.tenant;
         const cacheKey = `tenant:${tenantId}:kpi:salesPerformance`;
 
         const cachedPerformance = await cacheService.getOrSet(cacheKey, async () => {
@@ -349,15 +348,16 @@ exports.createOrder = async (req, res) => {
         });
         res.status(201).json(order);
     } catch (error) {
-        if (error.isOperational) throw error;
-        console.error('Error creating order:', error);
-        res.status(400).json({ message: error.message });
+        const status = error.isOperational ? (error.statusCode || 400) : 500;
+        if (!error.isOperational) console.error('Error creating order:', error);
+        res.status(status).json({ message: error.message });
     }
 };
 
 exports.updateOrder = async (req, res) => {
     try {
-        const bypass = req.user?.role === 'admin' || req.user?.permissions?.includes('orders.override_status');
+        const bypass = req.user?.role?.name === 'Super Admin' ||
+                       req.user?.computedPermissions?.includes('orders.override_status');
         const updatedOrder = await OrderService.updateOrder({
             orderId: req.params.id,
             userId: req.user._id,
@@ -366,9 +366,9 @@ exports.updateOrder = async (req, res) => {
         });
         res.json(updatedOrder);
     } catch (error) {
-        if (error.isOperational) throw error;
-        console.error('Error updating order:', error);
-        res.status(400).json({ message: error.message });
+        const status = error.isOperational ? (error.statusCode || 400) : 500;
+        if (!error.isOperational) console.error('Error updating order:', error);
+        res.status(status).json({ message: error.message });
     }
 };
 
