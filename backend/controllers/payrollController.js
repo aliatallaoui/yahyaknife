@@ -157,7 +157,7 @@ exports.approvePayroll = async (req, res) => {
         payroll.status = newStatus;
         if (newStatus === 'Paid') {
             payroll.approvedAt = new Date();
-            // payroll.approvedBy = req.user.id
+            payroll.approvedBy = req.user._id;
         }
 
         await payroll.save();
@@ -167,6 +167,7 @@ exports.approvePayroll = async (req, res) => {
             const employee = await Employee.findById(payroll.employeeId);
             const empName = employee?.name || 'Unknown Employee';
             await Expense.create({
+                tenant: req.user.tenant,
                 amount: paymentAmount,
                 date: new Date(),
                 description: `Salary payment — ${empName} (${payroll.period})${newStatus === 'Partially Paid' ? ' [Partial]' : ''}`,
