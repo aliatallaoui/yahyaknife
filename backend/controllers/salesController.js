@@ -356,6 +356,10 @@ exports.createOrder = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
     try {
+        // Verify order belongs to this tenant before delegating to service
+        const owned = await Order.exists({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null });
+        if (!owned) return res.status(404).json({ message: 'Order not found' });
+
         const bypass = req.user?.role?.name === 'Super Admin' ||
                        req.user?.computedPermissions?.includes('orders.override_status');
         const updatedOrder = await OrderService.updateOrder({
