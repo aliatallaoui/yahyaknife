@@ -4,7 +4,10 @@ const Tenant = require('../models/Tenant');
 
 // Generate JWT
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is not set');
+    }
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
 };
@@ -14,7 +17,7 @@ const generateToken = (id) => {
 // @access  Public
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, password, role, tenantId, businessName } = req.body;
+        const { name, email, password, tenantId, businessName } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Please add all required fields' });
@@ -42,12 +45,12 @@ exports.registerUser = async (req, res) => {
             tenant = await Tenant.create({ name: businessName });
         }
 
-        // Create user
+        // Create user — role must be assigned later by admin, never trusted from registration body
         const user = await User.create({
             name,
             email,
             password,
-            role: role || null,
+            role: null,
             tenant: tenant._id
         });
 

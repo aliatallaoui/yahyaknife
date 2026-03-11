@@ -298,6 +298,13 @@ const handleChat = async (req, res) => {
         const tenantId = req.user?.tenant;
         const { messages } = req.body;
 
+        if (!Array.isArray(messages) || messages.length === 0) {
+            return res.status(400).json({ error: "messages must be a non-empty array." });
+        }
+        if (messages.length > 100) {
+            return res.status(400).json({ error: "Conversation history too long." });
+        }
+
         if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({
                 error: "GEMINI_API_KEY is missing from environment variables.",
@@ -370,8 +377,7 @@ const handleChat = async (req, res) => {
         console.error("AI Controller Error:", error);
         res.status(500).json({
             error: "Failed to process AI request.",
-            reply: `Failed: ${error.message}\n\nStack:\n${error.stack}`,
-            details: error.message
+            reply: "I encountered an error while processing your request. Please try again."
         });
     }
 };
