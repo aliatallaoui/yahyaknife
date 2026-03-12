@@ -448,19 +448,13 @@ const resources = {
                 financial: "Financial Tracker",
                 inventory: "Inventory Tracking",
                 warehousing: "Warehouse Control",
-                mfg_production: "Production Floor",
                 procurement: "Purchase Center",
                 crm_acquisition: "Customer Insights",
                 crm_support: "Returns & Complaints",
-                projects_portfolio: "Project Status",
-                projects_tasks: "Active Projects",
                 hr_directory: "Employees",
                 hr_attendance: "Attendance",
                 hr_payroll: "Payroll",
-                hr_reports: "HR Reports",
-                production_tools: "Tool Management",
-                my_work: "My Work",
-                projects: "Projects"
+                hr_reports: "HR Reports"
             },
             analytics: {
                 title: "Ecommerce Analytics",
