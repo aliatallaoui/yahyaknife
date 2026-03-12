@@ -14,6 +14,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
     useEffect(() => {
         if (isOpen && product) {
             setLoading(true);
+            setFetchError(null);
             fetchVariantLedger(product._id)
                 .then(data => {
                     setLedger(data);
@@ -21,6 +22,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                 })
                 .catch(err => {
                     console.error("Failed to fetch ledger", err);
+                    setFetchError('Failed to load stock movements.');
                     setLoading(false);
                 });
         }
@@ -51,6 +53,11 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                     {loading ? (
                         <div className="flex items-center justify-center h-48">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        </div>
+                    ) : fetchError ? (
+                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
+                            <span>{fetchError}</span>
                         </div>
                     ) : ledger.length === 0 ? (
                         <div className="text-center py-12">

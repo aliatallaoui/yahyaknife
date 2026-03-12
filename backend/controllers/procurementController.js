@@ -146,9 +146,9 @@ exports.receivePurchaseOrder = async (req, res) => {
                     // Update Product Variant Stock
                     const pv = await ProductVariant.findById(poItem.itemRef).session(session);
                     if (pv) {
-                        pv.stock += stockChange;
+                        pv.totalStock += stockChange;
                         // Adjust rolling cost conceptually (simplified replacement strategy here)
-                        pv.unitCost = poItem.unitCost;
+                        pv.cost = poItem.unitCost;
                         await pv.save({ session });
                         ledgerRefId = pv._id;
                         ledgerRefModel = 'ProductVariant';
