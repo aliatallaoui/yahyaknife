@@ -6,14 +6,12 @@ import { useTranslation } from 'react-i18next';
 const PurchaseOrdersModal = ({ isOpen, onClose }) => {
     const { t } = useTranslation();
     const { suppliers, products } = useContext(InventoryContext);
-    const materials = [];
     const [supplierId, setSupplierId] = useState('');
     const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
     const [notes, setNotes] = useState('');
     const [items, setItems] = useState([]);
 
-    // For selecting a variant/material
-    const [selectedItemModel, setSelectedItemModel] = useState('ProductVariant');
+    // For selecting a variant
     const [selectedItemId, setSelectedItemId] = useState('');
     const [quantity, setQuantity] = useState('');
     const [unitCost, setUnitCost] = useState('');
@@ -39,16 +37,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
         });
     });
 
-    const availableMaterials = materials.map(m => ({
-        ...m,
-        itemId: m._id,
-        itemModel: 'RawMaterial',
-        displayName: m.name,
-        sku: m.sku,
-        cost: m.costPerUnit
-    }));
-
-    const availableItems = [...availableVariants, ...availableMaterials];
+    const availableItems = availableVariants;
 
     useEffect(() => {
         if (!isOpen) {
@@ -207,21 +196,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                         <div className="p-5 border border-indigo-100 bg-indigo-50/30 rounded-xl">
                             <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('modals.poAddItemsFormat', 'Add Items format')}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                <div className="md:col-span-3">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('modals.poItemType', 'Item Type')}</label>
-                                    <select
-                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
-                                        value={selectedItemModel}
-                                        onChange={(e) => {
-                                            setSelectedItemModel(e.target.value);
-                                            setSelectedItemId(''); // Reset selection
-                                        }}
-                                    >
-                                        <option value="ProductVariant">{t('modals.poFinishedVariant', 'Finished Product Variant')}</option>
-                                        <option value="RawMaterial">{t('modals.poRawMaterial', 'Raw Material Component')}</option>
-                                    </select>
-                                </div>
-                                <div className="md:col-span-3">
+                                <div className="md:col-span-6">
                                     <label className="block text-xs font-medium text-gray-600 mb-1">{t('modals.poItemToPurchase', 'Item to Purchase')}</label>
                                     <select
                                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
@@ -234,7 +209,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                         }}
                                     >
                                         <option value="">{t('modals.poSelectItem', 'Select Item...')}</option>
-                                        {availableItems.filter(i => i.itemModel === selectedItemModel).map(i => (
+                                        {availableItems.map(i => (
                                             <option key={i.itemId} value={i.itemId}>{i.displayName} ({i.sku})</option>
                                         ))}
                                     </select>
@@ -290,8 +265,8 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                                         {items.map((item, idx) => (
                                             <tr key={idx} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 text-sm text-gray-600 font-medium whitespace-nowrap">
-                                                    <span className={`px-2 py-0.5 rounded text-xs border ${item.itemModel === 'RawMaterial' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                                                        {item.itemModel === 'RawMaterial' ? t('modals.poRawMaterial', 'Raw Material') : t('modals.poFinishedVariant', 'Product Variant')}
+                                                    <span className="px-2 py-0.5 rounded text-xs border bg-blue-50 text-blue-700 border-blue-200">
+                                                        {t('modals.poFinishedVariant', 'Product Variant')}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-gray-900 font-medium">

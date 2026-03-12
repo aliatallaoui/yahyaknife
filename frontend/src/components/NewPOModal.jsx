@@ -13,34 +13,40 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
     const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
     const [notes, setNotes] = useState('');
     const [items, setItems] = useState([
-        { itemModel: 'RawMaterial', itemName: '', quantity: 1, unitCost: 0 }
+        { itemModel: 'ProductVariant', itemRef: '', quantity: 1, unitCost: 0 }
     ]);
 
-    // Available Inventory to reference
-    const [rawMaterials, setRawMaterials] = useState([]);
+    // Available product variants to reference
+    const [variants, setVariants] = useState([]);
 
     useEffect(() => {
         if (isOpen) {
-            fetchMaterials();
+            fetchVariants();
         }
     }, [isOpen]);
 
-    const fetchMaterials = async () => {
+    const fetchVariants = async () => {
         try {
-            // Trying to fetch raw materials if the endpoint exists, otherwise we'll handle gracefully
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/inventory/raw-materials`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            setRawMaterials(res.data);
+            const allVariants = (res.data || []).flatMap(p =>
+                (p.variants || []).map(v => ({
+                    _id: v._id,
+                    name: `${p.name} — ${v.sku}`,
+                    sku: v.sku
+                }))
+            );
+            setVariants(allVariants);
         } catch (err) {
-            console.log("Could not fetch raw materials", err);
+            // non-blocking
         }
     };
 
     if (!isOpen) return null;
 
     const handleAddItem = () => {
-        setItems([...items, { itemModel: 'RawMaterial', itemRef: '', quantity: 1, unitCost: 0 }]);
+        setItems([...items, { itemModel: 'ProductVariant', itemRef: '', quantity: 1, unitCost: 0 }]);
     };
 
     const handleRemoveItem = (index) => {
@@ -150,9 +156,9 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                             onChange={e => updateItem(idx, 'itemRef', e.target.value)}
                                             required
                                         >
-                                            <option value="" disabled>{t('procurement.selectMaterial', 'Select Material...')}</option>
-                                            {rawMaterials.map(m => (
-                                                <option key={m._id} value={m._id}>{m.name} [{m.sku}]</option>
+                                            <option value="" disabled>{t('procurement.selectVariant', 'Select Variant...')}</option>
+                                            {variants.map(v => (
+                                                <option key={v._id} value={v._id}>{v.name} [{v.sku}]</option>
                                             ))}
                                         </select>
 
