@@ -84,7 +84,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
             setOrders(pendingOrders.sort((a, b) => b.displayId.localeCompare(a.displayId)));
         } catch (error) {
             console.error('Could not fetch orders for dispatch', error);
-            setError('Could not load pending orders.');
+            setError(t('dispatch.errorLoadPending', 'Could not load pending orders.'));
         } finally {
             setLoadingOrders(false);
         }
@@ -118,7 +118,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
         setError('');
 
         if (!formData.orderId || !formData.customerName || !formData.phone1 || !formData.wilayaName || !formData.commune) {
-            setError('Please fill all required operational fields (Order, Customer, Phone, Wilaya, Commune).');
+            setError(t('dispatch.errorRequiredFields', 'Please fill all required operational fields (Order, Customer, Phone, Wilaya, Commune).'));
             return;
         }
 
@@ -139,7 +139,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
             onClose();
         } catch (error) {
             console.error('Shipment creation failed', error);
-            setError(error.response?.data?.message || 'Failed to dispatch shipment to courier.');
+            setError(error.response?.data?.message || t('dispatch.errorDispatch', 'Failed to dispatch shipment to courier.'));
         } finally {
             setSubmitting(false);
         }
@@ -197,9 +197,9 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                 {searchOrder && !formData.orderId && (
                                     <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-100 max-h-48 overflow-y-auto">
                                         {loadingOrders ? (
-                                            <div className="p-3 text-sm text-gray-500 text-center">Searching...</div>
+                                            <div className="p-3 text-sm text-gray-500 text-center">{t('dispatch.searching', 'Searching...')}</div>
                                         ) : filteredOrders.length === 0 ? (
-                                            <div className="p-3 text-sm text-gray-500 text-center">No pending orders found.</div>
+                                            <div className="p-3 text-sm text-gray-500 text-center">{t('dispatch.noPendingOrders', 'No pending orders found.')}</div>
                                         ) : (
                                             filteredOrders.map(order => (
                                                 <button

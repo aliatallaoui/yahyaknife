@@ -155,16 +155,16 @@ export default function OrderActionDrawer({ order, onClose, onSuccess }) {
                             </h4>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs font-semibold text-amber-800 uppercase mb-1 block">Wilaya</label>
+                                    <label className="text-xs font-semibold text-amber-800 uppercase mb-1 block">{t('callcenter.lblWilaya', 'Wilaya')}</label>
                                     <input value={wilaya} onChange={e => setWilaya(e.target.value)} className="w-full border border-amber-200 rounded-lg text-sm px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-amber-800 uppercase mb-1 block">Commune</label>
+                                    <label className="text-xs font-semibold text-amber-800 uppercase mb-1 block">{t('orders.lblCommune', 'Commune')}</label>
                                     <input value={commune} onChange={e => setCommune(e.target.value)} className="w-full border border-amber-200 rounded-lg text-sm px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-amber-800 uppercase mb-1 block">Full Address</label>
+                                <label className="text-xs font-semibold text-amber-800 uppercase mb-1 block">{t('callcenter.lblAddress', 'Full Address')}</label>
                                 <input value={address} onChange={e => setAddress(e.target.value)} className="w-full border border-amber-200 rounded-lg text-sm px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                             </div>
                             <div className="flex justify-end gap-2 pt-1">
@@ -185,7 +185,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess }) {
                                 {t('callcenter.drawer.postpone', 'Schedule Callback')}
                             </h4>
                             <div>
-                                <label className="text-xs font-semibold text-blue-800 uppercase mb-1 block">Callback Date</label>
+                                <label className="text-xs font-semibold text-blue-800 uppercase mb-1 block">{t('callcenter.lblCallbackDate', 'Callback Date')}</label>
                                 <input
                                     type="date"
                                     value={postponeDate}

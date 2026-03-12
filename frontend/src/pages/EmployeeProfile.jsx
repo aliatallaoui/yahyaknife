@@ -49,7 +49,7 @@ export default function EmployeeProfile() {
                 const leaveJson = await leaveRes.json();
                 setLeaves(leaveJson.data ?? (Array.isArray(leaveJson) ? leaveJson : []));
             } catch (err) {
-                setFetchError(err.message === 'Employee not found' ? null : 'Failed to load employee data.');
+                setFetchError(err.message === 'Employee not found' ? null : t('hr.errorLoadEmployee', 'Failed to load employee data.'));
             } finally {
                 setLoading(false);
             }

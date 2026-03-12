@@ -49,7 +49,7 @@ export default function CustomerProfile() {
                 }
 
             } catch (error) {
-                setFetchError('Failed to load profile data.');
+                setFetchError(t('crm.errorLoadProfile', 'Failed to load profile data.'));
                 if (existingCustomer) setCustomer(existingCustomer);
             } finally {
                 setLoading(false);
@@ -70,7 +70,7 @@ export default function CustomerProfile() {
             await updateCustomer(id, { blacklisted: !customer.blacklisted });
             setCustomer({ ...customer, blacklisted: !customer.blacklisted });
         } catch (error) {
-            setBlacklistError("Failed to update blacklist status.");
+            setBlacklistError(t('crm.errorBlacklist', 'Failed to update blacklist status.'));
         }
     };
 
@@ -128,7 +128,7 @@ export default function CustomerProfile() {
             {fetchError && (
                 <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm font-semibold text-amber-700">
                     <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span className="flex-1">{fetchError} — showing cached data.</span>
+                    <span className="flex-1">{fetchError} — {t('crm.showingCached', 'showing cached data.')}</span>
                     <button onClick={() => setFetchError(null)} className="text-amber-400 hover:text-amber-600">✕</button>
                 </div>
             )}
