@@ -776,6 +776,9 @@ const resources = {
                 cancel: "Cancel",
                 deleteBtn: "Delete",
                 errorLoadTransactions: "Failed to load transactions.",
+                errorAddTransaction: "Failed to add transaction.",
+                errorUpdateTransaction: "Failed to update transaction.",
+                errorDeleteTransaction: "Failed to delete transaction.",
                 errorLoadOverview: "Failed to load financial overview.",
                 periodThisMonth: "This Month",
                 periodLastMonth: "Last Month",
@@ -853,7 +856,8 @@ const resources = {
                 failedDeleteOrder: "Failed to delete order.",
                 failedDispatch: "Dispatch failed",
                 errorLoadOrders: "Failed to load orders.",
-                errorRefreshPerf: "Failed to refresh performance metrics."
+                errorRefreshPerf: "Failed to refresh performance metrics.",
+                errorSaveOrder: "Failed to save order."
             },
             logistics: {
                 title: "Delivery Management",
@@ -1177,7 +1181,11 @@ const resources = {
                 errorLoadProfile: "Failed to load profile data.",
                 errorBlacklist: "Failed to update blacklist status.",
                 showingCached: "showing cached data.",
-                analyticsUnavailable: "analytics charts may be unavailable."
+                analyticsUnavailable: "analytics charts may be unavailable.",
+                errorFetchCustomers: "Failed to load customers.",
+                errorCreateCustomer: "Failed to create customer.",
+                errorUpdateCustomer: "Failed to update customer.",
+                errorDeleteCustomer: "Failed to delete customer."
             },
             procurement: {
                 title: "Procurement Hub",
@@ -1586,6 +1594,7 @@ const resources = {
                 typeReceived: "RECEIVED",
                 typeManufactured: "MANUFACTURED",
                 noMovements: "No stock movements found.",
+                errorLoadMovements: "Failed to load stock movements.",
                 poTitle: "Create Purchase Order",
                 poSubtitle: "Order new stock from suppliers",
                 poSupplier: "Supplier *",
@@ -2737,6 +2746,9 @@ const resources = {
                 cancel: "إلغاء",
                 deleteBtn: "حذف",
                 errorLoadTransactions: "فشل تحميل المعاملات.",
+                errorAddTransaction: "فشل إضافة المعاملة.",
+                errorUpdateTransaction: "فشل تحديث المعاملة.",
+                errorDeleteTransaction: "فشل حذف المعاملة.",
                 errorLoadOverview: "فشل تحميل نظرة عامة المالية.",
                 periodThisMonth: "هذا الشهر",
                 periodLastMonth: "الشهر الماضي",
