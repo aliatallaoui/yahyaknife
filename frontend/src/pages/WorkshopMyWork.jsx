@@ -1,7 +1,8 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { AuthContext } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, ChevronRight, Loader2, RefreshCw, Hammer, PackageCheck, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Loader2, RefreshCw, Hammer, PackageCheck, AlertTriangle, X, Search } from 'lucide-react';
 import { getStageTranslation } from './KnifeDashboard';
 
 const STAGES = ['Design', 'In Production', 'Heat Treatment', 'Grinding', 'Handle Installation', 'Finishing', 'Sharpening', 'Completed'];
@@ -24,6 +25,11 @@ export default function WorkshopMyWork() {
     const [loading, setLoading] = useState(true);
     const [advancing, setAdvancing] = useState(null); // knifeId being advanced
     const [errorMsg, setErrorMsg] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [stageFilter, setStageFilter] = useState('All');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const fetchKnives = async () => {
         setLoading(true);
@@ -68,8 +74,16 @@ export default function WorkshopMyWork() {
         }
     };
 
-    const active = knives.filter(k => k.status !== 'Completed');
-    const done   = knives.filter(k => k.status === 'Completed');
+    const filterFn = k => {
+        if (stageFilter !== 'All' && k.status !== stageFilter) return false;
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            return k.name?.toLowerCase().includes(q) || k.knifeId?.toLowerCase().includes(q);
+        }
+        return true;
+    };
+    const active = knives.filter(k => k.status !== 'Completed' && filterFn(k));
+    const done   = knives.filter(k => k.status === 'Completed' && filterFn(k));
 
     if (loading) {
         return (
@@ -99,6 +113,34 @@ export default function WorkshopMyWork() {
                     <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
+
+            {/* Search + Stage Filter */}
+            {knives.length > 0 && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-amber-400" />
+                        <input
+                            ref={searchRef}
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            placeholder={t('workshop.mywork.search', 'Search by name or ID... (Press /)')}
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-amber-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium shadow-sm"
+                        />
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
+                        {['All', ...STAGES.filter(s => s !== 'Completed')].map(s => (
+                            <button
+                                key={s}
+                                onClick={() => setStageFilter(s)}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${stageFilter === s ? 'bg-amber-500 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                {s === 'All' ? t('common.all', 'All') : getStageTranslation(t, s)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Active blades */}
             {active.length === 0 ? (

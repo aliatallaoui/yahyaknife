@@ -148,29 +148,29 @@ export default function ToolManagement() {
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-slate-50 rounded-xl"><Wrench className="w-6 h-6 text-slate-600" /></div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">Total Registered</p>
+                        <p className="text-sm font-bold text-gray-500">{t('tools.totalRegistered', 'Total Registered')}</p>
                         <p className="text-2xl font-black text-gray-900">{tools.length}</p>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-emerald-50 rounded-xl"><CheckCircle2 className="w-6 h-6 text-emerald-600" /></div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">Operational</p>
-                        <p className="text-2xl font-black text-gray-900">{tools.filter(t => t.status === 'Operational').length}</p>
+                        <p className="text-sm font-bold text-gray-500">{t('tools.statusOperational', 'Operational')}</p>
+                        <p className="text-2xl font-black text-gray-900">{tools.filter(tool => tool.status === 'Operational').length}</p>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-amber-50 rounded-xl"><AlertCircle className="w-6 h-6 text-amber-600" /></div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">Needs Maintenance</p>
-                        <p className="text-2xl font-black text-gray-900">{tools.filter(t => t.status === 'Needs Maintenance').length}</p>
+                        <p className="text-sm font-bold text-gray-500">{t('tools.statusNeedsMaintenance', 'Needs Maintenance')}</p>
+                        <p className="text-2xl font-black text-gray-900">{tools.filter(tool => tool.status === 'Needs Maintenance').length}</p>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-rose-50 rounded-xl"><Settings className="w-6 h-6 text-rose-600" /></div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">Under Repair</p>
-                        <p className="text-2xl font-black text-gray-900">{tools.filter(t => t.status === 'Under Repair').length}</p>
+                        <p className="text-sm font-bold text-gray-500">{t('tools.statusUnderRepair', 'Under Repair')}</p>
+                        <p className="text-2xl font-black text-gray-900">{tools.filter(tool => tool.status === 'Under Repair').length}</p>
                     </div>
                 </div>
             </div>
@@ -214,12 +214,12 @@ export default function ToolManagement() {
                     <table className="w-full text-start text-sm min-w-[800px]">
                         <thead className="bg-slate-50 text-slate-500 font-medium border-b border-gray-200">
                             <tr>
-                                <th className="p-4 text-left">Equipment Name</th>
-                                <th className="p-4 text-left">Category & S/N</th>
-                                <th className="p-4 text-left">Status</th>
-                                <th className="p-4 text-left">Assigned To</th>
-                                <th className="p-4 text-left">Last Maintenance</th>
-                                <th className="p-4 text-right">Actions</th>
+                                <th className="p-4 text-left">{t('tools.colEquipmentName', 'Equipment Name')}</th>
+                                <th className="p-4 text-left">{t('tools.colCategorySerial', 'Category & S/N')}</th>
+                                <th className="p-4 text-left">{t('tools.colStatus', 'Status')}</th>
+                                <th className="p-4 text-left">{t('tools.colAssignedTo', 'Assigned To')}</th>
+                                <th className="p-4 text-left">{t('tools.colLastMaintenance', 'Last Maintenance')}</th>
+                                <th className="p-4 text-right">{t('tools.colActions', 'Actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -266,13 +266,13 @@ export default function ToolManagement() {
                                                 <span className="font-medium text-gray-900">{tool.assignedTo.name}</span>
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400 text-sm">Unassigned</span>
+                                            <span className="text-gray-400 text-sm">{t('tools.unassigned', 'Unassigned')}</span>
                                         )}
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-1.5 text-gray-600">
                                             <Calendar className="w-4 h-4 text-slate-400" />
-                                            <span>{tool.lastMaintenanceDate ? moment(tool.lastMaintenanceDate).format('MMM Do YYYY') : 'Never'}</span>
+                                            <span>{tool.lastMaintenanceDate ? moment(tool.lastMaintenanceDate).format('MMM Do YYYY') : t('tools.never', 'Never')}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-right">
@@ -297,37 +297,45 @@ export default function ToolManagement() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h2 className="text-xl font-black text-gray-900">{selectedTool ? 'Edit Tool' : 'Register New Tool'}</h2>
+                            <h2 className="text-xl font-black text-gray-900">{selectedTool ? t('tools.editTool', 'Edit Tool') : t('tools.registerTool', 'Register New Tool')}</h2>
                             <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                         </div>
                         <div className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Tool/Machinery Name</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">{t('tools.lblName', 'Tool/Machinery Name')}</label>
                                 <input type="text" value={newTool.name} onChange={e => setNewTool({ ...newTool, name: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-slate-500 focus:ring-0 outline-none" placeholder="e.g. Belt Grinder 2x72" />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('tools.lblCategory', 'Category')}</label>
                                     <select value={newTool.category} onChange={e => setNewTool({ ...newTool, category: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200">
-                                        <option>Grinder</option><option>Forge</option><option>Press</option><option>Hand Tool</option><option>Testing Equipment</option><option>Other</option>
+                                        <option value="Grinder">{t('tools.catGrinder', 'Grinder')}</option>
+                                        <option value="Forge">{t('tools.catForge', 'Forge')}</option>
+                                        <option value="Press">{t('tools.catPress', 'Press')}</option>
+                                        <option value="Hand Tool">{t('tools.catHandTool', 'Hand Tool')}</option>
+                                        <option value="Testing Equipment">{t('tools.catTestingEquipment', 'Testing Equipment')}</option>
+                                        <option value="Other">{t('tools.catOther', 'Other')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Serial Number</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('tools.lblSerialNumber', 'Serial Number')}</label>
                                     <input type="text" value={newTool.serialNumber} onChange={e => setNewTool({ ...newTool, serialNumber: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Status</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('tools.lblStatus', 'Status')}</label>
                                     <select value={newTool.status} onChange={e => setNewTool({ ...newTool, status: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200">
-                                        <option>Operational</option><option>Needs Maintenance</option><option>Under Repair</option><option>Decommissioned</option>
+                                        <option value="Operational">{t('tools.statusOperational', 'Operational')}</option>
+                                        <option value="Needs Maintenance">{t('tools.statusNeedsMaintenance', 'Needs Maintenance')}</option>
+                                        <option value="Under Repair">{t('tools.statusUnderRepair', 'Under Repair')}</option>
+                                        <option value="Decommissioned">{t('tools.statusDecommissioned', 'Decommissioned')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Assigned To</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('tools.lblAssignedTo', 'Assigned To')}</label>
                                     <select value={newTool.assignedTo} onChange={e => setNewTool({ ...newTool, assignedTo: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200">
-                                        <option value="">-- Unassigned --</option>
+                                        <option value="">{t('tools.unassignedOpt', '-- Unassigned --')}</option>
                                         {employees.map(emp => (
                                             <option key={emp._id} value={emp._id}>{emp.name} ({emp.workshopRole || emp.role})</option>
                                         ))}
@@ -336,8 +344,8 @@ export default function ToolManagement() {
                             </div>
                         </div>
                         <div className="p-6 bg-gray-50 flex justify-end gap-3">
-                            <button onClick={() => setModalOpen(false)} className="px-5 py-2.5 font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={handleSaveTool} className="px-5 py-2.5 font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl shadow transition-colors">Save Equipment</button>
+                            <button onClick={() => setModalOpen(false)} className="px-5 py-2.5 font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">{t('tools.btnCancel', 'Cancel')}</button>
+                            <button onClick={handleSaveTool} className="px-5 py-2.5 font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl shadow transition-colors">{t('tools.btnSaveEquipment', 'Save Equipment')}</button>
                         </div>
                     </div>
                 </div>
