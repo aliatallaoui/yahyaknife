@@ -59,7 +59,7 @@ export default function DispatchCenter() {
             setShipments(res.data);
             setLoading(false);
         } catch (error) {
-            showError(error.response?.data?.message || 'Failed to load shipments.');
+            showError(error.response?.data?.message || t('dispatch.errorLoadShipments', 'Failed to load shipments.'));
             setLoading(false);
         }
     };
@@ -72,7 +72,7 @@ export default function DispatchCenter() {
             });
             fetchShipments();
         } catch (error) {
-            showError(error.response?.data?.message || 'Failed to validate shipment.');
+            showError(error.response?.data?.message || t('dispatch.errorValidate', 'Failed to validate shipment.'));
         }
     };
 
@@ -88,7 +88,7 @@ export default function DispatchCenter() {
             });
             fetchShipments();
         } catch (error) {
-            showError(error.response?.data?.message || 'Failed to delete shipment.');
+            showError(error.response?.data?.message || t('dispatch.errorDelete', 'Failed to delete shipment.'));
         }
     };
 
@@ -102,7 +102,7 @@ export default function DispatchCenter() {
                 window.open(res.data.url, '_blank');
             }
         } catch (error) {
-            showError(error.response?.data?.message || 'Failed to fetch printing label.');
+            showError(error.response?.data?.message || t('dispatch.errorLabel', 'Failed to fetch printing label.'));
         }
     };
 
@@ -120,7 +120,7 @@ export default function DispatchCenter() {
             document.body.appendChild(link);
             link.click();
         } catch (error) {
-            showError(error.response?.data?.message || 'Export failed. Please try again.');
+            showError(error.response?.data?.message || t('dispatch.errorExport', 'Export failed. Please try again.'));
         }
     };
 
@@ -295,7 +295,7 @@ export default function DispatchCenter() {
                                     <tr key={shipment._id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900">{shipment.externalTrackingId || 'Pending...'}</span>
+                                                <span className="text-sm font-bold text-gray-900">{shipment.externalTrackingId || t('dispatch.pendingTrackingId', 'Pending...')}</span>
                                                 <span className="text-xs text-gray-500 font-mono mt-0.5">{shipment.internalOrderId}</span>
                                             </div>
                                         </td>

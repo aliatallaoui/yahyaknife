@@ -39,7 +39,7 @@ export default function HRReports() {
             setData(res.data?.data ?? res.data);
         } catch (error) {
             console.error(error);
-            setFetchError(error.response?.data?.message || error.response?.data?.error || 'Failed to load report data.');
+            setFetchError(error.response?.data?.message || error.response?.data?.error || t('hr.errorLoadReport', 'Failed to load report data.'));
         } finally {
             setLoading(false);
         }

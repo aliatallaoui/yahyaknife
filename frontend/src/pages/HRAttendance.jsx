@@ -40,7 +40,7 @@ export default function HRAttendance() {
             });
             setRecords(merged);
         } catch (error) {
-            setFetchError(error.response?.data?.error || 'Failed to load attendance records.');
+            setFetchError(error.response?.data?.error || t('hr.errorLoadAttendance', 'Failed to load attendance records.'));
         } finally {
             setLoading(false);
         }

@@ -20,7 +20,7 @@ export default function DashboardGrid({ data }) {
     if (!data) return (
         <div className="flex items-center justify-center h-64 flex-col gap-3">
             <AlertTriangle className="w-8 h-8 text-amber-400" />
-            <p className="text-gray-500 font-medium">Could not load dashboard data. Please refresh.</p>
+            <p className="text-gray-500 font-medium">{t('dashboard.errorLoad', 'Could not load dashboard data. Please refresh.')}</p>
         </div>
     );
 
@@ -34,7 +34,7 @@ export default function DashboardGrid({ data }) {
         {
             key: 'confirm',
             label: t('dashboard.awaitingConfirm'),
-            hint: 'Waiting for confirmation',
+            hint: t('dashboard.hintAwaitingConfirm', 'Waiting for confirmation'),
             count: orderMetrics?.awaitingConfirmation || 0,
             icon: ShoppingCart,
             bg: 'bg-pink-50', border: 'border-pink-200',
@@ -43,7 +43,7 @@ export default function DashboardGrid({ data }) {
         {
             key: 'dispatch',
             label: t('dashboard.awaitingDispatch'),
-            hint: 'Ready to be sent',
+            hint: t('dashboard.hintReadyToSend', 'Ready to be sent'),
             count: orderMetrics?.awaitingDispatch || 0,
             icon: Timer,
             bg: 'bg-amber-50', border: 'border-amber-200',
@@ -52,7 +52,7 @@ export default function DashboardGrid({ data }) {
         {
             key: 'delivery',
             label: t('dashboard.inDelivery'),
-            hint: 'On the way',
+            hint: t('dashboard.hintOnTheWay', 'On the way'),
             count: orderMetrics?.inDelivery || 0,
             icon: Truck,
             bg: 'bg-blue-50', border: 'border-blue-200',
@@ -61,7 +61,7 @@ export default function DashboardGrid({ data }) {
         {
             key: 'delivered',
             label: t('dashboard.delivered'),
-            hint: 'Successfully delivered ✓',
+            hint: t('dashboard.hintDelivered', 'Successfully delivered ✓'),
             count: orderMetrics?.deliveredOrders || 0,
             icon: PackageCheck,
             bg: 'bg-emerald-50', border: 'border-emerald-200',
@@ -108,7 +108,7 @@ export default function DashboardGrid({ data }) {
                     color="text-rose-600"
                     bg="bg-rose-50"
                     isEmpty={(financialMetrics?.globalSettlementsPending || 0) === 0}
-                    emptyLabel="✓ All Settled"
+                    emptyLabel={t('dashboard.allSettled', '✓ All Settled')}
                 />
             </div>
 
@@ -158,7 +158,7 @@ export default function DashboardGrid({ data }) {
                     {(orderMetrics?.totalOrders || 0) === 0 ? (
                         <div className="h-28 flex flex-col items-center justify-center gap-2 text-gray-400">
                             <Package className="w-8 h-8 opacity-25" />
-                            <p className="text-sm font-medium">No active orders right now</p>
+                            <p className="text-sm font-medium">{t('dashboard.noActiveOrders', 'No active orders right now')}</p>
                         </div>
                     ) : (
                         <div className="flex items-stretch gap-2 md:gap-3 overflow-x-auto pb-4 custom-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0">
@@ -217,7 +217,7 @@ export default function DashboardGrid({ data }) {
                             </div>
                         )}
                     </div>
-                    <p className="text-[10px] text-indigo-300/50 font-medium">AI-powered • Updates every 5 min</p>
+                    <p className="text-[10px] text-indigo-300/50 font-medium">{t('dashboard.aiPowered', 'AI-powered • Updates every 5 min')}</p>
                 </div>
             </div>
 
@@ -237,7 +237,7 @@ export default function DashboardGrid({ data }) {
                             <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${successRate}%` }} />
                         </div>
                         <p className="text-xs text-emerald-700 mt-2 font-medium">
-                            {successRate >= 80 ? '🟢 Good performance' : successRate >= 60 ? '🟡 Moderate' : '🔴 Low — review couriers'}
+                            {successRate >= 80 ? t('dashboard.perfGood', '🟢 Good performance') : successRate >= 60 ? t('dashboard.perfModerate', '🟡 Moderate') : t('dashboard.perfLow', '🔴 Low — review couriers')}
                         </p>
                     </div>
                     <div className={clsx("rounded-2xl p-4 border", refusalRate > 30 ? "bg-rose-50 border-rose-100" : "bg-gray-50 border-gray-100")}>
@@ -248,7 +248,7 @@ export default function DashboardGrid({ data }) {
                         <div className="w-full bg-rose-100 h-2 rounded-full overflow-hidden">
                             <div className="bg-rose-500 h-full rounded-full" style={{ width: `${refusalRate}%` }} />
                         </div>
-                        {refusalRate > 30 && <p className="text-xs text-rose-600 mt-2 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Check AI insights</p>}
+                        {refusalRate > 30 && <p className="text-xs text-rose-600 mt-2 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('dashboard.checkAiInsights', 'Check AI insights')}</p>}
                     </div>
                     <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex items-center justify-between">
                         <div>
@@ -268,16 +268,16 @@ export default function DashboardGrid({ data }) {
                 <InventoryCard icon={DollarSign} iconBg="bg-purple-50" iconColor="text-purple-600"
                     label={t('dashboard.totalInventoryValue')}
                     value={`${(inventoryMetrics?.inventoryValue || 0).toLocaleString()} ${t('common.currency')}`}
-                    hint="Total value of all products in stock" />
+                    hint={t('dashboard.hintInventoryValue', 'Total value of all products in stock')} />
                 <InventoryCard icon={Package} iconBg="bg-orange-50" iconColor="text-orange-600"
                     label={t('dashboard.totalAvailableStock')}
                     value={`${(inventoryMetrics?.totalAvailableStock || 0).toLocaleString()} ${t('dashboard.units')}`}
-                    hint="Units ready to ship" />
+                    hint={t('dashboard.hintAvailableStock', 'Units ready to ship')} />
                 <InventoryCard icon={AlertTriangle} iconBg="bg-rose-50" iconColor="text-rose-600"
                     label={t('dashboard.deadStockVariants')}
                     value={inventoryMetrics?.deadStockVariants || 0}
                     valueSuffix={t('dashboard.actionRequired')}
-                    hint="Products with no sales — review pricing"
+                    hint={t('dashboard.hintDeadStock', 'Products with no sales — review pricing')}
                     isAlert={(inventoryMetrics?.deadStockVariants || 0) > 0} />
             </div>
             {/* ── Row 5: HR Daily Snapshot + Reports ── */}
