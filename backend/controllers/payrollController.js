@@ -17,11 +17,33 @@ exports.generateMonthlyPayroll = async (req, res) => {
         const employees = await Employee.find({ tenant, status: 'Active' });
         const payrollResults = [];
 
+        const paddedMonth = month.padStart(2, '0');
+        const nextMonthNum = Number(month) === 12 ? 1 : Number(month) + 1;
+        const nextYear = Number(month) === 12 ? String(Number(year) + 1) : year;
+        const periodStart = `${year}-${paddedMonth}-01`;
+        const periodEnd   = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
+
         // Pre-fetch already-locked payroll records for this period (Approved/Partially Paid/Paid)
         const lockedPayrolls = new Set(
             (await Payroll.find({ tenant, period, status: { $in: ['Approved', 'Partially Paid', 'Paid'] } }).select('employeeId').lean())
                 .map(p => p.employeeId.toString())
         );
+
+        // Single aggregate for all attendance records this period — eliminates N+1
+        const attendanceAgg = await Attendance.aggregate([
+            { $match: { tenant, date: { $gte: periodStart, $lt: periodEnd } } },
+            { $group: {
+                _id: '$employeeId',
+                totalWorked:   { $sum: '$workedMinutes' },
+                totalRequired: { $sum: '$requiredMinutes' },
+                totalLate:     { $sum: '$lateMinutes' },
+                totalMissing:  { $sum: '$missingMinutes' },
+                totalOvertime: { $sum: '$overtimeMinutes' },
+                daysAbsent:    { $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] } }
+            }}
+        ]);
+        const attendanceMap = {};
+        attendanceAgg.forEach(a => { attendanceMap[a._id.toString()] = a; });
 
         for (const emp of employees) {
             // Skip employees whose payroll for this period is already approved or paid
@@ -30,28 +52,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
             const settings = emp.contractSettings || {};
             const baseSalary = settings.monthlySalary || emp.salary || 0;
 
-            const paddedMonth = month.padStart(2, '0');
-            const nextMonthNum = Number(month) === 12 ? 1 : Number(month) + 1;
-            const nextYear = Number(month) === 12 ? String(Number(year) + 1) : year;
-            const periodStart = `${year}-${paddedMonth}-01`;
-            const periodEnd   = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
-            const records = await Attendance.find({
-                tenant,
-                employeeId: emp._id,
-                date: { $gte: periodStart, $lt: periodEnd }
-            });
-
-            let totalWorked = 0, totalRequired = 0, totalLate = 0;
-            let totalMissing = 0, totalOvertime = 0, daysAbsent = 0;
-
-            for (const rec of records) {
-                totalWorked   += rec.workedMinutes;
-                totalRequired += rec.requiredMinutes;
-                totalLate     += rec.lateMinutes;
-                totalMissing  += rec.missingMinutes;
-                totalOvertime += rec.overtimeMinutes;
-                if (rec.status === 'Absent') daysAbsent++;
-            }
+            const att = attendanceMap[emp._id.toString()] || { totalWorked: 0, totalRequired: 0, totalLate: 0, totalMissing: 0, totalOvertime: 0, daysAbsent: 0 };
 
             const standardMonthlyMinutes = 22 * (settings.dailyRequiredMinutes || 480);
             const ratePerMinute = baseSalary / standardMonthlyMinutes;
@@ -59,15 +60,15 @@ exports.generateMonthlyPayroll = async (req, res) => {
             let missingTimeDeductions = 0, overtimeAdditions = 0, absenceDeductions = 0;
 
             if (settings.deductionRules?.missedMinutes) {
-                missingTimeDeductions = Math.round(totalMissing * ratePerMinute);
+                missingTimeDeductions = Math.round(att.totalMissing * ratePerMinute);
             }
             if (settings.overtimeEnabled) {
                 const multiplier = settings.overtimeRateMultiplier || 1.5;
-                overtimeAdditions = Math.round(totalOvertime * ratePerMinute * multiplier);
+                overtimeAdditions = Math.round(att.totalOvertime * ratePerMinute * multiplier);
             }
 
             const dailyRate = baseSalary / 22;
-            absenceDeductions = Math.round(daysAbsent * dailyRate);
+            absenceDeductions = Math.round(att.daysAbsent * dailyRate);
 
             const finalPayableSalary = Math.round(baseSalary + overtimeAdditions - missingTimeDeductions - absenceDeductions);
 
@@ -77,11 +78,11 @@ exports.generateMonthlyPayroll = async (req, res) => {
                 period,
                 baseSalary,
                 metricsTotal: {
-                    totalWorkedMinutes: totalWorked,
-                    totalRequiredMinutes: totalRequired,
-                    totalLateMinutes: totalLate,
-                    totalMissingMinutes: totalMissing,
-                    totalOvertimeMinutes: totalOvertime
+                    totalWorkedMinutes: att.totalWorked,
+                    totalRequiredMinutes: att.totalRequired,
+                    totalLateMinutes: att.totalLate,
+                    totalMissingMinutes: att.totalMissing,
+                    totalOvertimeMinutes: att.totalOvertime
                 },
                 overtimeAdditions,
                 missingTimeDeductions,
@@ -90,14 +91,13 @@ exports.generateMonthlyPayroll = async (req, res) => {
                 status: 'Pending Approval'
             };
 
-            await Payroll.findOneAndUpdate(
+            const savedDoc = await Payroll.findOneAndUpdate(
                 { tenant, employeeId: emp._id, period },
                 { $set: payrollData },
                 { new: true, upsert: true }
             );
 
-            const verifiedDoc = await Payroll.findOne({ tenant, employeeId: emp._id, period });
-            if (verifiedDoc) payrollResults.push(verifiedDoc);
+            if (savedDoc) payrollResults.push(savedDoc);
         }
 
         res.json({ message: `Successfully generated payroll for ${period}`, count: payrollResults.length, data: payrollResults });

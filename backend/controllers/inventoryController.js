@@ -30,18 +30,16 @@ exports.createProduct = async (req, res) => {
             name, category, brand, description, supplier: supplier || null
         });
 
-        if (variants && Array.isArray(variants)) {
-            for (const v of variants) {
-                await ProductVariant.create({
-                    productId: newProduct._id,
-                    sku: v.sku,
-                    attributes: v.attributes || {},
-                    price: v.price || 0,
-                    cost: v.cost || 0,
-                    totalStock: v.stock || 0,
-                    reorderLevel: v.reorderLevel || 10
-                });
-            }
+        if (variants && Array.isArray(variants) && variants.length > 0) {
+            await ProductVariant.insertMany(variants.map(v => ({
+                productId: newProduct._id,
+                sku: v.sku,
+                attributes: v.attributes || {},
+                price: v.price || 0,
+                cost: v.cost || 0,
+                totalStock: v.stock || 0,
+                reorderLevel: v.reorderLevel || 10
+            })));
         }
 
         // Populate to match get request format
