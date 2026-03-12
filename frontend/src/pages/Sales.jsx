@@ -36,7 +36,7 @@ export default function Sales() {
     const { t } = useTranslation();
     const { hasPermission } = useContext(AuthContext);
     const {
-        orders, performance, loading, createOrder, updateOrder, deleteOrder,
+        orders, performance, loading, fetchError, createOrder, updateOrder, deleteOrder,
         currentPage, totalPages, fetchSalesData
     } = useContext(SalesContext);
     const { products: inventoryProducts, refreshInventory } = useContext(InventoryContext);
@@ -121,8 +121,8 @@ export default function Sales() {
 
     const handleDeleteClick = (id) => {
         setConfirmDialog({
-            title: 'Move order to Trash?',
-            body: 'The order will be soft-deleted and can be restored from the Trash tab.',
+            title: t('sales.deleteOrderTitle', 'Move order to Trash?'),
+            body: t('sales.deleteOrderBody', 'The order will be soft-deleted and can be restored from the Trash tab.'),
             danger: false,
             onConfirm: async () => {
                 try {
@@ -137,8 +137,8 @@ export default function Sales() {
 
     const handleQuickDispatch = (orderId) => {
         setConfirmDialog({
-            title: 'Dispatch to Ecotrack now?',
-            body: 'This will create a shipment record and mark the order as Dispatched.',
+            title: t('sales.dispatchConfirmTitle', 'Dispatch to Ecotrack now?'),
+            body: t('sales.dispatchConfirmBody', 'This will create a shipment record and mark the order as Dispatched.'),
             danger: false,
             onConfirm: async () => {
                 setDispatchingOrderId(orderId);
@@ -161,8 +161,8 @@ export default function Sales() {
     const handleBatchVerify = async () => {
         if (selectedOrderIds.size === 0) return;
         setConfirmDialog({
-            title: `Confirm ${selectedOrderIds.size} orders as Phone Verified?`,
-            body: 'Status will be updated to Confirmed for all selected orders.',
+            title: t('sales.batchVerifyTitle', 'Confirm {{count}} orders as Phone Verified?', { count: selectedOrderIds.size }),
+            body: t('sales.batchVerifyBody', 'Status will be updated to Confirmed for all selected orders.'),
             danger: false,
             onConfirm: async () => {
                 try {
@@ -321,6 +321,13 @@ export default function Sales() {
                 }
             />
 
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => fetchSalesData(currentPage)} className="text-red-400 hover:text-red-600 text-xs font-bold">Retry</button>
+                </div>
+            )}
 
             {/* Full-width Order Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
@@ -877,8 +884,8 @@ export default function Sales() {
                         <h3 className="text-base font-black text-gray-900 mb-2">{confirmDialog.title}</h3>
                         <p className="text-sm text-gray-500 leading-relaxed mb-6">{confirmDialog.body}</p>
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={() => { setConfirmDialog(null); confirmDialog.onConfirm(); }} className={`px-4 py-2 text-sm font-bold text-white rounded-xl transition-colors ${confirmDialog.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Confirm</button>
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">{t('sales.cancel', 'Cancel')}</button>
+                            <button onClick={() => { setConfirmDialog(null); confirmDialog.onConfirm(); }} className={`px-4 py-2 text-sm font-bold text-white rounded-xl transition-colors ${confirmDialog.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{t('sales.confirm', 'Confirm')}</button>
                         </div>
                     </div>
                 </div>

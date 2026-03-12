@@ -8,6 +8,7 @@ export const SalesProvider = ({ children }) => {
     const [customOrders, setCustomOrders] = useState([]);
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -18,6 +19,7 @@ export const SalesProvider = ({ children }) => {
     const fetchSalesData = async (page = 1, limit = 10) => {
         if (!token) return;
         setLoading(true);
+        setFetchError(null);
         try {
             const [ordersRes, perfRes, customRes] = await Promise.all([
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -40,7 +42,7 @@ export const SalesProvider = ({ children }) => {
                 setCustomOrders(cj.data ?? (Array.isArray(cj) ? cj : []));
             }
         } catch (error) {
-            console.error('Failed to fetch sales data:', error);
+            setFetchError('Failed to load orders.');
         } finally {
             setLoading(false);
         }
@@ -181,7 +183,7 @@ export const SalesProvider = ({ children }) => {
 
     return (
         <SalesContext.Provider value={{
-            orders, performance, loading, fetchSalesData,
+            orders, performance, loading, fetchError, fetchSalesData,
             currentPage, totalPages, totalOrdersCount,
             createOrder, updateOrder, deleteOrder,
             customOrders, createCustomOrder, updateCustomOrder, deleteCustomOrder
