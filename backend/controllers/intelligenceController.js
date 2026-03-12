@@ -65,6 +65,8 @@ exports.evaluateOrderRisk = async (req, res) => {
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         const customer = order.customer;
+        if (!customer) return res.status(422).json({ message: 'Order customer record not found.' });
+
         let riskScore = 0;
         const flags = [];
 
