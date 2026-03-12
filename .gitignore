@@ -110,3 +110,16 @@ public
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# VSCode workspace settings
+.vscode/
+
+# Local dev / seed / test scripts (not production code)
+backend/clearData.js
+backend/seedAdmin.js
+backend/seedAllModels.js
+backend/test-dynamic.js
+
+# Claude Code tooling
+claude.exe
+install.cmd
