@@ -22,6 +22,7 @@ export default function CustomerProfile() {
     const [loading, setLoading] = useState(true);
     const [blacklistConfirm, setBlacklistConfirm] = useState(false);
     const [blacklistError, setBlacklistError] = useState(null);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         const loadCustomerData = async () => {
@@ -48,7 +49,7 @@ export default function CustomerProfile() {
                 }
 
             } catch (error) {
-                console.error("Failed to fetch profile:", error);
+                setFetchError('Failed to load profile data.');
                 if (existingCustomer) setCustomer(existingCustomer);
             } finally {
                 setLoading(false);
@@ -123,6 +124,14 @@ export default function CustomerProfile() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm font-semibold text-amber-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError} — showing cached data.</span>
+                    <button onClick={() => setFetchError(null)} className="text-amber-400 hover:text-amber-600">✕</button>
+                </div>
+            )}
 
             {/* Profile Header Card */}
             <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm relative overflow-hidden">

@@ -23,6 +23,7 @@ export default function EmployeeProfile() {
     const [payrolls, setPayrolls] = useState([]);
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     const [activeTab, setActiveTab] = useState('attendance'); // attendance | payroll | leaves
 
@@ -48,7 +49,7 @@ export default function EmployeeProfile() {
                 const leaveJson = await leaveRes.json();
                 setLeaves(leaveJson.data ?? (Array.isArray(leaveJson) ? leaveJson : []));
             } catch (err) {
-                console.error(err);
+                setFetchError(err.message === 'Employee not found' ? null : 'Failed to load employee data.');
             } finally {
                 setLoading(false);
             }
@@ -65,7 +66,10 @@ export default function EmployeeProfile() {
     if (!employee) return (
         <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-gray-500">
             <User className="w-16 h-16 mb-4 text-gray-300" />
-            <h2 className="text-xl font-bold">{t('hr.empNotFound')}</h2>
+            {fetchError
+                ? <><AlertCircle className="w-10 h-10 mb-2 text-red-400" /><h2 className="text-xl font-bold text-red-600">{fetchError}</h2></>
+                : <h2 className="text-xl font-bold">{t('hr.empNotFound')}</h2>
+            }
             <button onClick={() => navigate('/hr')} className="mt-4 text-blue-600 hover:underline">{t('hr.btnReturnDirectory')}</button>
         </div>
     );
