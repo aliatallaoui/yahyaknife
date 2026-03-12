@@ -127,10 +127,10 @@ const OrderRow = React.memo(({
                                         <div className="flex items-center gap-1.5">
                                             <span className="font-black text-gray-800 tracking-tight text-[13px] border-b border-dashed border-gray-400 hover:text-blue-600 transition-colors cursor-help">{order.orderId}</span>
                                             {['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(order.status) && activeStage === 'all' && (
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" title="Pre Dispatch Stage"></span>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" title={t('ordersControl.orderRow.preDispatch')}></span>
                                             )}
                                             {['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(order.status) && activeStage === 'all' && (
-                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title="Post Dispatch Stage"></span>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title={t('ordersControl.orderRow.postDispatch')}></span>
                                             )}
                                         </div>
 
@@ -268,9 +268,9 @@ const OrderRow = React.memo(({
                                                 backgroundSize: '1em 1em',
                                             }}
                                         >
-                                            <option value="Normal">— Normal</option>
-                                            <option value="High Priority">⚡ High</option>
-                                            <option value="Urgent">🔥 Urgent</option>
+                                            <option value="Normal">{t('ordersControl.orderRow.priorityNormal')}</option>
+                                            <option value="High Priority">{t('ordersControl.orderRow.priorityHigh')}</option>
+                                            <option value="Urgent">{t('ordersControl.orderRow.priorityUrgent')}</option>
                                         </select>
                                         {/* Tags */}
                                         {(order.tags || []).map(tag_item => (
@@ -291,13 +291,13 @@ const OrderRow = React.memo(({
                                                 onClick={(e) => e.stopPropagation()}
                                                 autoFocus
                                                 className="w-16 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                                                placeholder="TAG+"
+                                                placeholder={t('ordersControl.orderRow.tagPlaceholder')}
                                             />
                                         ) : (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setIsEditingTags(true); }}
                                                 className="px-1 py-0.5 rounded border border-dashed border-gray-300 text-gray-400 hover:text-blue-500 hover:border-blue-300 text-[9px] font-black uppercase cursor-pointer transition-colors"
-                                                title="Add Tag"
+                                                title={t('ordersControl.orderRow.addTag')}
                                             >
                                                 <Plus className="w-2.5 h-2.5 inline-block" />
                                             </button>
@@ -342,7 +342,7 @@ const OrderRow = React.memo(({
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); onRestore && onRestore(order._id); }}
                                                         className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
-                                                        title="Restore Order"
+                                                        title={t('ordersControl.orderRow.restoreOrder')}
                                                     >
                                                         <RotateCcw className="w-4 h-4" />
                                                     </button>
@@ -351,7 +351,7 @@ const OrderRow = React.memo(({
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); onPurge && onPurge(order._id); }}
                                                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-red-100 shadow-sm transition-colors"
-                                                        title="Delete Permanently"
+                                                        title={t('ordersControl.orderRow.deletePermanently')}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -364,15 +364,15 @@ const OrderRow = React.memo(({
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); onStatusChange && onStatusChange(order._id, 'Ready for Pickup'); }}
                                                         className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
-                                                        title="Recall to Pre-Dispatch (not yet validated by courier)"
+                                                        title={t('ordersControl.orderRow.recallToPreDispatch')}
                                                     >
                                                         <Undo2 className="w-4 h-4" />
                                                     </button>
                                                 )
                                             ) : (
                                                 // Locked — validated by courier, cannot recall or delete
-                                                <span className="px-1.5 py-1 text-[9px] font-black uppercase tracking-wider text-gray-300 border border-gray-100 rounded" title="Locked: validated by courier">
-                                                    Locked
+                                                <span className="px-1.5 py-1 text-[9px] font-black uppercase tracking-wider text-gray-300 border border-gray-100 rounded" title={t('ordersControl.orderRow.lockedTitle')}>
+                                                    {t('ordersControl.orderRow.locked')}
                                                 </span>
                                             )
                                         ) : (
@@ -380,7 +380,7 @@ const OrderRow = React.memo(({
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); onDelete && onDelete(order._id); }}
                                                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded bg-white border border-gray-200 shadow-sm transition-colors"
-                                                    title="Move to Trash"
+                                                    title={t('ordersControl.orderRow.moveToTrash')}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -397,16 +397,16 @@ const OrderRow = React.memo(({
                                             <span className="font-bold text-gray-900 truncate max-w-[150px]">{order.customer?.name || t('ordersControl.customerCard.unknown')}</span>
                                             {/* Priority Icon beside name */}
                                             {order.priority === 'Urgent' && (
-                                                <span title="URGENT" className="text-red-500 animate-pulse text-[11px]">🔥</span>
+                                                <span title={t('ordersControl.orderRow.urgentTitle')} className="text-red-500 animate-pulse text-[11px]">🔥</span>
                                             )}
                                             {order.priority === 'High Priority' && (
-                                                <span title="High Priority" className="text-orange-500 text-[11px]">⚡</span>
+                                                <span title={t('ordersControl.orderRow.highPriorityTitle')} className="text-orange-500 text-[11px]">⚡</span>
                                             )}
                                             {order.customer?.fraudProbability > 60 && (
-                                                <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" title="High Fraud Probability" />
+                                                <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" title={t('ordersControl.orderRow.highFraudTitle')} />
                                             )}
                                             {order.customer?.refusalRate > 25 && (
-                                                <span className="flex w-2 h-2 rounded-full bg-orange-500" title="High Return Rate"></span>
+                                                <span className="flex w-2 h-2 rounded-full bg-orange-500" title={t('ordersControl.orderRow.highReturnTitle')}></span>
                                             )}
                                         </div>
 
@@ -460,7 +460,7 @@ const OrderRow = React.memo(({
                                         <button
                                             onClick={copyPhone}
                                             className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                                            title="Copy number"
+                                            title={t('ordersControl.orderRow.copyNumber')}
                                         >
                                             {copiedPhone
                                                 ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -493,12 +493,12 @@ const OrderRow = React.memo(({
                             return (
                                 <td key={col.id} className="px-4 py-2 text-right">
                                     {order.totalAmount >= 100000 ? (
-                                        <div className="inline-flex items-center bg-gradient-to-r from-amber-100 to-yellow-200 text-amber-900 px-2 py-1 rounded shadow-sm border border-amber-300 transform hover:scale-105 transition-transform" title="Gold Highlight: Over 100k DZD">
+                                        <div className="inline-flex items-center bg-gradient-to-r from-amber-100 to-yellow-200 text-amber-900 px-2 py-1 rounded shadow-sm border border-amber-300 transform hover:scale-105 transition-transform" title={t('ordersControl.orderRow.goldHighlight')}>
                                             <span className="font-black mr-1 text-[13px]">{order.totalAmount.toLocaleString()}</span>
                                             <span className="text-[9px] font-black uppercase">DZD</span>
                                         </div>
                                     ) : order.totalAmount >= 50000 ? (
-                                        <div className="inline-flex items-center bg-purple-100 text-purple-900 px-2 py-1 rounded shadow-sm border border-purple-200 transform hover:scale-105 transition-transform" title="Purple Highlight: Over 50k DZD">
+                                        <div className="inline-flex items-center bg-purple-100 text-purple-900 px-2 py-1 rounded shadow-sm border border-purple-200 transform hover:scale-105 transition-transform" title={t('ordersControl.orderRow.purpleHighlight')}>
                                             <span className="font-black mr-1 text-[13px]">{order.totalAmount.toLocaleString()}</span>
                                             <span className="text-[9px] font-black uppercase">DZD</span>
                                         </div>

@@ -2,48 +2,39 @@
  * ShipmentService — business logic for shipment lifecycle.
  *
  * Depends on:
- *   - EcotrackAdapter  (or any CourierAdapter) for courier API calls
- *   - Order / Shipment / CustomOrder models for persistence
+ *   - EcotrackAdapter (or any CourierAdapter) for courier API calls
+ *   - Order / Shipment models for persistence
  *
  * Controllers call this service and only handle HTTP (req/res).
  */
 
 const Shipment = require('../../models/Shipment');
 const Order = require('../../models/Order');
-const CustomOrder = require('../../models/CustomOrder');
 const ecotrackAdapter = require('../../integrations/couriers/EcotrackAdapter');
 const AppError = require('../../shared/errors/AppError');
 const OrderService = require('../orders/order.service');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Resolve the internal order (regular or custom) */
-async function resolveOrder(orderId, isCustomOrder, tenantId) {
+/** Resolve the internal order */
+async function resolveOrder(orderId, tenantId) {
     const query = { _id: orderId };
-    if (tenantId) query.tenant = tenantId; // Allow non-tenant models if needed, but enforce if passed
-    
-    const doc = isCustomOrder
-        ? await CustomOrder.findOne(query)
-        : await Order.findOne(query);
-    if (!doc) throw AppError.notFound(isCustomOrder ? 'Custom order' : 'Order');
+    if (tenantId) query.tenant = tenantId;
+    const doc = await Order.findOne(query);
+    if (!doc) throw AppError.notFound('Order');
     return doc;
-}
-
-/** Determine whether an orderId belongs to a custom order */
-function isCustomOrderId(internalOrderId) {
-    return typeof internalOrderId === 'string' && internalOrderId.startsWith('CUST-');
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
-exports.createShipment = async ({ orderId, isCustomOrder, shipmentData, tenantId }) => {
-    const internalOrder = await resolveOrder(orderId, isCustomOrder, tenantId);
+exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
+    const internalOrder = await resolveOrder(orderId, tenantId);
 
     const newShipment = new Shipment({
         ...shipmentData,
         tenant: tenantId,
         internalOrder: orderId,
-        internalOrderId: isCustomOrder ? internalOrder.customOrderId : internalOrder.orderId,
+        internalOrderId: internalOrder.orderId,
         shipmentStatus: 'Created in Courier',
         activityHistory: [{ status: 'Created in system, pending dispatch to ECOTRACK', remarks: 'Initial creation' }]
     });
@@ -57,16 +48,13 @@ exports.createShipment = async ({ orderId, isCustomOrder, shipmentData, tenantId
     const savedShipment = await newShipment.save();
 
     // Sync order status through service to trigger inventory + audit trail
-    if (!isCustomOrder && tenantId) {
+    if (tenantId) {
         await OrderService.updateOrder({
             orderId: orderId.toString(),
             tenantId,
             updateData: { status: 'Dispatched', trackingInfo: { carrier: 'ECOTRACK', trackingNumber: savedShipment.externalTrackingId } },
             bypassStateMachine: true
         });
-    } else {
-        internalOrder.status = 'Dispatched';
-        await internalOrder.save();
     }
 
     return savedShipment;
@@ -172,10 +160,7 @@ exports.deleteShipment = async (shipmentId, tenantId) => {
     }
 
     // Revert internal order status
-    if (isCustomOrderId(shipment.internalOrderId)) {
-        const customOrder = await CustomOrder.findById(shipment.internalOrder);
-        if (customOrder) { customOrder.status = 'Confirmed'; await customOrder.save(); }
-    } else if (shipment.internalOrder && shipment.tenant) {
+    if (shipment.internalOrder && shipment.tenant) {
         await OrderService.updateOrder({
             orderId: shipment.internalOrder.toString(),
             tenantId: shipment.tenant,
@@ -215,10 +200,7 @@ exports.requestReturn = async (shipmentId, tenantId, userId = null) => {
     const updated = await shipment.save();
 
     // Sync internal order status to Returned (not Cancelled — item is coming back)
-    if (isCustomOrderId(shipment.internalOrderId)) {
-        const customOrder = await CustomOrder.findById(shipment.internalOrder);
-        if (customOrder) { customOrder.status = 'Returned'; await customOrder.save(); }
-    } else if (shipment.internalOrder && shipment.tenant) {
+    if (shipment.internalOrder && shipment.tenant) {
         await OrderService.updateOrder({
             orderId: shipment.internalOrder.toString(),
             tenantId: shipment.tenant,

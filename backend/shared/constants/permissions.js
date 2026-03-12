@@ -65,20 +65,16 @@ const PERMS = {
     // ── Intelligence ─────────────────────────────────────────────────────────
     INTELLIGENCE_VIEW:          'intelligence.view',
 
-    // ── Workshop (add-on) ────────────────────────────────────────────────────
-    WORKSHOP_VIEW:              'workshop.view',
-    WORKSHOP_EDIT:              'workshop.edit',
-    WORKSHOP_COMPLETE_STAGE:    'manufacturing.complete_stage',
+    // ── Call Center ──────────────────────────────────────────────────────────
+    CALLCENTER_PROCESS:             'callcenter.process_orders',
+    CALLCENTER_VIEW_REPORTS:        'callcenter.view_reports',
+    CALLCENTER_MANAGE_ASSIGNMENTS:  'callcenter.manage_assignments',
 
     // ── Procurement ──────────────────────────────────────────────────────────
     PROCUREMENT_VIEW:           'procurement.read',
     PROCUREMENT_CREATE_PO:      'procurement.create_po',
     PROCUREMENT_UPDATE_PO:      'procurement.update_po',
     PROCUREMENT_RECEIVE:        'procurement.receive_goods',
-
-    // ── Projects ─────────────────────────────────────────────────────────────
-    PROJECTS_VIEW:              'projects.view',
-    PROJECTS_EDIT:              'projects.edit',
 
     // ── Support ──────────────────────────────────────────────────────────────
     SUPPORT_VIEW:               'support.view',

@@ -18,60 +18,52 @@ router.route('/products/:id')
     .delete(requirePermission('inventory.export'), inventoryController.deleteProduct);
 
 // /api/inventory/metrics
-router.get('/metrics', inventoryController.getInventoryMetrics);
+router.get('/metrics', requirePermission('inventory.read'), inventoryController.getInventoryMetrics);
 
 // /api/inventory/suppliers
 router.route('/suppliers')
-    .get(inventoryController.getSuppliers)
-    .post(inventoryController.createSupplier);
+    .get(requirePermission('inventory.view_supplier_data'), inventoryController.getSuppliers)
+    .post(requirePermission('inventory.view_supplier_data'), inventoryController.createSupplier);
 
 router.route('/suppliers/:id')
-    .put(inventoryController.updateSupplier)
-    .delete(inventoryController.deleteSupplier);
+    .put(requirePermission('inventory.view_supplier_data'), inventoryController.updateSupplier)
+    .delete(requirePermission('inventory.view_supplier_data'), inventoryController.deleteSupplier);
 
 // /api/inventory/categories
 router.route('/categories')
-    .get(inventoryController.getCategories)
-    .post(inventoryController.createCategory);
+    .get(requirePermission('inventory.read'), inventoryController.getCategories)
+    .post(requirePermission('inventory.create_product'), inventoryController.createCategory);
 
 router.route('/categories/:id')
-    .put(inventoryController.updateCategory)
-    .delete(inventoryController.deleteCategory);
-
-// /api/inventory/ledger (Original routes)
-// router.get('/ledger', stockController.getGlobalLedger);
-// router.get('/ledger/:productId', stockController.getProductLedger);
-
-// New routes appended as per instruction
-// router.get('/reports', analyticsController.downloadReport);
-// router.post('/restock/:variantId', stockController.restockItem);
+    .put(requirePermission('inventory.create_product'), inventoryController.updateCategory)
+    .delete(requirePermission('inventory.create_product'), inventoryController.deleteCategory);
 
 // --- New Enterprise Logistics Routes ---
 
 // Warehouse CRUD
 router.route('/warehouses')
-    .get(inventoryController.getWarehouses)
-    .post(inventoryController.createWarehouse);
+    .get(requirePermission('warehouse.read'), inventoryController.getWarehouses)
+    .post(requirePermission('warehouse.create'), inventoryController.createWarehouse);
 
 router.route('/warehouses/:id')
-    .put(inventoryController.updateWarehouse);
+    .put(requirePermission('warehouse.update'), inventoryController.updateWarehouse);
 
 // Stock Ledger & Adjustments
-router.post('/adjust-stock', inventoryController.adjustStock);
-router.get('/ledger', inventoryController.getStockLedger); // This replaces the original /ledger route
+router.post('/adjust-stock', requirePermission('inventory.adjust_stock'), inventoryController.adjustStock);
+router.get('/ledger', requirePermission('inventory.read'), inventoryController.getStockLedger);
 
 // /api/inventory/sku-intelligence
-router.get('/sku-intelligence', analyticsController.getSkuIntelligence);
+router.get('/sku-intelligence', requirePermission('analytics.view'), analyticsController.getSkuIntelligence);
 
 // /api/inventory/supplier-intelligence
-router.get('/supplier-intelligence', analyticsController.getSupplierIntelligence);
+router.get('/supplier-intelligence', requirePermission('analytics.view'), analyticsController.getSupplierIntelligence);
 
 // /api/inventory/pos
 router.route('/pos')
-    .get(purchaseOrderController.getPurchaseOrders)
-    .post(purchaseOrderController.createPurchaseOrder);
+    .get(requirePermission('procurement.read'), purchaseOrderController.getPurchaseOrders)
+    .post(requirePermission('procurement.create_po'), purchaseOrderController.createPurchaseOrder);
 
 router.route('/pos/:id/status')
-    .put(purchaseOrderController.updatePOStatus);
+    .put(requirePermission('procurement.update_po'), purchaseOrderController.updatePOStatus);
 
 module.exports = router;

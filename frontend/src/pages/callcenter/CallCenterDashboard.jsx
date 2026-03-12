@@ -129,7 +129,7 @@ export default function CallCenterDashboard() {
                     <div className="flex flex-col gap-1">
                         {isCallback ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-600 w-fit">
-                                <Calendar className="w-3 h-3" /> Due callback
+                                <Calendar className="w-3 h-3" /> {t('callcenter.dueCallback', 'Due callback')}
                             </span>
                         ) : (
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold w-fit ${isUrgent ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-500'}`}>
@@ -268,7 +268,7 @@ export default function CallCenterDashboard() {
                             <p className="font-bold text-gray-500">
                                 {search ? t('callcenter.queue.no_match', 'No orders match your search.') : t('callcenter.queue.empty', 'Inbox zero! All orders processed.')}
                             </p>
-                            {search && <button onClick={() => setSearch('')} className="mt-2 text-xs text-indigo-500 hover:underline">Clear search</button>}
+                            {search && <button onClick={() => setSearch('')} className="mt-2 text-xs text-indigo-500 hover:underline">{t('callcenter.clearSearch', 'Clear search')}</button>}
                         </div>
                     ) : (
                         <table className="w-full text-sm">

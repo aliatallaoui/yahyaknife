@@ -110,13 +110,6 @@ exports.updatePOStatus = async (req, res) => {
                             po._id,
                             'PurchaseOrder'
                         );
-                    } else if (item.itemModel === 'RawMaterial') {
-                        // Handle Raw Material stock update (Assuming RawMaterial model exists)
-                        const RawMaterial = require('../models/RawMaterial');
-                        await RawMaterial.findByIdAndUpdate(item.itemRef._id, {
-                            $inc: { currentStock: newReceiveQty }
-                        });
-                        // Add RawMaterial ledger movement if RawMaterial has tracking
                     }
                 }
             }

@@ -7,15 +7,16 @@ const {
     getManagerAnalytics,
     getOrderCallHistory
 } = require('../controllers/callCenterController');
-const { protect, requirePermission, authorizeRoles } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
+const { PERMS } = require('../shared/constants/permissions');
 
 // Agent Routes
-router.get('/agent-dashboard', protect, requirePermission('overview.read'), getAgentDashboard);
-router.post('/log-call', protect, requirePermission('overview.read'), logCallAction);
-router.get('/calls/:orderId', protect, requirePermission('overview.read'), getOrderCallHistory);
+router.get('/agent-dashboard', protect, requirePermission(PERMS.CALLCENTER_PROCESS), getAgentDashboard);
+router.post('/log-call', protect, requirePermission(PERMS.CALLCENTER_PROCESS), logCallAction);
+router.get('/calls/:orderId', protect, requirePermission(PERMS.CALLCENTER_PROCESS), getOrderCallHistory);
 
 // Manager / Admin Routes
-router.post('/assign-orders', protect, requirePermission('overview.read'), assignOrders);
-router.get('/manager-analytics', protect, requirePermission('overview.read'), getManagerAnalytics);
+router.post('/assign-orders', protect, requirePermission(PERMS.CALLCENTER_MANAGE_ASSIGNMENTS), assignOrders);
+router.get('/manager-analytics', protect, requirePermission(PERMS.CALLCENTER_VIEW_REPORTS), getManagerAnalytics);
 
 module.exports = router;

@@ -14,20 +14,9 @@ import CustomerProfile from './pages/CustomerProfile';
 import Warehouses from './pages/Warehouses';
 import HRSnapshot from './pages/HRSnapshot';
 import EmployeeProfile from './pages/EmployeeProfile';
-import WorkerCard from './pages/WorkerCard';
 import HRAttendance from './pages/HRAttendance';
 import HRPayroll from './pages/HRPayroll';
 import HRReports from './pages/HRReports';
-import ProjectStatus from './pages/ProjectStatus';
-import GlobalTaskBoard from './pages/GlobalTaskBoard';
-import ProjectDetail from './pages/ProjectDetail';
-import ProductionFloor from './pages/ProductionFloor';
-import KnifeDashboard from './pages/KnifeDashboard';
-import KnifeLibrary from './pages/KnifeLibrary';
-import KnivesInProduction from './pages/KnivesInProduction';
-import KnifeBuilder from './pages/KnifeBuilder';
-import WorkshopMyWork from './pages/WorkshopMyWork';
-import ToolManagement from './pages/ToolManagement';
 import ProcurementHub from './pages/ProcurementHub';
 import SettingsLayout from './pages/settings/SettingsLayout';
 import SettingsProfile from './pages/settings/SettingsProfile';
@@ -50,9 +39,7 @@ import { AuthContext, AuthProvider } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { SalesProvider } from './context/SalesContext';
 import { InventoryProvider } from './context/InventoryContext';
-import { ManufacturingProvider } from './context/ManufacturingContext';
 import { CustomerProvider } from './context/CustomerContext';
-import { ProjectProvider } from './context/ProjectContext';
 import { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -125,22 +112,11 @@ const Layout = () => {
               <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/hr" element={<HRSnapshot />} />
               <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
-              <Route path="/production/workers/:id" element={<WorkerCard />} />
               <Route path="/hr/attendance" element={<HRAttendance />} />
               <Route path="/hr/payroll" element={<HRPayroll />} />
               <Route path="/hr/reports" element={<HRReports />} />
-              <Route path="/projects" element={<ProjectStatus />} />
-              <Route path="/projects/tasks" element={<GlobalTaskBoard />} />
-              <Route path="/projects/:id" element={<ProjectDetail />} />
-              <Route path="/production" element={<ProductionFloor />} />
-              <Route path="/knife-builder" element={<KnifeBuilder />} />
-              <Route path="/knives" element={<KnifeDashboard />} />
-              <Route path="/knives/library" element={<KnifeLibrary />} />
-              <Route path="/knives/production" element={<KnivesInProduction />} />
               <Route path="/procurement" element={<ProcurementHub />} />
               <Route path="/support" element={<SupportDesk />} />
-              <Route path="/production/tools" element={<ToolManagement />} />
-              <Route path="/workshop/my-work" element={<WorkshopMyWork />} />
 
               {/* Call Center Routes */}
               <Route path="/call-center" element={<CallCenterDashboard />} />
@@ -177,15 +153,11 @@ function App() {
       <TransactionProvider>
         <SalesProvider>
           <InventoryProvider>
-            <ManufacturingProvider>
-              <CustomerProvider>
-                <ProjectProvider>
-                  <Router>
-                    <Layout />
-                  </Router>
-                </ProjectProvider>
-              </CustomerProvider>
-            </ManufacturingProvider>
+            <CustomerProvider>
+              <Router>
+                <Layout />
+              </Router>
+            </CustomerProvider>
           </InventoryProvider>
         </SalesProvider>
       </TransactionProvider>

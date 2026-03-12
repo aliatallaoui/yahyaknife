@@ -2,7 +2,6 @@ const cron = require('node-cron');
 const Shipment = require('../models/Shipment');
 const { ecotrackRequest } = require('../utils/ecotrackRequest');
 const Order = require('../models/Order');
-const CustomOrder = require('../models/CustomOrder');
 const OrderService = require('../domains/orders/order.service');
 
 /**
@@ -118,15 +117,7 @@ const syncActiveShipments = async () => {
                         if (newShipmentStatus === 'Delivered' || newShipmentStatus === 'Returned' || newPaymentStatus === 'Paid_and_Settled') {
                             const isCustom = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-');
 
-                            if (isCustom) {
-                                const customOrder = await CustomOrder.findById(shipment.internalOrder);
-                                if (customOrder) {
-                                    if (newShipmentStatus === 'Delivered') customOrder.status = 'Delivered';
-                                    else if (newShipmentStatus === 'Returned') customOrder.status = 'Returned';
-                                    if (newPaymentStatus === 'Paid_and_Settled') { customOrder.status = 'Paid'; customOrder.paymentStatus = 'Paid'; }
-                                    await customOrder.save();
-                                }
-                            } else if (shipment.internalOrder && shipment.tenant) {
+                            if (!isCustom && shipment.internalOrder && shipment.tenant) {
                                 // Route through OrderService to trigger inventory delta + audit trail + metrics
                                 let targetStatus = null;
                                 const extraData = {};

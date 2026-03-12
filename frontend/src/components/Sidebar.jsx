@@ -306,35 +306,12 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             ]
         },
         {
-            title: t('sidebar.production_purchasing_domain', 'Production & Purchasing'),
-            icon: Factory,
-            permissions: ['manufacturing.read'],
-            items: [
-                { label: t('knives.builder', 'Custom Knife Builder'), path: '/knife-builder', icon: Hammer, permission: 'manufacturing.read' },
-                { label: t('sidebar.mfg_production', 'Production Floor'), path: '/production', icon: Factory, permission: 'manufacturing.read' },
-                { label: t('knives.cards', 'Work Orders'), path: '/knives', icon: Layers, permission: 'manufacturing.read' },
-                { label: t('knives.library', 'BOM / Library'), path: '/knives/library', icon: Search, permission: 'manufacturing.read' },
-                { label: t('knives.production', 'Manufacturing Status'), path: '/knives/production', icon: Layers, permission: 'manufacturing.read' },
-                { label: t('sidebar.production_tools', 'Tool Management'), path: '/production/tools', icon: Gear, permission: 'manufacturing.read' },
-                { label: t('sidebar.my_work', 'My Work'), path: '/workshop/my-work', icon: Hammer, permission: 'workshop.view' }
-            ]
-        },
-        {
             title: t('sidebar.customers_domain', 'Customers'),
             icon: Users,
             permissions: ['customer.read'],
             items: [
                 { label: t('sidebar.crm_acquisition', 'Customer Insights'), path: '/customers', icon: Users, permission: 'customer.read' },
                 { label: t('sidebar.crm_support', 'Returns & Complaints'), path: '/support', icon: HelpCircle, permission: 'customer.read' }
-            ]
-        },
-        {
-            title: t('sidebar.projects_domain', 'Projects'),
-            icon: Briefcase,
-            permissions: ['projects.read'],
-            items: [
-                { label: t('sidebar.projects_portfolio', 'Project Status'), path: '/projects', icon: Briefcase, permission: 'projects.read' },
-                { label: t('sidebar.projects_tasks', 'Active Projects'), path: '/projects/tasks', icon: Layers, permission: 'projects.read' }
             ]
         }
     ], [t]);
@@ -359,7 +336,6 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             } else {
                 setFavorites([
                     { path: '/inventory', label: t('sidebar.inventory', 'Inventory Tracking') },
-                    { path: '/production', label: t('sidebar.mfg_production', 'Production Floor') },
                     { path: '/customers', label: t('sidebar.crm_acquisition', 'Customer Insights') }
                 ]);
             }

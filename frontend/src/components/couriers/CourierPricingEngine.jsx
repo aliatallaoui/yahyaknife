@@ -146,8 +146,8 @@ export default function CourierPricingEngine({ courierId }) {
                             <h3 className="font-bold text-gray-900">{t('common.confirm_delete', 'Delete this pricing rule?')}</h3>
                         </div>
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={confirmDeleteRule} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">Delete</button>
+                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
+                            <button onClick={confirmDeleteRule} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">{t('common.delete', 'Delete')}</button>
                         </div>
                     </div>
                 </div>
@@ -169,7 +169,7 @@ export default function CourierPricingEngine({ courierId }) {
                     <h3 className="text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-100 flex items-center justify-between text-start">
                         {isEditing ? t('couriers.edit_rule', 'Edit Pricing Rule') : t('couriers.add_rule', 'Create New Rule')}
                         {isEditing && (
-                            <button onClick={handleCancelEdit} className="text-xs text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
+                            <button onClick={handleCancelEdit} className="text-xs text-gray-500 hover:text-gray-700 font-medium">{t('common.cancel', 'Cancel')}</button>
                         )}
                     </h3>
                     <form onSubmit={handleSaveRule} className="space-y-4 text-start">

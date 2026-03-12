@@ -75,27 +75,6 @@ const tools = [
         }
     },
     {
-        name: "get_production_analytics",
-        description: "Returns an overview of the manufacturing floor, including total orders, completed, and in-progress.",
-    },
-    {
-        name: "get_active_projects",
-        description: "Returns a list of all active projects in the company along with their completion percentage.",
-    },
-    {
-        name: "create_project_task",
-        description: "Creates a new task within a specific project. Requires the exact project name.",
-        parameters: {
-            type: "OBJECT",
-            properties: {
-                projectName: { type: "STRING", description: "The name of the project to add the task to." },
-                title: { type: "STRING", description: "The title or description of the task." },
-                priority: { type: "STRING", description: "Priority level: Low, Medium, High, or Urgent." }
-            },
-            required: ["projectName", "title"]
-        }
-    },
-    {
         name: "create_product",
         description: "Creates a new product in the inventory systems. You can specify category, brand, price, and initial stock.",
         parameters: {
@@ -124,9 +103,6 @@ const Revenue = require('../models/Revenue');
 const Shipment = require('../models/Shipment');
 const Customer = require('../models/Customer');
 const Employee = require('../models/Employee');
-const ProductionOrder = require('../models/ProductionOrder');
-const Project = require('../models/Project');
-const ProjectTask = require('../models/ProjectTask');
 const Product = require('../models/Product');
 const ProductVariant = require('../models/ProductVariant');
 const Category = require('../models/Category');
@@ -208,50 +184,6 @@ async function executeTool(call, tenantId) {
                 leaveBalance: 30
             });
             return { success: true, message: `Employee ${name} added successfully to ${department}.`, employeeId: newEmp._id };
-        }
-
-        if (call.name === 'get_production_analytics') {
-            const allOrders = await ProductionOrder.find().populate('bom');
-            const completed = allOrders.filter(o => o.status === 'Completed');
-            const inProgress = allOrders.filter(o => ['In Progress', 'Quality Check'].includes(o.status));
-
-            const totalUnitsProduced = completed.reduce((sum, o) => sum + (o.quantityCompleted || 0), 0);
-            return {
-                totalOrders: allOrders.length,
-                completedOrders: completed.length,
-                inProgressOrders: inProgress.length,
-                totalUnitsProduced
-            };
-        }
-
-        if (call.name === 'get_active_projects') {
-            const projects = await Project.find({ status: { $ne: 'Completed' } }).select('name status completionPercentage deadline');
-            return {
-                count: projects.length,
-                projects: projects
-            };
-        }
-
-        if (call.name === 'create_project_task') {
-            const { projectName, title, priority } = call.args || {};
-            if (!projectName || !title) return { error: "Missing required fields: projectName or title" };
-
-            // Find the project by name (case-insensitive, escaped to prevent regex crash)
-            const escapedProject = projectName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const project = await Project.findOne({ name: { $regex: new RegExp(`^${escapedProject}$`, 'i') } });
-            if (!project) {
-                return { error: `Project '${projectName}' not found. Please verify the project name.` };
-            }
-
-            const newTask = await ProjectTask.create({
-                project: project._id,
-                title,
-                priority: priority || 'Medium',
-                status: 'To Do',
-                taskId: `TSK-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`
-            });
-
-            return { success: true, message: `Task '${title}' added to project '${project.name}'.`, taskId: newTask.taskId };
         }
 
         if (call.name === 'create_product') {

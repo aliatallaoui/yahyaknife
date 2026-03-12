@@ -15,8 +15,7 @@ const purchaseOrderSchema = new mongoose.Schema({
     items: [{
         itemModel: {
             type: String,
-            required: true,
-            enum: ['ProductVariant', 'RawMaterial']
+            enum: ['ProductVariant']
         },
         itemRef: {
             type: mongoose.Schema.Types.ObjectId,

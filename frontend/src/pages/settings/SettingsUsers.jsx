@@ -300,8 +300,8 @@ export default function SettingsUsers() {
                         </div>
                         {confirmDialog.body && <p className="text-sm text-gray-500 mb-5 ms-[52px]">{confirmDialog.body}</p>}
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">Confirm</button>
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('btnCancel', 'Cancel')}</button>
+                            <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">{t('btnConfirm', 'Confirm')}</button>
                         </div>
                     </div>
                 </div>

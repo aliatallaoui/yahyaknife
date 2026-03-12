@@ -35,12 +35,11 @@ const defaultRoles = [
             ...PERMISSIONS.warehouse,
             ...PERMISSIONS.dispatch,
             ...PERMISSIONS.procurement,
-            ...PERMISSIONS.manufacturing,
-            ...PERMISSIONS.workshop,
             ...PERMISSIONS.customer_legacy,
-            ...PERMISSIONS.projects,
             ...PERMISSIONS.analytics,
             ...PERMISSIONS.intelligence,
+            ...PERMISSIONS.support,
+            ...PERMISSIONS.callcenter,
             'financial.read', 'finance.view', // Read summaries only
             'hr.read', 'hr.employees.view' // Read basic HR but no payroll editing
         ]
@@ -55,9 +54,12 @@ const defaultRoles = [
             ...PERMISSIONS.customers,
             ...PERMISSIONS.sales_legacy,
             ...PERMISSIONS.customer_legacy,
+            ...PERMISSIONS.callcenter,
             'analytics.view',
             'shipments.view',
-            'inventory.read', 'inventory.view' // Can view stock but not edit or see cost
+            'inventory.read', 'inventory.view', // Can view stock but not edit or see cost
+            'support.view', 'support.edit',     // Can manage escalated customer support
+            'support.create_ticket', 'support.send_reply', 'support.update_status'
         ]
     },
     {
@@ -79,29 +81,6 @@ const defaultRoles = [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.procurement,
             'inventory.read', 'inventory.view_supplier_data'
-        ]
-    },
-    {
-        name: 'Workshop Manager',
-        description: 'Controls the manufacturing floor, BOMs, production tracking, knife cards, and tools.',
-        isSystemRole: true,
-        permissions: [
-            ...PERMISSIONS.overview,
-            ...PERMISSIONS.manufacturing,
-            ...PERMISSIONS.workshop,
-            'inventory.read', 'warehouse.read',
-            'hr.read' // To see worker productivity metrics
-        ]
-    },
-    {
-        name: 'Workshop Worker',
-        description: 'Limited access to view assigned tasks, knife cards, and update production stages.',
-        isSystemRole: true,
-        permissions: [
-            'overview.read',
-            'manufacturing.read',
-            'manufacturing.complete_stage',
-            'workshop.view' // Can view knife cards and production status
         ]
     },
     {
@@ -145,13 +124,40 @@ const defaultRoles = [
     },
     {
         name: 'Customer Support Agent',
-        description: 'Read-only access to sales and customers to assist clients.',
+        description: 'Manages support tickets and assists clients with orders and shipments.',
         isSystemRole: true,
         permissions: [
             'overview.read',
             'orders.view', 'sales.read', 'sales.view_customer_details',
             'customers.view', 'customer.read',
-            'shipments.view', 'dispatch.read' // to update clients on tracking
+            'shipments.view', 'dispatch.read', // to update clients on tracking
+            'support.view', 'support.edit',    // access support desk
+            'support.create_ticket', 'support.send_reply', 'support.update_status'
+        ]
+    },
+    {
+        name: 'Call Center Agent',
+        description: 'Processes orders via phone — confirm, cancel, postpone, and log call outcomes.',
+        isSystemRole: true,
+        permissions: [
+            'overview.read',
+            'orders.view',
+            'customers.view', 'customer.read',
+            'callcenter.process_orders',
+        ]
+    },
+    {
+        name: 'Call Center Manager',
+        description: 'Manages call center agents — assigns orders, views team analytics, and sets daily targets.',
+        isSystemRole: true,
+        permissions: [
+            'overview.read',
+            'orders.view', 'orders.edit',
+            'customers.view', 'customer.read',
+            'callcenter.process_orders',
+            'callcenter.view_reports',
+            'callcenter.manage_assignments',
+            'analytics.view',
         ]
     },
     {
@@ -163,10 +169,9 @@ const defaultRoles = [
             'orders.view', 'shipments.view', 'finance.view', 'customers.view',
             'couriers.view', 'hr.employees.view', 'hr.payroll.view',
             'financial.read', 'sales.read', 'inventory.read',
-            'warehouse.read', 'dispatch.read', 'procurement.read', 'manufacturing.read',
-            'hr.read', 'projects.read', 'projects.view', 'customer.read',
-            'analytics.view', 'support.view',
-            'workshop.view' // Read-only access to knife cards and workshop tools
+            'warehouse.read', 'dispatch.read', 'procurement.read',
+            'hr.read', 'customer.read',
+            'analytics.view', 'support.view'
         ]
     }
 ];

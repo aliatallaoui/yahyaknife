@@ -9,9 +9,6 @@ const productSchema = new mongoose.Schema({
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
     isActive: { type: Boolean, default: true },
 
-    // Manufacturing Phase 2 Additions
-    isManufactured: { type: Boolean, default: false },
-    activeBom: { type: mongoose.Schema.Types.ObjectId, ref: 'BillOfMaterial' }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

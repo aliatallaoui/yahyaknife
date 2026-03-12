@@ -1,13 +1,12 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { X, Plus, Trash2, Search, Store } from 'lucide-react';
 import { InventoryContext } from '../context/InventoryContext';
-import { ManufacturingContext } from '../context/ManufacturingContext';
 import { useTranslation } from 'react-i18next';
 
 const PurchaseOrdersModal = ({ isOpen, onClose }) => {
     const { t } = useTranslation();
     const { suppliers, products } = useContext(InventoryContext);
-    const { materials } = useContext(ManufacturingContext);
+    const materials = [];
     const [supplierId, setSupplierId] = useState('');
     const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
     const [notes, setNotes] = useState('');
@@ -58,7 +57,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
             setExpectedDeliveryDate('');
             setNotes('');
             setItems([]);
-            setSelectedVariantId('');
+            setSelectedItemId('');
             setQuantity('');
             setUnitCost('');
             setError(null);

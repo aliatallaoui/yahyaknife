@@ -9,8 +9,8 @@ const validId = id => mongoose.Types.ObjectId.isValid(id);
 
 exports.createShipment = async (req, res) => {
     try {
-        const { orderId, isCustomOrder, ...shipmentData } = req.body;
-        const shipment = await ShipmentService.createShipment({ orderId, isCustomOrder, shipmentData, tenantId: req.user.tenant });
+        const { orderId, ...shipmentData } = req.body;
+        const shipment = await ShipmentService.createShipment({ orderId, shipmentData, tenantId: req.user.tenant });
         res.status(201).json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });

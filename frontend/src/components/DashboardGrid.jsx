@@ -140,46 +140,6 @@ export default function DashboardGrid({ data }) {
                 />
             </div>
 
-            {/* ── Row 1.5: Workshop / Bladesmith Operations KPIs ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <MetricCard
-                    title={t('dashboard.activeProduction', 'Active in Forge')}
-                    value={data.workshopMetrics?.activeProduction || 0}
-                    unit={t('knives.unitKnives', 'Knives')}
-                    icon={Package}
-                    isPositive={true}
-                    color="text-orange-600"
-                    bg="bg-orange-50"
-                />
-                <MetricCard
-                    title={t('dashboard.completedThisMonth', 'Finished This Month')}
-                    value={data.workshopMetrics?.completedThisMonth || 0}
-                    unit={t('knives.unitKnives', 'Knives')}
-                    icon={CheckCircle}
-                    isPositive={true}
-                    color="text-indigo-600"
-                    bg="bg-indigo-50"
-                />
-                <MetricCard
-                    title={t('dashboard.pendingCustom', 'Custom Orders')}
-                    value={data.workshopMetrics?.pendingCustomOrders || 0}
-                    unit={t('orders.unitOrders', 'Orders')}
-                    icon={Users}
-                    isPositive={false}
-                    color="text-blue-600"
-                    bg="bg-blue-50"
-                />
-                <MetricCard
-                    title={t('dashboard.valueInProduction', 'Value in Forge')}
-                    value={(data.workshopMetrics?.valueInProduction || 0).toLocaleString()}
-                    unit={t('common.currency')}
-                    icon={DollarSign}
-                    isPositive={true}
-                    color="text-emerald-600"
-                    bg="bg-emerald-50"
-                />
-            </div>
-
             {/* ── Row 2: Order Pipeline (stage cards) + AI Insights ── */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
 

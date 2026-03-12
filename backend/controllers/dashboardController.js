@@ -3,8 +3,6 @@ const Revenue = require('../models/Revenue');
 const ProductVariant = require('../models/ProductVariant');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
-const KnifeCard = require('../models/KnifeCard');
-const CustomOrder = require('../models/CustomOrder');
 const { generateExecutiveInsights } = require('../utils/aiInsights');
 
 const moment = require('moment');
@@ -156,29 +154,7 @@ exports.getDashboardData = async (req, res) => {
                 deadStock: deadStockVariants,
                 inventoryTurnoverRate
             },
-            workshopMetrics: {
-                activeProduction: 0,
-                completedThisMonth: 0,
-                pendingCustomOrders: 0,
-                valueInProduction: 0
-            }
         };
-
-        // --- WORKSHOP / BLADESMITH METRICS ---
-        try {
-            const [activeKnives, completedKnives, pendingCustoms] = await Promise.all([
-                KnifeCard.find({ status: { $nin: ['Completed', 'Sold'] } }),
-                KnifeCard.countDocuments({ status: { $in: ['Completed', 'Sold'] }, updatedAt: { $gte: startPeriod.toDate(), $lte: endPeriod.toDate() } }),
-                CustomOrder.countDocuments({ status: { $in: ['Pending', 'Confirmed', 'In Production'] } })
-            ]);
-
-            data.workshopMetrics.activeProduction = activeKnives.length;
-            data.workshopMetrics.completedThisMonth = completedKnives;
-            data.workshopMetrics.pendingCustomOrders = pendingCustoms;
-            data.workshopMetrics.valueInProduction = activeKnives.reduce((sum, k) => sum + (k.suggestedPrice || 0), 0);
-        } catch (err) {
-            console.error('Failed to fetch workshop metrics', err);
-        }
 
         // Leverage AI Intelligence summaries here
         const [criticalStock, suspiciousCustomers, absentToday] = await Promise.all([

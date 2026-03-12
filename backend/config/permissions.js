@@ -87,21 +87,6 @@ const PERMISSIONS = {
         'procurement.create_po', 'procurement.update_po', 'procurement.receive_goods',
         'procurement.view_supplier_metrics', 'procurement.export'
     ],
-    manufacturing: [
-        'manufacturing.read', 'manufacturing.manage_raw_materials', 'manufacturing.create_bom',
-        'manufacturing.update_bom', 'manufacturing.create_production_order', 'manufacturing.start_production',
-        'manufacturing.complete_stage', 'manufacturing.complete_production', 'manufacturing.view_costs'
-    ],
-    // ── Workshop (knife cards, tools, custom orders) ──────────────────────────
-    workshop: [
-        'workshop.view', 'workshop.edit'
-    ],
-    projects: [
-        'projects.view', 'projects.edit',
-        // legacy strings kept for existing roles
-        'projects.read', 'projects.create', 'projects.update', 'projects.manage_tasks',
-        'projects.manage_milestones', 'projects.export'
-    ],
     customer_legacy: [
         'customer.read', 'customer.update', 'customer.view_risk', 'customer.export'
     ],

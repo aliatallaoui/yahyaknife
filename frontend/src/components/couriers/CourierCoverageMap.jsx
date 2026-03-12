@@ -150,8 +150,8 @@ export default function CourierCoverageMap({ courierId }) {
                             <h3 className="font-bold text-gray-900">Delete this coverage region?</h3>
                         </div>
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={confirmDeleteCoverage} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">Delete</button>
+                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
+                            <button onClick={confirmDeleteCoverage} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">{t('common.delete', 'Delete')}</button>
                         </div>
                     </div>
                 </div>
@@ -168,8 +168,8 @@ export default function CourierCoverageMap({ courierId }) {
                         </div>
                         <p className="text-sm text-gray-500 mb-5 ms-[52px]">{t('couriers.confirmSync', 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds.')}</p>
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmSync(false)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={confirmSyncCoverage} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors">Continue</button>
+                            <button onClick={() => setConfirmSync(false)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
+                            <button onClick={confirmSyncCoverage} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors">{t('common.continue', 'Continue')}</button>
                         </div>
                     </div>
                 </div>

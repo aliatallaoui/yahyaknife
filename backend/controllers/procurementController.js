@@ -1,7 +1,6 @@
 const Supplier = require('../models/Supplier');
 const PurchaseOrder = require('../models/PurchaseOrder');
 const ProductVariant = require('../models/ProductVariant');
-const RawMaterial = require('../models/RawMaterial');
 const StockMovementLedger = require('../models/StockMovementLedger');
 const mongoose = require('mongoose');
 const { ok, created, message, paginated } = require('../shared/utils/ApiResponse');
@@ -86,16 +85,23 @@ exports.createPurchaseOrder = async (req, res) => {
         const count = await PurchaseOrder.countDocuments();
         const poNumber = `PO-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
+        const { supplier, items, expectedDeliveryDate, notes, orderDate } = req.body;
         const po = new PurchaseOrder({
-            ...req.body,
-            poNumber
+            supplier,
+            items: (items || []).map(({ itemModel, itemRef, quantity, unitCost }) => ({
+                itemModel, itemRef, quantity, unitCost
+            })),
+            expectedDeliveryDate,
+            notes,
+            poNumber,
+            status: 'Draft'
         });
 
         await po.save();
 
         // Also update Supplier lead time metrics if delivery date is expected
         if (po.expectedDeliveryDate && po.supplier) {
-            const startStr = req.body.orderDate || new Date();
+            const startStr = orderDate || new Date();
             const daysLead = Math.ceil((new Date(po.expectedDeliveryDate) - new Date(startStr)) / (1000 * 60 * 60 * 24));
 
             // Basic rolling average approximation
@@ -152,16 +158,6 @@ exports.receivePurchaseOrder = async (req, res) => {
                         await pv.save({ session });
                         ledgerRefId = pv._id;
                         ledgerRefModel = 'ProductVariant';
-                    }
-                } else if (poItem.itemModel === 'RawMaterial') {
-                    // Update Raw Material Stock
-                    const rm = await RawMaterial.findById(poItem.itemRef).session(session);
-                    if (rm) {
-                        rm.stockLevel += stockChange;
-                        rm.costPerUnit = poItem.unitCost;
-                        await rm.save({ session });
-                        ledgerRefId = rm._id;
-                        ledgerRefModel = 'RawMaterial';
                     }
                 }
 
