@@ -200,6 +200,9 @@ exports.updateProductionOrderStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
+        if (!mongoose.Types.ObjectId.isValid(id))
+            return res.status(400).json({ error: 'Invalid ID' });
+
         const order = await ProductionOrder.findById(id).populate('bom');
         if (!order) return res.status(404).json({ error: 'Production Order not found' });
         if (order.status === 'Completed') {

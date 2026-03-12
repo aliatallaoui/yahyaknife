@@ -14,11 +14,14 @@ exports.getAllKnifeCards = async (req, res) => {
         const { status, search } = req.query;
         const filter = {};
         if (status) filter.status = status;
-        if (search) filter.$or = [
-            { name: { $regex: search, $options: 'i' } },
-            { knifeId: { $regex: search, $options: 'i' } },
-            { steelType: { $regex: search, $options: 'i' } }
-        ];
+        if (search) {
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.$or = [
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { knifeId: { $regex: escapedSearch, $options: 'i' } },
+                { steelType: { $regex: escapedSearch, $options: 'i' } }
+            ];
+        }
 
         const [knives, total] = await Promise.all([
             KnifeCard.find(filter)

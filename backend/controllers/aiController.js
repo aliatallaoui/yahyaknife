@@ -236,8 +236,9 @@ async function executeTool(call, tenantId) {
             const { projectName, title, priority } = call.args || {};
             if (!projectName || !title) return { error: "Missing required fields: projectName or title" };
 
-            // Find the project by name (case-insensitive)
-            const project = await Project.findOne({ name: { $regex: new RegExp(`^${projectName}$`, 'i') } });
+            // Find the project by name (case-insensitive, escaped to prevent regex crash)
+            const escapedProject = projectName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const project = await Project.findOne({ name: { $regex: new RegExp(`^${escapedProject}$`, 'i') } });
             if (!project) {
                 return { error: `Project '${projectName}' not found. Please verify the project name.` };
             }
@@ -258,7 +259,8 @@ async function executeTool(call, tenantId) {
             if (!name || !categoryName) return { error: "Missing required fields: name or categoryName" };
 
             // Find or create category
-            let category = await Category.findOne({ name: { $regex: new RegExp(`^${categoryName}$`, 'i') } });
+            const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            let category = await Category.findOne({ name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') } });
             if (!category) {
                 category = await Category.create({ name: categoryName, description: 'Created via AI Copilot' });
             }

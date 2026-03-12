@@ -9,7 +9,7 @@ const shipmentActivitySchema = new mongoose.Schema({
 });
 
 const shipmentSchema = new mongoose.Schema({
-    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant' },
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
     // Internal Links
     internalOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     internalOrderId: { type: String, required: true }, // For quick reference/searching

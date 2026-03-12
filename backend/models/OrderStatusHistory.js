@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const orderStatusHistorySchema = new mongoose.Schema({
-    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
     status: { type: String, required: true },
     previousStatus: { type: String },  // null on initial creation
