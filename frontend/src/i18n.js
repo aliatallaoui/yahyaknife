@@ -955,7 +955,12 @@ const resources = {
                     remarkPlaceholder: "e.g. Call before delivery",
                     cancel: "Cancel",
                     submit: "Dispatch to Courier",
-                    submitting: "Pushing to EcoTrack..."
+                    submitting: "Pushing to EcoTrack...",
+                    selectWilaya: "Select Wilaya...",
+                    selectCommune: "Select Commune...",
+                    selectWilayaFirst: "Select Wilaya first",
+                    homeDelivery: "Home Delivery (0)",
+                    stopDesk: "Stop Desk / Point (1)"
                 },
                 statusCreatedInCourier: "Created in Courier",
                 statusValidated: "Validated",
@@ -2766,7 +2771,12 @@ const resources = {
                     remarkPlaceholder: "مثلاً: الاتصال قبل التوصيل",
                     cancel: "إلغاء",
                     submit: "إرسال إلى المندوب",
-                    submitting: "جارٍ الرفع إلى إيكوتراك..."
+                    submitting: "جارٍ الرفع إلى إيكوتراك...",
+                    selectWilaya: "اختر الولاية...",
+                    selectCommune: "اختر البلدية...",
+                    selectWilayaFirst: "اختر الولاية أولاً",
+                    homeDelivery: "توصيل للمنزل (0)",
+                    stopDesk: "نقطة التوقف (1)"
                 },
                 searching: "جارٍ البحث...",
                 noPendingOrders: "لم يتم العثور على طلبات معلقة.",
