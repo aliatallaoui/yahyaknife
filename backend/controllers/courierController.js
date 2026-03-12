@@ -16,7 +16,17 @@ exports.getCouriers = async (req, res) => {
 // Create a new courier
 exports.createCourier = async (req, res) => {
     try {
-        const newCourier = await Courier.create({ ...req.body, tenant: req.user.tenant });
+        const {
+            name, phone, logo, status, integrationType, apiProvider, apiBaseUrl,
+            authType, apiId, apiToken, accountReference, notes, vehicleType,
+            coverageZones, deliverySLAs
+        } = req.body;
+        const newCourier = await Courier.create({
+            name, phone, logo, status, integrationType, apiProvider, apiBaseUrl,
+            authType, apiId, apiToken, accountReference, notes, vehicleType,
+            coverageZones, deliverySLAs,
+            tenant: req.user.tenant
+        });
         res.status(201).json(newCourier);
     } catch (error) {
         res.status(400).json({ error: error.message });

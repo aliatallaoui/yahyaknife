@@ -54,7 +54,8 @@ const lookupCustomerByPhone = async (req, res) => {
 // @access  Private
 const createCustomer = async (req, res) => {
     try {
-        const customer = await Customer.create({ ...req.body, tenant: req.user.tenant });
+        const { name, phone, email, acquisitionChannel, status } = req.body;
+        const customer = await Customer.create({ name, phone, email, acquisitionChannel, status, tenant: req.user.tenant });
         res.status(201).json(customer);
     } catch (error) {
         res.status(400).json({ message: error.message });
