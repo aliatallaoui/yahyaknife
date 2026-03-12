@@ -32,14 +32,16 @@ exports.triggerEcotrackSync = async (req, res) => {
 exports.getOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = Math.min(parseInt(req.query.limit) || 10, 100);
         let skip = (page - 1) * limit;
 
         const query = { tenant: req.user.tenant, deletedAt: null };
 
         // Opt-in Cursor Pagination for massive datasets
         if (req.query.lastId) {
-            query._id = { $lt: req.query.lastId };
+            if (!mongoose.Types.ObjectId.isValid(req.query.lastId))
+                return res.status(400).json({ error: 'Invalid cursor (lastId).' });
+            query._id = { $lt: new mongoose.Types.ObjectId(req.query.lastId) };
             skip = 0; // Disable offset when using cursor
         }
 
@@ -77,7 +79,7 @@ exports.getOrders = async (req, res) => {
 exports.getAdvancedOrders = async (req, res) => {
     try {
         const { limit = 50 } = req.query;
-        let queryLimit = parseInt(limit);
+        let queryLimit = Math.min(parseInt(limit) || 50, 200);
 
         const ALLOWED_SORT_FIELDS = new Set(['_id', 'totalAmount', 'createdAt', 'status', 'priority', 'date']);
         let { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
@@ -87,7 +89,15 @@ exports.getAdvancedOrders = async (req, res) => {
 
         if (cursor) {
             const op = sortOrder === 'desc' ? '$lt' : '$gt';
-            query[sortField === 'date' ? '_id' : sortField] = { [op]: cursor };
+            const cursorField = sortField === 'date' ? '_id' : sortField;
+            if (cursorField === '_id') {
+                if (!mongoose.Types.ObjectId.isValid(cursor))
+                    return res.status(400).json({ error: 'Invalid cursor.' });
+                query._id = { [op]: new mongoose.Types.ObjectId(cursor) };
+            } else {
+                // Numeric/string sort fields — use as-is (already whitelisted above)
+                query[cursorField] = { [op]: cursor };
+            }
         }
 
         // 0. Stage Splitting Logic

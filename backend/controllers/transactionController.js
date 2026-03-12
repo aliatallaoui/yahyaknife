@@ -42,6 +42,11 @@ exports.addTransaction = async (req, res) => {
             return res.status(400).json({ message: 'Please provide all required fields' });
         }
 
+        const parsedAmount = Number(amount);
+        if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+            return res.status(400).json({ message: 'Amount must be a positive number' });
+        }
+
         if (type === 'revenue') {
             const newRevenue = await Revenue.create({
                 tenant: tenantId, amount, date, description,
@@ -72,6 +77,12 @@ exports.updateTransaction = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(id))
             return res.status(400).json({ message: 'Invalid transaction ID' });
         const { type, amount, date, description, category } = req.body;
+
+        if (amount !== undefined) {
+            const parsedAmount = Number(amount);
+            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0)
+                return res.status(400).json({ message: 'Amount must be a positive number' });
+        }
 
         if (type === 'revenue') {
             const updated = await Revenue.findOneAndUpdate(

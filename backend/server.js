@@ -8,23 +8,17 @@ const salesRoutes = require('./routes/sales');
 const inventoryRoutes = require('./routes/inventory');
 const customerRoutes = require('./routes/customerRoutes');
 const hrRoutes = require('./routes/hr');
-const projectRoutes = require('./routes/project');
 const roleRoutes = require('./routes/roles');
-const productionRoutes = require('./routes/production');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const toolRoutes = require('./routes/tools');
 const courierSettingsRoutes = require('./routes/courierSettings');
 const shipmentRoutes = require('./routes/shipments');
 const transactionRoutes = require('./routes/transactions');
 const courierRoutes = require('./routes/couriers');
 const intelligenceRoutes = require('./routes/intelligenceRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-const manufacturingRoutes = require('./routes/manufacturing');
 const procurementRoutes = require('./routes/procurement');
 const supportRoutes = require('./routes/support');
-const knifeRoutes = require('./routes/knives');
-const customOrderRoutes = require('./routes/customOrders');
 const aiRoutes = require('./routes/aiRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const callCenterRoutes = require('./routes/callCenterRoutes');
@@ -39,6 +33,9 @@ const PORT = process.env.PORT || 5000;
 
 // Determine which Mongo URI to use based on the environment
 const MONGO_URI = process.env.MONGO_URI || process.env.PROD_MONGO_URI || process.env.DEV_MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
+
+// Security — remove server fingerprint header
+app.disable('x-powered-by');
 
 // Middleware
 const corsOrigin = process.env.CORS_ORIGIN
@@ -55,21 +52,15 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/hr', hrRoutes);
-app.use('/api/projects', projectRoutes);
 app.use('/api/roles', roleRoutes);
-app.use('/api/production', productionRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/couriers', courierRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/manufacturing', manufacturingRoutes);
 app.use('/api/procurement', procurementRoutes);
 app.use('/api/support', supportRoutes);
-app.use('/api/knives', knifeRoutes);
-app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/tools', toolRoutes);
 app.use('/api/courier-settings', courierSettingsRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/ai', aiRoutes);

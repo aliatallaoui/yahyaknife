@@ -33,6 +33,14 @@ const errorHandler = (err, req, res, next) => { // eslint-disable-line no-unused
         });
     }
 
+    // ── Mongoose cast error (e.g., invalid ObjectId in query) ────────────────
+    if (err.name === 'CastError') {
+        return res.status(400).json({
+            success: false,
+            error: { code: 'INVALID_ID', message: `Invalid value for field: ${err.path}` }
+        });
+    }
+
     // ── Mongoose duplicate key ────────────────────────────────────────────────
     if (err.code === 11000) {
         const field = Object.keys(err.keyPattern || {})[0] || 'field';
