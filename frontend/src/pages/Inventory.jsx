@@ -16,9 +16,9 @@ export default function Inventory() {
     const { t } = useTranslation();
     const { hasPermission } = useContext(AuthContext);
     const {
-        products, suppliers, categories, metrics, loading,
+        products, suppliers, categories, metrics, loading, fetchError,
         createProduct, updateProduct, deleteProduct,
-        deleteSupplier, deleteCategory
+        deleteSupplier, deleteCategory, refreshInventory
     } = useContext(InventoryContext);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -198,6 +198,14 @@ export default function Inventory() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={refreshInventory} className="text-red-400 hover:text-red-600 text-xs font-bold">Retry</button>
+                </div>
+            )}
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

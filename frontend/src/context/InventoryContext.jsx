@@ -7,24 +7,21 @@ export const InventoryProvider = ({ children }) => {
     const { token } = useContext(AuthContext);
 
     const [products, setProducts] = useState([]);
-    const [rawMaterials, setRawMaterials] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [categories, setCategories] = useState([]);
     const [metrics, setMetrics] = useState(null);
     const [purchaseOrders, setPurchaseOrders] = useState([]);
     const [globalLedger, setGlobalLedger] = useState([]);
-    const [completedKnives, setCompletedKnives] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     const fetchInventoryData = async () => {
         if (!token) return;
         setLoading(true);
+        setFetchError(null);
         try {
-            const [prodRes, matRes, metricsRes, suppRes, catRes, poRes, ledgerRes, knivesRes] = await Promise.all([
+            const [prodRes, metricsRes, suppRes, catRes, poRes, ledgerRes] = await Promise.all([
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/raw-materials`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/metrics`, {
@@ -41,22 +38,17 @@ export const InventoryProvider = ({ children }) => {
                 }),
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger`, {
                     headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards?status=Completed`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
 
             if (prodRes.ok) { const prodJson = await prodRes.json(); setProducts(prodJson.data ?? (Array.isArray(prodJson) ? prodJson : [])); }
-            if (matRes.ok) { const matJson = await matRes.json(); setRawMaterials(matJson.data ?? (Array.isArray(matJson) ? matJson : [])); }
             if (metricsRes.ok) setMetrics(await metricsRes.json());
             if (suppRes.ok) { const suppJson = await suppRes.json(); setSuppliers(suppJson.data ?? (Array.isArray(suppJson) ? suppJson : [])); }
             if (catRes.ok) { const catJson = await catRes.json(); setCategories(catJson.data ?? (Array.isArray(catJson) ? catJson : [])); }
             if (poRes.ok) { const poJson = await poRes.json(); setPurchaseOrders(poJson.data ?? (Array.isArray(poJson) ? poJson : [])); }
             if (ledgerRes.ok) { const ledgerJson = await ledgerRes.json(); setGlobalLedger(ledgerJson.data ?? (Array.isArray(ledgerJson) ? ledgerJson : [])); }
-            if (knivesRes.ok) { const knivesJson = await knivesRes.json(); setCompletedKnives(knivesJson.data ?? (Array.isArray(knivesJson) ? knivesJson : [])); }
         } catch (error) {
-            console.error("Error fetching inventory data:", error);
+            setFetchError('Failed to load inventory data.');
         } finally {
             setLoading(false);
         }
@@ -235,14 +227,13 @@ export const InventoryProvider = ({ children }) => {
     return (
         <InventoryContext.Provider value={{
             products,
-            rawMaterials,
             suppliers,
             categories,
             metrics,
             purchaseOrders,
             globalLedger,
-            completedKnives,
             loading,
+            fetchError,
             createProduct,
             updateProduct,
             deleteProduct,
