@@ -31,6 +31,9 @@ export default function ProjectStatus() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProj, setNewProj] = useState({ name: '', description: '', department: 'General', deadline: '', linkedModule: 'None' });
     const [createError, setCreateError] = useState(null);
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const handleCreateProject = async (e) => {
         e.preventDefault();
@@ -74,8 +77,9 @@ export default function ProjectStatus() {
                         <div className="relative">
                             <Search className={clsx("w-4 h-4 absolute top-1/2 -translate-y-1/2 text-purple-500", isAr ? "right-3" : "left-3")} />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('searchPlaceholder', 'Search projects...')}
+                                placeholder={t('searchPlaceholder', 'Search projects... (Press /)')}
                                 className={clsx("bg-white border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-xl py-2 text-sm w-48 sm:w-64 shadow-sm font-bold transition-all", isAr ? "pr-9 pl-4" : "pl-9 pr-4")}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
