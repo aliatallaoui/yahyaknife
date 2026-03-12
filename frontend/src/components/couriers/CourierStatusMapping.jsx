@@ -79,7 +79,7 @@ export default function CourierStatusMapping({ courier, setCourier }) {
             setSuccessMsg(t('couriers.mapping_saved', 'Mapping configuration saved successfully.'));
         } catch (error) {
             console.error('Error saving mapping:', error);
-            setErrorMsg(error.response?.data?.message || 'Error saving mapping');
+            setErrorMsg(error.response?.data?.message || t('couriers.saveMappingFailed', 'Error saving mapping'));
         } finally {
             setSaving(false);
         }

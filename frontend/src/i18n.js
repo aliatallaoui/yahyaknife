@@ -226,6 +226,9 @@ const resources = {
                 selectVariant: 'Select Product / Variant',
                 inStock: '{{count}} in stock',
                 subtotal: 'Subtotal',
+                moveToTrash: 'Move to Trash',
+                pressToFocus: 'Press / to focus',
+                refreshDataCore: 'Refresh Data Core',
                 delivery: 'Delivery',
                 overrideFee: 'Override calculated fee',
                 discount: 'Discount',
@@ -320,8 +323,19 @@ const resources = {
                 reqHour: 'Requests / Hour',
                 dailyQuota: 'Daily Quota',
                 limitConfig: 'Configuration Limit',
-                resetInfo: 'API usage counters automatically reset based on calendar time boundaries. Bypassing limits will result in temporary suspension by the provider.'
-            },
+                resetInfo: 'API usage counters automatically reset based on calendar time boundaries. Bypassing limits will result in temporary suspension by the provider.',
+                loadFailed: 'Failed to load courier data.',
+                saveFailed: 'Error saving courier.',
+                loadCoverageFailed: 'Failed to load coverage regions.',
+                addCoverageFailed: 'Error adding coverage region',
+                deleteCoverageFailed: 'Failed to delete coverage region.',
+                syncCoverageFailed: 'Error syncing coverage. Check API credentials.',
+                loadPricingFailed: 'Failed to load pricing rules.',
+                saveRuleFailed: 'Error saving rule',
+                deleteRuleFailed: 'Failed to delete pricing rule.',
+                saveMappingFailed: 'Error saving mapping'
+            },,
+                errorLoadData: 'Failed to load courier data.',
             rbac: {
                 roles_title: "Roles & Permissions",
                 roles_desc: "Manage access control profiles across the organization.",
@@ -337,7 +351,10 @@ const resources = {
                 roles_edit: "Edit",
                 roles_matrix: "Permission Matrix",
                 roles_select_prompt: "Select a role to view permissions",
-                roles_or_create: "Or create a new custom role"
+                roles_or_create: "Or create a new custom role",
+                loadError: "Failed to load RBAC data",
+                saveRoleError: "Failed to save role",
+                deleteRoleError: "Failed to delete role"
             },
             modules: {
                 overview: "Overview",
@@ -500,7 +517,12 @@ const resources = {
                     aov: "AOV"
                 },
                 noCourierData: "No courier data for this period",
-                noHistoricalData: "No historical data yet — runs nightly at 00:30"
+                noHistoricalData: "No historical data yet — runs nightly at 00:30",
+                errorLoadData: "Failed to load analytics data.",
+
+                errorLoadTrend: "Failed to load trend data.",
+                noSalesData: "No sales data for this period",
+                noCustomerData: "No customer data for this period"
             },
             orders: {
                 lblWilaya: "Wilaya",
@@ -562,8 +584,11 @@ const resources = {
                 lblWilaya: "Wilaya",
                 lblCommune: "Commune",
                 lblAddress: "Full Address",
-                lblCallbackDate: "Callback Date"
-            },
+                lblCallbackDate: "Callback Date",
+                assignedCount: "{{count}} orders assigned successfully.",
+                autoAssignFailed: "Auto-assignment failed."
+            },,
+                actionFailed: "Action failed.",
             header: {
                 searchPlaceholder: "Search orders, customers, SKUs...",
                 businessOS: "Cortex Business OS",
@@ -606,7 +631,12 @@ const resources = {
                 loading: "Loading...",
                 cancel: "Cancel",
                 delete: "Delete",
-                continue: "Continue"
+                continue: "Continue",
+                copied: "Copied!",
+                copyNumber: "Copy number",
+                noPhone: "No phone number",
+                refresh: "Refresh",
+                noPermission: "You do not have permission to view this page."
             },
             dashboard: {
                 title: "Platform Overview",
@@ -680,6 +710,9 @@ const resources = {
                 hrOverview: "HR Overview",
                 hrOverviewSub: "{{count}} total employees"
             },
+            overview: {
+                refreshBriefing: "Refresh briefing"
+            },
             settings: {
                 title: "General Settings",
                 localization: "Localization",
@@ -726,8 +759,10 @@ const resources = {
                 deleteBulkTitle: "Delete {{count}} transaction(s)?",
                 deleteBulkBody: "This will permanently remove the selected entries from the ledger.",
                 cancel: "Cancel",
-                deleteBtn: "Delete"
-            },
+                deleteBtn: "Delete",
+                errorLoadTransactions: "Failed to load transactions."
+            },,
+                errorLoadOverview: "Failed to load financial overview.",
             sales: {
                 title: "Sales Management",
                 subtitle: "Full commercial lifecycle tracking and order fulfillment.",
@@ -789,7 +824,9 @@ const resources = {
                 cancel: "Cancel",
                 confirm: "Confirm",
                 failedDeleteOrder: "Failed to delete order.",
-                failedDispatch: "Dispatch failed"
+                failedDispatch: "Dispatch failed",
+                errorLoadOrders: "Failed to load orders.",
+                errorRefreshPerf: "Failed to refresh performance metrics."
             },
             logistics: {
                 title: "Delivery Management",
@@ -906,16 +943,16 @@ const resources = {
                 noPendingOrders: "No pending orders found.",
                 errorLoadPending: "Could not load pending orders.",
                 errorRequiredFields: "Please fill all required operational fields (Order, Customer, Phone, Wilaya, Commune).",
-                errorDispatch: "Failed to dispatch shipment to courier."
-            },
-            inventory: {
-                title: "Inventory Tracking",
+                errorDispatch: "Failed to dispatch shipment to courier.",
                 errorLoadShipments: "Failed to load shipments.",
                 errorValidate: "Failed to validate shipment.",
                 errorDelete: "Failed to delete shipment.",
                 errorLabel: "Failed to fetch printing label.",
                 errorExport: "Export failed. Please try again.",
-                pendingTrackingId: "Pending...",
+                pendingTrackingId: "Pending..."
+            },
+            inventory: {
+                title: "Inventory Tracking",
                 subtitle: "Manage product catalog, track stock levels, and monitor supplier flow.",
                 receivePoBtn: "Receive PO",
                 addCategoryBtn: "Add Category",
@@ -973,6 +1010,19 @@ const resources = {
                 managerText: "Manager",
                 unassigned: "Unassigned",
                 noWarehouses: "No warehouses defined. Add one to enable multi-location tracking.",
+                errorLoadData: "Failed to load inventory data.",
+                errorCreateProduct: "Failed to create product.",
+                errorUpdateProduct: "Failed to update product.",
+                errorDeleteProduct: "Failed to delete product.",
+                errorCreateSupplier: "Failed to create supplier.",
+                errorUpdateSupplier: "Failed to update supplier.",
+                errorDeleteSupplier: "Failed to delete supplier.",
+                errorCreateCategory: "Failed to create category.",
+                errorUpdateCategory: "Failed to update category.",
+                errorDeleteCategory: "Failed to delete category.",
+                errorCreatePO: "Failed to create purchase order.",
+                errorUpdatePO: "Failed to update PO status.",
+                errorFetchLedger: "Failed to fetch ledger.",
                 ledgerTitle: "Immutable Stock Ledger",
                 recentText: "Recent",
                 entriesText: "entries",
@@ -1093,7 +1143,8 @@ const resources = {
                 failedSave: "Failed to save customer.",
                 errorLoadProfile: "Failed to load profile data.",
                 errorBlacklist: "Failed to update blacklist status.",
-                showingCached: "showing cached data."
+                showingCached: "showing cached data.",
+                analyticsUnavailable: "analytics charts may be unavailable."
             },
             procurement: {
                 title: "Procurement Hub",
@@ -1129,7 +1180,11 @@ const resources = {
                 statusReceived: "Received",
                 statusCancelled: "Cancelled",
                 searchPlaceholder: "Search PO or Supplier...",
-                errorLoadData: "Failed to load procurement data."
+                errorLoadData: "Failed to load procurement data.",
+                poItemValidation: "Please select an item, quantity, and unit cost.",
+                supplierRequired: "Supplier is required",
+                itemsRequired: "At least one item is required",
+                poFailed: "Failed to create PO"
             },
             hr: {
                 title: "HR & Workforce",
@@ -1276,9 +1331,13 @@ const resources = {
                 lblStartDate: "Start Date",
                 lblContractStatus: "Contract Status",
                 na: "N/A",
+                notClockedIn: "have not clocked in yet",
+                statusPendingApproval: "Pending Approval",
+                statusPartiallyPaid: "Partially Paid",
                 errorLoadAttendance: "Failed to load attendance records.",
                 errorLoadReport: "Failed to load report data.",
-                errorLoadEmployee: "Failed to load employee data."
+                errorLoadEmployee: "Failed to load employee data.",
+                errorLoadData: "Failed to load HR data."
             },
             settingsTab: {
                 title: "System Settings",
@@ -1356,7 +1415,12 @@ const resources = {
                 roleSalesRepresentative: "Sales Representative",
                 roleWarehouseSupervisor: "Warehouse Supervisor",
                 roleProductionLead: "Production Lead",
-                roleuser: "User"
+                roleuser: "User",
+                loadError: "Failed to load users or roles. You may not have permission.",
+                networkError: "Network error loading data.",
+                placeholderName: "John Doe",
+                placeholderEmail: "john@company.com",
+                placeholderPassword: "Temporary vault key"
             },
             settingsSecurity: {
                 title: "Security & Logins",
@@ -2074,6 +2138,9 @@ const resources = {
                 commune: 'البلدية',
                 selectCommune: 'اختر البلدية...',
                 selectWilayaFirst: 'اختر الولاية أولاً',
+                moveToTrash: 'نقل إلى سلة المهملات',
+                pressToFocus: 'اضغط / للتركيز',
+                refreshDataCore: 'تحديث البيانات الأساسية',
                 communeOptions: '{{count}} خيار',
                 detailedAddress: 'العنوان التفصيلي',
                 addressPlaceholder: 'الشارع، المعلم، المبنى...',
@@ -2120,29 +2187,6 @@ const resources = {
                 returnRate: 'معدل الإرجاع',
                 ltv: 'القيمة الإجمالية',
                 duplicates: 'طلبات نشطة مكررة'
-            },
-
-            sales: {
-                statusNew: 'جديد',
-                statusCall1: 'اتصال 1',
-                statusCall2: 'اتصال 2',
-                statusCall3: 'اتصال 3',
-                statusNoAnswer: 'لا إجابة',
-                statusOutofCoverage: 'خارج التغطية',
-                statusPostponed: 'مؤجل',
-                statusWrongNumber: 'رقم خاطئ',
-                statusCancelledbyCustomer: 'ملغى من العميل',
-                statusConfirmed: 'مؤكد',
-                statusPreparing: 'قيد التجهيز',
-                statusReadyforPickup: 'جاهز للاستلام',
-                statusDispatched: 'تم الإرسال',
-                statusShipped: 'تم الشحن',
-                statusOutforDelivery: 'في الطريق للتوصيل',
-                statusDelivered: 'تم التوصيل',
-                statusPaid: 'مدفوع',
-                statusRefused: 'مرفوض',
-                statusReturned: 'مرتجع',
-                statusCancelled: 'ملغى',
             },
 
             couriers: {
@@ -2208,8 +2252,19 @@ const resources = {
                 reqHour: 'الطلبات / الساعة',
                 dailyQuota: 'الحصة اليومية',
                 limitConfig: 'حد التهيئة',
-                resetInfo: 'تتم إعادة تعيين عدادات استخدام الـ API تلقائياً بناءً على حدود الوقت التقويمية. تجاوز الحدود سيؤدي إلى تعليق مؤقت من مزود الخدمة.'
-            },
+                resetInfo: 'تتم إعادة تعيين عدادات استخدام الـ API تلقائياً بناءً على حدود الوقت التقويمية. تجاوز الحدود سيؤدي إلى تعليق مؤقت من مزود الخدمة.',
+                loadFailed: 'فشل تحميل بيانات الناقل.',
+                saveFailed: 'خطأ في حفظ الناقل.',
+                loadCoverageFailed: 'فشل تحميل مناطق التغطية.',
+                addCoverageFailed: 'خطأ في إضافة منطقة التغطية',
+                deleteCoverageFailed: 'فشل حذف منطقة التغطية.',
+                syncCoverageFailed: 'خطأ في مزامنة التغطية. تحقق من بيانات API.',
+                loadPricingFailed: 'فشل تحميل قواعد التسعير.',
+                saveRuleFailed: 'خطأ في حفظ القاعدة',
+                deleteRuleFailed: 'فشل حذف قاعدة التسعير.',
+                saveMappingFailed: 'خطأ في حفظ التعيين'
+            },,
+                errorLoadData: 'فشل تحميل بيانات شركات التوصيل.',
             rbac: {
                 roles_title: "الأدوار والصلاحيات",
                 roles_desc: "إدارة ملفات التحكم في الوصول عبر المنظمة.",
@@ -2225,7 +2280,10 @@ const resources = {
                 roles_edit: "تعديل",
                 roles_matrix: "مصفوفة الصلاحيات",
                 roles_select_prompt: "حدد دوراً لعرض الصلاحيات",
-                roles_or_create: "أو قم بإنشاء دور مخصص جديد"
+                roles_or_create: "أو قم بإنشاء دور مخصص جديد",
+                loadError: "فشل تحميل بيانات صلاحيات الوصول",
+                saveRoleError: "فشل حفظ الدور",
+                deleteRoleError: "فشل حذف الدور"
             },
             modules: {
                 overview: "نظرة عامة",
@@ -2406,7 +2464,11 @@ const resources = {
                     aov: "متوسط الطلب"
                 },
                 noCourierData: "لا توجد بيانات مندوب لهذه الفترة",
-                noHistoricalData: "لا توجد بيانات تاريخية بعد — يعمل يومياً في 00:30"
+                noHistoricalData: "لا توجد بيانات تاريخية بعد — يعمل يومياً في 00:30",
+                errorLoadData: "فشل تحميل بيانات التحليلات.",
+                errorLoadTrend: "فشل تحميل بيانات الاتجاه.",
+                noSalesData: "لا توجد بيانات مبيعات لهذه الفترة",
+                noCustomerData: "لا توجد بيانات عملاء لهذه الفترة"
             },
             orders: {
                 lblWilaya: "الولاية",
@@ -2468,8 +2530,11 @@ const resources = {
                 lblWilaya: "الولاية",
                 lblCommune: "البلدية",
                 lblAddress: "العنوان الكامل",
-                lblCallbackDate: "تاريخ معاودة الاتصال"
-            },
+                lblCallbackDate: "تاريخ معاودة الاتصال",
+                assignedCount: "{{count}} طلبات تم تعيينها بنجاح.",
+                autoAssignFailed: "فشل التعيين التلقائي."
+            },,
+                actionFailed: "فشل تنفيذ الإجراء.",
             header: {
                 searchPlaceholder: "البحث عن الطلبات، العملاء، السلع...",
                 businessOS: "كورتيكس - نظام إدارة الأعمال",
@@ -2497,7 +2562,12 @@ const resources = {
                 loading: "جاري التحميل...",
                 cancel: "إلغاء",
                 delete: "حذف",
-                continue: "متابعة"
+                continue: "متابعة",
+                copied: "تم النسخ!",
+                copyNumber: "نسخ الرقم",
+                noPhone: "لا يوجد رقم هاتف",
+                refresh: "تحديث",
+                noPermission: "ليس لديك صلاحية لعرض هذه الصفحة."
             },
             dashboard: {
                 title: "نظرة عامة على المنصة",
@@ -2567,6 +2637,9 @@ const resources = {
                 hrOverview: "نظرة عامة على الموارد البشرية",
                 hrOverviewSub: "{{count}} موظف إجمالي"
             },
+            overview: {
+                refreshBriefing: "تحديث الملخص"
+            },
             settings: {
                 title: "الإعدادات العامة",
                 localization: "التوطين واللغة",
@@ -2613,7 +2686,9 @@ const resources = {
                 deleteBulkTitle: "حذف {{count}} معاملة/معاملات؟",
                 deleteBulkBody: "سيؤدي هذا إلى الحذف النهائي للإدخالات المحددة من دفتر الأستاذ.",
                 cancel: "إلغاء",
-                deleteBtn: "حذف"
+                deleteBtn: "حذف",
+                errorLoadTransactions: "فشل تحميل المعاملات.",
+                errorLoadOverview: "فشل تحميل نظرة عامة المالية.",
             },
             dispatch: {
                 title: "مركز الإرسال والخدمات اللوجستية",
@@ -2668,7 +2743,27 @@ const resources = {
                 noPendingOrders: "لم يتم العثور على طلبات معلقة.",
                 errorLoadPending: "تعذر تحميل الطلبات المعلقة.",
                 errorRequiredFields: "يرجى ملء جميع الحقول المطلوبة (الطلب، العميل، الهاتف، الولاية، البلدية).",
-                errorDispatch: "فشل إرسال الشحنة إلى شركة الشحن."
+                errorDispatch: "فشل إرسال الشحنة إلى شركة الشحن.",
+                errorLoadShipments: "فشل تحميل الشحنات.",
+                errorValidate: "فشل التحقق من صحة الشحنة.",
+                errorDelete: "فشل حذف الشحنة.",
+                errorLabel: "فشل جلب ملصق الطباعة.",
+                errorExport: "فشل التصدير. يرجى المحاولة مجددًا.",
+                pendingTrackingId: "معلق...",
+                statusCreatedInCourier: "أُنشئت لدى المندوب",
+                statusValidated: "مُؤكدة",
+                statusInTransit: "في الطريق",
+                statusOutForDelivery: "مع الموزع",
+                statusDelivered: "تم التوصيل",
+                statusReturnInitiated: "بدء الإرجاع",
+                statusFailedAttempt: "محاولة فاشلة",
+                statusReturned: "مرتجع",
+                statusCancelled: "ملغى",
+                loadingShipments: "جارٍ تحميل الشحنات...",
+                deleteConfirmTitle: "حذف هذه الشحنة؟",
+                deleteConfirmBody: "سيؤدي هذا إلى إلغاء طلب الإرسال. سيعود الطلب المرتبط إلى حالة «مؤكد».",
+                cancel: "إلغاء",
+                deleteBtn: "حذف"
             },
             sales: {
                 title: "إدارة المبيعات",
@@ -2738,16 +2833,12 @@ const resources = {
                 cancel: "إلغاء",
                 confirm: "تأكيد",
                 failedDeleteOrder: "فشل حذف الطلب.",
-                failedDispatch: "فشل الإرسال"
+                failedDispatch: "فشل الإرسال",
+                errorLoadOrders: "فشل تحميل الطلبيات.",
+                errorRefreshPerf: "فشل تحديث مقاييس الأداء."
             },
             inventory: {
                 title: "تتبع المخزون",
-                errorLoadShipments: "فشل تحميل الشحنات.",
-                errorValidate: "فشل التحقق من صحة الشحنة.",
-                errorDelete: "فشل حذف الشحنة.",
-                errorLabel: "فشل جلب ملصق الطباعة.",
-                errorExport: "فشل التصدير. يرجى المحاولة مجددًا.",
-                pendingTrackingId: "معلق...",
                 subtitle: "إدارة كتالوج المنتجات وتتبع مستويات المخزون ومراقبة الموردين.",
                 receivePoBtn: "استلام طلب شراء",
                 addCategoryBtn: "إضافة فئة",
@@ -2788,7 +2879,20 @@ const resources = {
                 viewPOs: "عرض طلبات الشراء",
                 confirmArchiveProduct: "هل أنت متأكد من أرشفة هذا المنتج بالكامل؟ سيتم إزالته من المخزون النشط.",
                 confirmArchiveSupplier: "أرشفة هذا المورد؟",
-                confirmArchiveCategory: "أرشفة هذه الفئة؟"
+                confirmArchiveCategory: "أرشفة هذه الفئة؟",
+                errorLoadData: "فشل تحميل بيانات المخزون.",
+                errorCreateProduct: "فشل إنشاء المنتج.",
+                errorUpdateProduct: "فشل تحديث المنتج.",
+                errorDeleteProduct: "فشل حذف المنتج.",
+                errorCreateSupplier: "فشل إنشاء المورد.",
+                errorUpdateSupplier: "فشل تحديث المورد.",
+                errorDeleteSupplier: "فشل حذف المورد.",
+                errorCreateCategory: "فشل إنشاء الفئة.",
+                errorUpdateCategory: "فشل تحديث الفئة.",
+                errorDeleteCategory: "فشل حذف الفئة.",
+                errorCreatePO: "فشل إنشاء طلب الشراء.",
+                errorUpdatePO: "فشل تحديث حالة طلب الشراء.",
+                errorFetchLedger: "فشل جلب سجل المخزون.",
             },
             warehouses: {
                 title: "لوجستيات المؤسسة",
@@ -2925,7 +3029,8 @@ const resources = {
                 failedSave: "فشل حفظ بيانات العميل.",
                 errorLoadProfile: "فشل تحميل بيانات الملف الشخصي.",
                 errorBlacklist: "فشل تحديث حالة القائمة السوداء.",
-                showingCached: "يتم عرض البيانات المحفوظة."
+                showingCached: "يتم عرض البيانات المحفوظة.",
+                analyticsUnavailable: "رسوم التحليلات قد تكون غير متاحة."
             },
             procurement: {
                 title: "مركز المشتريات",
@@ -2979,7 +3084,11 @@ const resources = {
                 statusReceived: "مُستلم",
                 statusCancelled: "ملغى",
                 searchPlaceholder: "ابحث عن طلب شراء أو مورد...",
-                errorLoadData: "فشل تحميل بيانات المشتريات."
+                errorLoadData: "فشل تحميل بيانات المشتريات.",
+                poItemValidation: "يرجى اختيار صنف والكمية وتكلفة الوحدة.",
+                supplierRequired: "المورد مطلوب",
+                itemsRequired: "يجب إضافة صنف واحد على الأقل",
+                poFailed: "فشل إنشاء طلب الشراء"
             },
             logistics: {
                 title: "إدارة التوصيل",
@@ -3269,13 +3378,14 @@ const resources = {
                 colTotalLiabilityDeducted: "إجمالي الخصم",
                 colDaysWithOvertime: "أيام بها إضافي",
                 colTotalExtraMinutes: "إجمالي دقائق الإضافي",
-                unknown: "مجهول"
-            },
-            settingsSecurity: {
-                title: "الأمان والدخول",
+                unknown: "مجهول",
                 errorLoadAttendance: "فشل تحميل سجلات الحضور.",
                 errorLoadReport: "فشل تحميل بيانات التقرير.",
                 errorLoadEmployee: "فشل تحميل بيانات الموظف.",
+                errorLoadData: "فشل تحميل بيانات الموارد البشرية.",
+            },
+            settingsSecurity: {
+                title: "الأمان والدخول",
                 changePwd: "تغيير كلمة المرور",
                 currentPwd: "كلمة المرور الحالية",
                 newPwd: "كلمة المرور الجديدة",
@@ -3632,7 +3742,12 @@ const resources = {
                 errDelete: "فشل في إبطال الهوية.",
                 confirmDelete: "إجراء حرج: هل أنت متأكد أنك تريد إبطال هذه الهوية بشكل دائم؟ لا يمكن التراجع عن هذا الإجراء.",
                 loading: "الاستعلام عن دليل إدارة الهوية والوصول...",
-                accessDenied: "الوصول مرفوض"
+                accessDenied: "الوصول مرفوض",
+                loadError: "فشل تحميل المستخدمين أو الأدوار. قد لا تملك الصلاحية.",
+                networkError: "خطأ في الشبكة أثناء تحميل البيانات.",
+                placeholderName: "مثال: أحمد علي",
+                placeholderEmail: "ahmed@company.com",
+                placeholderPassword: "كلمة المرور المؤقتة"
             },
             financial: {
                 title: "المركز المالي",
@@ -3662,45 +3777,6 @@ const resources = {
                 amount: "المبلغ (د.ج)",
                 actions: "إجراءات",
                 noTransactions: "لم يتم تسجيل معاملات يدوية بعد."
-            },
-            dispatch: {
-                title: "مركز الإرسال والخدمات اللوجستية",
-                subtitle: "إدارة شحنات ECOTRACK الصادرة وتتبع الحالات والمرتجعات.",
-                exportList: "تصدير القائمة",
-                createShipment: "شحنة جديدة",
-                kpi: {
-                    total: "إجمالي الشحنات",
-                    active: "نشط وفي الطريق",
-                    delivered: "تم التوصيل بنجاح",
-                    returns: "المرتجعات والاستثناءات"
-                },
-                search: "البحث عن طريق رقم التتبع، العميل، الطلب...",
-                table: {
-                    tracking: "التتبع / المرجع",
-                    recipient: "المستلم",
-                    destination: "الوجهة",
-                    status: "حالة شركة الشحن",
-                    cod: "مبلغ الدفع عند الاستلام",
-                    actions: "إجراءات"
-                },
-                empty: {
-                    title: "لم يتم العثور على شحنات",
-                    subtitle: "قم بتعديل المرشحات أو إنشاء طلب إرسال جديد."
-                },
-                statusCreatedInCourier: "أُنشئت لدى المندوب",
-                statusValidated: "مُؤكدة",
-                statusInTransit: "في الطريق",
-                statusOutForDelivery: "مع الموزع",
-                statusDelivered: "تم التوصيل",
-                statusReturnInitiated: "بدء الإرجاع",
-                statusFailedAttempt: "محاولة فاشلة",
-                statusReturned: "مرتجع",
-                statusCancelled: "ملغى",
-                loadingShipments: "جارٍ تحميل الشحنات...",
-                deleteConfirmTitle: "حذف هذه الشحنة؟",
-                deleteConfirmBody: "سيؤدي هذا إلى إلغاء طلب الإرسال. سيعود الطلب المرتبط إلى حالة «مؤكد».",
-                cancel: "إلغاء",
-                deleteBtn: "حذف"
             }
         },
     }

@@ -43,7 +43,7 @@ export default function CourierCoverageMap({ courierId }) {
             setCoverage(res.data);
         } catch (error) {
             console.error('Error fetching coverage:', error);
-            setErrorMsg(error.response?.data?.message || 'Failed to load coverage regions.');
+            setErrorMsg(error.response?.data?.message || t('couriers.loadCoverageFailed', 'Failed to load coverage regions.'));
         } finally {
             setLoading(false);
         }
@@ -64,7 +64,7 @@ export default function CourierCoverageMap({ courierId }) {
             fetchCoverage();
         } catch (error) {
             console.error('Error adding coverage:', error);
-            setErrorMsg(error.response?.data?.message || 'Error adding coverage region');
+            setErrorMsg(error.response?.data?.message || t('couriers.addCoverageFailed', 'Error adding coverage region'));
         }
     };
 
@@ -81,7 +81,7 @@ export default function CourierCoverageMap({ courierId }) {
             fetchCoverage();
         } catch (error) {
             console.error('Error deleting coverage:', error);
-            setErrorMsg('Failed to delete coverage region.');
+            setErrorMsg(t('couriers.deleteCoverageFailed', 'Failed to delete coverage region.'));
         }
     };
 
@@ -99,7 +99,7 @@ export default function CourierCoverageMap({ courierId }) {
             fetchCoverage();
         } catch (error) {
             console.error('Error syncing coverage:', error);
-            setErrorMsg(error.response?.data?.message || error.response?.data?.error || 'Error syncing coverage. Check API credentials.');
+            setErrorMsg(error.response?.data?.message || error.response?.data?.error || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
         } finally {
             setSyncing(false);
         }

@@ -44,7 +44,7 @@ export default function CourierPricingEngine({ courierId }) {
             setRules(res.data);
         } catch (error) {
             console.error('Error fetching pricing rules:', error);
-            setErrorMsg(error.response?.data?.message || 'Failed to load pricing rules.');
+            setErrorMsg(error.response?.data?.message || t('couriers.loadPricingFailed', 'Failed to load pricing rules.'));
         } finally {
             setLoading(false);
         }
@@ -72,7 +72,7 @@ export default function CourierPricingEngine({ courierId }) {
             handleCancelEdit();
         } catch (error) {
             console.error('Error saving pricing rule:', error);
-            setErrorMsg(error.response?.data?.message || 'Error saving rule');
+            setErrorMsg(error.response?.data?.message || t('couriers.saveRuleFailed', 'Error saving rule'));
         }
     };
 
@@ -89,7 +89,7 @@ export default function CourierPricingEngine({ courierId }) {
             fetchRules();
         } catch (error) {
             console.error('Error deleting pricing rule:', error);
-            setErrorMsg('Failed to delete pricing rule.');
+            setErrorMsg(t('couriers.deleteRuleFailed', 'Failed to delete pricing rule.'));
         }
     };
 

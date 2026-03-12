@@ -52,7 +52,7 @@ export default function CourierDetails() {
             }
             setLoading(false);
         } catch (error) {
-            setSaveToast({ type: 'error', msg: error.response?.data?.message || 'Failed to load courier data.' });
+            setSaveToast({ type: 'error', msg: error.response?.data?.message || t('couriers.loadFailed', 'Failed to load courier data.') });
             setLoading(false);
         }
     };
@@ -70,7 +70,7 @@ export default function CourierDetails() {
             }
         } catch (error) {
             console.error('Error saving courier:', error);
-            setSaveToast({ type: 'error', msg: error.response?.data?.message || 'Error saving courier.' });
+            setSaveToast({ type: 'error', msg: error.response?.data?.message || t('couriers.saveFailed', 'Error saving courier.') });
         } finally {
             setSaving(false);
         }

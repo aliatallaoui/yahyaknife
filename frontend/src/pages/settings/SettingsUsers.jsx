@@ -45,10 +45,10 @@ export default function SettingsUsers() {
                 setUsers(await usersRes.json());
                 setRolesAvailable(await rolesRes.json());
             } else {
-                setError('Failed to load users or roles. You may not have permission.');
+                setError(t('loadError', 'Failed to load users or roles. You may not have permission.'));
             }
         } catch (err) {
-            setError('Network error loading data.');
+            setError(t('networkError', 'Network error loading data.'));
         } finally {
             setLoading(false);
         }
@@ -330,7 +330,7 @@ export default function SettingsUsers() {
                                             value={modalData.name}
                                             onChange={(e) => setModalData({ ...modalData, name: e.target.value })}
                                             className="w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none rounded-xl px-4 py-2.5 font-medium transition-all"
-                                            placeholder="John Doe"
+                                            placeholder={t('placeholderName', 'John Doe')}
                                         />
                                     </div>
                                     <div>
@@ -340,7 +340,7 @@ export default function SettingsUsers() {
                                             value={modalData.email}
                                             onChange={(e) => setModalData({ ...modalData, email: e.target.value })}
                                             className="w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none rounded-xl px-4 py-2.5 font-medium transition-all"
-                                            placeholder="john@company.com"
+                                            placeholder={t('placeholderEmail', 'john@company.com')}
                                         />
                                     </div>
                                     <div>
@@ -350,7 +350,7 @@ export default function SettingsUsers() {
                                             value={modalData.password}
                                             onChange={(e) => setModalData({ ...modalData, password: e.target.value })}
                                             className="w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none rounded-xl px-4 py-2.5 font-medium transition-all"
-                                            placeholder="Temporary vault key"
+                                            placeholder={t('placeholderPassword', 'Temporary vault key')}
                                         />
                                     </div>
                                 </>

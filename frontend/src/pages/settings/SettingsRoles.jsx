@@ -33,7 +33,7 @@ export default function SettingsRoles() {
             setCatalog(catalogRes.data);
         } catch (err) {
             console.error("Failed to fetch roles/catalog", err);
-            setError("Failed to load RBAC data");
+            setError(t('rbac.loadError', 'Failed to load RBAC data'));
         } finally {
             setLoading(false);
         }
@@ -81,7 +81,7 @@ export default function SettingsRoles() {
             setIsEditing(false);
             if (!selectedRole) setSelectedRole(roles.find(r => r.name === editForm.name)); // Optimistic select
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to save role");
+            setError(err.response?.data?.message || t('rbac.saveRoleError', 'Failed to save role'));
         }
     };
 
@@ -101,14 +101,14 @@ export default function SettingsRoles() {
             setSelectedRole(null);
             await fetchData();
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to delete role");
+            setError(err.response?.data?.message || t('rbac.deleteRoleError', 'Failed to delete role'));
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading RBAC matrix...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading...')}</div>;
 
     if (!hasPermission('users.read')) {
-        return <div className="p-8 text-center text-red-500">You do not have permission to view this page.</div>;
+        return <div className="p-8 text-center text-red-500">{t('common.noPermission', 'You do not have permission to view this page.')}</div>;
     }
 
     return (

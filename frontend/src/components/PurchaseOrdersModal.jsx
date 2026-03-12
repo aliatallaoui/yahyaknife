@@ -55,7 +55,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
 
     const handleAddItem = () => {
         if (!selectedItemId || !quantity || !unitCost) {
-            setError('Please select an item, quantity, and unit cost.');
+            setError(t('procurement.poItemValidation', 'Please select an item, quantity, and unit cost.'));
             return;
         }
 
@@ -85,8 +85,8 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
         e.preventDefault();
         setError(null);
 
-        if (!supplierId) return setError('Supplier is required');
-        if (items.length === 0) return setError('At least one item is required');
+        if (!supplierId) return setError(t('procurement.supplierRequired', 'Supplier is required'));
+        if (items.length === 0) return setError(t('procurement.itemsRequired', 'At least one item is required'));
 
         try {
             setSubmitting(true);
@@ -114,7 +114,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || 'Failed to create PO');
+                throw new Error(errData.error || t('procurement.poFailed', 'Failed to create PO'));
             }
 
             onClose();
