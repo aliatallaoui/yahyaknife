@@ -207,6 +207,39 @@ export default function HRPayroll() {
                 </div>
             )}
 
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                    <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                    <input
+                        ref={searchRef}
+                        type="text"
+                        placeholder={t('hr.searchEmployeePlaceholder', 'Search... (Press /)')}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full ps-9 pe-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all font-bold"
+                    />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {['All', 'Pending Approval', 'Approved', 'Partially Paid', 'Paid'].map(status => {
+                        const count = status === 'All' ? records.length : records.filter(r => r.status === status).length;
+                        return (
+                            <button key={status} onClick={() => setFilterStatus(status)}
+                                className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors',
+                                    filterStatus === status ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                )}>
+                                {status === 'All' ? t('hr.allStatus', 'All') : status}
+                                {count > 0 && (
+                                    <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
+                                        filterStatus === status ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                                    )}>{count}</span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             {/* Payroll Grid */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -231,7 +264,10 @@ export default function HRPayroll() {
                                     </td>
                                 </tr>
                             )}
-                            {records.map(record => (
+                            {records.length > 0 && filteredRecords.length === 0 && (
+                                <tr><td colSpan={7} className="p-8 text-center text-sm text-gray-400">{t('hr.noEmployeesFound', 'No records match your search or filter.')}</td></tr>
+                            )}
+                            {filteredRecords.map(record => (
                                 <tr key={record._id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-gray-900">{record.employeeId?.name || t('hr.unknownEmployee')}</div>
