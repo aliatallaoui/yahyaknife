@@ -228,7 +228,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                                 >
                                                     <div>
                                                         <span className="font-semibold text-gray-900 group-hover:text-blue-700">{order.displayId}</span>
-                                                        <span className="text-xs text-gray-500 ml-2">{order.customer}</span>
+                                                        <span className="text-xs text-gray-500 ml-2">{order.customer?.name ?? order.customer}</span>
                                                     </div>
                                                     <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
                                                         {order.total.toLocaleString()} DZD
