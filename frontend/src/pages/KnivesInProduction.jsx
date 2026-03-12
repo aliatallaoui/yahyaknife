@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Plus, Clock, Search, GripVertical, User } from 'lucide-react';
+import { Loader2, Plus, Clock, Search, GripVertical, User, AlertTriangle } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import KnifeCardModal from '../components/KnifeCardModal';
@@ -15,6 +15,7 @@ export default function KnivesInProduction() {
     const { token } = useContext(AuthContext);
     const [knives, setKnives] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [actionError, setActionError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const searchRef = useRef(null);
     useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
@@ -34,7 +35,7 @@ export default function KnivesInProduction() {
             const data = Array.isArray(json) ? json : (json.data ?? []);
             // We only want knives currently in the workshop, not Sold.
             setKnives(data.filter(k => k.status !== 'Sold'));
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error(e); setActionError('Failed to load production data.'); }
         finally { setLoading(false); }
     };
 
@@ -55,6 +56,7 @@ export default function KnivesInProduction() {
             fetchKnives();
         } catch (e) {
             console.error(e);
+            setActionError(e.message || 'Failed to update knife status.');
             fetchKnives(); // revert
         }
     };
@@ -89,6 +91,13 @@ export default function KnivesInProduction() {
 
     return (
         <div className="flex flex-col h-full gap-4">
+            {actionError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{actionError}</span>
+                    <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
             <PageHeader
                 title={t('knives.productionTitle', 'Production Floor')}
                 subtitle={t('knives.productionDesc', 'Monitor and manage knife lifecycles across the bladesmithing workshop.')}

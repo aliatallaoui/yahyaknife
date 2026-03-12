@@ -43,6 +43,7 @@ export default function CourierCoverageMap({ courierId }) {
             setCoverage(res.data);
         } catch (error) {
             console.error('Error fetching coverage:', error);
+            setErrorMsg(error.response?.data?.message || 'Failed to load coverage regions.');
         } finally {
             setLoading(false);
         }

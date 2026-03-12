@@ -44,6 +44,7 @@ export default function CourierPricingEngine({ courierId }) {
             setRules(res.data);
         } catch (error) {
             console.error('Error fetching pricing rules:', error);
+            setErrorMsg(error.response?.data?.message || 'Failed to load pricing rules.');
         } finally {
             setLoading(false);
         }

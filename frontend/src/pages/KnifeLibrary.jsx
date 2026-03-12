@@ -151,6 +151,7 @@ export default function KnifeLibrary() {
     const { token } = useContext(AuthContext);
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingModel, setEditingModel] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState(null);
@@ -176,7 +177,7 @@ export default function KnifeLibrary() {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`, { headers: { Authorization: `Bearer ${token}` } });
             const json = await res.json();
             setModels(json.data ?? (Array.isArray(json) ? json : []));
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error(e); setFetchError('Failed to load knife models.'); }
         finally { setLoading(false); }
     };
 
@@ -224,6 +225,14 @@ export default function KnifeLibrary() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* Filter Bar */}
             {!loading && models.length > 0 && (

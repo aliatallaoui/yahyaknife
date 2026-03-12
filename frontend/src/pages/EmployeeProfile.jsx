@@ -269,9 +269,9 @@ export default function EmployeeProfile() {
 
                     {/* Tabs */}
                     <div className="flex flex-wrap bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm shrink-0 w-full xl:w-auto overflow-x-auto gap-1">
-                        <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Clock} label={t('hr.tabTimesheets')} />
-                        <TabButton active={activeTab === 'payroll'} onClick={() => setActiveTab('payroll')} icon={FileText} label={t('hr.tabPayrollHistory')} />
-                        <TabButton active={activeTab === 'leaves'} onClick={() => setActiveTab('leaves')} icon={Calendar} label={t('hr.tabLeaveHistory')} />
+                        <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Clock} label={t('hr.tabTimesheets')} count={attendance.length} />
+                        <TabButton active={activeTab === 'payroll'} onClick={() => setActiveTab('payroll')} icon={FileText} label={t('hr.tabPayrollHistory')} count={payrolls.length} />
+                        <TabButton active={activeTab === 'leaves'} onClick={() => setActiveTab('leaves')} icon={Calendar} label={t('hr.tabLeaveHistory')} count={leaves.length} />
                     </div>
                 </div>
 
@@ -476,7 +476,7 @@ function StatSquare({ label, value, icon: Icon, color }) {
     );
 }
 
-function TabButton({ active, onClick, icon: Icon, label }) {
+function TabButton({ active, onClick, icon: Icon, label, count }) {
     return (
         <button
             onClick={onClick}
@@ -487,6 +487,9 @@ function TabButton({ active, onClick, icon: Icon, label }) {
         >
             <Icon className="w-4 h-4" />
             {label}
+            {count > 0 && (
+                <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', active ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500')}>{count}</span>
+            )}
         </button>
     );
 }

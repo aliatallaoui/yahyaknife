@@ -347,6 +347,9 @@ export default function CustomerProfile() {
                         )}
                     >
                         <Package className="w-4 h-4" /> {t('crm.tabOrderHistory', 'Order History')}
+                        {orders.length > 0 && (
+                            <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', activeTab === 'orders' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-500')}>{orders.length}</span>
+                        )}
                     </button>
                     <button
                         onClick={() => setActiveTab('support')}
@@ -356,6 +359,9 @@ export default function CustomerProfile() {
                         )}
                     >
                         <MessageSquare className="w-4 h-4" /> {t('crm.tabSupportTickets', 'Support Tickets')}
+                        {tickets.length > 0 && (
+                            <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', activeTab === 'support' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-500')}>{tickets.length}</span>
+                        )}
                     </button>
                 </div>
 

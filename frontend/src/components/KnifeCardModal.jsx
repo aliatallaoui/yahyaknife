@@ -157,19 +157,24 @@ export default function KnifeCardModal({ isOpen, onClose, onSaved, initialData =
                 {/* Tab nav */}
                 <div className="flex gap-1 px-6 pt-4 border-b border-gray-100 overflow-x-auto">
                     {[
-                        ['basic', '📋 ' + t('knives.basicInfo', 'Basic Info')],
-                        ['specs', '📐 ' + t('knives.specs', 'Specs & Materials')],
-                        ['bom', '📦 ' + t('knives.bom', 'Bill of Material')],
-                        ['cost', '💰 ' + t('knives.costPrice', 'Cost & Price')]
-                    ].map(([key, label]) => (
+                        ['basic', '📋 ' + t('knives.basicInfo', 'Basic Info'), null],
+                        ['specs', '📐 ' + t('knives.specs', 'Specs & Materials'), null],
+                        ['bom', '📦 ' + t('knives.bom', 'Bill of Material'), form.bom?.length || 0],
+                        ['cost', '💰 ' + t('knives.costPrice', 'Cost & Price'), null]
+                    ].map(([key, label, count]) => (
                         <button
                             key={key}
                             onClick={() => setTab(key)}
                             className={clsx(
-                                'px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 transition-colors whitespace-nowrap',
+                                'flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 transition-colors whitespace-nowrap',
                                 tab === key ? 'border-blue-600 text-blue-700 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700'
                             )}
-                        >{label}</button>
+                        >
+                            {label}
+                            {count > 0 && (
+                                <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', tab === key ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500')}>{count}</span>
+                            )}
+                        </button>
                     ))}
                 </div>
 
