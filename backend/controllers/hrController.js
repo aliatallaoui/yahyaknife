@@ -113,12 +113,12 @@ exports.updateEmployee = async (req, res) => {
             return res.status(400).json({ error: 'Invalid ID' });
         const {
             name, email, phone, role, department, salary, performanceScore, leaveBalance,
-            joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings
+            joinDate, status, managerId, contractSettings
         } = req.body;
         const updated = await Employee.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
             { name, email, phone, role, department, salary, performanceScore, leaveBalance,
-              joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings },
+              joinDate, status, managerId, contractSettings },
             { new: true }
         );
         if (!updated) return res.status(404).json({ error: 'Employee not found' });
