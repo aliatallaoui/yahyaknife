@@ -123,3 +123,4 @@ backend/test-dynamic.js
 # Claude Code tooling
 claude.exe
 install.cmd
+backend/test_inventory.js
