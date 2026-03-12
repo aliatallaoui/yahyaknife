@@ -1,4 +1,5 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { useTranslation } from 'react-i18next';
 import { Package, FileCode2, PlayCircle, Plus, Search, Building } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
@@ -13,6 +14,10 @@ import ProductionOrderModal from '../components/ProductionOrderModal';
 export default function ProductionFloor() {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('materials'); // 'materials', 'boms', 'orders'
+    const [searchTerm, setSearchTerm] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
     const { loading } = useContext(ManufacturingContext);
 
     if (loading) {
@@ -57,11 +62,24 @@ export default function ProductionFloor() {
                 />
             </div>
 
+            {/* Search */}
+            <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500" />
+                <input
+                    ref={searchRef}
+                    type="text"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder={t('manufacturing.search', 'Search... (Press /)')}
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-yellow-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 font-medium shadow-sm"
+                />
+            </div>
+
             {/* Content Area */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[500px]">
-                {activeTab === 'materials' && <MaterialsPanel />}
-                {activeTab === 'boms' && <BOPanel />}
-                {activeTab === 'orders' && <OrdersPanel />}
+                {activeTab === 'materials' && <MaterialsPanel searchTerm={searchTerm} />}
+                {activeTab === 'boms' && <BOPanel searchTerm={searchTerm} />}
+                {activeTab === 'orders' && <OrdersPanel searchTerm={searchTerm} />}
             </div>
         </div>
     );
@@ -113,9 +131,10 @@ function ProductionAnalytics() {
     );
 }
 
-function MaterialsPanel() {
+function MaterialsPanel({ searchTerm }) {
     const { t } = useTranslation();
-    const { materials, createMaterial, updateMaterial } = useContext(ManufacturingContext);
+    const { materials: allMaterials, createMaterial, updateMaterial } = useContext(ManufacturingContext);
+    const materials = searchTerm.trim() ? allMaterials.filter(m => m.name?.toLowerCase().includes(searchTerm.toLowerCase()) || m.sku?.toLowerCase().includes(searchTerm.toLowerCase()) || m.category?.toLowerCase().includes(searchTerm.toLowerCase())) : allMaterials;
     const { suppliers } = useContext(InventoryContext);
     const { hasPermission } = useContext(AuthContext);
 
@@ -169,7 +188,7 @@ function MaterialsPanel() {
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                         {materials.length === 0 ? (
-                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noMaterials')}</td></tr>
+                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{searchTerm.trim() ? t('manufacturing.noMatch', 'No materials match your search.') : t('manufacturing.noMaterials')}</td></tr>
                         ) : materials.map((mat) => (
                             <tr key={mat._id} className={clsx("hover:bg-gray-50/50", hasPermission('manufacturing.manage_raw_materials') && "cursor-pointer")} onClick={() => hasPermission('manufacturing.manage_raw_materials') && handleEditClick(mat)}>
                                 <td className="p-4 font-mono text-xs text-blue-600 hover:underline">{mat.sku}</td>
@@ -210,9 +229,10 @@ function MaterialsPanel() {
     );
 }
 
-function BOPanel() {
+function BOPanel({ searchTerm }) {
     const { t } = useTranslation();
-    const { boms, createBOM, updateBOM } = useContext(ManufacturingContext);
+    const { boms: allBoms, createBOM, updateBOM } = useContext(ManufacturingContext);
+    const boms = searchTerm.trim() ? allBoms.filter(b => b.variantId?.sku?.toLowerCase().includes(searchTerm.toLowerCase()) || b.variantId?.displayName?.toLowerCase().includes(searchTerm.toLowerCase())) : allBoms;
     const { products } = useContext(InventoryContext);
     const { materials } = useContext(ManufacturingContext);
     const { hasPermission } = useContext(AuthContext);
@@ -257,7 +277,7 @@ function BOPanel() {
             </div>
             {boms.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl">
-                    {t('manufacturing.noBoms')}
+                    {searchTerm.trim() ? t('manufacturing.noMatch', 'No BOMs match your search.') : t('manufacturing.noBoms')}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -304,9 +324,10 @@ function BOPanel() {
     );
 }
 
-function OrdersPanel() {
+function OrdersPanel({ searchTerm }) {
     const { t } = useTranslation();
-    const { productionOrders, createProductionOrder, updateProductionStatus } = useContext(ManufacturingContext);
+    const { productionOrders: allOrders, createProductionOrder, updateProductionStatus } = useContext(ManufacturingContext);
+    const productionOrders = searchTerm.trim() ? allOrders.filter(o => o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || o.variantId?.sku?.toLowerCase().includes(searchTerm.toLowerCase())) : allOrders;
     const { products } = useContext(InventoryContext);
     const { boms } = useContext(ManufacturingContext);
     const { hasPermission } = useContext(AuthContext);
@@ -376,7 +397,7 @@ function OrdersPanel() {
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                         {productionOrders.length === 0 ? (
-                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('manufacturing.noOrders')}</td></tr>
+                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{searchTerm.trim() ? t('manufacturing.noMatch', 'No orders match your search.') : t('manufacturing.noOrders')}</td></tr>
                         ) : productionOrders.map((po) => (
                             <tr key={po._id} className="hover:bg-gray-50/50">
                                 <td className="p-4 font-semibold text-gray-900">{po.orderNumber}</td>
