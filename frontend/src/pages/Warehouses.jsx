@@ -1,4 +1,5 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { Box, MapPin, Search, Plus, List, ArrowRightLeft, ShieldCheck, ArrowDown, ArrowUp, AlertTriangle } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { AuthContext } from '../context/AuthContext';
@@ -16,6 +17,11 @@ export default function Warehouses() {
     const [ledger, setLedger] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     // Modals
     const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
@@ -100,6 +106,19 @@ export default function Warehouses() {
                 <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div></div>
             ) : (
                 <>
+                    {/* Search bar — shared across all tabs */}
+                    <div className="relative w-full sm:w-72">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400" />
+                        <input
+                            ref={searchRef}
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            placeholder={t('warehouses.search', 'Search... (Press /)')}
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-indigo-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 font-medium shadow-sm"
+                        />
+                    </div>
+
                     {/* WAREHOUSES TAB */}
                     {activeTab === 'warehouses' && (
                         <div className="flex flex-col gap-6">

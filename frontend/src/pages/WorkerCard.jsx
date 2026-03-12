@@ -54,8 +54,8 @@ export default function WorkerCard() {
     if (!worker) return (
         <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-gray-500">
             <User className="w-16 h-16 mb-4 text-gray-300" />
-            <h2 className="text-xl font-bold">Worker Not Found</h2>
-            <button onClick={() => navigate(-1)} className="mt-4 text-amber-600 hover:underline">Return</button>
+            <h2 className="text-xl font-bold">{t('hr.workerNotFound', 'Worker Not Found')}</h2>
+            <button onClick={() => navigate(-1)} className="mt-4 text-amber-600 hover:underline">{t('hr.returnBtn', 'Return')}</button>
         </div>
     );
 
@@ -102,30 +102,30 @@ export default function WorkerCard() {
                         {worker.skills?.length > 0 ? worker.skills.map((skill, i) => (
                             <span key={i} className="bg-gray-100 text-gray-600 px-2.5 py-1 text-xs font-bold rounded-lg border border-gray-200">{skill}</span>
                         )) : (
-                            <span className="text-sm text-gray-400">No specialized skills tracked</span>
+                            <span className="text-sm text-gray-400">{t('hr.noSkillsTracked', 'No specialized skills tracked')}</span>
                         )}
                     </div>
                 </div>
 
                 {/* 2. Productivity Snapshot */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 lg:p-8 flex flex-col justify-center">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> Production Output</h3>
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> {t('hr.productionOutput', 'Production Output')}</h3>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col items-center justify-center">
                             <span className="text-3xl font-black text-gray-900 mb-1">{totalOperations}</span>
-                            <span className="text-xs font-bold text-gray-500 text-center">Lifetime Operations</span>
+                            <span className="text-xs font-bold text-gray-500 text-center">{t('hr.lifetimeOperations', 'Lifetime Operations')}</span>
                         </div>
                         <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col items-center justify-center">
                             <div className="flex items-center gap-1 mb-1">
                                 <span className="text-3xl font-black text-emerald-600">{averageQuality.toFixed(1)}</span>
                                 <Star className="w-5 h-5 text-amber-400 fill-amber-400 mb-1" />
                             </div>
-                            <span className="text-xs font-bold text-gray-500 text-center">Avg. Quality Score</span>
+                            <span className="text-xs font-bold text-gray-500 text-center">{t('hr.avgQualityScore', 'Avg. Quality Score')}</span>
                         </div>
                         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex flex-col items-center justify-center col-span-2">
                             <span className="text-2xl font-black text-amber-700 mb-1">{worker.productivityMultiplier?.toFixed(2) || '1.00'}x</span>
-                            <span className="text-xs font-bold text-amber-600 text-center">Reward Multiplier (Based on Speed & Quality)</span>
+                            <span className="text-xs font-bold text-amber-600 text-center">{t('hr.rewardMultiplier', 'Reward Multiplier')}</span>
                         </div>
                     </div>
                 </div>
@@ -205,12 +205,12 @@ export default function WorkerCard() {
                 {/* Tool / Productivity Logs */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                     <div className="bg-gray-50/50 p-5 pl-6 border-b border-gray-100 flex items-center justify-between">
-                        <h3 className="text-base font-bold text-gray-900">Recent Operations Log</h3>
-                        <span className="text-xs font-bold text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-200">{productivity.length} sessions</span>
+                        <h3 className="text-base font-bold text-gray-900">{t('hr.recentOpsLog', 'Recent Operations Log')}</h3>
+                        <span className="text-xs font-bold text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-200">{productivity.length} {t('hr.sessions', 'sessions')}</span>
                     </div>
                     <div className="p-0 overflow-y-auto max-h-[500px]">
                         {productivity.length === 0 ? (
-                            <div className="p-10 text-center text-gray-400 font-medium">No productivity logs recorded yet.</div>
+                            <div className="p-10 text-center text-gray-400 font-medium">{t('hr.noProductivityLogs', 'No productivity logs recorded yet.')}</div>
                         ) : (
                             <div className="divide-y divide-gray-50">
                                 {productivity.map(log => (
@@ -218,7 +218,7 @@ export default function WorkerCard() {
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <p className="text-sm font-bold text-gray-900">{moment(log.date).format('MMMM Do YYYY')}</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">Recorded {log.operations?.length || 0} operations</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">{t('hr.recordedOps', 'Recorded')} {log.operations?.length || 0}</p>
                                             </div>
                                             <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg">
                                                 <Activity className="w-3.5 h-3.5 text-emerald-600" />
