@@ -1,6 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { useHotkey } from '../../hooks/useHotkey';
 import { AuthContext } from '../../context/AuthContext';
-import { Users, Shield, Edit2, Trash2, CheckCircle, XCircle, UserPlus, Key, AlertTriangle } from 'lucide-react';
+import { Users, Shield, Edit2, Trash2, CheckCircle, XCircle, UserPlus, Key, AlertTriangle, Search } from 'lucide-react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +29,10 @@ export default function SettingsUsers() {
     const [modalError, setModalError] = useState('');
     const [confirmDialog, setConfirmDialog] = useState(null);
     const [pageError, setPageError] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const fetchData = async () => {
         try {
@@ -185,13 +190,26 @@ export default function SettingsUsers() {
                         </h1>
                         <p className="text-gray-500 text-sm mt-1.5">{t('subtitle')}</p>
                     </div>
-                    <button
-                        onClick={handleOpenCreate}
-                        className="flex w-full sm:w-auto justify-center items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95"
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        {t('invite')}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                ref={searchRef}
+                                type="text"
+                                placeholder={t('search', 'Search users... (Press /)')}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 sm:w-64 font-medium"
+                            />
+                        </div>
+                        <button
+                            onClick={handleOpenCreate}
+                            className="flex w-full sm:w-auto justify-center items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            {t('invite')}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -206,7 +224,7 @@ export default function SettingsUsers() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-sm">
-                            {users.map((userObj) => (
+                            {(searchTerm.trim() ? users.filter(u => u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase())) : users).map((userObj) => (
                                 <tr key={userObj._id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="p-4 px-6 text-start">
                                         <div className="flex items-center gap-3">
