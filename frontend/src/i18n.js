@@ -2298,7 +2298,20 @@ const resources = {
                 loadPricingFailed: 'فشل تحميل قواعد التسعير.',
                 saveRuleFailed: 'خطأ في حفظ القاعدة',
                 deleteRuleFailed: 'فشل حذف قاعدة التسعير.',
-                saveMappingFailed: 'خطأ في حفظ التعيين'
+                saveMappingFailed: 'خطأ في حفظ التعيين',
+                yalidinValidation: 'معرف API ورمز API مطلوبان لاختبار اتصال Yalidin.',
+                ecotrackValidation: 'رمز API وعنوان URL الأساسي مطلوبان لاختبار اتصال Ecotrack.',
+                connectionOk: 'تم تأسيس الاتصال بنجاح!',
+                connectionFailed: 'فشل الاتصال. يرجى التحقق من بيانات الاعتماد.',
+                providerEcotrack: 'واجهة ECOTRACK المتوافقة',
+                providerYalidin: 'Yalidin Express',
+                providerOther: 'مخصص / آخر',
+                authBearer: 'Bearer Token',
+                authApiKey: 'مفتاح API',
+                authNone: 'بدون',
+                deleteCoverageConfirm: 'حذف منطقة التغطية هذه؟',
+                homeDelivery: 'توصيل منزلي',
+                officeDelivery: 'نقطة استلام (Stop Desk)'
             },
             rbac: {
                 roles_title: "الأدوار والصلاحيات",
@@ -2601,7 +2614,9 @@ const resources = {
                 copyNumber: "نسخ الرقم",
                 noPhone: "لا يوجد رقم هاتف",
                 refresh: "تحديث",
-                noPermission: "ليس لديك صلاحية لعرض هذه الصفحة."
+                noPermission: "ليس لديك صلاحية لعرض هذه الصفحة.",
+                errorOccurred: "حدث خطأ",
+                deleting: "جارٍ الحذف..."
             },
             dashboard: {
                 title: "نظرة عامة على المنصة",
@@ -2723,6 +2738,18 @@ const resources = {
                 deleteBtn: "حذف",
                 errorLoadTransactions: "فشل تحميل المعاملات.",
                 errorLoadOverview: "فشل تحميل نظرة عامة المالية.",
+                periodThisMonth: "هذا الشهر",
+                periodLastMonth: "الشهر الماضي",
+                period3m: "3 أشهر",
+                periodYtd: "منذ بداية العام",
+                periodAll: "كل الفترات",
+                filterAllTypes: "كل الأنواع",
+                filterRevenue: "إيرادات",
+                filterExpense: "مصروفات",
+                filterAllCategories: "كل الفئات",
+                clearFilters: "مسح الفلاتر",
+                selectedCount: "{{count}} محدد",
+                deleteBatch: "حذف ({{count}})"
             },
             dispatch: {
                 title: "مركز الإرسال والخدمات اللوجستية",
@@ -2932,6 +2959,7 @@ const resources = {
                 errorCreatePO: "فشل إنشاء طلب الشراء.",
                 errorUpdatePO: "فشل تحديث حالة طلب الشراء.",
                 errorFetchLedger: "فشل جلب سجل المخزون.",
+                archiveFailed: "فشل أرشفة المنتج."
             },
             warehouses: {
                 title: "لوجستيات المؤسسة",
