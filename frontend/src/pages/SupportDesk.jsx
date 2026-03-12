@@ -16,6 +16,7 @@ export default function SupportDesk() {
     const [loading, setLoading] = useState(true);
     const [replyText, setReplyText] = useState('');
     const [replyError, setReplyError] = useState(null);
+    const [fetchError, setFetchError] = useState(null);
     const [filter, setFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const searchRef = useRef(null);
@@ -36,7 +37,7 @@ export default function SupportDesk() {
             const data = Array.isArray(json) ? json : (json.data ?? []);
             setTickets(data);
         } catch (error) {
-            console.error("Failed to fetch tickets", error);
+            setFetchError(t('support.fetchError', 'Failed to load support tickets. Please refresh.'));
         } finally {
             setLoading(false);
         }
@@ -51,7 +52,7 @@ export default function SupportDesk() {
             const json = await res.json();
             setSelectedTicket(json.data ?? json);
         } catch (error) {
-            console.error("Error fetching ticket", error);
+            setReplyError(t('support.ticketLoadError', 'Failed to load ticket details.'));
         }
     };
 
@@ -158,6 +159,15 @@ export default function SupportDesk() {
                     )
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => { setFetchError(null); fetchTickets(); }} className="text-red-600 underline hover:no-underline text-xs font-bold">Retry</button>
+                    <button onClick={() => setFetchError(null)} className="ml-2 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row flex-1 bg-white overflow-hidden font-sans border border-gray-100 rounded-3xl shadow-sm">
                 {/* Sidebar List */}
