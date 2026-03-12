@@ -30,8 +30,18 @@ async function resolveOrder(orderId, tenantId) {
 exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
     const internalOrder = await resolveOrder(orderId, tenantId);
 
+    // Whitelist fields accepted from client — prevent mass-assignment of
+    // paymentStatus, lifecycle timestamps, externalTrackingId, etc.
+    const {
+        customerName, phone1, phone2, address, commune, wilayaCode, wilayaName,
+        postalCode, gpsLink, productName, quantity, weight, remark, boutique,
+        operationType, deliveryType, stopDeskFlag, fragileFlag, codAmount, courierFee
+    } = shipmentData;
+
     const newShipment = new Shipment({
-        ...shipmentData,
+        customerName, phone1, phone2, address, commune, wilayaCode, wilayaName,
+        postalCode, gpsLink, productName, quantity, weight, remark, boutique,
+        operationType, deliveryType, stopDeskFlag, fragileFlag, codAmount, courierFee,
         tenant: tenantId,
         internalOrder: orderId,
         internalOrderId: internalOrder.orderId,

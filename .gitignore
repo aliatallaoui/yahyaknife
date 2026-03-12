@@ -124,3 +124,6 @@ backend/test-dynamic.js
 claude.exe
 install.cmd
 backend/test_inventory.js
+
+backend/setupLocal.js
+backend/scripts/migrate_hr_tenant.js
