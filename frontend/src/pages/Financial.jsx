@@ -36,7 +36,7 @@ function periodToRange(period) {
 }
 
 export default function Financial() {
-    const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction, fetchTransactions } = useContext(TransactionContext);
+    const { transactions, loading: txLoading, fetchError: txError, addTransaction, updateTransaction, deleteTransaction, fetchTransactions } = useContext(TransactionContext);
     const { hasPermission, token } = useContext(AuthContext);
     const { t } = useTranslation();
     const [overview, setOverview] = useState(null);
@@ -104,8 +104,8 @@ export default function Financial() {
     const handleBatchDelete = () => {
         if (selectedIds.size === 0) return;
         setConfirmDialog({
-            title: `Delete ${selectedIds.size} transaction${selectedIds.size > 1 ? 's' : ''}?`,
-            body: 'This will permanently remove the selected entries from the ledger.',
+            title: t('finance.deleteBulkTitle', 'Delete {{count}} transaction(s)?', { count: selectedIds.size }),
+            body: t('finance.deleteBulkBody', 'This will permanently remove the selected entries from the ledger.'),
             danger: true,
             onConfirm: async () => {
                 setBatchDeleting(true);
@@ -120,8 +120,8 @@ export default function Financial() {
 
     const handleSingleDelete = (id) => {
         setConfirmDialog({
-            title: 'Delete this transaction?',
-            body: 'This entry will be permanently removed from the manual ledger.',
+            title: t('finance.deleteTxTitle', 'Delete this transaction?'),
+            body: t('finance.deleteTxBody', 'This entry will be permanently removed from the manual ledger.'),
             danger: true,
             onConfirm: () => deleteTransaction(id),
         });
@@ -264,6 +264,13 @@ export default function Financial() {
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{overviewError}</span>
                     <button onClick={() => setOverviewError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
+            {txError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{txError}</span>
+                    <button onClick={fetchTransactions} className="text-red-400 hover:text-red-600 text-xs font-bold">Retry</button>
                 </div>
             )}
 
@@ -786,13 +793,13 @@ export default function Financial() {
                         </div>
                         <div className="flex items-center justify-end gap-2 p-4">
                             <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                Cancel
+                                {t('finance.cancel', 'Cancel')}
                             </button>
                             <button
                                 onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
                                 className="px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                             >
-                                Delete
+                                {t('finance.deleteBtn', 'Delete')}
                             </button>
                         </div>
                     </div>

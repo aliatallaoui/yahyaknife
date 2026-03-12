@@ -6,11 +6,13 @@ export const TransactionContext = createContext();
 export const TransactionProvider = ({ children }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
     const { token } = useContext(AuthContext);
 
     const fetchTransactions = async () => {
         if (!token) return;
         setLoading(true);
+        setFetchError(null);
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions`, {
                 headers: {
@@ -22,7 +24,7 @@ export const TransactionProvider = ({ children }) => {
                 setTransactions(data);
             }
         } catch (error) {
-            console.error('Failed to fetch transactions:', error);
+            setFetchError('Failed to load transactions.');
         } finally {
             setLoading(false);
         }
@@ -101,7 +103,7 @@ export const TransactionProvider = ({ children }) => {
     };
 
     return (
-        <TransactionContext.Provider value={{ transactions, loading, fetchTransactions, addTransaction, updateTransaction, deleteTransaction }}>
+        <TransactionContext.Provider value={{ transactions, loading, fetchError, fetchTransactions, addTransaction, updateTransaction, deleteTransaction }}>
             {children}
         </TransactionContext.Provider>
     );
