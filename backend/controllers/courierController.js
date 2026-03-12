@@ -195,7 +195,7 @@ exports.assignOrdersToCourier = async (req, res) => {
 
 exports.recalculateCourierKPIs = async (courierId) => {
     try {
-        const courier = await Courier.findById(courierId);
+        const courier = await Courier.findById(courierId).select('_id tenant totalDeliveries successRate averageDeliveryTimeMinutes');
         if (!courier) return;
 
         const [kpiData] = await Order.aggregate([
@@ -256,7 +256,7 @@ exports.syncCourierCash = async (courierId, amountDelta) => {
     try {
         if (!courierId || amountDelta === 0) return;
 
-        const courier = await Courier.findById(courierId);
+        const courier = await Courier.findById(courierId).select('_id cashCollected cashSettled pendingRemittance');
         if (!courier) return;
 
         // Use the pre-save hook to ensure pendingRemittance stays accurate
@@ -308,6 +308,19 @@ exports.testCourierConnection = async (req, res) => {
             // Ecotrack logic
             if (!apiBaseUrl || !apiToken) {
                 return res.status(400).json({ message: 'Base URL and API Token are required for Ecotrack.' });
+            }
+
+            // SSRF guard: only allow HTTPS URLs pointing to public hosts
+            let parsedUrl;
+            try { parsedUrl = new URL(apiBaseUrl); } catch {
+                return res.status(400).json({ message: 'Invalid API base URL.' });
+            }
+            if (parsedUrl.protocol !== 'https:') {
+                return res.status(400).json({ message: 'API base URL must use HTTPS.' });
+            }
+            const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254', '::1'];
+            if (blockedHosts.includes(parsedUrl.hostname) || parsedUrl.hostname.startsWith('10.') || parsedUrl.hostname.startsWith('192.168.') || /^172\.(1[6-9]|2\d|3[01])\./.test(parsedUrl.hostname)) {
+                return res.status(400).json({ message: 'API base URL must point to a public host.' });
             }
 
             const baseUrl = apiBaseUrl.replace(/\/$/, "");

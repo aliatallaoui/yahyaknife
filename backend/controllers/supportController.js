@@ -39,7 +39,7 @@ exports.getTickets = async (req, res) => {
         let query = {};
 
         const VALID_STATUSES = ['Open', 'In Progress', 'Waiting on Customer', 'Resolved', 'Closed'];
-        const VALID_TYPES    = ['Order Issue', 'Return', 'Complaint', 'Enquiry', 'Other'];
+        const VALID_TYPES    = ['General Inquiry', 'Shipping Issue', 'Product Defect', 'RMA Request'];
         const VALID_PRIORITY = ['Low', 'Medium', 'High', 'Urgent'];
 
         if (status) { if (VALID_STATUSES.includes(status)) query.status = status; else return res.status(400).json({ error: 'Invalid status filter' }); }
