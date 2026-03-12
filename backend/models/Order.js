@@ -8,7 +8,6 @@ const orderSchema = new mongoose.Schema({
     products: [{
         variantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant' },
         knifeCardRef: { type: mongoose.Schema.Types.ObjectId, ref: 'KnifeCard' },
-        customOrderRef: { type: mongoose.Schema.Types.ObjectId, ref: 'CustomOrder' },
         name: { type: String }, // Storing snapshot of the product name
         quantity: { type: Number, required: true },
         unitPrice: { type: Number, required: true }
@@ -91,7 +90,8 @@ const orderSchema = new mongoose.Schema({
     deliveryStatus: {
         refusalReason: { type: String },
         deliveryTimeMinutes: { type: Number },
-        deliveredAt: { type: Date }
+        deliveredAt: { type: Date },
+        returnedAt: { type: Date }
     },
     // Shipping details for courier dispatch
     shipping: {
