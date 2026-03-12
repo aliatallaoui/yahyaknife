@@ -622,7 +622,7 @@ const OrderRow = React.memo(({
                                         }}
                                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 text-[11px] font-black tracking-wider uppercase rounded border border-red-200 hover:border-red-600 transition-all"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" /> Move to Trash
+                                        <Trash2 className="w-3.5 h-3.5" /> {t('ordersControl.moveToTrash', 'Move to Trash')}
                                     </button>
                                 )}
                                 <button
@@ -655,7 +655,7 @@ const OrderRow = React.memo(({
     if (prevProps.order.status !== nextProps.order.status) return false;
     if (prevProps.order.priority !== nextProps.order.priority) return false;
     if ((prevProps.order.tags || []).join(',') !== (nextProps.order.tags || []).join(',')) return false;
-    if (prevProps.order.agent?._id !== nextProps.order.agent?._id) return false;
+    if (prevProps.order.assignedAgent?._id !== nextProps.order.assignedAgent?._id) return false;
     if (prevProps.order.courier?._id !== nextProps.order.courier?._id) return false;
 
     return true;

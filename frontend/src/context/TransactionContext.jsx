@@ -1,9 +1,11 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
 
 export const TransactionContext = createContext();
 
 export const TransactionProvider = ({ children }) => {
+    const { t } = useTranslation();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
@@ -24,7 +26,7 @@ export const TransactionProvider = ({ children }) => {
                 setTransactions(data);
             }
         } catch (error) {
-            setFetchError('Failed to load transactions.');
+            setFetchError(t('finance.errorLoadTransactions', 'Failed to load transactions.'));
         } finally {
             setLoading(false);
         }
@@ -53,7 +55,7 @@ export const TransactionProvider = ({ children }) => {
                 setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
                 return true;
             }
-            throw new Error('Failed to add transaction');
+            throw new Error(t('finance.errorAddTransaction', 'Failed to add transaction'));
         } catch (error) {
             console.error(error);
             throw error;
@@ -75,7 +77,7 @@ export const TransactionProvider = ({ children }) => {
                 setTransactions(prev => prev.map(t => t._id === id ? updated : t).sort((a, b) => new Date(b.date) - new Date(a.date)));
                 return true;
             }
-            throw new Error('Failed to update transaction');
+            throw new Error(t('finance.errorUpdateTransaction', 'Failed to update transaction'));
         } catch (error) {
             console.error(error);
             throw error;
@@ -95,7 +97,7 @@ export const TransactionProvider = ({ children }) => {
                 setTransactions(prev => prev.filter(t => t._id !== id));
                 return true;
             }
-            throw new Error('Failed to delete transaction');
+            throw new Error(t('finance.errorDeleteTransaction', 'Failed to delete transaction'));
         } catch (error) {
             console.error(error);
             throw error;

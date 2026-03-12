@@ -139,7 +139,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
             await onSubmit(formData);
             onClose();
         } catch (err) {
-            setError(err.message || 'An error occurred');
+            setError(err.message || t('common.errorOccurred', 'An error occurred'));
         } finally {
             setLoading(false);
         }

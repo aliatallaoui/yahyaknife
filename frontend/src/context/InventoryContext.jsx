@@ -1,9 +1,11 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
 
 export const InventoryContext = createContext();
 
 export const InventoryProvider = ({ children }) => {
+    const { t } = useTranslation();
     const { token } = useContext(AuthContext);
 
     const [products, setProducts] = useState([]);
@@ -48,7 +50,7 @@ export const InventoryProvider = ({ children }) => {
             if (poRes.ok) { const poJson = await poRes.json(); setPurchaseOrders(poJson.data ?? (Array.isArray(poJson) ? poJson : [])); }
             if (ledgerRes.ok) { const ledgerJson = await ledgerRes.json(); setGlobalLedger(ledgerJson.data ?? (Array.isArray(ledgerJson) ? ledgerJson : [])); }
         } catch (error) {
-            setFetchError('Failed to load inventory data.');
+            setFetchError(t('inventory.errorLoadData', 'Failed to load inventory data.'));
         } finally {
             setLoading(false);
         }
@@ -71,7 +73,7 @@ export const InventoryProvider = ({ children }) => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create product');
+            throw new Error(errorData.message || t('inventory.errorCreateProduct', 'Failed to create product'));
         }
 
         const newProduct = await response.json();
@@ -94,7 +96,7 @@ export const InventoryProvider = ({ children }) => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update product');
+            throw new Error(errorData.message || t('inventory.errorUpdateProduct', 'Failed to update product'));
         }
 
         const updatedProduct = await response.json();
@@ -113,7 +115,7 @@ export const InventoryProvider = ({ children }) => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete product');
+            throw new Error(errorData.message || t('inventory.errorDeleteProduct', 'Failed to delete product'));
         }
 
         setProducts(prev => prev.filter(p => p._id !== id));
@@ -127,7 +129,7 @@ export const InventoryProvider = ({ children }) => {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
         });
-        if (!res.ok) throw new Error('Failed to create supplier');
+        if (!res.ok) throw new Error(t('inventory.errorCreateSupplier', 'Failed to create supplier'));
         const newData = await res.json();
         setSuppliers(prev => [...prev, newData]);
         return newData;
@@ -139,7 +141,7 @@ export const InventoryProvider = ({ children }) => {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(updates)
         });
-        if (!res.ok) throw new Error('Failed to update supplier');
+        if (!res.ok) throw new Error(t('inventory.errorUpdateSupplier', 'Failed to update supplier'));
         const updated = await res.json();
         setSuppliers(prev => prev.map(s => s._id === id ? updated : s));
         return updated;
@@ -150,7 +152,7 @@ export const InventoryProvider = ({ children }) => {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to delete supplier');
+        if (!res.ok) throw new Error(t('inventory.errorDeleteSupplier', 'Failed to delete supplier'));
         setSuppliers(prev => prev.filter(s => s._id !== id));
     };
 
@@ -161,7 +163,7 @@ export const InventoryProvider = ({ children }) => {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
         });
-        if (!res.ok) throw new Error('Failed to create category');
+        if (!res.ok) throw new Error(t('inventory.errorCreateCategory', 'Failed to create category'));
         const newData = await res.json();
         setCategories(prev => [...prev, newData]);
         return newData;
@@ -173,7 +175,7 @@ export const InventoryProvider = ({ children }) => {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(updates)
         });
-        if (!res.ok) throw new Error('Failed to update category');
+        if (!res.ok) throw new Error(t('inventory.errorUpdateCategory', 'Failed to update category'));
         const updated = await res.json();
         setCategories(prev => prev.map(c => c._id === id ? updated : c));
         return updated;
@@ -184,7 +186,7 @@ export const InventoryProvider = ({ children }) => {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to delete category');
+        if (!res.ok) throw new Error(t('inventory.errorDeleteCategory', 'Failed to delete category'));
         setCategories(prev => prev.filter(c => c._id !== id));
     };
 
@@ -195,7 +197,7 @@ export const InventoryProvider = ({ children }) => {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
         });
-        if (!res.ok) throw new Error('Failed to create purchase order');
+        if (!res.ok) throw new Error(t('inventory.errorCreatePO', 'Failed to create purchase order'));
         const newData = await res.json();
         setPurchaseOrders(prev => [newData, ...prev]);
         return newData;
@@ -207,7 +209,7 @@ export const InventoryProvider = ({ children }) => {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ status })
         });
-        if (!res.ok) throw new Error('Failed to update PO status');
+        if (!res.ok) throw new Error(t('inventory.errorUpdatePO', 'Failed to update PO status'));
         const updated = await res.json();
 
         // Refresh entire inventory state to see stock movement
@@ -220,7 +222,7 @@ export const InventoryProvider = ({ children }) => {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger/${variantId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to fetch ledger');
+        if (!res.ok) throw new Error(t('inventory.errorFetchLedger', 'Failed to fetch ledger'));
         return await res.json();
     };
 

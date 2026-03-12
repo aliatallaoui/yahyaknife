@@ -5,6 +5,7 @@ import { AuthContext } from './AuthContext';
 export const SalesContext = createContext();
 
 export const SalesProvider = ({ children }) => {
+    const { t } = useTranslation();
     const [orders, setOrders] = useState([]);
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ export const SalesProvider = ({ children }) => {
                 setPerformance(await perfRes.json());
             }
         } catch (error) {
-            setFetchError('Failed to load orders.');
+            setFetchError(t('sales.errorLoadOrders', 'Failed to load orders.'));
         } finally {
             setLoading(false);
         }
@@ -49,7 +50,7 @@ export const SalesProvider = ({ children }) => {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } });
             if (res.ok) setPerformance(await res.json());
         } catch (error) {
-            setFetchError('Failed to refresh performance metrics.');
+            setFetchError(t('sales.errorRefreshPerf', 'Failed to refresh performance metrics.'));
         }
     }
 

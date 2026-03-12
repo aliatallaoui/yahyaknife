@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
 
 const CustomerContext = createContext();
@@ -6,6 +7,7 @@ const CustomerContext = createContext();
 export const useCustomer = () => useContext(CustomerContext);
 
 export const CustomerProvider = ({ children }) => {
+    const { t } = useTranslation();
     const { token } = useContext(AuthContext);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export const CustomerProvider = ({ children }) => {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error('Failed to fetch customers');
+            if (!res.ok) throw new Error(t('crm.errorFetchCustomers', 'Failed to fetch customers'));
             const data = await res.json();
             setCustomers(data);
             setError(null);
@@ -43,7 +45,7 @@ export const CustomerProvider = ({ children }) => {
                 },
                 body: JSON.stringify(customerData)
             });
-            if (!res.ok) throw new Error('Failed to create customer');
+            if (!res.ok) throw new Error(t('crm.errorCreateCustomer', 'Failed to create customer'));
             const newCustomer = await res.json();
             setCustomers([newCustomer, ...customers]);
             return newCustomer;
@@ -62,7 +64,7 @@ export const CustomerProvider = ({ children }) => {
                 },
                 body: JSON.stringify(updateData)
             });
-            if (!res.ok) throw new Error('Failed to update customer');
+            if (!res.ok) throw new Error(t('crm.errorUpdateCustomer', 'Failed to update customer'));
             const updatedCustomer = await res.json();
             setCustomers(customers.map(c => c._id === id ? updatedCustomer : c));
             return updatedCustomer;
@@ -77,7 +79,7 @@ export const CustomerProvider = ({ children }) => {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error('Failed to delete customer');
+            if (!res.ok) throw new Error(t('crm.errorDeleteCustomer', 'Failed to delete customer'));
             setCustomers(customers.filter(c => c._id !== id));
             return true;
         } catch (err) {

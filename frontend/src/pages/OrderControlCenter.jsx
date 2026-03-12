@@ -222,7 +222,7 @@ export default function OrderControlCenter() {
                 pollExportStatus(res.data.jobId);
             }
         } catch (err) {
-            showError(err.response?.data?.message || 'Failed to trigger export');
+            showError(err.response?.data?.message || t('ordersControl.errorTriggerExport', 'Failed to trigger export'));
         }
     };
 
@@ -290,7 +290,7 @@ export default function OrderControlCenter() {
                     .catch(err => console.error('Failed products:', err));
 
             } catch (err) {
-                showError('Failed to load dropdowns (couriers, agents, products). Refresh to retry.');
+                showError(t('ordersControl.errorLoadDropdowns', 'Failed to load dropdowns (couriers, agents, products). Refresh to retry.'));
             }
         };
         fetchDeps();
@@ -348,7 +348,7 @@ export default function OrderControlCenter() {
 
         } catch (err) {
             console.error("Order Fetch Error", err);
-            setError(err.response?.data?.message || "Failed to load orders");
+            setError(err.response?.data?.message || t('ordersControl.errorLoadOrders', 'Failed to load orders'));
         } finally {
             setLoading(false);
             setIsFetchingNextPage(false);
@@ -803,7 +803,7 @@ export default function OrderControlCenter() {
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); }}
                                 className="bg-gray-50 border border-gray-200 text-xs font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-[140px] md:w-[150px] xl:w-[200px] ps-8 pe-2.5 py-1.5 xl:py-2 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
-                                title="Press / to focus"
+                                title={t('ordersControl.pressToFocus', 'Press / to focus')}
                             />
                             {searchTerm && (
                                 <button onClick={() => setSearchTerm('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -953,7 +953,7 @@ export default function OrderControlCenter() {
                             </button>
                         )}
 
-                        <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hidden sm:block shrink-0" title="Refresh Data Core">
+                        <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hidden sm:block shrink-0" title={t('ordersControl.refreshDataCore', 'Refresh Data Core')}>
                             <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin text-indigo-500")} />
                         </button>
                     </div>

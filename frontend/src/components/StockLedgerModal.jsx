@@ -22,7 +22,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                 })
                 .catch(err => {
                     console.error("Failed to fetch ledger", err);
-                    setFetchError('Failed to load stock movements.');
+                    setFetchError(t('modals.errorLoadMovements', 'Failed to load stock movements.'));
                     setLoading(false);
                 });
         }

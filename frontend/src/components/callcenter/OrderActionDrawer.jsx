@@ -48,7 +48,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess }) {
             );
             onSuccess();
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Action failed');
+            setError(err.response?.data?.message || err.message || t('callcenter.actionFailed', 'Action failed'));
         } finally {
             setLoadingAction(null);
         }

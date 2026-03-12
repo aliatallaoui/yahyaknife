@@ -167,9 +167,9 @@ export default function Financial() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (finRes.ok) { const json = await finRes.json(); setOverview(json.data ?? json); }
-            else { const j = await finRes.json().catch(() => ({})); setOverviewError(j.error || 'Failed to load financial overview.'); }
+            else { const j = await finRes.json().catch(() => ({})); setOverviewError(j.error || t('finance.errorLoadOverview', 'Failed to load financial overview.')); }
         } catch (error) {
-            setOverviewError('Failed to load financial overview.');
+            setOverviewError(t('finance.errorLoadOverview', 'Failed to load financial overview.'));
         } finally {
             setLoadingOverview(false);
         }
@@ -234,11 +234,11 @@ export default function Financial() {
                         {/* Period selector */}
                         <div className="flex bg-white/10 backdrop-blur-sm border border-white/20 p-0.5 rounded-xl">
                             {[
-                                { key: 'thisMonth', label: 'This Month' },
-                                { key: 'lastMonth', label: 'Last Month' },
-                                { key: '3m',        label: '3 Months' },
-                                { key: 'ytd',       label: 'YTD' },
-                                { key: 'all',       label: 'All Time' },
+                                { key: 'thisMonth', label: t('finance.periodThisMonth', 'This Month') },
+                                { key: 'lastMonth', label: t('finance.periodLastMonth', 'Last Month') },
+                                { key: '3m',        label: t('finance.period3m', '3 Months') },
+                                { key: 'ytd',       label: t('finance.periodYtd', 'YTD') },
+                                { key: 'all',       label: t('finance.periodAll', 'All Time') },
                             ].map(p => (
                                 <button
                                     key={p.key}
@@ -505,16 +505,16 @@ export default function Financial() {
                         onChange={e => { setFilterType(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
                         className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
                     >
-                        <option value="all">All Types</option>
-                        <option value="revenue">Revenue</option>
-                        <option value="expense">Expense</option>
+                        <option value="all">{t('finance.filterAllTypes', 'All Types')}</option>
+                        <option value="revenue">{t('finance.filterRevenue', 'Revenue')}</option>
+                        <option value="expense">{t('finance.filterExpense', 'Expense')}</option>
                     </select>
                     <select
                         value={filterCategory}
                         onChange={e => { setFilterCategory(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
                         className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
                     >
-                        <option value="all">All Categories</option>
+                        <option value="all">{t('finance.filterAllCategories', 'All Categories')}</option>
                         {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                     {(filterType !== 'all' || filterCategory !== 'all' || searchTerm) && (
@@ -522,7 +522,7 @@ export default function Financial() {
                             onClick={() => { setFilterType('all'); setFilterCategory('all'); setSearchTerm(''); setCurrentPage(1); }}
                             className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
                         >
-                            Clear Filters
+                            {t('finance.clearFilters', 'Clear Filters')}
                         </button>
                     )}
                 </div>
@@ -530,14 +530,14 @@ export default function Financial() {
                 {/* Batch Action Bar */}
                 {selectedIds.size > 0 && hasPermission('financial.manage_manual_transactions') && (
                     <div className="flex items-center justify-between px-5 py-3 bg-blue-50 border-b border-blue-100">
-                        <span className="text-sm font-bold text-blue-800">{selectedIds.size} selected</span>
+                        <span className="text-sm font-bold text-blue-800">{t('finance.selectedCount', '{{count}} selected', { count: selectedIds.size })}</span>
                         <button
                             onClick={handleBatchDelete}
                             disabled={batchDeleting}
                             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            {batchDeleting ? 'Deleting...' : `Delete (${selectedIds.size})`}
+                            {batchDeleting ? t('common.deleting', 'Deleting...') : t('finance.deleteBatch', 'Delete ({{count}})', { count: selectedIds.size })}
                         </button>
                     </div>
                 )}
@@ -596,8 +596,8 @@ export default function Financial() {
                                                     onBlur={async (e) => { await saveTypeChange(tx, e.target.value); }}
                                                     className="text-xs font-bold px-2 py-1.5 rounded-lg border border-blue-400 appearance-none cursor-pointer outline-none w-full shadow-sm"
                                                 >
-                                                    <option value="revenue">Revenue</option>
-                                                    <option value="expense">Expense</option>
+                                                    <option value="revenue">{t('finance.filterRevenue', 'Revenue')}</option>
+                                                    <option value="expense">{t('finance.filterExpense', 'Expense')}</option>
                                                 </select>
                                             ) : (
                                                 <span

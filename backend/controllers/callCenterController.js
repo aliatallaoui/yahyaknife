@@ -254,7 +254,7 @@ exports.getOrderCallHistory = async (req, res) => {
 exports.getManagerAnalytics = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        const agents = await AgentProfile.find({ isActive: true }).populate('user', 'firstName lastName email');
+        const agents = await AgentProfile.find({ isActive: true }).populate('user', 'name email');
 
         if (agents.length === 0) return res.json({ leaderboard: [] });
 
@@ -268,7 +268,7 @@ exports.getManagerAnalytics = async (req, res) => {
                     $group: {
                         _id: '$assignedAgent',
                         totalAssigned: { $sum: 1 },
-                        totalConfirmed: { $sum: { $cond: [{ $nin: ['$status', ['New', 'Refused']] }, 1, 0] } },
+                        totalConfirmed: { $sum: { $cond: [{ $not: [{ $in: ['$status', ['New', 'Refused']] }] }, 1, 0] } },
                         totalDelivered: { $sum: { $cond: [{ $in:  ['$status', ['Delivered', 'Paid']] }, 1, 0] } }
                     }
                 }
@@ -302,7 +302,7 @@ exports.getManagerAnalytics = async (req, res) => {
 
             return {
                 agentId,
-                name: `${profile.user.firstName} ${profile.user.lastName}`,
+                name: profile.user.name || profile.user.email,
                 totalAssigned:  stats.totalAssigned,
                 totalConfirmed: stats.totalConfirmed,
                 confirmedRate:  parseFloat(confirmedRate),

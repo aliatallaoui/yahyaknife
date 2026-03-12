@@ -48,7 +48,7 @@ export default function Couriers() {
             setRegionalData(regionRes.data);
             setCouriers(couriersRes.data);
         } catch (error) {
-            setFetchError(error.response?.data?.error || error.message || 'Failed to load courier data.');
+            setFetchError(error.response?.data?.error || error.message || t('couriers.errorLoadData', 'Failed to load courier data.'));
         } finally {
             setLoading(false);
         }

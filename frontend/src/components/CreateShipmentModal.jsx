@@ -261,7 +261,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         }}
                                         className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                                     >
-                                        <option value="">Select Wilaya...</option>
+                                        <option value="">{t('dispatch.modal.selectWilaya', 'Select Wilaya...')}</option>
                                         {leblad.getWilayaList().map(wilaya => (
                                             <option key={wilaya.mattricule} value={wilaya.mattricule}>
                                                 {String(wilaya.mattricule).padStart(2, '0')} - {wilaya.name}
@@ -278,7 +278,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         onChange={e => setFormData({ ...formData, commune: e.target.value })}
                                         className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     >
-                                        <option value="">{formData.wilayaCode ? 'Select Commune...' : 'Select Wilaya first'}</option>
+                                        <option value="">{formData.wilayaCode ? t('dispatch.modal.selectCommune', 'Select Commune...') : t('dispatch.modal.selectWilayaFirst', 'Select Wilaya first')}</option>
                                         {formData.wilayaCode && getSafeCommunesForWilaya(formData.wilayaCode).map(commune => (
                                             <option key={commune.code} value={commune.name}>
                                                 {commune.name}
@@ -319,8 +319,8 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">{t('dispatch.modal.deliveryType', 'Delivery Type')}</label>
                                     <select value={formData.deliveryType} onChange={e => setFormData({ ...formData, deliveryType: Number(e.target.value) })} className="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500 py-1.5">
-                                        <option value={0}>Home Delivery (0)</option>
-                                        <option value={1}>Stop Desk / Point (1)</option>
+                                        <option value={0}>{t('dispatch.modal.homeDelivery', 'Home Delivery (0)')}</option>
+                                        <option value={1}>{t('dispatch.modal.stopDesk', 'Stop Desk / Point (1)')}</option>
                                     </select>
                                 </div>
                                 <div>

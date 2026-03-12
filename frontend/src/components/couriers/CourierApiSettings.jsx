@@ -18,11 +18,11 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
             
             if (isYalidin) {
                 if (!courier.apiId || !courier.apiToken) {
-                    throw new Error('API ID and API Token are required for Yalidin connection test.');
+                    throw new Error(t('couriers.yalidinValidation', 'API ID and API Token are required for Yalidin connection test.'));
                 }
             } else {
                 if (!courier.apiBaseUrl || !courier.apiToken) {
-                    throw new Error('API Token and Base URL are required for Ecotrack connection test.');
+                    throw new Error(t('couriers.ecotrackValidation', 'API Token and Base URL are required for Ecotrack connection test.'));
                 }
             }
 
@@ -38,10 +38,10 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
             });
 
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Success' }));
-            setTestResult({ success: true, message: 'Connection established successfully!' });
+            setTestResult({ success: true, message: t('couriers.connectionOk', 'Connection established successfully!') });
         } catch (error) {
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Failed' }));
-            setTestResult({ success: false, message: error.response?.data?.message || error.message || 'Connection failed. Please check credentials.' });
+            setTestResult({ success: false, message: error.response?.data?.message || error.message || t('couriers.connectionFailed', 'Connection failed. Please check credentials.') });
         } finally {
             setTesting(false);
         }
@@ -77,9 +77,9 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                             onChange={e => setCourier({ ...courier, apiProvider: e.target.value })}
                             className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                         >
-                            <option value="Ecotrack">ECOTRACK Compatible API</option>
-                            <option value="Yalidin">Yalidin Express</option>
-                            <option value="Other">Custom / Other</option>
+                            <option value="Ecotrack">{t('couriers.providerEcotrack', 'ECOTRACK Compatible API')}</option>
+                            <option value="Yalidin">{t('couriers.providerYalidin', 'Yalidin Express')}</option>
+                            <option value="Other">{t('couriers.providerOther', 'Custom / Other')}</option>
                         </select>
                     </div>
 
@@ -103,9 +103,9 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                                     onChange={e => setCourier({ ...courier, authType: e.target.value })}
                                     className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                                 >
-                                    <option value="Bearer Token">Bearer Token</option>
-                                    <option value="API Key">API Key</option>
-                                    <option value="None">None</option>
+                                    <option value="Bearer Token">{t('couriers.authBearer', 'Bearer Token')}</option>
+                                    <option value="API Key">{t('couriers.authApiKey', 'API Key')}</option>
+                                    <option value="None">{t('couriers.authNone', 'None')}</option>
                                 </select>
                             </div>
                         </>

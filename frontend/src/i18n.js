@@ -334,7 +334,20 @@ const resources = {
                 saveRuleFailed: 'Error saving rule',
                 deleteRuleFailed: 'Failed to delete pricing rule.',
                 saveMappingFailed: 'Error saving mapping',
-                errorLoadData: 'Failed to load courier data.'
+                errorLoadData: 'Failed to load courier data.',
+                yalidinValidation: 'API ID and API Token are required for Yalidin connection test.',
+                ecotrackValidation: 'API Token and Base URL are required for Ecotrack connection test.',
+                connectionOk: 'Connection established successfully!',
+                connectionFailed: 'Connection failed. Please check credentials.',
+                providerEcotrack: 'ECOTRACK Compatible API',
+                providerYalidin: 'Yalidin Express',
+                providerOther: 'Custom / Other',
+                authBearer: 'Bearer Token',
+                authApiKey: 'API Key',
+                authNone: 'None',
+                deleteCoverageConfirm: 'Delete this coverage region?',
+                homeDelivery: 'Home',
+                officeDelivery: 'Office (Stop Desk)'
             },
             rbac: {
                 roles_title: "Roles & Permissions",
@@ -636,7 +649,9 @@ const resources = {
                 copyNumber: "Copy number",
                 noPhone: "No phone number",
                 refresh: "Refresh",
-                noPermission: "You do not have permission to view this page."
+                noPermission: "You do not have permission to view this page.",
+                errorOccurred: "An error occurred",
+                deleting: "Deleting..."
             },
             dashboard: {
                 title: "Platform Overview",
@@ -761,7 +776,19 @@ const resources = {
                 cancel: "Cancel",
                 deleteBtn: "Delete",
                 errorLoadTransactions: "Failed to load transactions.",
-                errorLoadOverview: "Failed to load financial overview."
+                errorLoadOverview: "Failed to load financial overview.",
+                periodThisMonth: "This Month",
+                periodLastMonth: "Last Month",
+                period3m: "3 Months",
+                periodYtd: "YTD",
+                periodAll: "All Time",
+                filterAllTypes: "All Types",
+                filterRevenue: "Revenue",
+                filterExpense: "Expense",
+                filterAllCategories: "All Categories",
+                clearFilters: "Clear Filters",
+                selectedCount: "{{count}} selected",
+                deleteBatch: "Delete ({{count}})"
             },
             sales: {
                 title: "Sales Management",
@@ -1007,6 +1034,7 @@ const resources = {
                 errorCreatePO: "Failed to create purchase order.",
                 errorUpdatePO: "Failed to update PO status.",
                 errorFetchLedger: "Failed to fetch ledger.",
+                archiveFailed: "Failed to archive product."
             },
             warehouses: {
                 title: "Enterprise Logistics",
@@ -2124,7 +2152,13 @@ const resources = {
                     copyNumber: 'نسخ الرقم',
                     goldHighlight: 'تمييز ذهبي: أكثر من 100 ألف دج',
                     purpleHighlight: 'تمييز بنفسجي: أكثر من 50 ألف دج'
-                }
+                },
+                moveToTrash: 'نقل إلى سلة المهملات',
+                pressToFocus: 'اضغط / للتركيز',
+                refreshDataCore: 'تحديث البيانات الأساسية',
+                errorTriggerExport: 'فشل بدء عملية التصدير.',
+                errorLoadDropdowns: 'فشل تحميل البيانات المساعدة. جدد الصفحة وحاول مرة أخرى.',
+                errorLoadOrders: 'فشل تحميل الطلبات.',
             },
             orderModal: {
                 createTitle: 'إنشاء طلب دفع عند الاستلام',
@@ -2138,9 +2172,6 @@ const resources = {
                 commune: 'البلدية',
                 selectCommune: 'اختر البلدية...',
                 selectWilayaFirst: 'اختر الولاية أولاً',
-                moveToTrash: 'نقل إلى سلة المهملات',
-                pressToFocus: 'اضغط / للتركيز',
-                refreshDataCore: 'تحديث البيانات الأساسية',
                 communeOptions: '{{count}} خيار',
                 detailedAddress: 'العنوان التفصيلي',
                 addressPlaceholder: 'الشارع، المعلم، المبنى...',

@@ -229,7 +229,7 @@ export default function Sales() {
             setIsModalOpen(false);
             return { success: true };
         } catch (error) {
-            let msg = error.message || "Failed to save order.";
+            let msg = error.message || t('sales.errorSaveOrder', 'Failed to save order.');
             try {
                 const parsed = JSON.parse(msg);
                 msg = parsed.message || msg;

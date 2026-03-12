@@ -120,7 +120,7 @@ export default function CourierCoverageMap({ courierId }) {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Regions...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading...')}</div>;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -147,7 +147,7 @@ export default function CourierCoverageMap({ courierId }) {
                             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                                 <AlertTriangle className="w-5 h-5 text-red-600" />
                             </div>
-                            <h3 className="font-bold text-gray-900">Delete this coverage region?</h3>
+                            <h3 className="font-bold text-gray-900">{t('couriers.deleteCoverageConfirm', 'Delete this coverage region?')}</h3>
                         </div>
                         <div className="flex gap-3 justify-end">
                             <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
@@ -233,7 +233,7 @@ export default function CourierCoverageMap({ courierId }) {
                                 onChange={e => setFormData({ ...formData, homeSupported: e.target.checked })}
                                 className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                             />
-                            <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Home className="w-4 h-4 text-gray-400" /> Home</span>
+                            <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Home className="w-4 h-4 text-gray-400" /> {t('couriers.homeDelivery', 'Home')}</span>
                         </label>
                         
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -243,7 +243,7 @@ export default function CourierCoverageMap({ courierId }) {
                                 onChange={e => setFormData({ ...formData, officeSupported: e.target.checked })}
                                 className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                             />
-                            <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-gray-400" /> Office (Stop Desk)</span>
+                            <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-gray-400" /> {t('couriers.officeDelivery', 'Office (Stop Desk)')}</span>
                         </label>
                     </div>
 
