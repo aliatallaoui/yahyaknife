@@ -1,4 +1,5 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { Users, UserMinus, UserCheck, Star, ShieldAlert, BarChart3, ArrowRight, ArrowLeft, DollarSign, Target, Plus, Search, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useCustomer } from '../context/CustomerContext';
@@ -25,6 +26,9 @@ export default function CustomerInsight() {
     const [searchTerm, setSearchTerm] = useState('');
     const [saveError, setSaveError] = useState(null);
     const [metricsError, setMetricsError] = useState(null);
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     useEffect(() => {
         const fetchCustomerData = async () => {
@@ -108,8 +112,9 @@ export default function CustomerInsight() {
                         <div className="relative">
                             <Search className="w-4 h-4 text-sky-500 absolute start-3 top-1/2 -translate-y-1/2" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('crm.searchPlaceholder', "Search name or email...")}
+                                placeholder={t('crm.searchPlaceholder', "Search name or email... (Press /)")}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="ps-9 pe-4 py-2 bg-white border border-sky-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all w-48 sm:w-64 shadow-sm font-bold"

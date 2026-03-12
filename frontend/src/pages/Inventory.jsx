@@ -1,4 +1,5 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
@@ -21,6 +22,9 @@ export default function Inventory() {
     } = useContext(InventoryContext);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
     const [activeTab, setActiveTab] = useState('finished');
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -191,8 +195,9 @@ export default function Inventory() {
                         <div className="relative">
                             <Search className="w-4 h-4 text-amber-500 absolute start-3 top-1/2 -translate-y-1/2" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name...')}
+                                placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name... (Press /)')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="ps-9 pe-4 py-2 bg-white border border-amber-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all w-48 sm:w-64 shadow-sm font-bold"

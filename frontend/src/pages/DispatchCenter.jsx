@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +42,9 @@ export default function DispatchCenter() {
     const [confirmDelete, setConfirmDelete] = useState(null); // shipment id pending delete
     const [errorMsg, setErrorMsg] = useState(null);
     const showError = (msg) => { setErrorMsg(msg); setTimeout(() => setErrorMsg(null), 5000); };
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     useEffect(() => {
         fetchShipments();
@@ -232,8 +236,9 @@ export default function DispatchCenter() {
                 <div className="w-full md:w-96 relative">
                     <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
+                        ref={searchRef}
                         type="text"
-                        placeholder={t('dispatch.search', 'Search tracking ID, customer, order...')}
+                        placeholder={t('dispatch.search', 'Search tracking ID, customer, order... (Press /)')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
