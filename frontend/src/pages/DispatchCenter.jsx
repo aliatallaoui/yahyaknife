@@ -59,7 +59,7 @@ export default function DispatchCenter() {
             setShipments(res.data);
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching shipments', error);
+            showError(error.response?.data?.message || 'Failed to load shipments.');
             setLoading(false);
         }
     };
@@ -279,7 +279,7 @@ export default function DispatchCenter() {
                                 <tr><td colSpan="6" className="px-6 py-12 text-center">
                                     <div className="flex flex-col items-center gap-3 text-gray-400">
                                         <div className="w-7 h-7 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" />
-                                        <span className="text-sm font-medium">Loading shipments...</span>
+                                        <span className="text-sm font-medium">{t('dispatch.loadingShipments', 'Loading shipments...')}</span>
                                     </div>
                                 </td></tr>
                             ) : filteredShipments.length === 0 ? (
@@ -369,11 +369,11 @@ export default function DispatchCenter() {
                         <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
                             <Trash2 className="w-5 h-5 text-red-600" />
                         </div>
-                        <h3 className="text-base font-black text-gray-900 mb-2">Delete this shipment?</h3>
-                        <p className="text-sm text-gray-500 leading-relaxed mb-6">This will cancel the dispatch request. The linked order will revert to Confirmed status.</p>
+                        <h3 className="text-base font-black text-gray-900 mb-2">{t('dispatch.deleteConfirmTitle', 'Delete this shipment?')}</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed mb-6">{t('dispatch.deleteConfirmBody', 'This will cancel the dispatch request. The linked order will revert to Confirmed status.')}</p>
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={confirmDeleteShipment} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">Delete</button>
+                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">{t('dispatch.cancel', 'Cancel')}</button>
+                            <button onClick={confirmDeleteShipment} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">{t('dispatch.deleteBtn', 'Delete')}</button>
                         </div>
                     </div>
                 </div>

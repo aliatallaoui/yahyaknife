@@ -31,12 +31,14 @@ export default function HRSnapshot() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [leaveError, setLeaveError] = useState(null);
+    const [fetchError, setFetchError] = useState(null);
     const searchRef = useRef(null);
     useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
     useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const fetchHRData = async () => {
         setLoading(true);
+        setFetchError(null);
         try {
             const todayStr = moment().format('YYYY-MM-DD');
             const h = { headers: { Authorization: `Bearer ${token}` } };
@@ -76,7 +78,7 @@ export default function HRSnapshot() {
             setEmployees(empsWithAtt);
             setLeaves(Array.isArray(leaveData) ? leaveData : []);
         } catch (error) {
-            console.error("Error fetching HR data:", error);
+            setFetchError('Failed to load HR data.');
         } finally {
             setLoading(false);
         }
@@ -170,6 +172,14 @@ export default function HRSnapshot() {
                     </>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -286,7 +296,7 @@ export default function HRSnapshot() {
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
                             {filteredEmployees.map((emp) => (
-                                <tr key={emp._id} onClick={() => navigate((emp.workshopRole && emp.workshopRole !== 'None') ? `/production/workers/${emp._id}` : `/hr/employees/${emp._id}`)} className="hover:bg-blue-50/30 transition-colors cursor-pointer group">
+                                <tr key={emp._id} onClick={() => navigate(`/hr/employees/${emp._id}`)} className="hover:bg-blue-50/30 transition-colors cursor-pointer group">
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">

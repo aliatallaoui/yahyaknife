@@ -20,6 +20,7 @@ export default function EcommerceAnalytics() {
     const [dashData, setDashData] = useState(null);
     const [trendData, setTrendData] = useState([]);
     const [trendLoading, setTrendLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     const fetchAnalytics = async () => {
         setIsRefreshing(true);
@@ -33,7 +34,7 @@ export default function EcommerceAnalytics() {
                 setDashData(data);
             }
         } catch (error) {
-            console.error("Failed to fetch analytics:", error);
+            setFetchError('Failed to load analytics data.');
         } finally {
             setIsRefreshing(false);
         }
@@ -62,7 +63,7 @@ export default function EcommerceAnalytics() {
                 })));
             }
         } catch (e) {
-            console.error('Failed to fetch daily trends:', e);
+            setFetchError('Failed to load trend data.');
         } finally {
             setTrendLoading(false);
         }
@@ -171,6 +172,14 @@ export default function EcommerceAnalytics() {
                     </a>
                 </div>
             </div>
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* AI Insight Feed */}
             <InsightFeed />
