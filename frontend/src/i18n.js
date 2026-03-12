@@ -333,9 +333,9 @@ const resources = {
                 loadPricingFailed: 'Failed to load pricing rules.',
                 saveRuleFailed: 'Error saving rule',
                 deleteRuleFailed: 'Failed to delete pricing rule.',
-                saveMappingFailed: 'Error saving mapping'
-            },,
-                errorLoadData: 'Failed to load courier data.',
+                saveMappingFailed: 'Error saving mapping',
+                errorLoadData: 'Failed to load courier data.'
+            },
             rbac: {
                 roles_title: "Roles & Permissions",
                 roles_desc: "Manage access control profiles across the organization.",
@@ -586,9 +586,9 @@ const resources = {
                 lblAddress: "Full Address",
                 lblCallbackDate: "Callback Date",
                 assignedCount: "{{count}} orders assigned successfully.",
-                autoAssignFailed: "Auto-assignment failed."
-            },,
-                actionFailed: "Action failed.",
+                autoAssignFailed: "Auto-assignment failed.",
+                actionFailed: "Action failed."
+            },
             header: {
                 searchPlaceholder: "Search orders, customers, SKUs...",
                 businessOS: "Cortex Business OS",
@@ -760,9 +760,9 @@ const resources = {
                 deleteBulkBody: "This will permanently remove the selected entries from the ledger.",
                 cancel: "Cancel",
                 deleteBtn: "Delete",
-                errorLoadTransactions: "Failed to load transactions."
-            },,
-                errorLoadOverview: "Failed to load financial overview.",
+                errorLoadTransactions: "Failed to load transactions.",
+                errorLoadOverview: "Failed to load financial overview."
+            },
             sales: {
                 title: "Sales Management",
                 subtitle: "Full commercial lifecycle tracking and order fulfillment.",
@@ -2263,8 +2263,7 @@ const resources = {
                 saveRuleFailed: 'خطأ في حفظ القاعدة',
                 deleteRuleFailed: 'فشل حذف قاعدة التسعير.',
                 saveMappingFailed: 'خطأ في حفظ التعيين'
-            },,
-                errorLoadData: 'فشل تحميل بيانات شركات التوصيل.',
+            },
             rbac: {
                 roles_title: "الأدوار والصلاحيات",
                 roles_desc: "إدارة ملفات التحكم في الوصول عبر المنظمة.",
@@ -2533,8 +2532,7 @@ const resources = {
                 lblCallbackDate: "تاريخ معاودة الاتصال",
                 assignedCount: "{{count}} طلبات تم تعيينها بنجاح.",
                 autoAssignFailed: "فشل التعيين التلقائي."
-            },,
-                actionFailed: "فشل تنفيذ الإجراء.",
+            },
             header: {
                 searchPlaceholder: "البحث عن الطلبات، العملاء، السلع...",
                 businessOS: "كورتيكس - نظام إدارة الأعمال",
@@ -3379,10 +3377,35 @@ const resources = {
                 colDaysWithOvertime: "أيام بها إضافي",
                 colTotalExtraMinutes: "إجمالي دقائق الإضافي",
                 unknown: "مجهول",
+                notClockedIn: "لم يسجل الدخول بعد",
+                statusPendingApproval: "في انتظار الموافقة",
+                statusPartiallyPaid: "مدفوع جزئياً",
                 errorLoadAttendance: "فشل تحميل سجلات الحضور.",
                 errorLoadReport: "فشل تحميل بيانات التقرير.",
                 errorLoadEmployee: "فشل تحميل بيانات الموظف.",
-                errorLoadData: "فشل تحميل بيانات الموارد البشرية.",
+                errorLoadData: "فشل تحميل بيانات الموارد البشرية."
+            },
+            settingsTab: {
+                title: "إعدادات النظام",
+                subtitle: "إدارة تفضيلاتك وإعدادات الأمان والمعاملات العامة.",
+                tabProfile: "ملفي الشخصي",
+                tabGeneral: "عام",
+                tabSecurity: "الأمان",
+                tabAlerts: "التنبيهات",
+                tabCouriers: "تكامل المندوبين",
+                tabUsers: "المستخدمون والأدوار"
+            },
+            courier: {
+                title: "إعدادات تكامل المندوبين",
+                settingsSaved: "تم حفظ الإعدادات واختبار الاتصال بنجاح.",
+                settingsError: "فشل حفظ الإعدادات.",
+                statusValid: "متصل وصالح",
+                statusInvalid: "رمز غير صالح",
+                statusNotAllowed: "IP / الحساب مقيد",
+                statusUnreachable: "غير قابل للوصول",
+                settingsLoadError: "فشل تحميل إعدادات المندوب.",
+                loadingConfig: "جاري تحميل الإعداد...",
+                validating: "جاري التحقق..."
             },
             settingsSecurity: {
                 title: "الأمان والدخول",
