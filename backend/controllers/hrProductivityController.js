@@ -70,7 +70,7 @@ exports.getRewards = async (req, res) => {
             return res.status(404).json({ error: 'Employee not found' });
 
         const rewards = await WorkerReward.find({ employeeId: { $in: employeeIds } })
-            .populate('employeeId', 'name workshopRole')
+            .populate('employeeId', 'name role')
             .sort({ dateAwarded: -1 });
         res.json(rewards);
     } catch (error) {
