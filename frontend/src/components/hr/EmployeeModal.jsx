@@ -16,7 +16,6 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
         joinDate: employee?.joinDate ? moment(employee.joinDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         department: employee?.department || 'Manufacturing',
         role: employee?.role || '',
-        workshopRole: employee?.workshopRole || 'None',
         status: employee?.status || 'Active',
         salary: employee?.salary || employee?.contractSettings?.monthlySalary || 0,
         dailyRequiredMinutes: employee?.contractSettings?.dailyRequiredMinutes || 480,
@@ -42,7 +41,6 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
             joinDate: formData.joinDate,
             department: formData.department,
             role: formData.role,
-            workshopRole: formData.workshopRole,
             status: formData.status,
             salary: Number(formData.salary),
             contractSettings: {
@@ -131,18 +129,6 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblRole')}</label>
                             <input required type="text" value={formData.role} onChange={e => set('role', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.rolePlaceholder')} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">Workshop Role</label>
-                            <select value={formData.workshopRole} onChange={e => set('workshopRole', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
-                                <option value="None">None (Standard HR)</option>
-                                <option value="Master Bladesmith">Master Bladesmith</option>
-                                <option value="Grinder">Grinder</option>
-                                <option value="Handle Maker">Handle Maker</option>
-                                <option value="Finisher">Finisher</option>
-                                <option value="Apprentice">Apprentice</option>
-                                <option value="Packager">Packager</option>
-                            </select>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStatus')}</label>

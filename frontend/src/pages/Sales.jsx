@@ -818,6 +818,8 @@ export default function Sales() {
                                                 Next ›
                                             </button>
                                         </div>
+                                    </div>
+                                );
                             })()}
                     </>
             </div>

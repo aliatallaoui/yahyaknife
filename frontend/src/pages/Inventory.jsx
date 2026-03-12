@@ -149,9 +149,6 @@ export default function Inventory() {
     const totalVariantPages = Math.max(1, Math.ceil(filteredVariants.length / perPage));
     const paginatedVariants = filteredVariants.slice((currentPage - 1) * perPage, currentPage * perPage);
 
-    const totalVariantPages = Math.max(1, Math.ceil(filteredVariants.length / perPage));
-    const paginatedVariants = filteredVariants.slice((currentPage - 1) * perPage, currentPage * perPage);
-
     const filteredCategories = categories.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -203,7 +200,7 @@ export default function Inventory() {
                 <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
-                    <button onClick={refreshInventory} className="text-red-400 hover:text-red-600 text-xs font-bold">Retry</button>
+                    <button onClick={refreshInventory} className="text-red-400 hover:text-red-600 text-xs font-bold">{t('common.retry', 'Retry')}</button>
                 </div>
             )}
 

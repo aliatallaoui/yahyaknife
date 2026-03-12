@@ -333,7 +333,7 @@ export default function EcommerceAnalytics() {
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">No courier data for this period</td></tr>
+                                    <tr><td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">{t('analytics.noCourierData', 'No courier data for this period')}</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -438,7 +438,7 @@ export default function EcommerceAnalytics() {
                             <div className="w-6 h-6 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin" />
                         </div>
                     ) : trendData.length === 0 ? (
-                        <div className="flex items-center justify-center h-full text-sm text-gray-400">No historical data yet — runs nightly at 00:30</div>
+                        <div className="flex items-center justify-center h-full text-sm text-gray-400">{t('analytics.noHistoricalData', 'No historical data yet — runs nightly at 00:30')}</div>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -476,7 +476,7 @@ export default function EcommerceAnalytics() {
                             <div className="w-6 h-6 rounded-full border-4 border-gray-200 border-t-indigo-500 animate-spin" />
                         </div>
                     ) : trendData.length === 0 ? (
-                        <div className="flex items-center justify-center h-full text-sm text-gray-400">No historical data yet — runs nightly at 00:30</div>
+                        <div className="flex items-center justify-center h-full text-sm text-gray-400">{t('analytics.noHistoricalData', 'No historical data yet — runs nightly at 00:30')}</div>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>

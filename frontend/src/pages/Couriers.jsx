@@ -256,7 +256,7 @@ export default function Couriers() {
                                                 filterStatus === s ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
                                             )}
                                         >
-                                            {s === 'All' ? t('common.all', 'All') : s}
+                                            {s === 'All' ? t('common.all', 'All') : s === 'Active' ? t('couriers.statusActive', 'Active') : t('couriers.statusInactive', 'Inactive')}
                                             <span className={clsx('text-[10px] font-black px-1 py-0.5 rounded-full leading-none', filterStatus === s ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500')}>{count}</span>
                                         </button>
                                     );
@@ -311,7 +311,7 @@ export default function Couriers() {
                                                     "inline-flex items-center px-2 py-1 rounded-md text-xs font-bold",
                                                     c.integrationType === 'API' ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-gray-50 text-gray-700 border border-gray-200"
                                                 )}>
-                                                    {c.integrationType === 'API' ? '⚡ API Connected' : 'Manual'}
+                                                    {c.integrationType === 'API' ? t('couriers.apiConnected', '⚡ API Connected') : t('couriers.manual', 'Manual')}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -324,7 +324,7 @@ export default function Couriers() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 {c.status === 'Active' ? (
-                                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200"><CheckCircle className="w-3.5 h-3.5" /> Active</span>
+                                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200"><CheckCircle className="w-3.5 h-3.5" /> {t('couriers.statusActive', 'Active')}</span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-full border border-red-200"><XCircle className="w-3.5 h-3.5" /> {c.status}</span>
                                                 )}

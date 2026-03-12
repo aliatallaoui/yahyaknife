@@ -5,7 +5,6 @@ export const SalesContext = createContext();
 
 export const SalesProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
-    const [customOrders, setCustomOrders] = useState([]);
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
@@ -21,10 +20,9 @@ export const SalesProvider = ({ children }) => {
         setLoading(true);
         setFetchError(null);
         try {
-            const [ordersRes, perfRes, customRes] = await Promise.all([
+            const [ordersRes, perfRes] = await Promise.all([
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders`, { headers: { Authorization: `Bearer ${token}` } })
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             if (ordersRes.ok && perfRes.ok) {
@@ -35,11 +33,6 @@ export const SalesProvider = ({ children }) => {
                 setTotalOrdersCount(ordersData.totalOrders || 0);
 
                 setPerformance(await perfRes.json());
-            }
-
-            if (customRes.ok) {
-                const cj = await customRes.json();
-                setCustomOrders(cj.data ?? (Array.isArray(cj) ? cj : []));
             }
         } catch (error) {
             setFetchError('Failed to load orders.');
@@ -78,7 +71,6 @@ export const SalesProvider = ({ children }) => {
                 body: JSON.stringify(orderData)
             });
             if (res.ok) {
-                // Refresh to page 1 to see the new order
                 fetchSalesData(1);
                 return true;
             }
@@ -100,7 +92,7 @@ export const SalesProvider = ({ children }) => {
                 body: JSON.stringify(orderData)
             });
             if (res.ok) {
-                fetchSalesData(currentPage); // Sync state entirely
+                fetchSalesData(currentPage);
                 return true;
             }
             throw new Error(await res.text());
@@ -127,66 +119,11 @@ export const SalesProvider = ({ children }) => {
         }
     };
 
-    // --- Custom Orders ---
-    const createCustomOrder = async (orderData) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify(orderData)
-            });
-            if (res.ok) {
-                fetchSalesData(currentPage);
-                return true;
-            }
-            throw new Error(await res.text());
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
-    };
-
-    const updateCustomOrder = async (id, orderData) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify(orderData)
-            });
-            if (res.ok) {
-                fetchSalesData(currentPage);
-                return true;
-            }
-            throw new Error(await res.text());
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
-    };
-
-    const deleteCustomOrder = async (id) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                fetchSalesData(currentPage);
-                return true;
-            }
-            throw new Error(await res.text());
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
-    };
-
     return (
         <SalesContext.Provider value={{
             orders, performance, loading, fetchError, fetchSalesData,
             currentPage, totalPages, totalOrdersCount,
-            createOrder, updateOrder, deleteOrder,
-            customOrders, createCustomOrder, updateCustomOrder, deleteCustomOrder
+            createOrder, updateOrder, deleteOrder
         }}>
             {children}
         </SalesContext.Provider>

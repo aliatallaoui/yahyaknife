@@ -25,7 +25,6 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
     // Form State mapped to ECOTRACK
     const [formData, setFormData] = useState({
         orderId: '',
-        isCustomOrder: false,
         customerName: '',
         phone1: '',
         phone2: '',
@@ -56,7 +55,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
             fetchPendingOrders();
             // Reset state
             setFormData({
-                orderId: '', isCustomOrder: false, customerName: '', phone1: '', phone2: '',
+                orderId: '', customerName: '', phone1: '', phone2: '',
                 address: '', commune: '', wilayaCode: '', wilayaName: '', postalCode: '',
                 productName: '', quantity: 1, weight: 1, codAmount: 0, remark: '',
                 operationType: 1, deliveryType: 0, stopDeskFlag: false, fragileFlag: false
@@ -69,36 +68,20 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
         setLoadingOrders(true);
         try {
             const token = localStorage.getItem('token');
-            const [stdRes, custRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/custom-orders`, { headers: { Authorization: `Bearer ${token}` } })
-            ]);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders`, { headers: { Authorization: `Bearer ${token}` } });
 
-            // Filter out already dispatched orders
-            const standardOrders = stdRes.data.orders || stdRes.data;
-            const pendingStd = standardOrders.filter(o => ['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(o.status)).map(o => ({
+            const standardOrders = res.data.orders || res.data;
+            const pendingOrders = standardOrders.filter(o => ['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(o.status)).map(o => ({
                 id: o._id,
                 displayId: o.orderId,
                 customer: o.customer?.name || 'Unknown',
                 phone: o.customer?.phone || o.shipping?.phone1 || '',
                 product: o.products?.map(i => i.name).join(', ') || 'Mixed Items',
                 total: o.totalAmount,
-                isCustom: false,
                 shipping: o.shipping || {}
             }));
 
-            const custList = custRes.data?.data ?? (Array.isArray(custRes.data) ? custRes.data : []);
-            const pendingCust = custList.filter(o => ['Pending', 'Confirmed', 'In Production'].includes(o.status)).map(o => ({
-                id: o._id,
-                displayId: o.customOrderId,
-                customer: o.clientName,
-                phone: o.phone || '',
-                product: `Custom: ${o.knifeModel || 'Blade'}`,
-                total: o.agreedPrice,
-                isCustom: true
-            }));
-
-            setOrders([...pendingStd, ...pendingCust].sort((a, b) => b.displayId.localeCompare(a.displayId)));
+            setOrders(pendingOrders.sort((a, b) => b.displayId.localeCompare(a.displayId)));
         } catch (error) {
             console.error('Could not fetch orders for dispatch', error);
             setError('Could not load pending orders.');
@@ -113,7 +96,6 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
         setFormData(prev => ({
             ...prev,
             orderId: order.id,
-            isCustomOrder: order.isCustom,
             customerName: s.recipientName || order.customer,
             phone1: s.phone1 || order.phone,
             phone2: s.phone2 || '',

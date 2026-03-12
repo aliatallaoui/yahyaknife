@@ -274,9 +274,9 @@ export default function HRSnapshot() {
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
                             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-transparent text-sm text-gray-700 outline-none font-medium cursor-pointer">
                                 <option value="All">{t('hr.allStatus')}</option>
-                                <option value="Active">Active</option>
-                                <option value="On Leave">On Leave</option>
-                                <option value="Terminated">Terminated</option>
+                                <option value="Active">{t('hr.statusActive', 'Active')}</option>
+                                <option value="On Leave">{t('hr.statusOnLeave', 'On Leave')}</option>
+                                <option value="Terminated">{t('hr.statusTerminated', 'Terminated')}</option>
                             </select>
                         </div>
                     </div>

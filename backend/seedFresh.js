@@ -1,6 +1,6 @@
 /**
  * Fresh Database Seed — New Architecture
- * Wipes: Orders, Customers, Shipments, CustomOrders
+ * Wipes: Orders, Customers, Shipments
  * Generates: Customers with phones → Orders with shipping details → Some dispatched shipments
  */
 const mongoose = require('mongoose');
@@ -46,16 +46,16 @@ const CUSTOMER_DATA = [
 ];
 
 const PRODUCT_NAMES = [
-    'سكين الشيف الدمشقي',
-    'سكين الطاهي الإحترافي',
-    'سكين فيليه سمك',
-    'سكين المطبخ العربي',
-    'سكين الجيب الصغير',
-    'سكين الصيد البري',
-    'سكين الذبح التقليدي',
-    'طقم سكاكين ٣ قطع',
-    'سكين خبز مسنن',
-    'مبراة سكاكين يدوية',
+    'حقيبة يد نسائية جلدية',
+    'ساعة رجالية كلاسيكية',
+    'عطر رجالي فاخر 100ml',
+    'حذاء رياضي أديداس',
+    'سماعات بلوتوث لاسلكية',
+    'طقم أدوات مطبخ 5 قطع',
+    'كريم عناية بالبشرة',
+    'حقيبة ظهر مدرسية',
+    'مكيف هواء محمول',
+    'جهاز تمرين منزلي',
 ];
 
 const ADDRESSES = [
@@ -94,7 +94,7 @@ async function seed() {
     console.log('   Done.');
 
     // ---- Skip product linking, use product names directly ----
-    console.log('📦 Using knife product names for orders');
+    console.log('📦 Generating sample orders...');
 
     // ---- CREATE CUSTOMERS ----
     console.log('👥 Creating customers...');

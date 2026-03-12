@@ -78,7 +78,7 @@ export default function CourierSettings() {
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
             <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
-            <span className="text-sm font-medium">Loading Configuration...</span>
+            <span className="text-sm font-medium">{t('courier.loadingConfig', 'Loading Configuration...')}</span>
         </div>
     );
 
@@ -153,7 +153,7 @@ export default function CourierSettings() {
                                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
                                 >
                                     {saving ? (
-                                        <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
+                                        <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> {t('courier.validating', 'Validating...')}</>
                                     ) : (
                                         <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveTest', 'Save & Test Connection')}</>
                                     )}
@@ -180,7 +180,7 @@ export default function CourierSettings() {
                             className="inline-flex items-center px-4 py-2 border border-indigo-200 rounded-lg shadow-sm text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                         >
                             {saving ? (
-                                <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> Validating...</>
+                                <><RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" /> {t('courier.validating', 'Validating...')}</>
                             ) : (
                                 <><Save className="-ml-1 mr-2 h-4 w-4" />{t('couriers.saveLimits', 'Update Limits')}</>
                             )}

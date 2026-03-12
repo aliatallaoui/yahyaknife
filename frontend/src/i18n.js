@@ -13,7 +13,9 @@ const resources = {
                     pending: 'Pending',
                     confirmed: 'Confirmed',
                     dispatched: 'Dispatched',
-                    returnRate: 'Return Rate'
+                    returnRate: 'Return Rate',
+                    delivered: 'Delivered',
+                    returns: 'Returns'
                 },
                 searchPlaceholder: 'Search ID, Phone, Name...',
                 columnsBtn: 'Columns',
@@ -24,7 +26,8 @@ const resources = {
                     preDispatch: 'Pre Dispatch',
                     postDispatch: 'Post Dispatch',
                     returns: 'Returns & Refusals',
-                    all: 'All Orders'
+                    all: 'All Orders',
+                    trash: 'Trash'
                 },
                 filters: {
                     priority: 'All Priorities',
@@ -88,7 +91,18 @@ const resources = {
                 messages: {
                     syncRateLimit: 'You can only sync once per hour. Please wait {{minutes}} minutes.',
                     syncSuccess: 'ECOTRACK sequence manually fired and completed.',
-                    syncFailed: 'Failed to sync with courier aggregator.'
+                    syncFailed: 'Failed to sync with courier aggregator.',
+                    syncOnly: 'Status is controlled by automatic sync',
+                    fetchingMore: 'Fetching more orders...',
+                    fetchingMoreShort: 'Fetching more...',
+                    endOfResults: 'End of results',
+                    trashMoveTitle: 'Move {{count}} order{{s}} to Trash?',
+                    trashMoveBody: 'Orders can be restored from the Trash tab before they are permanently deleted.',
+                    purgeTitle: 'Permanently delete {{count}} order{{s}}?',
+                    purgeBody: 'This action cannot be undone. All order data, history, and notes will be destroyed forever.',
+                    dialogCancel: 'Cancel',
+                    dialogDeleteForever: 'Delete Forever',
+                    dialogMoveToTrash: 'Move to Trash'
                 },
                 timeline: {
                     title: 'Order Timeline',
@@ -155,7 +169,33 @@ const resources = {
                     changeCourier: 'Change Courier',
                     assignCsr: 'Assign CSR',
                     changeStatus: 'Change Status',
-                    sendToCourier: 'Send to Courier'
+                    sendToCourier: 'Send to Courier',
+                    selected: '{{count}} selected',
+                    restore: 'Restore',
+                    deleteForever: 'Delete Forever',
+                    moveToTrash: 'Move to Trash'
+                },
+                orderRow: {
+                    preDispatch: 'Pre Dispatch Stage',
+                    postDispatch: 'Post Dispatch Stage',
+                    priorityNormal: '— Normal',
+                    priorityHigh: '⚡ High',
+                    priorityUrgent: '🔥 Urgent',
+                    addTag: 'Add Tag',
+                    tagPlaceholder: 'TAG+',
+                    restoreOrder: 'Restore Order',
+                    deletePermanently: 'Delete Permanently',
+                    recallToPreDispatch: 'Recall to Pre-Dispatch (not yet validated by courier)',
+                    locked: 'Locked',
+                    lockedTitle: 'Locked: validated by courier',
+                    moveToTrash: 'Move to Trash',
+                    urgentTitle: 'URGENT',
+                    highPriorityTitle: 'High Priority',
+                    highFraudTitle: 'High Fraud Probability',
+                    highReturnTitle: 'High Return Rate',
+                    copyNumber: 'Copy number',
+                    goldHighlight: 'Gold Highlight: Over 100k DZD',
+                    purpleHighlight: 'Purple Highlight: Over 50k DZD'
                 }
             },
             orderModal: {
@@ -217,48 +257,6 @@ const resources = {
                 ltv: 'LTV',
                 duplicates: 'Active Duplicate Orders'
             },
-            knivesBuilder: {
-                title: 'Custom Knife Builder',
-                subtitle: 'Design bespoke blades and instantly generate production orders.',
-                steps: {
-                    profile: 'Blade Profile',
-                    materials: 'Materials',
-                    measurements: 'Measurements',
-                    summary: 'Client Summary'
-                },
-                baseProfile: 'Base Profile',
-                steelSelection: 'Steel Selection',
-                handleMaterial: 'Handle Material',
-                specifications: 'Specifications',
-                bladeLength: 'Blade Length (cm)',
-                totalLength: 'Total Length (cm)',
-                sheath: 'Custom Leather Sheath',
-                sheathEstimate: '+2500 DZD Estimated',
-                specialNotes: 'Special Notes for the Forge',
-                quoteSummary: 'Quote Summary',
-                linkClient: 'Link Client',
-                profile: 'Profile',
-                steel: 'Steel',
-                handle: 'Handle',
-                yes: 'Yes',
-                no: 'No',
-                estimatedFinalPrice: 'Estimated Final Price',
-                depositRequired: 'Deposit Required',
-                selectClient: 'Select an existing client...',
-                btnBack: 'Back',
-                btnNext: 'Next Step',
-                btnPlaceOrder: 'Place Custom Order',
-                errSelectClient: 'Please select a client.',
-                types: {
-                    Hunter: 'Hunter', Chef: 'Chef', Tactical: 'Tactical', Damascus: 'Damascus', Cleaver: 'Cleaver', Utility: 'Utility', Custom: 'Custom'
-                },
-                steels: {
-                    'D2': 'D2', '1095': '1095', 'O1': 'O1', 'AEB-L': 'AEB-L', 'Damascus': 'Damascus', 'S30V': 'S30V', 'VG-10': 'VG-10', 'Other': 'Other'
-                },
-                handles: {
-                    Walnut: 'Walnut', Rosewood: 'Rosewood', 'Olive Wood': 'Olive Wood', G10: 'G10', Micarta: 'Micarta', 'Carbon Fiber': 'Carbon Fiber', Bone: 'Bone', 'Stabilized Wood': 'Stabilized Wood', Other: 'Other'
-                }
-            },
             couriers: {
                 dashboardTitle: 'Delivery Analytics',
                 dashboardSubtitle: 'Monitor fleet performance and ECOTRACK synchronization.',
@@ -294,7 +292,35 @@ const resources = {
                 apiTokenYalidin: 'Yalidin API Token',
                 apiBaseUrl: 'API Base URL',
                 apiToken: 'API Token / Key',
-                authType: 'Authentication Type'
+                authType: 'Authentication Type',
+                apiConnected: '⚡ API Connected',
+                manual: 'Manual',
+                statusActive: 'Active',
+                statusInactive: 'Inactive',
+                name: 'Courier',
+                integration: 'Mode',
+                deliveries: 'Deliveries',
+                status: 'Status',
+                searchPlaceholder: 'Search couriers... (Press /)',
+                addCourier: 'Add Courier',
+                viewAnalytics: 'Performance Metrics',
+                viewList: 'Couriers List',
+                empty: 'No couriers mapped yet.',
+                ecotrack: 'ECOTRACK Integration',
+                ecotrackSub: 'Configure your ECOTRACK API credentials to enable automated dispatch.',
+                liveStatus: 'Live Status',
+                gatewayUrl: 'API Gateway URL',
+                gatewaySub: 'Ensure this points to the active V1 environment.',
+                bearerToken: 'Bearer Token',
+                bearerSub: 'Your secret API token. Keep this safe; it grants full access to create shipments.',
+                saveTest: 'Save & Test Connection',
+                rateLimits: 'API Rate Limits & Usage Tracker',
+                saveLimits: 'Update Limits',
+                reqMin: 'Requests / Minute',
+                reqHour: 'Requests / Hour',
+                dailyQuota: 'Daily Quota',
+                limitConfig: 'Configuration Limit',
+                resetInfo: 'API usage counters automatically reset based on calendar time boundaries. Bypassing limits will result in temporary suspension by the provider.'
             },
             rbac: {
                 roles_title: "Roles & Permissions",
@@ -321,9 +347,7 @@ const resources = {
                 warehouse: "Warehouse",
                 dispatch: "Dispatch",
                 procurement: "Procurement",
-                manufacturing: "Manufacturing",
                 hr: "Human Resources",
-                projects: "Projects",
                 customer: "Customers",
                 users: "Users",
                 settings: "Settings"
@@ -370,15 +394,6 @@ const resources = {
                 "procurement_receive_goods": "Receive Goods",
                 "procurement_view_supplier_metrics": "View Supplier Metrics",
                 "procurement_export": "Export Procurement",
-                "manufacturing_read": "Read Manufacturing",
-                "manufacturing_manage_raw_materials": "Manage Raw Materials",
-                "manufacturing_create_bom": "Create BOM",
-                "manufacturing_update_bom": "Update BOM",
-                "manufacturing_create_production_order": "Create Production Order",
-                "manufacturing_start_production": "Start Production",
-                "manufacturing_complete_stage": "Complete Stage",
-                "manufacturing_complete_production": "Complete Production",
-                "manufacturing_view_costs": "View Costs",
                 "hr_read": "Read HR",
                 "hr_create_employee": "Create Employee",
                 "hr_update_employee": "Update Employee",
@@ -388,12 +403,6 @@ const resources = {
                 "hr_view_salary": "View Salary",
                 "hr_view_reports": "View Reports",
                 "hr_manage_rewards": "Manage Rewards",
-                "projects_read": "Read Projects",
-                "projects_create": "Create Project",
-                "projects_update": "Update Project",
-                "projects_manage_tasks": "Manage Tasks",
-                "projects_manage_milestones": "Manage Milestones",
-                "projects_export": "Export Projects",
                 "customer_read": "Read Customers",
                 "customer_update": "Update Customer",
                 "customer_view_risk": "View Risk",
@@ -429,9 +438,7 @@ const resources = {
                 callcenter_manager: "Manager Analytics",
                 finance_domain: "Finance",
                 inventory_domain: "Inventory",
-                production_purchasing_domain: "Production & Purchasing",
                 customers_domain: "Customers",
-                projects_domain: "Projects",
                 hr_domain: "Human Resources",
                 settings_nav: "Settings",
                 dashboard: "Overview",
@@ -453,12 +460,7 @@ const resources = {
                 hr_reports: "HR Reports",
                 production_tools: "Tool Management",
                 my_work: "My Work",
-                projects: "Projects",
-                knives: {
-                    cards: "Work Orders",
-                    library: "BOM / Library",
-                    production: "Manufacturing Status"
-                }
+                projects: "Projects"
             },
             analytics: {
                 title: "Ecommerce Analytics",
@@ -502,7 +504,9 @@ const resources = {
                     conv: "Conv. Rate",
                     customer: "Customer",
                     aov: "AOV"
-                }
+                },
+                noCourierData: "No courier data for this period",
+                noHistoricalData: "No historical data yet — runs nightly at 00:30"
             },
             callcenter: {
                 agent_dashboard: "Agent Workspace",
@@ -553,7 +557,9 @@ const resources = {
                     confirmed: "Confirm Rate",
                     delivered: "Delivered",
                     commission: "Commission"
-                }
+                },
+                dueCallback: "Due callback",
+                clearSearch: "Clear search"
             },
             header: {
                 searchPlaceholder: "Search orders, customers, SKUs...",
@@ -589,7 +595,15 @@ const resources = {
             common: {
                 currency: "DZD",
                 prev: "Previous",
-                next: "Next"
+                next: "Next",
+                retry: "Retry",
+                all: "All",
+                noMatch: "No results match your search.",
+                dzd: "DZD",
+                loading: "Loading...",
+                cancel: "Cancel",
+                delete: "Delete",
+                continue: "Continue"
             },
             dashboard: {
                 title: "Platform Overview",
@@ -629,7 +643,12 @@ const resources = {
                 activeProduction: "Active in Forge",
                 completedThisMonth: "Finished This Month",
                 pendingCustom: "Custom Orders",
-                valueInProduction: "Value in Forge"
+                valueInProduction: "Value in Forge",
+                briefingOrdersAwaiting: "orders awaiting confirmation",
+                briefingCouriersPending: "courier settlements pending",
+                briefingAbsentToday: "employees absent today",
+                briefingLowStock: "low-stock variants",
+                briefingLoading: "Loading..."
             },
             settings: {
                 title: "General Settings",
@@ -671,7 +690,13 @@ const resources = {
                 revenue: "Revenue",
                 expense: "Expense",
                 page: "Page",
-                of: "of"
+                of: "of",
+                deleteTxTitle: "Delete this transaction?",
+                deleteTxBody: "This entry will be permanently removed from the manual ledger.",
+                deleteBulkTitle: "Delete {{count}} transaction(s)?",
+                deleteBulkBody: "This will permanently remove the selected entries from the ledger.",
+                cancel: "Cancel",
+                deleteBtn: "Delete"
             },
             sales: {
                 title: "Sales Management",
@@ -724,7 +749,17 @@ const resources = {
                 prev: "Previous",
                 next: "Next",
                 page: "Page",
-                of: "of"
+                of: "of",
+                deleteOrderTitle: "Move order to Trash?",
+                deleteOrderBody: "The order will be soft-deleted and can be restored from the Trash tab.",
+                dispatchConfirmTitle: "Dispatch to Ecotrack now?",
+                dispatchConfirmBody: "This will create a shipment record and mark the order as Dispatched.",
+                batchVerifyTitle: "Confirm {{count}} orders as Phone Verified?",
+                batchVerifyBody: "Status will be updated to Confirmed for all selected orders.",
+                cancel: "Cancel",
+                confirm: "Confirm",
+                failedDeleteOrder: "Failed to delete order.",
+                failedDispatch: "Dispatch failed"
             },
             logistics: {
                 title: "Delivery Management",
@@ -1012,7 +1047,9 @@ const resources = {
                 btnInsertTemplate: "Insert Template",
                 btnRmaOptions: "RMA Options",
                 btnSendReply: "Send Reply",
-                selectTicketPrompt: "Select a ticket from the inbox to start replying."
+                selectTicketPrompt: "Select a ticket from the inbox to start replying.",
+                failedLoadMetrics: "Failed to load customer metrics.",
+                failedSave: "Failed to save customer."
             },
             manufacturing: {
                 title: "Production Floor & Manufacturing",
@@ -1340,7 +1377,10 @@ const resources = {
                 statusValid: "Connected & Valid",
                 statusInvalid: "Invalid Token",
                 statusNotAllowed: "IP/Account Restricted",
-                statusUnreachable: "Unreachable"
+                statusUnreachable: "Unreachable",
+                settingsLoadError: "Failed to load courier settings.",
+                loadingConfig: "Loading Configuration...",
+                validating: "Validating..."
             },
             settingsGeneral: {
                 title: "General Settings",
@@ -1384,6 +1424,7 @@ const resources = {
                 lblLoginStatus: "Login Status",
                 lblRestrictedLocked: "Restricted (Locked)",
                 btnCancel: "Cancel",
+                btnConfirm: "Confirm",
                 btnSaveMod: "Save Security Policy",
                 btnSaveInv: "Create Credentials",
                 errUpdate: "Failed to update user.",
@@ -1694,85 +1735,6 @@ const resources = {
                 funnelHeader: "Customer Funnel Analytics",
                 funnelSubtitle: "Insights into customer journey and conversions"
             },
-            knives: {
-                workshop: "Knife Workshop",
-                overviewDesc: "Track every knife from design to sale",
-                cards: "Knife Cards",
-                library: "Knife Library",
-                totalKnives: "Total Knives",
-                inProgress: "In Progress",
-                completed: "Completed",
-                sold: "Sold",
-                searchBy: "Search by name or ID...",
-                all: "All",
-                stages: {
-                    design: "Design",
-                    inProduction: "In Production",
-                    heatTreatment: "Heat Treatment",
-                    grinding: "Grinding",
-                    handleInstallation: "Handle Install",
-                    finishing: "Finishing",
-                    sharpening: "Sharpening",
-                    completed: "Completed",
-                    sold: "Sold"
-                },
-                emptyTitle: "No knives yet. Create your first Knife Card!",
-                newCard: "New Knife Card",
-                editCard: "Edit Knife Card",
-                basicInfo: "Basic Info",
-                specs: "Specs & Materials",
-                costPrice: "Cost & Price",
-                fromTemplate: "From Library Template",
-                startScratch: "— Start from scratch —",
-                nameRequired: "Knife name is required",
-                nameLabel: "Knife Name *",
-                namePlaceholder: "e.g. Hunter's Companion",
-                typeLabel: "Type",
-                statusLabel: "Status",
-                makerLabel: "Responsible Maker",
-                unassigned: "— Unassigned —",
-                startDateLabel: "Production Start",
-                notesLabel: "Notes",
-                notesPlaceholder: "Any special notes, customer requests...",
-                steelLabel: "Steel Type",
-                handleLabel: "Handle Material",
-                selectPrompt: "— Select —",
-                guardLabel: "Guard Material",
-                guardPlaceholder: "Brass, Steel, None...",
-                pinsLabel: "Pins / Rivets",
-                pinsPlaceholder: "e.g. 2x Brass",
-                bladeLengthLabel: "Blade Length (cm)",
-                totalLengthLabel: "Total Length (cm)",
-                weightLabel: "Weight (g)",
-                hardnessLabel: "Hardness (HRC)",
-                sheathLabel: "Leather Sheath Required",
-                sheathMaterialPlaceholder: "Sheath material...",
-                materialCost: "Material Cost (DZ)",
-                laborCost: "Labor Cost (DZ)",
-                otherCosts: "Other Costs (DZ)",
-                otherCostsPlaceholder: "Packaging, finishing...",
-                totalCost: "Total Production Cost",
-                suggPrice: "Suggested Price (DZ)",
-                margin: "Margin",
-                profit: "{{amount}} DZ profit",
-                cancel: "Cancel",
-                save: "Save Knife",
-                saving: "Saving...",
-                advanceStage: "Advance Stage",
-                edit: "Edit",
-                blade: "blade",
-                costDz: "cost DZ",
-                priceDz: "price DZ",
-                daySuffix: "d",
-                libraryTitle: "Knife Library",
-                libraryDesc: "Reusable knife model templates — create a new knife in seconds",
-                addModel: "Add Model",
-                editModel: "Edit Knife Model",
-                emptyLibrary: "No knife models yet. Add your first template!",
-                saveModel: "Save Model",
-                createFromThis: "Create Knife from This",
-                sheathIncluded: "Sheath included"
-            }
         },
         auth: {
             loginTitle: "Access Cortex OS",
@@ -2017,81 +1979,6 @@ const resources = {
             loading: "Interrogating IAM directory...",
             accessDenied: "Clearance Denied"
         },
-        knives: {
-            workshop: "Knife Workshop",
-            cards: "Knife Cards",
-            library: "Knife Library",
-            production: "Production Kanban",
-            overviewDesc: "Track every knife from design to sale",
-            newCard: "New Knife Card",
-            totalKnives: "Total Knives",
-            inProgress: "In Progress",
-            completed: "Completed",
-            sold: "Sold",
-            searchBy: "Search by name or ID...",
-            all: "All",
-            emptyTitle: "No knives yet. Create your first Knife Card!",
-            daySuffix: "d",
-            sheathIncluded: "Sheath included",
-            blade: "blade",
-            costDz: "cost DZ",
-            priceDz: "price DZ",
-            edit: "Edit",
-            advanceStage: "Advance Stage",
-            stages: {
-                design: "Design",
-                inProduction: "In Production",
-                heatTreatment: "Heat Treatment",
-                grinding: "Grinding",
-                handleInstallation: "Handle Install",
-                finishing: "Finishing",
-                sharpening: "Sharpening",
-                completed: "Completed",
-                sold: "Sold"
-            },
-            addModel: "Add Model",
-            editModel: "Edit Knife Model",
-            defaultBom: "Default Bill of Materials",
-            bomDesc: "Define standard ingredients. These will be copied when creating a new knife from this model.",
-            cancel: "Cancel",
-            saveModel: "Save Model",
-            libraryTitle: "Knife Library",
-            libraryDesc: "Reusable knife model templates — create a new knife in seconds",
-            emptyLibrary: "No knife models yet. Add your first template!",
-            createFromThis: "Create Knife from This",
-            productionTitle: "Production Kanban",
-            productionDesc: "Drag and drop knives through the bladesmithing stages.",
-            searchDb: "Search knives...",
-            addKnife: "New Knife",
-            unknownSteel: "? Steel",
-            dropHere: "Drop here",
-            searchModels: "Search models... (Press /)",
-            allTypes: "All",
-            noModelMatch: "No models match your search or filter.",
-            deleteCardTitle: "Delete knife card?",
-            deleteCardBody: "This knife card will be permanently deleted.",
-            deleteModelTitle: "Delete knife model?",
-            deleteModelBody: "This model and its BOM will be permanently removed.",
-            modelNameRequired: "Model name required",
-            failedLoadModels: "Failed to load knife models.",
-            failedLoadProduction: "Failed to load production data.",
-            failedUpdateStatus: "Failed to update knife status.",
-            unassignedMaker: "Unassigned",
-            lblModelName: "Model Name *",
-            lblType: "Type",
-            lblDefaultSteel: "Default Steel",
-            lblDefaultHandle: "Default Handle",
-            lblGuardMaterial: "Guard Material",
-            lblBladeMin: "Blade Min (cm)",
-            lblBladeMax: "Blade Max (cm)",
-            lblEstCost: "Est. Cost (DZ)",
-            lblPriceMin: "Price Min (DZ)",
-            lblPriceMax: "Price Max (DZ)",
-            lblSheathRequired: "Sheath typically required",
-            lblNotes: "Notes",
-            priceRange: "Price Range",
-            deleteBtn: "Delete"
-        },
         financial: {
             title: "Financial Hub",
             subtitle: "Real-time COD revenue tracking and global P&L",
@@ -2144,7 +2031,12 @@ const resources = {
             empty: {
                 title: "No shipments found",
                 subtitle: "Adjust filters or create a new dispatch order."
-            }
+            },
+            loadingShipments: "Loading shipments...",
+            deleteConfirmTitle: "Delete this shipment?",
+            deleteConfirmBody: "This will cancel the dispatch request. The linked order will revert to Confirmed status.",
+            cancel: "Cancel",
+            deleteBtn: "Delete"
         },
         tools: {
             title: "Tool Management & Machinery",
@@ -2225,58 +2117,19 @@ const resources = {
                 signOut: "تسجيل الخروج الآمن"
             },
 
-            knivesBuilder: {
-                title: 'صانع السكاكين المخصصة',
-                subtitle: 'تصميم شفرات مخصصة وإنشاء طلبات الإنتاج فوراً.',
-                steps: {
-                    profile: 'شكل النصل',
-                    materials: 'المواد',
-                    measurements: 'القياسات',
-                    summary: 'ملخص العميل'
-                },
-                baseProfile: 'الشكل الأساسي',
-                steelSelection: 'اختيار الفولاذ',
-                handleMaterial: 'مادة المقبض',
-                specifications: 'المواصفات',
-                bladeLength: 'طول النصل (سم)',
-                totalLength: 'الطول الإجمالي (سم)',
-                sheath: 'غمد جلدي مخصص',
-                sheathEstimate: '+2500 د.ج قيمة تقديرية',
-                specialNotes: 'ملاحظات خاصة للورشة',
-                quoteSummary: 'ملخص التسعير',
-                linkClient: 'ربط العميل',
-                profile: 'الشكل',
-                steel: 'الفولاذ',
-                handle: 'المقبض',
-                yes: 'نعم',
-                no: 'لا',
-                estimatedFinalPrice: 'السعر النهائي التقديري',
-                depositRequired: 'العربون المطلوب',
-                selectClient: 'اختر عميلاً حالياً...',
-                btnBack: 'رجوع',
-                btnNext: 'الخطوة التالية',
-                btnPlaceOrder: 'تأكيد الطلب المخصص',
-                errSelectClient: 'يرجى اختيار عميل.',
-                types: {
-                    Hunter: 'صيد', Chef: 'طاهي', Tactical: 'تكتيكي', Damascus: 'دمشقي', Cleaver: 'ساطور', Utility: 'متعدد الاستخدام', Custom: 'مخصص'
-                },
-                steels: {
-                    'D2': 'D2', '1095': '1095', 'O1': 'O1', 'AEB-L': 'AEB-L', 'Damascus': 'دمشقي', 'S30V': 'S30V', 'VG-10': 'VG-10', 'Other': 'أخرى'
-                },
-                handles: {
-                    Walnut: 'جوز', Rosewood: 'خشب الورد', 'Olive Wood': 'خشب الزيتون', G10: 'G10', Micarta: 'ميكارتا', 'Carbon Fiber': 'ألياف الكربون', Bone: 'عظم', 'Stabilized Wood': 'خشب معالج', Other: 'أخرى'
-                }
-            },
-
             ordersControl: {
-                title: 'نظرة عامة على لوحة الطلبات',
+                title: 'مركز تحكم الطلبات',
                 subtitle: 'واجهة العمليات ذات الحجم العالي',
+                orderCreated: 'تم إنشاء الطلب بنجاح!',
+                orderUpdated: 'تم تحديث الطلب بنجاح!',
                 kpis: {
                     newToday: 'الجديدة اليوم',
                     pending: 'قيد الانتظار',
                     confirmed: 'مؤكدة',
                     dispatched: 'تم إرسالها',
-                    returnRate: 'معدل الإرجاع'
+                    returnRate: 'معدل الإرجاع',
+                    delivered: 'مُسلمة',
+                    returns: 'مرتجعات'
                 },
                 searchPlaceholder: 'البحث عن الطلب، الهاتف، الاسم...',
                 columnsBtn: 'الأعمدة',
@@ -2287,7 +2140,8 @@ const resources = {
                     preDispatch: 'قبل الإرسال',
                     postDispatch: 'بعد الإرسال',
                     returns: 'المرتجعات والمرفوضة',
-                    all: 'جميع الطلبات'
+                    all: 'جميع الطلبات',
+                    trash: 'سلة المهملات'
                 },
                 filters: {
                     priority: 'كل الأولويات',
@@ -2301,7 +2155,16 @@ const resources = {
                     anyCourier: 'أي شركة توصيل',
                     status: 'جميع الحالات',
                     to: 'إلى',
-                    tagsHolder: 'الوسوم (مثال: VIP)'
+                    tagsHolder: 'الوسوم (مثال: VIP)',
+                    wilayaHolder: 'كل الولايات',
+                    datePresets: 'الفترات الزمنية',
+                    today: 'اليوم',
+                    yesterday: 'أمس',
+                    last7Days: 'آخر 7 أيام',
+                    last30Days: 'آخر 30 يوم',
+                    thisMonth: 'هذا الشهر',
+                    lastMonth: 'الشهر الماضي',
+                    clearAll: 'مسح الكل'
                 },
                 grid: {
                     orderId: 'رقم الطلب',
@@ -2322,7 +2185,11 @@ const resources = {
                     noItems: 'لا توجد عناصر',
                     ago: 'مضت',
                     totalValue: 'القيمة الإجمالية',
-                    updating: 'جاري تحديث البيانات...'
+                    updating: 'جاري تحديث البيانات...',
+                    tags: 'الوسوم',
+                    syncCouriers: 'مزامنة شركات التوصيل',
+                    callCustomer: 'الاتصال بالعميل',
+                    unspecifiedZone: 'منطقة غير محددة'
                 },
                 details: {
                     customerInfo: 'معلومات العميل',
@@ -2351,7 +2218,18 @@ const resources = {
                 messages: {
                     syncRateLimit: 'يمكنك المزامنة مرة واحدة فقط كل ساعة. يرجى الانتظار {{minutes}} دقيقة.',
                     syncSuccess: 'اكتملت المزامنة بنجاح مع النظام اللوجيستي.',
-                    syncFailed: 'فشلت المزامنة مع شركة التوصيل.'
+                    syncFailed: 'فشلت المزامنة مع شركة التوصيل.',
+                    syncOnly: 'الحالة تتحكم بها المزامنة التلقائية',
+                    fetchingMore: 'جاري تحميل المزيد من الطلبات...',
+                    fetchingMoreShort: 'جاري التحميل...',
+                    endOfResults: 'نهاية النتائج',
+                    trashMoveTitle: 'نقل {{count}} طلب إلى سلة المهملات؟',
+                    trashMoveBody: 'يمكن استعادة الطلبات من تبويب سلة المهملات قبل حذفها نهائياً.',
+                    purgeTitle: 'حذف {{count}} طلب نهائياً؟',
+                    purgeBody: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف بيانات الطلب والسجل والملاحظات بشكل دائم.',
+                    dialogCancel: 'إلغاء',
+                    dialogDeleteForever: 'حذف نهائي',
+                    dialogMoveToTrash: 'نقل إلى سلة المهملات'
                 },
                 timeline: {
                     title: 'التسلسل الزمني للطلب',
@@ -2374,7 +2252,16 @@ const resources = {
                     confirm: 'تأكيد سريع',
                     assignCourier: 'تعيين مندوب',
                     details: 'فتح التفاصيل والملاحظات',
-                    cancel: 'إلغاء الطلب'
+                    cancel: 'إلغاء الطلب',
+                    exportCsv: 'تصدير CSV',
+                    manageColumns: 'إدارة الأعمدة',
+                    dragHint: 'اسحب لإعادة الترتيب',
+                    showKPIs: 'عرض مؤشرات الأداء',
+                    reset: 'إعادة تعيين',
+                    newOrder: 'طلب جديد',
+                    edit: 'تعديل',
+                    dispatch: 'إرسال',
+                    whatsapp: 'واتساب'
                 },
                 expanded: {
                     customerInfo: 'معلومات العميل',
@@ -2393,7 +2280,8 @@ const resources = {
                     provider: 'المزود:',
                     trackingCode: 'رمز التتبع:',
                     timelineStage: 'مرحلة التسلسل الزمني:',
-                    viewFull: 'عرض التفاصيل الكاملة للطلب'
+                    viewFull: 'عرض التفاصيل الكاملة للطلب',
+                    actions: 'الإجراءات'
                 },
                 pagination: {
                     showing: 'عرض',
@@ -2418,7 +2306,33 @@ const resources = {
                     changeCourier: 'تغيير المندوب',
                     assignCsr: 'تعيين وكيل الدعم',
                     changeStatus: 'تغيير الحالة',
-                    sendToCourier: 'إرسال إلى شركة التوصيل'
+                    sendToCourier: 'إرسال إلى شركة التوصيل',
+                    selected: '{{count}} محدد',
+                    restore: 'استعادة',
+                    deleteForever: 'حذف نهائي',
+                    moveToTrash: 'نقل إلى سلة المهملات'
+                },
+                orderRow: {
+                    preDispatch: 'مرحلة قبل الإرسال',
+                    postDispatch: 'مرحلة بعد الإرسال',
+                    priorityNormal: '— عادي',
+                    priorityHigh: '⚡ عالي',
+                    priorityUrgent: '🔥 عاجل',
+                    addTag: 'إضافة وسم',
+                    tagPlaceholder: 'وسم+',
+                    restoreOrder: 'استعادة الطلب',
+                    deletePermanently: 'حذف نهائي',
+                    recallToPreDispatch: 'إرجاع إلى مرحلة ما قبل الإرسال (لم يُتحقق منه بعد)',
+                    locked: 'مقفل',
+                    lockedTitle: 'مقفل: تم التحقق منه بواسطة شركة التوصيل',
+                    moveToTrash: 'نقل إلى سلة المهملات',
+                    urgentTitle: 'عاجل',
+                    highPriorityTitle: 'أولوية عالية',
+                    highFraudTitle: 'احتمالية احتيال مرتفعة',
+                    highReturnTitle: 'معدل إرجاع مرتفع',
+                    copyNumber: 'نسخ الرقم',
+                    goldHighlight: 'تمييز ذهبي: أكثر من 100 ألف دج',
+                    purpleHighlight: 'تمييز بنفسجي: أكثر من 50 ألف دج'
                 }
             },
             orderModal: {
@@ -2539,7 +2453,35 @@ const resources = {
                 apiTokenYalidin: 'Yalidin رمز API',
                 apiBaseUrl: 'রابط الأساس للـ API (Base URL)',
                 apiToken: 'رمز / مفتاح API',
-                authType: 'نوع المصادقة'
+                authType: 'نوع المصادقة',
+                apiConnected: '⚡ متصل بالـ API',
+                manual: 'يدوي',
+                statusActive: 'نشط',
+                statusInactive: 'غير نشط',
+                name: 'المندوب',
+                integration: 'النوع',
+                deliveries: 'التسليمات',
+                status: 'الحالة',
+                searchPlaceholder: 'ابحث عن مندوب... (اضغط /)',
+                addCourier: 'إضافة مندوب',
+                viewAnalytics: 'مقاييس الأداء',
+                viewList: 'قائمة المندوبين',
+                empty: 'لا يوجد مندوبون محددون بعد.',
+                ecotrack: 'تكامل ECOTRACK',
+                ecotrackSub: 'قم بتهيئة بيانات اعتماد ECOTRACK API لتفعيل الإرسال التلقائي.',
+                liveStatus: 'الحالة المباشرة',
+                gatewayUrl: 'رابط بوابة الـ API',
+                gatewaySub: 'تأكد من أن هذا يشير إلى بيئة V1 النشطة.',
+                bearerToken: 'رمز Bearer',
+                bearerSub: 'رمز API السري الخاص بك. احتفظ به بأمان؛ فهو يمنح وصولاً كاملاً لإنشاء الشحنات.',
+                saveTest: 'حفظ واختبار الاتصال',
+                rateLimits: 'حدود معدل الـ API وتتبع الاستخدام',
+                saveLimits: 'تحديث الحدود',
+                reqMin: 'الطلبات / الدقيقة',
+                reqHour: 'الطلبات / الساعة',
+                dailyQuota: 'الحصة اليومية',
+                limitConfig: 'حد التهيئة',
+                resetInfo: 'تتم إعادة تعيين عدادات استخدام الـ API تلقائياً بناءً على حدود الوقت التقويمية. تجاوز الحدود سيؤدي إلى تعليق مؤقت من مزود الخدمة.'
             },
             rbac: {
                 roles_title: "الأدوار والصلاحيات",
@@ -2721,12 +2663,7 @@ const resources = {
                 hr_reports: "تقارير الموارد البشرية",
                 production_tools: "إدارة الأدوات",
                 my_work: "عملي",
-                projects: "المشاريع",
-                knives: {
-                    cards: "أوامر العمل",
-                    library: "مكتبة النماذج",
-                    production: "طابق الإنتاج"
-                }
+                projects: "المشاريع"
             },
             analytics: {
                 title: "نظرة عامة على المنصة",
@@ -2770,7 +2707,9 @@ const resources = {
                     conv: "نسبة التحويل",
                     customer: "العميل",
                     aov: "متوسط الطلب"
-                }
+                },
+                noCourierData: "لا توجد بيانات مندوب لهذه الفترة",
+                noHistoricalData: "لا توجد بيانات تاريخية بعد — يعمل يومياً في 00:30"
             },
             callcenter: {
                 agent_dashboard: "لوحة تحكم الوكيل",
@@ -2821,7 +2760,9 @@ const resources = {
                     confirmed: "نسبة التأكيد",
                     delivered: "مُسلمة",
                     commission: "عمولة"
-                }
+                },
+                dueCallback: "موعد الاتصال",
+                clearSearch: "مسح البحث"
             },
             header: {
                 searchPlaceholder: "البحث عن الطلبات، العملاء، السلع...",
@@ -2842,7 +2783,15 @@ const resources = {
             common: {
                 currency: "دج",
                 prev: "السابق",
-                next: "التالي"
+                next: "التالي",
+                retry: "إعادة المحاولة",
+                all: "الكل",
+                noMatch: "لا توجد نتائج تطابق بحثك.",
+                dzd: "دج",
+                loading: "جاري التحميل...",
+                cancel: "إلغاء",
+                delete: "حذف",
+                continue: "متابعة"
             },
             dashboard: {
                 title: "نظرة عامة على المنصة",
@@ -2878,7 +2827,12 @@ const resources = {
                 actionRequired: "إجراء مطلوب",
                 cash_transit: "النقد في الطريق",
                 couriers_pending: "مناديب في الانتظار",
-                volume: "الحجم"
+                volume: "الحجم",
+                briefingOrdersAwaiting: "طلب بانتظار التأكيد",
+                briefingCouriersPending: "تسوية ناقلة معلقة",
+                briefingAbsentToday: "موظف غائب اليوم",
+                briefingLowStock: "متغير منخفض المخزون",
+                briefingLoading: "جارٍ التحميل..."
             },
             settings: {
                 title: "الإعدادات العامة",
@@ -2920,7 +2874,13 @@ const resources = {
                 revenue: "إيرادات",
                 expense: "مصروفات",
                 page: "صفحة",
-                of: "من"
+                of: "من",
+                deleteTxTitle: "حذف هذه المعاملة؟",
+                deleteTxBody: "سيُحذف هذا السجل نهائيًا من دفتر الأستاذ.",
+                deleteBulkTitle: "حذف {{count}} معاملة/معاملات؟",
+                deleteBulkBody: "سيؤدي هذا إلى الحذف النهائي للإدخالات المحددة من دفتر الأستاذ.",
+                cancel: "إلغاء",
+                deleteBtn: "حذف"
             },
             dispatch: {
                 title: "مركز الإرسال والخدمات اللوجستية",
@@ -2982,8 +2942,6 @@ const resources = {
                 totalOrdersCount: "إجمالي عدد الطلبات",
                 allOrdersTab: "جميع الطلبات",
                 verificationTab: "قائمة التحقق",
-                customOrdersTab: "الطلبات المخصصة",
-                noCustomOrders: "لا توجد طلبات مخصصة.",
                 orderId: "رقم الطلب",
                 client: "العميل",
                 request: "تفاصيل الطلب",
@@ -3032,7 +2990,17 @@ const resources = {
                 prev: "السابق",
                 next: "التالي",
                 page: "صفحة",
-                of: "من"
+                of: "من",
+                deleteOrderTitle: "نقل الطلب إلى سلة المحذوفات؟",
+                deleteOrderBody: "سيُحذف الطلب حذفًا ناعمًا ويمكن استعادته من علامة تبويب سلة المحذوفات.",
+                dispatchConfirmTitle: "إرسال إلى Ecotrack الآن؟",
+                dispatchConfirmBody: "سيُنشئ هذا سجل شحنة ويضع الطلب في حالة «تم الإرسال».",
+                batchVerifyTitle: "تأكيد {{count}} طلب/طلبات كمحقق هاتفيًا؟",
+                batchVerifyBody: "ستُحدَّث الحالة إلى «مؤكد» لجميع الطلبات المحددة.",
+                cancel: "إلغاء",
+                confirm: "تأكيد",
+                failedDeleteOrder: "فشل حذف الطلب.",
+                failedDispatch: "فشل الإرسال"
             },
             inventory: {
                 title: "تتبع المخزون",
@@ -3208,7 +3176,9 @@ const resources = {
                 btnInsertTemplate: "إدراج قالب",
                 btnRmaOptions: "خيارات الإرجاع",
                 btnSendReply: "إرسال الرد",
-                selectTicketPrompt: "اختر تذكرة من المنبثق للبدء في الرد."
+                selectTicketPrompt: "اختر تذكرة من المنبثق للبدء في الرد.",
+                failedLoadMetrics: "فشل تحميل مقاييس العميل.",
+                failedSave: "فشل حفظ بيانات العميل."
             },
             manufacturing: {
                 title: "أرضية الإنتاج والتصنيع",
@@ -3698,7 +3668,10 @@ const resources = {
                 statusValid: "متصل وصالح",
                 statusInvalid: "رمز غير صالح",
                 statusNotAllowed: "تم تقييد الـ IP أو الحساب",
-                statusUnreachable: "غير قابل للوصول"
+                statusUnreachable: "غير قابل للوصول",
+                settingsLoadError: "فشل تحميل إعدادات المندوب.",
+                loadingConfig: "جاري تحميل التهيئة...",
+                validating: "جاري التحقق..."
             },
             settingsGeneral: {
                 title: "التفضيلات العامة",
@@ -3742,6 +3715,7 @@ const resources = {
                 lblLoginStatus: "حالة الدخول",
                 lblRestrictedLocked: "مقيد (مغلق)",
                 btnCancel: "إلغاء",
+                btnConfirm: "تأكيد",
                 btnSaveMod: "حفظ سياسة الأمان",
                 btnSaveInv: "إنشاء بيانات الاعتماد",
                 errUpdate: "فشل تحديث المستخدم.",
@@ -4052,77 +4026,6 @@ const resources = {
                 funnelHeader: "تحليلات مسار العملاء",
                 funnelSubtitle: "رؤى حول رحلة العميل والتحويلات"
             },
-            knives: {
-                workshop: "ورشة السكاكين",
-                overviewDesc: "تتبع كل سكين من التصميم إلى البيع",
-                cards: "بطاقات السكاكين",
-                library: "مكتبة السكاكين",
-                totalKnives: "إجمالي السكاكين",
-                inProgress: "قيد التنفيذ",
-                completed: "مكتمل",
-                sold: "مباع",
-                searchBy: "البحث بالاسم أو المعرف...",
-                all: "الكل",
-                stages: {
-                    design: "تصميم",
-                    inProduction: "قيد الإنتاج",
-                    heatTreatment: "معالجة حرارية",
-                    grinding: "طحن",
-                    handleInstallation: "تركيب المقبض",
-                    finishing: "تشطيب",
-                    sharpening: "شحذ",
-                    completed: "مكتمل",
-                    sold: "مباع"
-                },
-                emptyTitle: "لا توجد سكاكين بعد. قم بإنشاء أول بطاقة سكين لك!",
-                newCard: "بطاقة سكين جديدة",
-                editCard: "تعديل بطاقة السكين",
-                basicInfo: "المعلومات الأساسية",
-                specs: "المواصفات والمواد",
-                costPrice: "التكلفة والسعر",
-                fromTemplate: "من قالب المكتبة",
-                startScratch: "— ابدأ من الصفر —",
-                nameRequired: "اسم السكين مطلوب",
-                nameLabel: "اسم السكين *",
-                namePlaceholder: "مثل: رفيق الصياد",
-                typeLabel: "النوع",
-                statusLabel: "الحالة",
-                makerLabel: "الصانع المسؤول",
-                unassigned: "— غير معين —",
-                startDateLabel: "بدء الإنتاج",
-                notesLabel: "ملاحظات",
-                notesPlaceholder: "أي ملاحظات خاصة، طلبات عملاء...",
-                steelLabel: "نوع الفولاذ",
-                handleLabel: "مادة المقبض",
-                selectPrompt: "— تحديد —",
-                guardLabel: "مادة الحرس",
-                guardPlaceholder: "نحاس، صلب، لا شيء...",
-                pinsLabel: "دبابيس / مسامير",
-                pinsPlaceholder: "مثل: 2x نحاس",
-                bladeLengthLabel: "طول الشفرة (سم)",
-                totalLengthLabel: "الطول الكلي (سم)",
-                weightLabel: "الوزن (غ)",
-                hardnessLabel: "الصلابة (HRC)",
-                sheathLabel: "مطلوب غمد جلدي",
-                sheathMaterialPlaceholder: "مادة الغمد...",
-                materialCost: "تكلفة المواد (دج)",
-                laborCost: "تكلفة العمالة (دج)",
-                otherCosts: "تكاليف أخرى (دج)",
-                otherCostsPlaceholder: "تغليف، تشطيب...",
-                totalCost: "إجمالي تكلفة الإنتاج",
-                suggPrice: "السعر المقترح (دج)",
-                margin: "الهامش",
-                profit: "{{amount}} دج ربح",
-                cancel: "إلغاء",
-                save: "حفظ السكين",
-                saving: "جاري الحفظ...",
-                advanceStage: "تقديم المرحلة",
-                edit: "تعديل",
-                blade: "شفرة",
-                costDz: "تكلفة دج",
-                priceDz: "سعر دج",
-                sheathIncluded: "شامل الغمد"
-            },
             auth: {
                 loginTitle: "الدخول لنظام كورتكس",
                 loginOr: "أو",
@@ -4366,81 +4269,6 @@ const resources = {
                 loading: "الاستعلام عن دليل إدارة الهوية والوصول...",
                 accessDenied: "الوصول مرفوض"
             },
-            knives: {
-                workshop: "ورشة السكاكين",
-                cards: "بطاقات السكاكين",
-                library: "مكتبة النماذج",
-                production: "لوحة الإنتاج",
-                overviewDesc: "تتبع كل سكين من التصميم إلى البيع",
-                newCard: "بطاقة سكين جديدة",
-                totalKnives: "إجمالي السكاكين",
-                inProgress: "قيد التنفيذ",
-                completed: "مكتمل",
-                sold: "مباع",
-                searchBy: "البحث بالاسم أو المعرف...",
-                all: "الكل",
-                emptyTitle: "لا توجد سكاكين بعد. أنشئ أول بطاقة سكين لك!",
-                daySuffix: "ي",
-                sheathIncluded: "متضمن الغمد",
-                blade: "نصل",
-                costDz: "التكلفة دج",
-                priceDz: "السعر دج",
-                edit: "تعديل",
-                advanceStage: "تقديم المرحلة",
-                stages: {
-                    design: "تصميم",
-                    inProduction: "في الإنتاج",
-                    heatTreatment: "معالجة حرارية",
-                    grinding: "تفريز",
-                    handleInstallation: "تركيب المقبض",
-                    finishing: "تشطيب",
-                    sharpening: "شحذ",
-                    completed: "مكتمل",
-                    sold: "م مباع"
-                },
-                addModel: "إضافة نموذج",
-                editModel: "تعديل نموذج السكين",
-                defaultBom: "قائمة المواد الافتراضية",
-                bomDesc: "حدد المكونات القياسية. سيتم نسخها عند إنشاء سكين جديد من هذا النموذج.",
-                cancel: "إلغاء",
-                saveModel: "حفظ النموذج",
-                libraryTitle: "مكتبة النماذج",
-                libraryDesc: "قوالب نماذج سكاكين قابلة لإعادة الاستخدام — أنشئ سكين جديد في ثوانٍ",
-                emptyLibrary: "لا توجد نماذج سكاكين بعد. أضف قالبك الأول!",
-                createFromThis: "إنشاء سكين من هذا",
-                productionTitle: "لوحة الإنتاج",
-                productionDesc: "السحب والإفلات للسكاكين عبر مراحل الحدادة.",
-                searchDb: "البحث في السكاكين...",
-                addKnife: "سكين جديد",
-                unknownSteel: "? صلب",
-                dropHere: "أسقط هنا",
-                searchModels: "البحث في النماذج... (اضغط /)",
-                allTypes: "الكل",
-                noModelMatch: "لا توجد نماذج تطابق بحثك أو المرشح.",
-                deleteCardTitle: "حذف بطاقة السكين؟",
-                deleteCardBody: "ستُحذف بطاقة السكين هذه نهائيًا.",
-                deleteModelTitle: "حذف نموذج السكين؟",
-                deleteModelBody: "سيُحذف هذا النموذج وقائمة المواد الخاصة به نهائيًا.",
-                modelNameRequired: "اسم النموذج مطلوب",
-                failedLoadModels: "فشل تحميل نماذج السكاكين.",
-                failedLoadProduction: "فشل تحميل بيانات الإنتاج.",
-                failedUpdateStatus: "فشل تحديث حالة السكين.",
-                unassignedMaker: "غير مُعين",
-                lblModelName: "اسم النموذج *",
-                lblType: "النوع",
-                lblDefaultSteel: "الصلب الافتراضي",
-                lblDefaultHandle: "المقبض الافتراضي",
-                lblGuardMaterial: "مادة الحارس",
-                lblBladeMin: "الحد الأدنى للنصل (سم)",
-                lblBladeMax: "الحد الأقصى للنصل (سم)",
-                lblEstCost: "التكلفة التقديرية (دج)",
-                lblPriceMin: "الحد الأدنى للسعر (دج)",
-                lblPriceMax: "الحد الأقصى للسعر (دج)",
-                lblSheathRequired: "الغمد مطلوب عادةً",
-                lblNotes: "ملاحظات",
-                priceRange: "نطاق السعر",
-                deleteBtn: "حذف"
-            },
             financial: {
                 title: "المركز المالي",
                 subtitle: "تتبع إيرادات الدفع عند الاستلام في الوقت الفعلي وخسائر وأرباح النظام",
@@ -4502,7 +4330,12 @@ const resources = {
                 statusReturnInitiated: "بدء الإرجاع",
                 statusFailedAttempt: "محاولة فاشلة",
                 statusReturned: "مرتجع",
-                statusCancelled: "ملغى"
+                statusCancelled: "ملغى",
+                loadingShipments: "جارٍ تحميل الشحنات...",
+                deleteConfirmTitle: "حذف هذه الشحنة؟",
+                deleteConfirmBody: "سيؤدي هذا إلى إلغاء طلب الإرسال. سيعود الطلب المرتبط إلى حالة «مؤكد».",
+                cancel: "إلغاء",
+                deleteBtn: "حذف"
             }
         },
         tools: {

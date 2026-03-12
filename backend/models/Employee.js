@@ -22,16 +22,6 @@ const employeeSchema = new mongoose.Schema({
     },
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
 
-    // Workshop & Skills Integration
-    workshopRole: {
-        type: String,
-        enum: ['Master Bladesmith', 'Grinder', 'Handle Maker', 'Finisher', 'Apprentice', 'Packager', 'None'],
-        default: 'None'
-    },
-    skills: [{ type: String }], // e.g., 'Heat Treatment', 'Leatherworking', 'Damascus Forging'
-    productivityMultiplier: { type: Number, default: 1.0 }, // Base factor for reward calculations
-
-
     // Contract Settings for Payroll & Attendance
     contractSettings: {
         monthlySalary: { type: Number, required: true, default: 0 },

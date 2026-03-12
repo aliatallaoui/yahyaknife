@@ -42,7 +42,7 @@ export default function CustomerInsight() {
                 setMetrics(Array.isArray(data) ? data : (data.error ? null : data));
             } catch (error) {
                 console.error("Error fetching customer metrics:", error);
-                setMetricsError('Failed to load customer metrics.');
+                setMetricsError(t('crm.failedLoadMetrics', 'Failed to load customer metrics.'));
             } finally {
                 setLoading(false);
             }
@@ -70,7 +70,7 @@ export default function CustomerInsight() {
             setIsModalOpen(false);
             setSaveError(null);
         } catch (error) {
-            setSaveError(error?.response?.data?.message || error?.message || 'Failed to save customer.');
+            setSaveError(error?.response?.data?.message || error?.message || t('crm.failedSave', 'Failed to save customer.'));
         }
     };
 
