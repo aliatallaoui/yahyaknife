@@ -249,7 +249,7 @@ export default function Financial() {
                                 </button>
                             ))}
                         </div>
-                        <button onClick={fetchOverview} className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors border border-white/20" title="Refresh">
+                        <button onClick={fetchOverview} className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors border border-white/20" title={t('common.refresh', 'Refresh')}>
                             <RefreshCw className={`w-4 h-4 ${loadingOverview ? 'animate-spin' : ''}`} />
                         </button>
                         {hasPermission('financial.manage_manual_transactions') && (

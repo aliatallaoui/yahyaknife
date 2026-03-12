@@ -78,7 +78,7 @@ export default function HRSnapshot() {
             setEmployees(empsWithAtt);
             setLeaves(Array.isArray(leaveData) ? leaveData : []);
         } catch (error) {
-            setFetchError('Failed to load HR data.');
+            setFetchError(t('hr.errorLoadData', 'Failed to load HR data.'));
         } finally {
             setLoading(false);
         }

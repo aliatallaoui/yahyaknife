@@ -99,7 +99,7 @@ export default function CustomerInsight() {
             {metricsError && (
                 <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm font-semibold text-amber-700">
                     <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span className="flex-1">{metricsError} — analytics charts may be unavailable.</span>
+                    <span className="flex-1">{metricsError} — {t('crm.analyticsUnavailable', 'analytics charts may be unavailable.')}</span>
                     <button onClick={() => setMetricsError(null)} className="text-amber-400 hover:text-amber-600">✕</button>
                 </div>
             )}

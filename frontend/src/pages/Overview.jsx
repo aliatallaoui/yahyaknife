@@ -107,7 +107,7 @@ export default function Overview() {
                         <button
                             onClick={fetchBriefing}
                             className="ms-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Refresh briefing"
+                            title={t('overview.refreshBriefing', 'Refresh briefing')}
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
                         </button>

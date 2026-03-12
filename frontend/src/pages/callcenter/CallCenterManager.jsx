@@ -74,10 +74,10 @@ export default function CallCenterManager() {
                 { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
             );
             const count = res.data?.assignedCount ?? res.data?.count ?? '?';
-            setAssignSuccess(`${count} orders assigned successfully.`);
+            setAssignSuccess(t('callcenter.assignedCount', { count }, '{{count}} orders assigned successfully.'));
             fetchAnalytics();
         } catch (error) {
-            setAssignError(error.response?.data?.message || error.message || 'Auto-assignment failed.');
+            setAssignError(error.response?.data?.message || error.message || t('callcenter.autoAssignFailed', 'Auto-assignment failed.'));
         } finally {
             setAssignmentLoading(false);
         }

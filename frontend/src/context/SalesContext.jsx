@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
 
 export const SalesContext = createContext();

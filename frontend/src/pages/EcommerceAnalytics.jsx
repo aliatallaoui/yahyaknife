@@ -34,7 +34,7 @@ export default function EcommerceAnalytics() {
                 setDashData(data);
             }
         } catch (error) {
-            setFetchError('Failed to load analytics data.');
+            setFetchError(t('analytics.errorLoadData', 'Failed to load analytics data.'));
         } finally {
             setIsRefreshing(false);
         }
@@ -63,7 +63,7 @@ export default function EcommerceAnalytics() {
                 })));
             }
         } catch (e) {
-            setFetchError('Failed to load trend data.');
+            setFetchError(t('analytics.errorLoadTrend', 'Failed to load trend data.'));
         } finally {
             setTrendLoading(false);
         }
@@ -385,7 +385,7 @@ export default function EcommerceAnalytics() {
                                         <td className="px-4 py-3 text-indigo-600 font-medium">{p.conv || 0}%</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">No sales data for this period</td></tr>
+                                    <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">{t('analytics.noSalesData', 'No sales data for this period')}</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -419,7 +419,7 @@ export default function EcommerceAnalytics() {
                                         <td className="px-4 py-3 text-gray-500">{(c.aov || 0).toLocaleString()} DZD</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">No customer data for this period</td></tr>
+                                    <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">{t('analytics.noCustomerData', 'No customer data for this period')}</td></tr>
                                 )}
                             </tbody>
                         </table>

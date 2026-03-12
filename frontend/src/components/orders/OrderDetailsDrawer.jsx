@@ -7,8 +7,9 @@ import { useTranslation } from 'react-i18next';
 
 // Click-to-copy phone with tel: fallback
 function PhoneRow({ phone }) {
+    const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
-    if (!phone) return <span className="text-gray-400 text-sm mt-2 block">No phone number</span>;
+    if (!phone) return <span className="text-gray-400 text-sm mt-2 block">{t('common.noPhone', 'No phone number')}</span>;
     const handleCopy = (e) => {
         e.stopPropagation();
         navigator.clipboard.writeText(phone).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
@@ -21,7 +22,7 @@ function PhoneRow({ phone }) {
                 </div>
                 <span className="font-mono text-sm font-black text-gray-700 tracking-tight group-hover:text-blue-600">{phone}</span>
             </a>
-            <button onClick={handleCopy} title={copied ? 'Copied!' : 'Copy number'} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+            <button onClick={handleCopy} title={copied ? t('common.copied', 'Copied!') : t('common.copyNumber', 'Copy number')} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
                 {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
             </button>
         </div>

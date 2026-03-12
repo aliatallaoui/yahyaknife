@@ -1,5 +1,5 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+void 0;
+void 0;
 
 // Platform Core Translation Dictionaries
 const resources = {
@@ -501,11 +501,6 @@ const resources = {
                 },
                 noCourierData: "No courier data for this period",
                 noHistoricalData: "No historical data yet — runs nightly at 00:30"
-            },
-            orders: {
-                lblWilaya: "Wilaya",
-                lblCommune: "Commune",
-                lblAddress: "Full Address"
             },
             callcenter: {
                 agent_dashboard: "Agent Workspace",
@@ -2408,11 +2403,6 @@ const resources = {
                 noCourierData: "لا توجد بيانات مندوب لهذه الفترة",
                 noHistoricalData: "لا توجد بيانات تاريخية بعد — يعمل يومياً في 00:30"
             },
-            orders: {
-                lblWilaya: "الولاية",
-                lblCommune: "البلدية",
-                lblAddress: "العنوان الكامل"
-            },
             callcenter: {
                 agent_dashboard: "لوحة تحكم الوكيل",
                 agent_subtitle: "إدارة طلباتك وتأكيد عمليات الشراء.",
@@ -3726,4 +3716,4 @@ i18n.on('languageChanged', (lng) => {
     document.documentElement.lang = lng;
 });
 
-export default i18n;
+var _x = i18n;
