@@ -120,7 +120,7 @@ export default function DispatchCenter() {
             document.body.appendChild(link);
             link.click();
         } catch (error) {
-            console.error('Export failed', error);
+            showError(error.response?.data?.message || 'Export failed. Please try again.');
         }
     };
 

@@ -27,10 +27,12 @@ export default function Warehouses() {
     const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
     const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', location: '', capacity: 1000, type: 'Main' });
     const [warehouseError, setWarehouseError] = useState(null);
+    const [fetchError, setFetchError] = useState(null);
 
     const fetchData = async () => {
         if (!token) return;
         setLoading(true);
+        setFetchError(null);
         try {
             const [wRes, lRes, sRes] = await Promise.all([
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/warehouses`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -41,7 +43,7 @@ export default function Warehouses() {
             setLedger(await lRes.json());
             setSuppliers(await sRes.json());
         } catch (error) {
-            console.error("Error fetching warehouse data:", error);
+            setFetchError(t('warehouses.fetchError', 'Failed to load warehouse data. Check your connection and refresh.'));
         } finally {
             setLoading(false);
         }
@@ -106,6 +108,15 @@ export default function Warehouses() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={fetchData} className="text-red-600 underline hover:no-underline text-xs font-bold">{t('common.retry', 'Retry')}</button>
+                    <button onClick={() => setFetchError(null)} className="ml-2 text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div></div>

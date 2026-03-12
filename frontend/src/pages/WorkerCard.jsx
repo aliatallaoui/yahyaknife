@@ -17,6 +17,7 @@ export default function WorkerCard() {
     const [productivity, setProductivity] = useState([]);
     const [rewards, setRewards] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -37,7 +38,9 @@ export default function WorkerCard() {
                 const rewJson = await rewRes.json();
                 setRewards(rewJson.data ?? (Array.isArray(rewJson) ? rewJson : []));
             } catch (err) {
-                console.error(err);
+                if (err.message !== 'Worker not found') {
+                    setFetchError(t('hr.workerLoadError', 'Failed to load worker data. Please try again.'));
+                }
             } finally {
                 setLoading(false);
             }
@@ -54,7 +57,7 @@ export default function WorkerCard() {
     if (!worker) return (
         <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-gray-500">
             <User className="w-16 h-16 mb-4 text-gray-300" />
-            <h2 className="text-xl font-bold">{t('hr.workerNotFound', 'Worker Not Found')}</h2>
+            <h2 className="text-xl font-bold">{fetchError || t('hr.workerNotFound', 'Worker Not Found')}</h2>
             <button onClick={() => navigate(-1)} className="mt-4 text-amber-600 hover:underline">{t('hr.returnBtn', 'Return')}</button>
         </div>
     );

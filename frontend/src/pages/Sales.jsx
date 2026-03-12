@@ -106,7 +106,7 @@ export default function Sales() {
                 return res.json();
             })
             .then(data => setCouriers(Array.isArray(data) ? data : []))
-            .catch(err => console.error("Error fetching couriers:", err));
+            .catch(() => showToast('error', 'Failed to load courier list for filters.'));
     }, []);
 
     const handleCreateClick = () => {
@@ -203,7 +203,7 @@ export default function Sales() {
         try {
             await updateOrder(orderId, { status: newStatus });
         } catch (err) {
-            console.error('Status update failed', err);
+            showToast('error', 'Status update failed: ' + (err.response?.data?.message || err.message));
         } finally {
             setUpdatingOrderId(null);
         }
@@ -214,7 +214,7 @@ export default function Sales() {
         try {
             await updateOrder(orderId, { channel: newChannel });
         } catch (err) {
-            console.error('Channel update failed', err);
+            showToast('error', 'Channel update failed: ' + (err.response?.data?.message || err.message));
         } finally {
             setUpdatingOrderId(null);
         }
@@ -325,7 +325,7 @@ export default function Sales() {
                 <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
-                    <button onClick={() => fetchSalesData(currentPage)} className="text-red-400 hover:text-red-600 text-xs font-bold">Retry</button>
+                    <button onClick={() => fetchSalesData(currentPage)} className="text-red-400 hover:text-red-600 text-xs font-bold">{t('common.retry', 'Retry')}</button>
                 </div>
             )}
 

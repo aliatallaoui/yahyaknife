@@ -109,11 +109,13 @@ export default function Financial() {
             danger: true,
             onConfirm: async () => {
                 setBatchDeleting(true);
+                let failCount = 0;
                 for (const id of selectedIds) {
-                    try { await deleteTransaction(id); } catch (e) { console.error('Failed to delete', id, e); }
+                    try { await deleteTransaction(id); } catch { failCount++; }
                 }
                 setSelectedIds(new Set());
                 setBatchDeleting(false);
+                if (failCount > 0) setOverviewError(`${failCount} transaction(s) could not be deleted. Please retry.`);
             },
         });
     };
@@ -270,7 +272,7 @@ export default function Financial() {
                 <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{txError}</span>
-                    <button onClick={fetchTransactions} className="text-red-400 hover:text-red-600 text-xs font-bold">Retry</button>
+                    <button onClick={fetchTransactions} className="text-red-400 hover:text-red-600 text-xs font-bold">{t('common.retry', 'Retry')}</button>
                 </div>
             )}
 
