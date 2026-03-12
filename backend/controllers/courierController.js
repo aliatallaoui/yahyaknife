@@ -27,10 +27,17 @@ exports.createCourier = async (req, res) => {
 exports.updateCourier = async (req, res) => {
     try {
         const { id } = req.params;
+        // Strip immutable / computed fields from the update payload
+        const {
+            tenant, cashCollected, cashSettled, pendingRemittance,
+            totalDeliveries, successRate, averageDeliveryTimeMinutes, reliabilityScore,
+            _id, __v, createdAt, updatedAt, testConnectionStatus, lastSyncAt,
+            ...safe
+        } = req.body;
         const updated = await Courier.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant },
-            req.body,
-            { new: true }
+            { $set: safe },
+            { new: true, runValidators: true }
         );
         if (!updated) return res.status(404).json({ message: 'Courier not found' });
         res.json(updated);
