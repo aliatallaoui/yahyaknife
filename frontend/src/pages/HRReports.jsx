@@ -19,6 +19,7 @@ export default function HRReports() {
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         fetchReport();
@@ -26,6 +27,7 @@ export default function HRReports() {
 
     const fetchReport = async () => {
         setLoading(true);
+        setFetchError(null);
         try {
             let res;
             const authHeader = { headers: { Authorization: `Bearer ${token}` } };
@@ -37,6 +39,7 @@ export default function HRReports() {
             setData(res.data?.data ?? res.data);
         } catch (error) {
             console.error(error);
+            setFetchError(error.response?.data?.message || error.response?.data?.error || 'Failed to load report data.');
         } finally {
             setLoading(false);
         }
@@ -350,6 +353,13 @@ export default function HRReports() {
                 <ReportCard id="deductions" title={t('hr.reportDeductionsTitle')} desc={t('hr.reportDeductionsDesc')} icon={AlertTriangle} />
             </div>
 
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
             {loading ? (
                 <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div></div>
             ) : (
