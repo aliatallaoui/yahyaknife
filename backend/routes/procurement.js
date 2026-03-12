@@ -10,25 +10,26 @@ const {
     receivePurchaseOrder
 } = require('../controllers/procurementController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
+const { PERMS } = require('../shared/constants/permissions');
 
 router.use(protect);
 
 // Supplier Routes
 router.route('/suppliers')
-    .get(paginate, getSuppliers)
-    .post(createSupplier);
+    .get(requirePermission(PERMS.PROCUREMENT_VIEW), paginate, getSuppliers)
+    .post(requirePermission(PERMS.PROCUREMENT_CREATE_PO), createSupplier);
 
 router.route('/suppliers/:id')
-    .put(updateSupplier);
+    .put(requirePermission(PERMS.PROCUREMENT_UPDATE_PO), updateSupplier);
 
 // Purchase Order Routes
 router.route('/orders')
-    .get(paginate, getPurchaseOrders)
-    .post(createPurchaseOrder);
+    .get(requirePermission(PERMS.PROCUREMENT_VIEW), paginate, getPurchaseOrders)
+    .post(requirePermission(PERMS.PROCUREMENT_CREATE_PO), createPurchaseOrder);
 
 // Active Delivery Receiving Hook
 router.route('/orders/:id/receive')
-    .post(receivePurchaseOrder);
+    .post(requirePermission(PERMS.PROCUREMENT_RECEIVE), receivePurchaseOrder);
 
 module.exports = router;

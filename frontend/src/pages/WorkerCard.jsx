@@ -222,7 +222,7 @@ export default function WorkerCard() {
                                             </div>
                                             <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg">
                                                 <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                                                <span className="text-xs font-bold text-emerald-700">{log.dailyScore || 0} pts</span>
+                                                <span className="text-xs font-bold text-emerald-700">{log.dailyScore || 0} {t('hr.pts', 'pts')}</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
@@ -244,12 +244,12 @@ export default function WorkerCard() {
                 {/* Financial / Reward History */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                     <div className="bg-gray-50/50 p-5 pl-6 border-b border-gray-100 flex items-center justify-between">
-                        <h3 className="text-base font-bold text-gray-900">Reward History</h3>
-                        <span className="text-xs font-bold text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-200">{rewards.length} awards</span>
+                        <h3 className="text-base font-bold text-gray-900">{t('hr.rewardHistory', 'Reward History')}</h3>
+                        <span className="text-xs font-bold text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-200">{rewards.length} {t('hr.awards', 'awards')}</span>
                     </div>
                     <div className="p-0 overflow-y-auto max-h-[500px]">
                         {rewards.length === 0 ? (
-                            <div className="p-10 text-center text-gray-400 font-medium">No rewards granted yet.</div>
+                            <div className="p-10 text-center text-gray-400 font-medium">{t('hr.noRewardsGranted', 'No rewards granted yet.')}</div>
                         ) : (
                             <div className="divide-y divide-gray-50">
                                 {rewards.map(r => (
@@ -260,13 +260,13 @@ export default function WorkerCard() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-gray-900">{r.type}</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">{moment(r.dateAwarded).format('MMM Do, YYYY')} • {r.reason || 'Routine bonus'}</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">{moment(r.dateAwarded).format('MMM Do, YYYY')} • {r.reason || t('hr.routineBonus', 'Routine bonus')}</p>
                                             </div>
                                         </div>
                                         <div className="text-left sm:text-right flex flex-row sm:flex-col items-baseline sm:items-end gap-2 sm:gap-1.5 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-gray-100 justify-between sm:justify-end">
                                             <span className="text-lg font-black text-indigo-600">+{r.amount.toLocaleString()} <span className="text-xs">DZ</span></span>
                                             <span className={clsx("px-2 py-0.5 text-[10px] font-bold uppercase rounded", r.isPaid ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
-                                                {r.isPaid ? 'Cleared in Payroll' : 'Pending Payout'}
+                                                {r.isPaid ? t('hr.clearedInPayroll', 'Cleared in Payroll') : t('hr.pendingPayout', 'Pending Payout')}
                                             </span>
                                         </div>
                                     </div>

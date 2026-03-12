@@ -75,6 +75,11 @@ export default function Warehouses() {
         }
     };
 
+    const q = searchTerm.toLowerCase();
+    const filteredWarehouses = searchTerm.trim() ? warehouses.filter(w => w.name?.toLowerCase().includes(q) || w.code?.toLowerCase().includes(q) || w.location?.toLowerCase().includes(q)) : warehouses;
+    const filteredLedger = searchTerm.trim() ? ledger.filter(e => e.referenceId?.toLowerCase().includes(q) || e.variantId?.sku?.toLowerCase().includes(q) || e.notes?.toLowerCase().includes(q)) : ledger;
+    const filteredSuppliers = searchTerm.trim() ? suppliers.filter(s => s.name?.toLowerCase().includes(q) || s.code?.toLowerCase().includes(q)) : suppliers;
+
     return (
         <div className="flex flex-col gap-6 w-full max-w-[1400px]">
             {/* Header & Stats */}
@@ -130,7 +135,7 @@ export default function Warehouses() {
                                 )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {warehouses.length > 0 ? warehouses.map(w => (
+                                {filteredWarehouses.length > 0 ? filteredWarehouses.map(w => (
                                     <div key={w._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:border-indigo-200 hover:shadow-md transition-all">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex items-center gap-3">
@@ -158,7 +163,7 @@ export default function Warehouses() {
                                             <span>{t('warehouses.managerText', 'Manager')}: {w.managerDetails?.name || t('warehouses.unassigned', 'Unassigned')}</span>
                                         </div>
                                     </div>
-                                )) : <div className="col-span-3 text-center text-gray-500 p-8 border border-dashed rounded-xl">{t('warehouses.noWarehouses', 'No warehouses defined. Add one to enable multi-location tracking.')}</div>}
+                                )) : <div className="col-span-3 text-center text-gray-500 p-8 border border-dashed rounded-xl">{searchTerm.trim() ? t('warehouses.noMatch', 'No warehouses match your search.') : t('warehouses.noWarehouses', 'No warehouses defined. Add one to enable multi-location tracking.')}</div>}
                             </div>
                         </div>
                     )}
@@ -184,7 +189,7 @@ export default function Warehouses() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 text-sm">
-                                        {ledger.map(entry => (
+                                        {filteredLedger.map(entry => (
                                             <tr key={entry._id} className="hover:bg-gray-50/50">
                                                 <td className="p-4 text-gray-500 font-medium">{moment(entry.createdAt).format('DD MMM, HH:mm')}</td>
                                                 <td className="p-4 font-mono text-xs font-bold text-indigo-600">{entry.referenceId}</td>
@@ -208,7 +213,7 @@ export default function Warehouses() {
                                         ))}
                                     </tbody>
                                 </table>
-                                {ledger.length === 0 && <div className="p-8 text-center text-gray-500">{t('warehouses.noLedger', 'No movement data found.')}</div>}
+                                {filteredLedger.length === 0 && <div className="p-8 text-center text-gray-500">{searchTerm.trim() ? t('warehouses.noMatch', 'No ledger entries match your search.') : t('warehouses.noLedger', 'No movement data found.')}</div>}
                             </div>
                         </div>
                     )}
@@ -216,7 +221,7 @@ export default function Warehouses() {
                     {/* SUPPLIERS TAB */}
                     {activeTab === 'suppliers' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {suppliers.map(s => (
+                            {filteredSuppliers.map(s => (
                                 <div key={s._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:border-gray-300">
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
@@ -242,7 +247,7 @@ export default function Warehouses() {
                                     </div>
                                 </div>
                             ))}
-                            {suppliers.length === 0 && <div className="col-span-3 p-8 text-center text-gray-500 border border-dashed rounded-xl">{t('warehouses.noTrackableSuppliers', 'No suppliers trackable. Use the main Inventory tab to add Vendors.')}</div>}
+                            {filteredSuppliers.length === 0 && <div className="col-span-3 p-8 text-center text-gray-500 border border-dashed rounded-xl">{searchTerm.trim() ? t('warehouses.noMatch', 'No suppliers match your search.') : t('warehouses.noTrackableSuppliers', 'No suppliers trackable. Use the main Inventory tab to add Vendors.')}</div>}
                         </div>
                     )}
                 </>

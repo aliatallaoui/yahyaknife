@@ -70,6 +70,12 @@ const PERMS = {
     WORKSHOP_EDIT:              'workshop.edit',
     WORKSHOP_COMPLETE_STAGE:    'manufacturing.complete_stage',
 
+    // ── Procurement ──────────────────────────────────────────────────────────
+    PROCUREMENT_VIEW:           'procurement.read',
+    PROCUREMENT_CREATE_PO:      'procurement.create_po',
+    PROCUREMENT_UPDATE_PO:      'procurement.update_po',
+    PROCUREMENT_RECEIVE:        'procurement.receive_goods',
+
     // ── Projects ─────────────────────────────────────────────────────────────
     PROJECTS_VIEW:              'projects.view',
     PROJECTS_EDIT:              'projects.edit',
