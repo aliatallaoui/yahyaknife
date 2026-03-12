@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const OrderService = require('../domains/orders/order.service');
@@ -380,6 +381,9 @@ exports.createOrder = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid order ID' });
+
         // Verify order belongs to this tenant before delegating to service
         const owned = await Order.exists({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null });
         if (!owned) return res.status(404).json({ message: 'Order not found' });

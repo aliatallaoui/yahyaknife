@@ -1,5 +1,8 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -19,6 +22,8 @@ const getUsers = async (req, res) => {
 const updateUserAccess = async (req, res) => {
     try {
         const { role, isActive, permissionOverrides } = req.body;
+
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid user ID' });
 
         // Prevent modifying oneself
         if (req.user._id.toString() === req.params.id) {
@@ -68,6 +73,8 @@ const updateUserAccess = async (req, res) => {
 // @access  Private/SuperAdmin
 const deleteUser = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid user ID' });
+
         // Prevent deleting oneself
         if (req.user._id.toString() === req.params.id) {
             return res.status(400).json({ message: "Cannot delete yourself" });
