@@ -28,8 +28,8 @@ exports.addPricingRule = async (req, res) => {
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
-        const ruleData = { ...req.body, courierId: id };
-        const newRule = await CourierPricing.create(ruleData);
+        const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
+        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority, courierId: id });
         
         res.status(201).json(newRule);
     } catch (error) {
