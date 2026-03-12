@@ -266,20 +266,28 @@ export default function OrderControlCenter() {
         const fetchDeps = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const [curRes, usrRes, kpiRes, prodRes] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, { headers: { Authorization: `Bearer ${token}` } }),
-                    axios.get(`${import.meta.env.VITE_API_URL || ''}/api/users`, { headers: { Authorization: `Bearer ${token}` } }),
-                    axios.get(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/operations-kpi`, { headers: { Authorization: `Bearer ${token}` } }),
-                    axios.get(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, { headers: { Authorization: `Bearer ${token}` } })
-                ]);
-                setCouriers(curRes.data || []);
-                setAgents((usrRes.data || []).filter(u => {
-                    const roleName = u.role?.name || u.role;
-                    // Temporarily allow all users or specific roles until RBAC is fully seeded
-                    return !roleName || ['Admin', 'Call Center Agent', 'Agent'].includes(roleName);
-                }));
-                setKpis(kpiRes.data);
-                setProductsList(prodRes.data.products || prodRes.data || []);
+                
+                // Fetch independently to prevent one failure (like KPIs) from blocking the others
+                const apiConfigs = { headers: { Authorization: `Bearer ${token}` } };
+                
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, apiConfigs)
+                    .then(res => setCouriers(res.data || []))
+                    .catch(err => console.error('Failed couriers:', err));
+                    
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/users`, apiConfigs)
+                    .then(res => setAgents((res.data || []).filter(u => {
+                        const roleName = u.role?.name || u.role;
+                        return !roleName || ['Admin', 'Call Center Agent', 'Agent'].includes(roleName);
+                    })))
+                    .catch(err => console.error('Failed users:', err));
+                    
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/operations-kpi`, apiConfigs)
+                    .then(res => setKpis(res.data))
+                    .catch(err => console.error('Failed KPIs:', err));
+                    
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, apiConfigs)
+                    .then(res => setProductsList(res.data.products || res.data || []))
+                    .catch(err => console.error('Failed products:', err));
 
             } catch (err) {
                 showError('Failed to load dropdowns (couriers, agents, products). Refresh to retry.');

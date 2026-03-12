@@ -93,12 +93,12 @@ exports.createEmployee = async (req, res) => {
     try {
         const {
             name, email, phone, role, department, salary, performanceScore, leaveBalance,
-            joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings
+            joinDate, status, managerId, contractSettings
         } = req.body;
         const employee = new Employee({
             tenant: req.user.tenant,
             name, email, phone, role, department, salary, performanceScore, leaveBalance,
-            joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings
+            joinDate, status, managerId, contractSettings
         });
         const saved = await employee.save();
         res.status(201).json(created(saved));

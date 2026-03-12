@@ -38,10 +38,17 @@ exports.getTickets = async (req, res) => {
         const { status, type, priority, customerId } = req.query;
         let query = {};
 
-        if (status) query.status = status;
-        if (type) query.type = type;
-        if (priority) query.priority = priority;
-        if (customerId) query.customerId = customerId;
+        const VALID_STATUSES = ['Open', 'In Progress', 'Waiting on Customer', 'Resolved', 'Closed'];
+        const VALID_TYPES    = ['Order Issue', 'Return', 'Complaint', 'Enquiry', 'Other'];
+        const VALID_PRIORITY = ['Low', 'Medium', 'High', 'Urgent'];
+
+        if (status) { if (VALID_STATUSES.includes(status)) query.status = status; else return res.status(400).json({ error: 'Invalid status filter' }); }
+        if (type)   { if (VALID_TYPES.includes(type))     query.type = type;     else return res.status(400).json({ error: 'Invalid type filter' }); }
+        if (priority) { if (VALID_PRIORITY.includes(priority)) query.priority = priority; else return res.status(400).json({ error: 'Invalid priority filter' }); }
+        if (customerId) {
+            if (!mongoose.Types.ObjectId.isValid(customerId)) return res.status(400).json({ error: 'Invalid customerId' });
+            query.customerId = customerId;
+        }
 
         const [tickets, total] = await Promise.all([
             SupportTicket.find(query)
@@ -81,6 +88,9 @@ exports.addMessage = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
         const { message, sender, senderId } = req.body;
+
+        if (!['Agent', 'Customer'].includes(sender))
+            return res.status(400).json({ error: 'sender must be Agent or Customer' });
 
         const ticket = await SupportTicket.findById(req.params.id);
         if (!ticket) return res.status(404).json({ error: 'Ticket not found' });

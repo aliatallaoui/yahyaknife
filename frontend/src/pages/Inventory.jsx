@@ -386,21 +386,21 @@ export default function Inventory() {
 
                                 {activeTab === 'categories' && (
                                     filteredCategories.length === 0 ? (
-                                        <tr><td colSpan="7" className="p-8 text-center text-gray-500">{t('inventory.noCategories', 'No active categories found.')}</td></tr>
+                                        <tr><td colSpan="5" className="p-8 text-center text-gray-500">{t('inventory.noCategories', 'No active categories found.')}</td></tr>
                                     ) : (
                                         filteredCategories.map((cat) => (
                                             <tr key={cat._id} className="hover:bg-gray-50/50 transition-colors">
                                                 <td className="p-4 font-medium text-gray-900">{cat.name}</td>
-                                                <td colSpan="5" className="p-4 text-gray-500">{cat.description || t('inventory.noDescription', 'No description provided.')}</td>
+                                                <td colSpan="3" className="p-4 text-gray-500">{cat.description || t('inventory.noDescription', 'No description provided.')}</td>
                                                 <td className="p-4 text-end">
                                                     <div className="flex items-center justify-end gap-2">
                                                         {hasPermission('inventory.update_product') && (
-                                                            <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Category">
+                                                            <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Category">
                                                                 <Pencil className="w-4 h-4" />
                                                             </button>
                                                         )}
                                                         {hasPermission('inventory.export') && (
-                                                            <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Archive Category">
+                                                            <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Archive Category">
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         )}

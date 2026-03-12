@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const ProductVariant = require('../models/ProductVariant');
 const Customer = require('../models/Customer');
@@ -61,6 +62,8 @@ exports.getStockoutPredictions = async (req, res) => {
 exports.evaluateOrderRisk = async (req, res) => {
     try {
         const { orderId } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(orderId))
+            return res.status(400).json({ message: 'Invalid order ID' });
         const order = await Order.findOne({ _id: orderId, tenant: req.user.tenant }).populate('customer');
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
