@@ -18,6 +18,8 @@ export default function EcommerceAnalytics() {
     const [dateRange, setDateRange] = useState('7d');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dashData, setDashData] = useState(null);
+    const [trendData, setTrendData] = useState([]);
+    const [trendLoading, setTrendLoading] = useState(true);
 
     const fetchAnalytics = async () => {
         setIsRefreshing(true);
@@ -37,9 +39,42 @@ export default function EcommerceAnalytics() {
         }
     };
 
+    const fetchTrendData = async () => {
+        setTrendLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const to = new Date().toISOString().slice(0, 10);
+            const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/analytics/daily?from=${from}&to=${to}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const json = await res.json();
+                setTrendData((json.data?.rollups ?? []).map(d => ({
+                    date: d.date.slice(5),
+                    revenue: d.revenue.gross,
+                    profit: d.revenue.netProfit,
+                    orders: d.orders.created,
+                    delivered: d.orders.delivered,
+                    returned: d.orders.returned,
+                    present: d.hr.present,
+                    absent: d.hr.absent,
+                })));
+            }
+        } catch (e) {
+            console.error('Failed to fetch daily trends:', e);
+        } finally {
+            setTrendLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchAnalytics();
     }, [dateRange]);
+
+    useEffect(() => {
+        fetchTrendData();
+    }, []);
 
     // --- COMPONENT HELPERS ---
     const KPICard = ({ title, value, prefix = '', suffix = '', trend, trendValue, icon: Icon, colorClass }) => (
@@ -380,6 +415,76 @@ export default function EcommerceAnalytics() {
                             </tbody>
                         </table>
                     </div>
+                </ChartCard>
+            </div>
+
+            {/* 7. 30-Day Historical Trends (DailyRollup) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ChartCard
+                    title={t('analytics.charts.revenue_30d', '30-Day Revenue & Profit')}
+                    subtitle={t('analytics.charts.revenue_30d_sub', 'Gross revenue vs. net profit — last 30 days')}
+                >
+                    {trendLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="w-6 h-6 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin" />
+                        </div>
+                    ) : trendData.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-sm text-gray-400">No historical data yet — runs nightly at 00:30</div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="grad30Rev" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="grad30Prof" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} dy={8} interval={4} />
+                                <YAxis tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} dx={-8} />
+                                <RechartsTooltip
+                                    formatter={(val, name) => [`${val.toLocaleString()} DZD`, name === 'revenue' ? 'Gross Revenue' : 'Net Profit']}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#grad30Rev)" />
+                                <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#grad30Prof)" />
+                                <Legend iconType="circle" iconSize={8} formatter={v => v === 'revenue' ? 'Gross Revenue' : 'Net Profit'} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    )}
+                </ChartCard>
+
+                <ChartCard
+                    title={t('analytics.charts.orders_30d', '30-Day Order Flow')}
+                    subtitle={t('analytics.charts.orders_30d_sub', 'Created vs. delivered vs. returned — last 30 days')}
+                >
+                    {trendLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="w-6 h-6 rounded-full border-4 border-gray-200 border-t-indigo-500 animate-spin" />
+                        </div>
+                    ) : trendData.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-sm text-gray-400">No historical data yet — runs nightly at 00:30</div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} dy={8} interval={4} />
+                                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} dx={-8} allowDecimals={false} />
+                                <RechartsTooltip
+                                    formatter={(val, name) => [val, name === 'orders' ? 'Created' : name === 'delivered' ? 'Delivered' : 'Returned']}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Line type="monotone" dataKey="orders" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="delivered" stroke="#10b981" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="returned" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                                <Legend iconType="circle" iconSize={8} formatter={v => v === 'orders' ? 'Created' : v === 'delivered' ? 'Delivered' : 'Returned'} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    )}
                 </ChartCard>
             </div>
         </div>
