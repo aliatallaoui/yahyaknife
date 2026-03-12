@@ -124,7 +124,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                 });
                 if (!payRes.ok) {
                     const payErr = await payRes.json();
-                    throw new Error(payErr.error || 'Payroll sync failed');
+                    throw new Error(payErr.error || t('modals.payrollSyncFailed', 'Payroll sync failed'));
                 }
                 // The payroll controller already creates an Expense via sync
                 // So we don't need to also call onSubmit which would create a duplicate
@@ -230,15 +230,15 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                         <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
                             <div className="flex items-center gap-2 text-sm font-bold text-violet-800">
                                 <Users className="w-4 h-4" />
-                                Select Employee to Pay
+                                {t('modals.selectEmployee', 'Select Employee to Pay')}
                             </div>
                             {payrollLoading ? (
                                 <div className="text-sm text-violet-500 flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" /> Loading workers...
+                                    <Loader2 className="w-4 h-4 animate-spin" /> {t('modals.loadingWorkers', 'Loading workers...')}
                                 </div>
                             ) : payrollRecords.length === 0 ? (
                                 <div className="text-sm text-violet-400 italic">
-                                    No unpaid payroll records. You can still add a manual HR expense below.
+                                    {t('modals.noUnpaidPayroll', 'No unpaid payroll records. You can still add a manual HR expense below.')}
                                 </div>
                             ) : (
                                 <>
@@ -247,7 +247,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                         onChange={(e) => setSelectedPayrollId(e.target.value)}
                                         className="w-full border border-violet-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400 bg-white"
                                     >
-                                        <option value="">— Select a worker (optional) —</option>
+                                        <option value="">{t('modals.selectWorkerOptional', '— Select a worker (optional) —')}</option>
                                         {payrollRecords.map(pr => {
                                             const remaining = pr.finalPayableSalary - pr.amountPaid;
                                             const empName = pr.employeeId?.name || 'Unknown';
@@ -263,15 +263,15 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                     {selectedRecord && (
                                         <div className="grid grid-cols-3 gap-2 text-center">
                                             <div className="bg-white rounded-lg p-2 border border-violet-100">
-                                                <div className="text-[10px] text-gray-500 font-bold uppercase">Salary</div>
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase">{t('modals.workerSalary', 'Salary')}</div>
                                                 <div className="text-sm font-black text-gray-900">{selectedRecord.finalPayableSalary.toLocaleString()}</div>
                                             </div>
                                             <div className="bg-white rounded-lg p-2 border border-violet-100">
-                                                <div className="text-[10px] text-emerald-600 font-bold uppercase">Paid</div>
+                                                <div className="text-[10px] text-emerald-600 font-bold uppercase">{t('modals.workerPaid', 'Paid')}</div>
                                                 <div className="text-sm font-black text-emerald-600">{selectedRecord.amountPaid.toLocaleString()}</div>
                                             </div>
                                             <div className="bg-white rounded-lg p-2 border border-violet-100">
-                                                <div className="text-[10px] text-amber-600 font-bold uppercase">Remaining</div>
+                                                <div className="text-[10px] text-amber-600 font-bold uppercase">{t('modals.workerRemaining', 'Remaining')}</div>
                                                 <div className="text-sm font-black text-amber-600">{(selectedRecord.finalPayableSalary - selectedRecord.amountPaid).toLocaleString()}</div>
                                             </div>
                                         </div>
@@ -334,7 +334,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            {isEdit ? t('modals.trxBtnSave') : (isHR && selectedPayrollId ? 'Pay & Record' : t('modals.trxBtnCreate'))}
+                            {isEdit ? t('modals.trxBtnSave') : (isHR && selectedPayrollId ? t('modals.payAndRecord', 'Pay & Record') : t('modals.trxBtnCreate'))}
                         </button>
                     </div>
                 </form>
