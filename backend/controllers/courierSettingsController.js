@@ -12,7 +12,10 @@ exports.getSettings = async (req, res) => {
                 connectionStatus: 'Invalid Token'
             });
         }
-        res.json(settings);
+        // Redact raw token — UI only needs connection status, not the credential
+        const { apiToken: _raw, ...safe } = settings.toObject();
+        safe.apiToken = settings.apiToken ? '****' + settings.apiToken.slice(-4) : '';
+        res.json(safe);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -25,15 +28,12 @@ exports.updateSettings = async (req, res) => {
         let settings = await CourierSetting.findOne({ providerName: 'ECOTRACK' });
 
         if (!settings) {
-            console.log("[CourierSettings] Creating new ECOTRACK settings record during update.");
             settings = new CourierSetting({ providerName: 'ECOTRACK' });
         }
 
         // Update settings object
         if (apiUrl !== undefined) settings.apiUrl = apiUrl;
         if (apiToken !== undefined) settings.apiToken = apiToken;
-
-        console.log(`[CourierSettings] Updating for ECOTRACK: URL=${settings.apiUrl}, Token=${settings.apiToken ? '****' + settings.apiToken.slice(-4) : 'EMPTY'}`);
 
         // Try to validate the token with ECOTRACK
         let connectionStatus = 'Invalid Token';
@@ -79,7 +79,9 @@ exports.updateSettings = async (req, res) => {
         settings.lastValidatedAt = new Date();
 
         await settings.save();
-        res.json(settings);
+        const { apiToken: _raw2, ...safeResponse } = settings.toObject();
+        safeResponse.apiToken = settings.apiToken ? '****' + settings.apiToken.slice(-4) : '';
+        res.json(safeResponse);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

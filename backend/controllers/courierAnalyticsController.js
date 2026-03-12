@@ -6,10 +6,11 @@ exports.getCourierKPIs = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const { dateRange = 30 } = req.query;
-        const cacheKey = `tenant:${tenantId}:courier:kpis:days:${dateRange}`;
+        const days = Math.min(Math.max(1, parseInt(dateRange) || 30), 365);
+        const cacheKey = `tenant:${tenantId}:courier:kpis:days:${days}`;
 
         const cachedKPIs = await cacheService.getOrSet(cacheKey, async () => {
-            const startDate = moment().subtract(Number(dateRange), 'days').toDate();
+            const startDate = moment().subtract(days, 'days').toDate();
             const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
 
             const [kpiResult] = await Order.aggregate([
@@ -122,10 +123,11 @@ exports.getRegionalPerformance = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const { dateRange = 30 } = req.query;
-        const cacheKey = `tenant:${tenantId}:courier:regional:days:${dateRange}`;
+        const days = Math.min(Math.max(1, parseInt(dateRange) || 30), 365);
+        const cacheKey = `tenant:${tenantId}:courier:regional:days:${days}`;
 
         const cachedRegions = await cacheService.getOrSet(cacheKey, async () => {
-            const startDate = moment().subtract(Number(dateRange), 'days').toDate();
+            const startDate = moment().subtract(days, 'days').toDate();
             const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
 
             return await Order.aggregate([
