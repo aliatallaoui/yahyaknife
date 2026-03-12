@@ -55,7 +55,7 @@ export const SalesProvider = ({ children }) => {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } });
             if (res.ok) setPerformance(await res.json());
         } catch (error) {
-            console.error(error);
+            setFetchError('Failed to refresh performance metrics.');
         }
     }
 
