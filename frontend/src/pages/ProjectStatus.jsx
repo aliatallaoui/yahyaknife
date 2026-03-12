@@ -1,4 +1,5 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { ProjectContext } from '../context/ProjectContext';
 import { LayoutDashboard, CheckCircle2, Clock, AlertTriangle, Plus, Search, Filter, TrendingUp, Users } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';

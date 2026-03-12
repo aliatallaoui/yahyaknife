@@ -1,6 +1,7 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef } from 'react';
 import { ProjectContext } from '../context/ProjectContext';
 import { Target, Search, Clock, List, LayoutGrid, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useHotkey } from '../hooks/useHotkey';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
@@ -27,6 +28,9 @@ export default function GlobalTaskBoard() {
     const { globalTasks, loading, updateTaskStatus } = useContext(ProjectContext);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     if (loading) {
         return (
@@ -57,8 +61,9 @@ export default function GlobalTaskBoard() {
                         <div className="relative">
                             <Search className="w-4 h-4 text-blue-400 absolute start-3 top-1/2 -translate-y-1/2" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('projects.gtbSearch', 'Search tasks, assignees...')}
+                                placeholder={t('projects.gtbSearch', 'Search tasks... (Press /)')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="ps-9 pe-4 py-2 bg-white border border-blue-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
