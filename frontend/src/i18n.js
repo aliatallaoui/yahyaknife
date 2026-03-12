@@ -2913,7 +2913,8 @@ const resources = {
                 failedDeleteOrder: "فشل حذف الطلب.",
                 failedDispatch: "فشل الإرسال",
                 errorLoadOrders: "فشل تحميل الطلبيات.",
-                errorRefreshPerf: "فشل تحديث مقاييس الأداء."
+                errorRefreshPerf: "فشل تحديث مقاييس الأداء.",
+                errorSaveOrder: "فشل حفظ الطلب."
             },
             inventory: {
                 title: "تتبع المخزون",
@@ -3109,7 +3110,11 @@ const resources = {
                 errorLoadProfile: "فشل تحميل بيانات الملف الشخصي.",
                 errorBlacklist: "فشل تحديث حالة القائمة السوداء.",
                 showingCached: "يتم عرض البيانات المحفوظة.",
-                analyticsUnavailable: "رسوم التحليلات قد تكون غير متاحة."
+                analyticsUnavailable: "رسوم التحليلات قد تكون غير متاحة.",
+                errorFetchCustomers: "فشل تحميل قائمة العملاء.",
+                errorCreateCustomer: "فشل إنشاء العميل.",
+                errorUpdateCustomer: "فشل تحديث بيانات العميل.",
+                errorDeleteCustomer: "فشل حذف العميل."
             },
             procurement: {
                 title: "مركز المشتريات",
@@ -3619,6 +3624,7 @@ const resources = {
                 typeReceived: "مستلم",
                 typeManufactured: "مُصنّع",
                 noMovements: "لم يتم العثور على حركات للمخزون.",
+                errorLoadMovements: "فشل تحميل حركات المخزون.",
                 poTitle: "إنشاء طلب شراء",
                 poSubtitle: "طلب مخزون جديد من الموردين",
                 poSupplier: "المورد *",
