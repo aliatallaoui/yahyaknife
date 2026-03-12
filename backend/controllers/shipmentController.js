@@ -1,6 +1,9 @@
+const mongoose = require('mongoose');
 const Shipment = require('../models/Shipment');
 const Order = require('../models/Order');
 const ShipmentService = require('../domains/dispatch/shipment.service');
+
+const validId = id => mongoose.Types.ObjectId.isValid(id);
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 
@@ -32,6 +35,7 @@ exports.quickDispatch = async (req, res) => {
 exports.getAllShipments = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
+        if (!tenantId) return res.status(401).json({ error: 'Tenant context required' });
 
         const STATUS_MAP = {
             'Dispatched':       'Created in Courier',
@@ -45,12 +49,12 @@ exports.getAllShipments = async (req, res) => {
 
         const [dispatchedOrders, ecotrackShipments] = await Promise.all([
             Order.find({
-                ...(tenantId ? { tenant: tenantId } : {}),
+                tenant: tenantId,
                 status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned'] },
                 deletedAt: null
             }).populate('customer', 'name phone').sort({ updatedAt: -1 }).lean(),
 
-            Shipment.find(tenantId ? { tenant: tenantId } : {}).sort({ createdAt: -1 }).lean()
+            Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).lean()
         ]);
 
         const mappedOrders = dispatchedOrders.map(o => ({
@@ -86,6 +90,7 @@ exports.getAllShipments = async (req, res) => {
 
 exports.getShipmentById = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
         const shipment = await Shipment.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
         res.json(shipment);
@@ -122,6 +127,7 @@ exports.exportShipments = async (req, res) => {
 
 exports.updateShipment = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
         const shipment = await Shipment.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
 
@@ -129,8 +135,9 @@ exports.updateShipment = async (req, res) => {
             return res.status(403).json({ message: `Cannot edit a shipment that is already ${shipment.shipmentStatus}` });
         }
 
-        Object.assign(shipment, req.body);
-        shipment.activityHistory.push({ status: 'Shipment Updated', remarks: 'User edited shipment details before courier validation' });
+        const { tenant: _t, activityHistory: _h, shipmentStatus: _ss, ...safeBody } = req.body;
+        Object.assign(shipment, safeBody);
+        shipment.activityHistory.push({ status: 'Shipment Updated', remarks: 'User edited shipment details before courier validation', changedBy: req.user._id });
 
         const updated = await shipment.save();
         res.json(updated);
@@ -143,6 +150,7 @@ exports.updateShipment = async (req, res) => {
 
 exports.deleteShipment = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
         const result = await ShipmentService.deleteShipment(req.params.id, req.user.tenant);
         res.json({ message: 'Shipment successfully deleted', ...result });
     } catch (error) {
@@ -155,8 +163,9 @@ exports.deleteShipment = async (req, res) => {
 
 exports.validateShipment = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
         const { ask_collection = 1 } = req.body;
-        const shipment = await ShipmentService.validateShipment(req.params.id, req.user.tenant, { askCollection: ask_collection });
+        const shipment = await ShipmentService.validateShipment(req.params.id, req.user.tenant, { askCollection: ask_collection, userId: req.user._id });
         res.json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
@@ -169,6 +178,7 @@ exports.validateShipment = async (req, res) => {
 
 exports.getShipmentLabel = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
         const url = await ShipmentService.getShipmentLabel(req.params.id, req.user.tenant);
         res.json({ url });
     } catch (error) {
@@ -181,7 +191,8 @@ exports.getShipmentLabel = async (req, res) => {
 
 exports.requestReturn = async (req, res) => {
     try {
-        const shipment = await ShipmentService.requestReturn(req.params.id, req.user.tenant);
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
+        const shipment = await ShipmentService.requestReturn(req.params.id, req.user.tenant, req.user._id);
         res.json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });

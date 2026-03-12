@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Activity, Save, RefreshCw } from 'lucide-react';
+import { Activity, Save, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export default function CourierStatusMapping({ courier, setCourier }) {
     const { t } = useTranslation();
     const [saving, setSaving] = useState(false);
+    const [successMsg, setSuccessMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
 
     // List of standard COD internal statuses to map against
     const internalStatuses = [
@@ -74,10 +76,10 @@ export default function CourierStatusMapping({ courier, setCourier }) {
             });
 
             setCourier(res.data);
-            alert(t('couriers.mapping_saved', 'Mapping configuration saved successfully.'));
+            setSuccessMsg(t('couriers.mapping_saved', 'Mapping configuration saved successfully.'));
         } catch (error) {
             console.error('Error saving mapping:', error);
-            alert(error.response?.data?.message || 'Error saving mapping');
+            setErrorMsg(error.response?.data?.message || 'Error saving mapping');
         } finally {
             setSaving(false);
         }
@@ -85,6 +87,20 @@ export default function CourierStatusMapping({ courier, setCourier }) {
 
     return (
         <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {errorMsg && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{errorMsg}</span>
+                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
+            {successMsg && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{successMsg}</span>
+                    <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600">✕</button>
+                </div>
+            )}
             <div className="bg-white border text-start border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-indigo-500" />

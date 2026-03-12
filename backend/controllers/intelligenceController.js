@@ -135,13 +135,13 @@ exports.getGlobalIntelligence = async (req, res) => {
 
         const [criticalStock, suspiciousCustomers] = await Promise.all([
             ProductVariant.countDocuments({ status: 'Active', $expr: { $lte: [{ $subtract: ['$totalStock', '$reservedStock'] }, '$reorderLevel'] } }),
-            Customer.countDocuments({ tenant: tenantId, isSuspicious: true })
+            Customer.countDocuments({ tenant: tenantId, blacklisted: true })
         ]);
 
         res.json({
             alerts: [
                 { type: 'Stock', message: `${criticalStock} variants are at or below reorder level.`, severity: criticalStock > 5 ? 'High' : 'Medium' },
-                { type: 'Fraud', message: `${suspiciousCustomers} customers flagged as Suspicious based on refusal behavior.`, severity: 'High' }
+                { type: 'Fraud', message: `${suspiciousCustomers} customers blacklisted based on refusal behavior.`, severity: 'High' }
             ],
             recommendations: [
                 'Run stock movement analysis for top 5 selling SKUs.',

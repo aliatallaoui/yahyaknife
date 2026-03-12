@@ -85,18 +85,23 @@ export default function SettingsRoles() {
         }
     };
 
-    const handleDelete = async () => {
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
+    const handleDelete = () => {
         if (!selectedRole || selectedRole.isSystemRole) return;
-        if (window.confirm("Are you sure you want to delete this custom role?")) {
-            try {
-                await axios.delete(`${API_URL}/api/roles/${selectedRole._id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setSelectedRole(null);
-                await fetchData();
-            } catch (err) {
-                setError(err.response?.data?.message || "Failed to delete role");
-            }
+        setConfirmDelete(true);
+    };
+
+    const confirmDeleteRole = async () => {
+        setConfirmDelete(false);
+        try {
+            await axios.delete(`${API_URL}/api/roles/${selectedRole._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSelectedRole(null);
+            await fetchData();
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to delete role");
         }
     };
 
@@ -107,6 +112,7 @@ export default function SettingsRoles() {
     }
 
     return (
+        <>
         <div className="p-6">
             <div className="mb-6 flex justify-between items-center">
                 <div>
@@ -270,5 +276,30 @@ export default function SettingsRoles() {
                 </div>
             </div>
         </div>
+
+        {confirmDelete && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900">{t('rbac.delete_role_title', 'Delete this role?')}</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">{selectedRole?.name}</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                        <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            {t('common.cancel', 'Cancel')}
+                        </button>
+                        <button onClick={confirmDeleteRole} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                            {t('common.delete', 'Delete')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }

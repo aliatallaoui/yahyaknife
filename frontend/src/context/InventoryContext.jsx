@@ -47,14 +47,14 @@ export const InventoryProvider = ({ children }) => {
                 })
             ]);
 
-            setProducts(await prodRes.json());
-            setRawMaterials(await matRes.json());
-            setMetrics(await metricsRes.json());
-            setSuppliers(await suppRes.json());
-            setCategories(await catRes.json());
-            setPurchaseOrders(await poRes.json());
-            setGlobalLedger(await ledgerRes.json());
-            setCompletedKnives(await knivesRes.json());
+            if (prodRes.ok) setProducts(await prodRes.json());
+            if (matRes.ok) { const matJson = await matRes.json(); setRawMaterials(matJson.data ?? (Array.isArray(matJson) ? matJson : [])); }
+            if (metricsRes.ok) setMetrics(await metricsRes.json());
+            if (suppRes.ok) setSuppliers(await suppRes.json());
+            if (catRes.ok) setCategories(await catRes.json());
+            if (poRes.ok) setPurchaseOrders(await poRes.json());
+            if (ledgerRes.ok) setGlobalLedger(await ledgerRes.json());
+            if (knivesRes.ok) { const knivesJson = await knivesRes.json(); setCompletedKnives(knivesJson.data ?? (Array.isArray(knivesJson) ? knivesJson : [])); }
         } catch (error) {
             console.error("Error fetching inventory data:", error);
         } finally {

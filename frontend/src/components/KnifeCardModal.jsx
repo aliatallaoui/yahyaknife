@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { X, ChevronRight, Calendar, User, Activity, Flame, Shield, Wrench, Check, Save, Loader2 } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 import clsx from 'clsx';
 import KnifeStageTracker from './KnifeStageTracker';
 import BOMBuilder from './BOMBuilder';
@@ -27,9 +28,11 @@ const EMPTY_FORM = {
 
 export default function KnifeCardModal({ isOpen, onClose, onSaved, initialData = null, knifeModels = [], workers = [] }) {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [form, setForm] = useState(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [tab, setTab] = useState('basic');
 
     useEffect(() => {
@@ -80,16 +83,18 @@ export default function KnifeCardModal({ isOpen, onClose, onSaved, initialData =
             if (!payload.maker) delete payload.maker;
             if (!payload.customerTarget) delete payload.customerTarget;
 
-            const url = initialData?._id ? `/api/knives/cards/${initialData._id}` : '/api/knives/cards';
+            const url = initialData?._id
+                ? `${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${initialData._id}`
+                : `${import.meta.env.VITE_API_URL || ''}/api/knives/cards`;
             const method = initialData?._id ? 'PUT' : 'POST';
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
-            const saved = await res.json();
-            onSaved(saved);
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Save failed');
+            onSaved(json.data ?? json);
             onClose();
         } catch (err) {
             setError(err.message);
@@ -105,11 +110,13 @@ export default function KnifeCardModal({ isOpen, onClose, onSaved, initialData =
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${form._id}/consume`, {
                 method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) throw new Error((await res.json()).error || 'Failed to consume materials');
             setForm(prev => ({ ...prev, materialsConsumed: true }));
             onSaved({ ...form, materialsConsumed: true });
-            alert(t('knives.consumeSuccess', 'Materials successfully deducted from inventory.'));
+            setSuccessMsg(t('knives.consumeSuccess', 'Materials successfully deducted from inventory.'));
+            setTimeout(() => setSuccessMsg(''), 4000);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -335,6 +342,7 @@ export default function KnifeCardModal({ isOpen, onClose, onSaved, initialData =
                 </div>
 
                 {/* Footer */}
+                {successMsg && <p className="px-6 py-2 text-sm text-emerald-700 font-semibold bg-emerald-50 border-t border-emerald-100 flex items-center gap-2"><Check className="w-4 h-4 shrink-0" />{successMsg}</p>}
                 {error && <p className="px-6 py-2 text-sm text-rose-600 font-medium bg-rose-50 border-t border-rose-100">{error}</p>}
                 <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
                     <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">{t('knives.cancel', 'Cancel')}</button>

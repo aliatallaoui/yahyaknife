@@ -4,13 +4,17 @@ const ProductVariant = require('../models/ProductVariant');
 const RawMaterial = require('../models/RawMaterial');
 const StockMovementLedger = require('../models/StockMovementLedger');
 const mongoose = require('mongoose');
+const { ok, created, message, paginated } = require('../shared/utils/ApiResponse');
 
 // --- SUPPLIER CRUD ---
 
 exports.getSuppliers = async (req, res) => {
     try {
-        const suppliers = await Supplier.find().sort('-createdAt');
-        res.json(suppliers);
+        const [suppliers, total] = await Promise.all([
+            Supplier.find().sort('-createdAt').skip(req.skip).limit(req.limit),
+            Supplier.countDocuments()
+        ]);
+        res.json(paginated(suppliers, { total, hasNextPage: req.skip + suppliers.length < total }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -18,9 +22,10 @@ exports.getSuppliers = async (req, res) => {
 
 exports.createSupplier = async (req, res) => {
     try {
-        const sup = new Supplier(req.body);
+        const { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes } = req.body;
+        const sup = new Supplier({ name, contactPerson, supplierCategory, materialsSupplied, address, status, notes });
         await sup.save();
-        res.status(201).json(sup);
+        res.status(201).json(created(sup));
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -28,10 +33,28 @@ exports.createSupplier = async (req, res) => {
 
 exports.updateSupplier = async (req, res) => {
     try {
-        const sup = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json(sup);
+        const { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes } = req.body;
+        const sup = await Supplier.findByIdAndUpdate(
+            req.params.id,
+            { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes },
+            { new: true, runValidators: true }
+        );
+        if (!sup) return res.status(404).json({ error: 'Supplier not found' });
+        res.json(ok(sup));
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+};
+
+exports.deleteSupplier = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const sup = await Supplier.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
+        if (!sup) return res.status(404).json({ error: 'Supplier not found' });
+        res.json(message('Supplier archived'));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -39,16 +62,19 @@ exports.updateSupplier = async (req, res) => {
 
 exports.getPurchaseOrders = async (req, res) => {
     try {
-        const pos = await PurchaseOrder.find()
-            .populate('supplier', 'name status reliabilityScore performanceMetrics')
-            // Need to conditionally populate based on itemModel
-            .populate({
-                path: 'items.itemRef',
-                select: 'sku name displayName currentStock stock costPerUnit unitOfMeasure'
-            })
-            .sort('-createdAt');
+        const [pos, total] = await Promise.all([
+            PurchaseOrder.find()
+                .populate('supplier', 'name status reliabilityScore performanceMetrics')
+                .populate({
+                    path: 'items.itemRef',
+                    select: 'sku name displayName currentStock stock costPerUnit unitOfMeasure'
+                })
+                .sort('-createdAt')
+                .skip(req.skip).limit(req.limit),
+            PurchaseOrder.countDocuments()
+        ]);
 
-        res.json(pos);
+        res.json(paginated(pos, { total, hasNextPage: req.skip + pos.length < total }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -78,13 +104,15 @@ exports.createPurchaseOrder = async (req, res) => {
             });
         }
 
-        res.status(201).json(po);
+        res.status(201).json(created(po));
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 };
 
 exports.receivePurchaseOrder = async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+        return res.status(400).json({ error: 'Invalid ID' });
     /**
      * Payload should contain:
      * {
@@ -189,7 +217,7 @@ exports.receivePurchaseOrder = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        res.json({ message: "PO Received & Stock Distributed Successfully", status: po.status });
+        res.json(ok({ message: "PO Received & Stock Distributed Successfully", status: po.status }));
 
     } catch (error) {
         await session.abortTransaction();

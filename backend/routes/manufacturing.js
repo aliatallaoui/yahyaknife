@@ -1,43 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const manufacturingController = require('../controllers/manufacturingController');
-const { protect } = require('../middleware/authMiddleware');
-
-// Note: Ensure the auth middleware is required. We'll add 'protect' to securely lock the endpoints.
-// We use generic 'protect' for now, but authorize(['admin', 'manager', 'production']) could be used later.
+const { protect, requirePermission } = require('../middleware/authMiddleware');
+const { PERMS } = require('../shared/constants/permissions');
 
 // ============================================
 // Raw Materials Routes
 // ============================================
 
 router.route('/raw-materials')
-    .get(protect, manufacturingController.getAllRawMaterials)
-    .post(protect, manufacturingController.createRawMaterial);
+    .get(protect, requirePermission(PERMS.WORKSHOP_VIEW), manufacturingController.getAllRawMaterials)
+    .post(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.createRawMaterial);
 
 router.route('/raw-materials/:id')
-    .put(protect, manufacturingController.updateRawMaterial)
-    .delete(protect, manufacturingController.deleteRawMaterial);
+    .put(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.updateRawMaterial)
+    .delete(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.deleteRawMaterial);
 
 // ============================================
 // BOM (Bill of Materials) Routes
 // ============================================
 
 router.route('/boms')
-    .get(protect, manufacturingController.getAllBOMs)
-    .post(protect, manufacturingController.createBOM);
+    .get(protect, requirePermission(PERMS.WORKSHOP_VIEW), manufacturingController.getAllBOMs)
+    .post(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.createBOM);
 
 router.route('/boms/:id')
-    .delete(protect, manufacturingController.deleteBOM);
+    .delete(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.deleteBOM);
 
 // ============================================
 // Production Order Routes
 // ============================================
 
 router.route('/orders')
-    .get(protect, manufacturingController.getAllProductionOrders)
-    .post(protect, manufacturingController.createProductionOrder);
+    .get(protect, requirePermission(PERMS.WORKSHOP_VIEW), manufacturingController.getAllProductionOrders)
+    .post(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.createProductionOrder);
 
 router.route('/orders/:id/status')
-    .put(protect, manufacturingController.updateProductionOrderStatus);
+    .put(protect, requirePermission(PERMS.WORKSHOP_EDIT), manufacturingController.updateProductionOrderStatus);
 
 module.exports = router;

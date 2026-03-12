@@ -27,13 +27,13 @@ const generateKPISnapshots = async () => {
                     shippedEver,
                     returnedEver
                 ] = await Promise.all([
-                    Order.countDocuments({ tenant: tenantId, date: { $gte: today }, status: 'New' }),
+                    Order.countDocuments({ tenant: tenantId, createdAt: { $gte: today }, status: 'New' }),
                     Order.countDocuments({ tenant: tenantId, status: 'New' }),
                     Order.countDocuments({ tenant: tenantId, status: 'Confirmed' }),
                     Order.countDocuments({ tenant: tenantId, status: { $in: ['Preparing', 'Ready for Pickup'] } }),
                     Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-                    Order.countDocuments({ tenant: tenantId, date: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-                    Order.countDocuments({ tenant: tenantId, 'deliveryStatus.deliveredAt': { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
+                    Order.countDocuments({ tenant: tenantId, createdAt: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+                    Order.countDocuments({ tenant: tenantId, updatedAt: { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
                     Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
                     Order.countDocuments({ tenant: tenantId, status: { $in: ['Returned', 'Refused'] } })
                 ]);

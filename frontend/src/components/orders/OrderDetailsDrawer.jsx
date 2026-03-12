@@ -1,9 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment';
-import { X, MapPin, Package, CreditCard, Truck, UserCircle, Save, Phone, Clock, FileText, CheckCircle2 } from 'lucide-react';
+import { X, MapPin, Package, CreditCard, Truck, UserCircle, Save, Phone, Clock, FileText, CheckCircle2, Copy, Check } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+
+// Click-to-copy phone with tel: fallback
+function PhoneRow({ phone }) {
+    const [copied, setCopied] = useState(false);
+    if (!phone) return <span className="text-gray-400 text-sm mt-2 block">No phone number</span>;
+    const handleCopy = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(phone).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
+    };
+    return (
+        <div className="mt-2 flex items-center gap-2">
+            <a href={`tel:${phone}`} className="flex items-center gap-2 group flex-1">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <Phone className="w-4 h-4" />
+                </div>
+                <span className="font-mono text-sm font-black text-gray-700 tracking-tight group-hover:text-blue-600">{phone}</span>
+            </a>
+            <button onClick={handleCopy} title={copied ? 'Copied!' : 'Copy number'} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+            </button>
+        </div>
+    );
+}
 
 const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 
@@ -26,6 +49,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
     const { t } = useTranslation();
     const [agents, setAgents] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
 
     // Editable state
     const [status, setStatus] = useState(order?.status || '');
@@ -45,7 +69,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
             try {
                 const token = localStorage.getItem('token');
                 const usrRes = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
-                setAgents((usrRes.data || []).filter(u => ['Admin', 'Call Center Agent'].includes(u.role)));
+                setAgents((usrRes.data || []).filter(u => ['Admin', 'Call Center Agent'].includes(u.role?.name || u.role)));
             } catch (err) { console.error(err); }
         };
         fetchDeps();
@@ -66,7 +90,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
             if (onUpdate) onUpdate(res.data);
             onClose();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            setSaveError(err.response?.data?.message || err.message);
         } finally {
             setSaving(false);
         }
@@ -91,7 +115,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                         </div>
                         <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
-                            {moment(order.date).format('MMMM Do YYYY, h:mm a')}
+                            {moment(order.createdAt).format('MMMM Do YYYY, h:mm a')}
                         </span>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
@@ -145,15 +169,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                             </h3>
                             <div>
                                 <p className="font-bold text-gray-900 text-sm">{order.customer?.name || order.shipping?.firstName || 'Walk-in'}</p>
-                                <div className="mt-2 flex items-center gap-2 group cursor-pointer" onClick={() => {
-                                    const phone = order.customer?.phone || order.shipping?.phone1;
-                                    if (phone) window.open(`tel:${phone}`);
-                                }}>
-                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        <Phone className="w-4 h-4" />
-                                    </div>
-                                    <span className="font-mono text-sm font-black text-gray-700 tracking-tight group-hover:text-blue-600">{order.customer?.phone || order.shipping?.phone1 || 'No Phone'}</span>
-                                </div>
+                                <PhoneRow phone={order.customer?.phone || order.shipping?.phone1} />
                             </div>
                         </div>
 
@@ -230,6 +246,13 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                 </div>
 
                 {/* Footer Action */}
+                {saveError && (
+                    <div className="mx-6 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-semibold text-red-700 flex items-center gap-2">
+                        <span className="shrink-0">⚠</span>
+                        <span>{saveError}</span>
+                        <button onClick={() => setSaveError(null)} className="ml-auto text-red-400 hover:text-red-700">✕</button>
+                    </div>
+                )}
                 <div className="bg-white px-6 py-4 border-t border-gray-100 shrink-0 flex items-center justify-between">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-100 transition-colors">
                         {t('ordersControl.bulk.cancel', { defaultValue: 'Discard' })}

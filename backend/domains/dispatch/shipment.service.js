@@ -13,6 +13,7 @@ const Order = require('../../models/Order');
 const CustomOrder = require('../../models/CustomOrder');
 const ecotrackAdapter = require('../../integrations/couriers/EcotrackAdapter');
 const AppError = require('../../shared/errors/AppError');
+const OrderService = require('../orders/order.service');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,8 +56,18 @@ exports.createShipment = async ({ orderId, isCustomOrder, shipmentData, tenantId
 
     const savedShipment = await newShipment.save();
 
-    internalOrder.status = 'Dispatched';
-    await internalOrder.save();
+    // Sync order status through service to trigger inventory + audit trail
+    if (!isCustomOrder && tenantId) {
+        await OrderService.updateOrder({
+            orderId: orderId.toString(),
+            tenantId,
+            updateData: { status: 'Dispatched', trackingInfo: { carrier: 'ECOTRACK', trackingNumber: savedShipment.externalTrackingId } },
+            bypassStateMachine: true
+        });
+    } else {
+        internalOrder.status = 'Dispatched';
+        await internalOrder.save();
+    }
 
     return savedShipment;
 };
@@ -105,16 +116,20 @@ exports.quickDispatch = async (orderId, tenantId) => {
 
     const savedShipment = await newShipment.save();
 
-    order.status = 'Dispatched';
-    order.trackingInfo = { carrier: 'ECOTRACK', trackingNumber: trackingId };
-    await order.save();
+    // Sync order status through service to trigger inventory + audit trail
+    await OrderService.updateOrder({
+        orderId: orderId.toString(),
+        tenantId,
+        updateData: { status: 'Dispatched', trackingInfo: { carrier: 'ECOTRACK', trackingNumber: trackingId } },
+        bypassStateMachine: true
+    });
 
     return savedShipment;
 };
 
 // ─── Validate ─────────────────────────────────────────────────────────────────
 
-exports.validateShipment = async (shipmentId, tenantId, { askCollection = 1 } = {}) => {
+exports.validateShipment = async (shipmentId, tenantId, { askCollection = 1, userId = null } = {}) => {
     const shipment = await Shipment.findOne({ _id: shipmentId, tenant: tenantId });
     if (!shipment) throw AppError.notFound('Shipment');
 
@@ -129,7 +144,8 @@ exports.validateShipment = async (shipmentId, tenantId, { askCollection = 1 } = 
     shipment.shipmentStatus = 'Validated';
     shipment.activityHistory.push({
         status: 'Validated & Dispatched',
-        remarks: `Pickup requested: ${askCollection === 1 ? 'Yes' : 'No'}`
+        remarks: `Pickup requested: ${askCollection === 1 ? 'Yes' : 'No'}`,
+        changedBy: userId
     });
 
     return shipment.save();
@@ -156,13 +172,16 @@ exports.deleteShipment = async (shipmentId, tenantId) => {
     }
 
     // Revert internal order status
-    const internalOrder = isCustomOrderId(shipment.internalOrderId)
-        ? await CustomOrder.findById(shipment.internalOrder)
-        : await Order.findById(shipment.internalOrder);
-
-    if (internalOrder) {
-        internalOrder.status = 'Confirmed';
-        await internalOrder.save();
+    if (isCustomOrderId(shipment.internalOrderId)) {
+        const customOrder = await CustomOrder.findById(shipment.internalOrder);
+        if (customOrder) { customOrder.status = 'Confirmed'; await customOrder.save(); }
+    } else if (shipment.internalOrder && shipment.tenant) {
+        await OrderService.updateOrder({
+            orderId: shipment.internalOrder.toString(),
+            tenantId: shipment.tenant,
+            updateData: { status: 'Confirmed' },
+            bypassStateMachine: true
+        }).catch(() => {}); // non-fatal — shipment deletion proceeds regardless
     }
 
     await Shipment.findOneAndDelete({ _id: shipmentId, tenant: tenantId });
@@ -172,7 +191,7 @@ exports.deleteShipment = async (shipmentId, tenantId) => {
 
 // ─── Return ───────────────────────────────────────────────────────────────────
 
-exports.requestReturn = async (shipmentId, tenantId) => {
+exports.requestReturn = async (shipmentId, tenantId, userId = null) => {
     const shipment = await Shipment.findOne({ _id: shipmentId, tenant: tenantId });
     if (!shipment) throw AppError.notFound('Shipment');
 
@@ -191,18 +210,21 @@ exports.requestReturn = async (shipmentId, tenantId) => {
 
     shipment.returnRequestedAt = new Date();
     shipment.shipmentStatus = 'Return Initiated';
-    shipment.activityHistory.push({ status: 'Return Requested', remarks: 'Admin manually requested return from ECOTRACK.' });
+    shipment.activityHistory.push({ status: 'Return Requested', remarks: 'Admin manually requested return from ECOTRACK.', changedBy: userId });
 
     const updated = await shipment.save();
 
-    // Sync internal order status
-    const internalOrder = isCustomOrderId(shipment.internalOrderId)
-        ? await CustomOrder.findById(shipment.internalOrder)
-        : await Order.findById(shipment.internalOrder);
-
-    if (internalOrder) {
-        internalOrder.status = 'Cancelled';
-        await internalOrder.save();
+    // Sync internal order status to Returned (not Cancelled — item is coming back)
+    if (isCustomOrderId(shipment.internalOrderId)) {
+        const customOrder = await CustomOrder.findById(shipment.internalOrder);
+        if (customOrder) { customOrder.status = 'Returned'; await customOrder.save(); }
+    } else if (shipment.internalOrder && shipment.tenant) {
+        await OrderService.updateOrder({
+            orderId: shipment.internalOrder.toString(),
+            tenantId: shipment.tenant,
+            updateData: { status: 'Returned' },
+            bypassStateMachine: true
+        }).catch(console.error);
     }
 
     return updated;

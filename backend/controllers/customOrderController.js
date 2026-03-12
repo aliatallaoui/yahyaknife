@@ -1,10 +1,15 @@
+const mongoose = require('mongoose');
 const CustomOrder = require('../models/CustomOrder');
 const KnifeCard = require('../models/KnifeCard');
+const { ok, created, message, paginated } = require('../shared/utils/ApiResponse');
 
 exports.getCustomOrders = async (req, res) => {
     try {
-        const orders = await CustomOrder.find().populate('customer').populate('generatedKnifeCard').sort({ date: -1 });
-        res.json(orders);
+        const [orders, total] = await Promise.all([
+            CustomOrder.find().populate('customer').populate('generatedKnifeCard').sort({ date: -1 }).skip(req.skip).limit(req.limit),
+            CustomOrder.countDocuments()
+        ]);
+        res.json(paginated(orders, { total, hasNextPage: req.skip + orders.length < total }));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -13,10 +18,9 @@ exports.getCustomOrders = async (req, res) => {
 exports.createCustomOrder = async (req, res) => {
     try {
         const orderId = `CO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-        const newOrder = await CustomOrder.create({
-            ...req.body,
-            orderId
-        });
+        // Strip server-controlled fields before saving
+        const { orderId: _oid, generatedKnifeCard: _gkc, ...safeBody } = req.body;
+        const newOrder = await CustomOrder.create({ ...safeBody, orderId });
 
         // Auto-generate KnifeCard if Confirmed or In Production
         if (['Confirmed', 'In Production'].includes(newOrder.status) && !newOrder.generatedKnifeCard) {
@@ -38,7 +42,7 @@ exports.createCustomOrder = async (req, res) => {
         }
 
         const populated = await CustomOrder.findById(newOrder._id).populate('customer').populate('generatedKnifeCard');
-        res.status(201).json(populated);
+        res.status(201).json(created(populated));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -46,9 +50,12 @@ exports.createCustomOrder = async (req, res) => {
 
 exports.updateCustomOrder = async (req, res) => {
     try {
-        const order = await CustomOrder.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('customer').populate('generatedKnifeCard');
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const { orderId: _oid, generatedKnifeCard: _gkc, ...safeBody } = req.body;
+        const order = await CustomOrder.findByIdAndUpdate(req.params.id, safeBody, { new: true }).populate('customer').populate('generatedKnifeCard');
         if (!order) return res.status(404).json({ error: 'Order not found' });
-        res.json(order);
+        res.json(ok(order));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -56,9 +63,11 @@ exports.updateCustomOrder = async (req, res) => {
 
 exports.deleteCustomOrder = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const order = await CustomOrder.findByIdAndDelete(req.params.id);
         if (!order) return res.status(404).json({ error: 'Order not found' });
-        res.json({ message: 'Deleted successfully' });
+        res.json(message('Deleted successfully'));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

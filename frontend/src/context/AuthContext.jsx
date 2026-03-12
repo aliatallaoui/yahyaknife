@@ -28,7 +28,8 @@ export const AuthProvider = ({ children }) => {
                             permissions: userData.permissions || [],
                             permissionOverrides: userData.permissionOverrides || [],
                             isActive: userData.isActive,
-                            preferences: userData.preferences || {}
+                            preferences: userData.preferences || {},
+                            tenant: userData.tenant
                         });
                     } else {
                         logout();
@@ -66,7 +67,8 @@ export const AuthProvider = ({ children }) => {
                 permissions: data.permissions || [],
                 permissionOverrides: data.permissionOverrides || [],
                 isActive: data.isActive,
-                preferences: data.preferences || {} // capture incoming preferences
+                preferences: data.preferences || {},
+                tenant: data.tenant
             });
             localStorage.setItem('token', data.token);
             return true;

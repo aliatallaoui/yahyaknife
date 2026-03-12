@@ -91,13 +91,10 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     const finalTotal = subtotalAmt + courierFee - discount;
     const mainStatus = status || 'New';
 
-    // 4. Atomic write
-    const session = await mongoose.startSession();
+    // 4. Sequential write (Transactions disabled for local standalone MongoDB compatibility)
     let savedOrder;
     try {
-        session.startTransaction();
-
-        const [created] = await Order.create([{
+        const created = await Order.create({
             tenant: tenantId,
             orderId,
             customer: resolvedCustomerId,
@@ -121,7 +118,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             wilaya: shipping?.wilayaCode ? `${shipping.wilayaCode} - ${shipping.wilayaName}` : 'Unknown',
             commune: shipping?.commune || 'Unknown',
             notes: notes || ''
-        }], { session });
+        });
 
         savedOrder = created;
 
@@ -138,36 +135,35 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             lineTotal: p.quantity * p.unitPrice
         }));
         if (orderItemDocs.length > 0) {
-            await OrderItem.insertMany(orderItemDocs, { session });
+            await OrderItem.insertMany(orderItemDocs);
         }
 
-        await OrderStatusHistory.create([{
+        await OrderStatusHistory.create({
             tenant: tenantId,
             orderId: savedOrder._id,
             status: mainStatus,
             changedBy: userId || null,
             note: 'Order created via COD Flow'
-        }], { session });
+        });
 
         if (notes) {
-            await OrderNote.create([{
+            await OrderNote.create({
                 orderId: savedOrder._id,
                 type: 'Call Center',
                 content: notes,
                 createdBy: userId || null
-            }], { session });
+            });
         }
-
-        await session.commitTransaction();
     } catch (error) {
-        await session.abortTransaction();
+        if (savedOrder && savedOrder._id) {
+            // Attempt manual rollback for the primary document
+            await Order.findByIdAndDelete(savedOrder._id).catch(e => console.error("Rollback failed:", e));
+        }
         throw error;
-    } finally {
-        session.endSession();
     }
 
     // 5. Post-commit side effects (fire-and-forget)
-    const isFulfilled = ['Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(savedOrder.status);
+    const isFulfilled = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(savedOrder.status);
     const isActive = !['Refused', 'Returned', 'Cancelled', 'Cancelled by Customer'].includes(savedOrder.status);
 
     if (isFulfilled) {
@@ -192,8 +188,8 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
 
 // ─── Update ───────────────────────────────────────────────────────────────────
 
-exports.updateOrder = async ({ orderId, userId, updateData, bypassStateMachine = false }) => {
-    const existingOrder = await Order.findById(orderId);
+exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStateMachine = false }) => {
+    const existingOrder = await Order.findOne({ _id: orderId, tenant: tenantId });
     if (!existingOrder) throw AppError.notFound('Order');
 
     if (updateData.products && Array.isArray(updateData.products)) {
@@ -210,17 +206,38 @@ exports.updateOrder = async ({ orderId, userId, updateData, bypassStateMachine =
         assertTransition(oldMainStatus, newMainStatus, bypassStateMachine);
     }
 
-    // Handle postponedUntil
+    // Handle postponedUntil — must be a valid future date
     if (newMainStatus === 'Postponed') {
-        updateData.postponedUntil = updateData.postponedUntil ? new Date(updateData.postponedUntil) : null;
+        if (!updateData.postponedUntil) throw AppError.validationFailed({ postponedUntil: 'A future date is required when postponing' });
+        const postponedDate = new Date(updateData.postponedUntil);
+        if (isNaN(postponedDate.getTime()) || postponedDate <= new Date()) {
+            throw AppError.validationFailed({ postponedUntil: 'postponedUntil must be a valid future date' });
+        }
+        updateData.postponedUntil = postponedDate;
     } else if (oldMainStatus === 'Postponed' && newMainStatus !== 'Postponed') {
         updateData.postponedUntil = null;
     }
 
-    const isOldActive   = !['Cancelled', 'Returned', 'Refused'].includes(oldMainStatus);
-    const isNewActive   = !['Cancelled', 'Returned', 'Refused'].includes(newMainStatus);
-    const isOldFulfilled = ['Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(oldMainStatus);
-    const isNewFulfilled = ['Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(newMainStatus);
+    // Inject delivery timestamps on relevant transitions
+    if (updateData.status && newMainStatus !== oldMainStatus) {
+        if (['Delivered', 'Paid'].includes(newMainStatus)) {
+            updateData['deliveryStatus.deliveredAt'] = new Date();
+        }
+        if (newMainStatus === 'Refused' && updateData.refusalReason) {
+            // refusalReason passed through from caller — already in updateData
+        }
+        if (newMainStatus === 'Returned') {
+            updateData['deliveryStatus.returnedAt'] = new Date();
+        }
+    }
+
+    const INACTIVE_STATUSES = ['Cancelled', 'Cancelled by Customer', 'Returned', 'Refused'];
+    const FULFILLED_STATUSES = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'];
+
+    const isOldActive    = !INACTIVE_STATUSES.includes(oldMainStatus);
+    const isNewActive    = !INACTIVE_STATUSES.includes(newMainStatus);
+    const isOldFulfilled = FULFILLED_STATUSES.includes(oldMainStatus);
+    const isNewFulfilled = FULFILLED_STATUSES.includes(newMainStatus);
 
     // Inventory delta calculation
     const variantDeltas = {};
@@ -301,9 +318,23 @@ exports.updateOrder = async ({ orderId, userId, updateData, bypassStateMachine =
         await Customer.findByIdAndUpdate(existingOrder.customer, { $set: customerUpdates });
     }
 
-    const updatedOrder = await Order.findByIdAndUpdate(orderId, updateData, { new: true, runValidators: true })
+    // Strip immutable / protected fields before persisting
+    const { _id, tenant, createdAt, updatedAt, deletedAt, orderId: _oid, ...safeUpdate } = updateData;
+    const updatedOrder = await Order.findOneAndUpdate({ _id: orderId, tenant: tenantId }, safeUpdate, { new: true, runValidators: true })
         .populate('customer', 'name email')
         .populate({ path: 'products.variantId', populate: { path: 'productId' } });
+
+    // Persist status change to audit trail
+    if (updateData.status && newMainStatus !== oldMainStatus) {
+        OrderStatusHistory.create({
+            tenant: existingOrder.tenant,
+            orderId: existingOrder._id,
+            status: newMainStatus,
+            previousStatus: oldMainStatus,
+            changedBy: userId || null,
+            note: updateData.statusNote || ''
+        }).catch(console.error);
+    }
 
     // Post-update side effects
     if (updatedOrder.customer) updateCustomerMetrics(updatedOrder.customer._id).catch(console.error);

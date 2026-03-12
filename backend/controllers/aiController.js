@@ -134,7 +134,7 @@ const Category = require('../models/Category');
 async function executeTool(call, tenantId) {
     try {
         if (call.name === 'get_financial_summary') {
-            const tenantFilter = tenantId ? { tenant: tenantId } : {};
+            const tenantFilter = { tenant: tenantId };
             const expenses = await Expense.aggregate([{ $match: tenantFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
             const revenues = await Revenue.aggregate([{ $match: tenantFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
             const manualExpenses = expenses.length > 0 ? expenses[0].total : 0;
@@ -155,7 +155,7 @@ async function executeTool(call, tenantId) {
         }
 
         if (call.name === 'get_active_shipments') {
-            const tenantFilter = tenantId ? { tenant: tenantId } : {};
+            const tenantFilter = { tenant: tenantId };
             const active = await Shipment.countDocuments({ ...tenantFilter, shipmentStatus: { $in: ['Created in Courier', 'In Transit', 'Out for Delivery'] } });
             const delivered = await Shipment.countDocuments({ ...tenantFilter, shipmentStatus: 'Delivered' });
             const returned = await Shipment.countDocuments({ ...tenantFilter, shipmentStatus: { $in: ['Returned', 'Return Initiated'] } });
@@ -168,7 +168,7 @@ async function executeTool(call, tenantId) {
             if (!description || !amount) return { error: "Missing required fields: description or amount" };
 
             const newExpense = await Expense.create({
-                ...(tenantId ? { tenant: tenantId } : {}),
+                tenant: tenantId,
                 description,
                 amount: Number(amount),
                 category: category || 'General',
@@ -182,7 +182,7 @@ async function executeTool(call, tenantId) {
             if (!name || !phone) return { error: "Missing required fields: name or phone" };
 
             const newCust = await Customer.create({
-                ...(tenantId ? { tenant: tenantId } : {}),
+                tenant: tenantId,
                 name,
                 phone,
                 wilayaName: wilaya || '',
@@ -296,6 +296,8 @@ async function executeTool(call, tenantId) {
 const handleChat = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
+        if (!tenantId) return res.status(401).json({ error: 'Tenant context required' });
+
         const { messages } = req.body;
 
         if (!Array.isArray(messages) || messages.length === 0) {

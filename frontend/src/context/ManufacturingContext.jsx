@@ -23,10 +23,10 @@ export const ManufacturingProvider = ({ children }) => {
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/production/analytics`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
-            if (matRes.ok) { const md = await matRes.json(); setMaterials(Array.isArray(md) ? md : []); }
-            if (bomRes.ok) { const bd = await bomRes.json(); setBoms(Array.isArray(bd) ? bd : []); }
-            if (poRes.ok) { const pd = await poRes.json(); setProductionOrders(Array.isArray(pd) ? pd : []); }
-            if (statRes.ok) { setAnalytics(await statRes.json()); }
+            if (matRes.ok) { const md = await matRes.json(); setMaterials(md.data ?? (Array.isArray(md) ? md : [])); }
+            if (bomRes.ok) { const bd = await bomRes.json(); setBoms(bd.data ?? (Array.isArray(bd) ? bd : [])); }
+            if (poRes.ok) { const pd = await poRes.json(); setProductionOrders(pd.data ?? (Array.isArray(pd) ? pd : [])); }
+            if (statRes.ok) { const sd = await statRes.json(); setAnalytics(sd.data ?? sd); }
         } catch (error) {
             console.error("Error fetching manufacturing data:", error);
         } finally {
@@ -47,7 +47,8 @@ export const ManufacturingProvider = ({ children }) => {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(await res.text());
-        const newMat = await res.json();
+        const json = await res.json();
+        const newMat = json.data ?? json;
         setMaterials(prev => [...prev, newMat]);
         return newMat;
     };
@@ -59,7 +60,8 @@ export const ManufacturingProvider = ({ children }) => {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(await res.text());
-        const updated = await res.json();
+        const json = await res.json();
+        const updated = json.data ?? json;
         setMaterials(prev => prev.map(m => m._id === id ? updated : m));
         return updated;
     };
@@ -81,7 +83,8 @@ export const ManufacturingProvider = ({ children }) => {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(await res.text());
-        const newBom = await res.json();
+        const json = await res.json();
+        const newBom = json.data ?? json;
         setBoms(prev => [...prev, newBom]);
         return newBom;
     };
@@ -93,7 +96,8 @@ export const ManufacturingProvider = ({ children }) => {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(await res.text());
-        const updated = await res.json();
+        const json = await res.json();
+        const updated = json.data ?? json;
         setBoms(prev => prev.map(b => b._id === id ? updated : b));
         return updated;
     };
@@ -115,7 +119,8 @@ export const ManufacturingProvider = ({ children }) => {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(await res.text());
-        const newPo = await res.json();
+        const json = await res.json();
+        const newPo = json.data ?? json;
         setProductionOrders(prev => [newPo, ...prev]);
         return newPo;
     };
@@ -127,7 +132,8 @@ export const ManufacturingProvider = ({ children }) => {
             body: JSON.stringify(statusData)
         });
         if (!res.ok) throw new Error(await res.text());
-        const updated = await res.json();
+        const json = await res.json();
+        const updated = json.data ?? json;
         setProductionOrders(prev => prev.map(po => po._id === id ? updated : po));
 
         // If it was completed, we need to refresh materials because inventory was deducted

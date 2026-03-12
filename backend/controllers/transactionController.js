@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Expense = require('../models/Expense');
 const Revenue = require('../models/Revenue');
 
@@ -68,6 +69,8 @@ exports.updateTransaction = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id))
+            return res.status(400).json({ message: 'Invalid transaction ID' });
         const { type, amount, date, description, category } = req.body;
 
         if (type === 'revenue') {
@@ -102,6 +105,8 @@ exports.deleteTransaction = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id))
+            return res.status(400).json({ message: 'Invalid transaction ID' });
         const { type } = req.query;
 
         if (type === 'revenue') {

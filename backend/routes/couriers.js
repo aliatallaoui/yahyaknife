@@ -8,6 +8,7 @@ const {
     createCourier,
     updateCourier,
     settleCourierCash,
+    getSettlementHistory,
     assignOrdersToCourier,
     testCourierConnection
 } = require('../controllers/courierController');
@@ -56,6 +57,7 @@ router.route('/:id')
     .put(requirePermission('couriers.edit'), updateCourier);
 
 router.post('/:id/settle', requirePermission('finance.settle.courier'), settleCourierCash);
+router.get('/:id/settlements', requirePermission('finance.settle.courier'), getSettlementHistory);
 router.post('/:id/dispatch', requirePermission('couriers.edit'), assignOrdersToCourier);
 
 // Pricing Rules

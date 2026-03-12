@@ -58,6 +58,26 @@ const PERMS = {
     HR_PAYROLL_RUN:         'hr.payroll.run',
     HR_PAYROLL_APPROVE:     'hr.payroll.approve',
 
+    // ── Analytics ────────────────────────────────────────────────────────────
+    ANALYTICS_VIEW:             'analytics.view',
+    ANALYTICS_FINANCIAL_VIEW:   'analytics.financial.view',
+
+    // ── Intelligence ─────────────────────────────────────────────────────────
+    INTELLIGENCE_VIEW:          'intelligence.view',
+
+    // ── Workshop (add-on) ────────────────────────────────────────────────────
+    WORKSHOP_VIEW:              'workshop.view',
+    WORKSHOP_EDIT:              'workshop.edit',
+    WORKSHOP_COMPLETE_STAGE:    'manufacturing.complete_stage',
+
+    // ── Projects ─────────────────────────────────────────────────────────────
+    PROJECTS_VIEW:              'projects.view',
+    PROJECTS_EDIT:              'projects.edit',
+
+    // ── Support ──────────────────────────────────────────────────────────────
+    SUPPORT_VIEW:               'support.view',
+    SUPPORT_EDIT:               'support.edit',
+
     // ── System ───────────────────────────────────────────────────────────────
     SYSTEM_ROLES:           'system.roles',
     SYSTEM_SETTINGS:        'system.settings',

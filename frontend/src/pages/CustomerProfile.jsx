@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
-import { ArrowLeft, ArrowRight, User, Phone, MapPin, Mail, Calendar, ShieldAlert, CheckCircle2, Package, TrendingUp, AlertCircle, RefreshCw, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Phone, MapPin, Mail, Calendar, ShieldAlert, CheckCircle2, Package, TrendingUp, AlertCircle, RefreshCw, MessageSquare, Plus } from 'lucide-react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
@@ -12,13 +12,16 @@ import { AuthContext } from '../context/AuthContext';
 export default function CustomerProfile() {
     const { id } = useParams();
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const { customers, deleteCustomer, updateCustomer } = useCustomer();
-    const { hasPermission } = useContext(AuthContext);
+    const { hasPermission, token } = useContext(AuthContext);
     const [customer, setCustomer] = useState(null);
     const [orders, setOrders] = useState([]);
     const [tickets, setTickets] = useState([]);
     const [activeTab, setActiveTab] = useState('orders');
     const [loading, setLoading] = useState(true);
+    const [blacklistConfirm, setBlacklistConfirm] = useState(false);
+    const [blacklistError, setBlacklistError] = useState(null);
 
     useEffect(() => {
         const loadCustomerData = async () => {
@@ -27,14 +30,15 @@ export default function CustomerProfile() {
 
             try {
                 // Fetch fresh profile and orders and tickets
+                const authHeader = { headers: { Authorization: `Bearer ${token}` } };
                 const [ordersRes, profilesRes, ticketsRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/${id}/orders`),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`), // Refresh full list to get newest metrics for this ID
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/support?customerId=${id}`)
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/${id}/orders`, authHeader),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`, authHeader), // Refresh full list to get newest metrics for this ID
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/support?customerId=${id}`, authHeader)
                 ]);
 
                 if (ordersRes.ok) setOrders(await ordersRes.json());
-                if (ticketsRes.ok) setTickets(await ticketsRes.json());
+                if (ticketsRes.ok) { const tj = await ticketsRes.json(); setTickets(tj.data ?? (Array.isArray(tj) ? tj : [])); }
 
                 if (profilesRes.ok) {
                     const allCustomers = await profilesRes.json();
@@ -54,19 +58,18 @@ export default function CustomerProfile() {
         if (id) loadCustomerData();
     }, [id, customers]);
 
-    const handleToggleBlacklist = async () => {
+    const handleToggleBlacklist = () => {
         if (!customer) return;
-        const confirmMsg = customer.blacklisted
-            ? "Pardon this customer? They will be allowed to order again."
-            : "Blacklist this customer? Future orders will be auto-flagged.";
+        setBlacklistConfirm(true);
+    };
 
-        if (window.confirm(confirmMsg)) {
-            try {
-                await updateCustomer(id, { blacklisted: !customer.blacklisted });
-                setCustomer({ ...customer, blacklisted: !customer.blacklisted });
-            } catch (error) {
-                alert("Failed to update blacklist status.");
-            }
+    const confirmToggleBlacklist = async () => {
+        setBlacklistConfirm(false);
+        try {
+            await updateCustomer(id, { blacklisted: !customer.blacklisted });
+            setCustomer({ ...customer, blacklisted: !customer.blacklisted });
+        } catch (error) {
+            setBlacklistError("Failed to update blacklist status.");
         }
     };
 
@@ -95,18 +98,29 @@ export default function CustomerProfile() {
     }));
 
     return (
+        <>
         <div className="flex flex-col gap-6 max-w-[1400px]">
             <PageHeader
                 title={customer.name}
                 subtitle={`${t('crm.customerProfileSubtitle', 'Intelligence profile for')} ${customer.email || customer.name}`}
                 variant="customers"
                 actions={
-                    <button
-                        onClick={() => navigate('/customers')}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none text-xs"
-                    >
-                        <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('crm.directory', 'Directory')}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {hasPermission('orders.create') && customer && (
+                            <button
+                                onClick={() => navigate(`/sales?newOrder=1&phone=${encodeURIComponent(customer.phone || '')}&name=${encodeURIComponent(customer.name || '')}`)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-700 font-bold rounded-xl transition-all border border-white/30 active:scale-95 leading-none text-xs hover:bg-white/90 shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" /> {t('crm.newOrder', 'New Order')}
+                            </button>
+                        )}
+                        <button
+                            onClick={() => navigate('/customers')}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all border border-white/10 backdrop-blur-md active:scale-95 leading-none text-xs"
+                        >
+                            <ArrowLeft className="w-4 h-4 ltr:scale-x-100 rtl:-scale-x-100" /> {t('crm.directory', 'Directory')}
+                        </button>
+                    </div>
                 }
             />
 
@@ -276,7 +290,7 @@ export default function CustomerProfile() {
                                     <Phone className="w-3.5 h-3.5" /> {t('crm.requiresPhoneAuth', 'Requires Phone Auth')}
                                 </span>
                             )}
-                            {!customer.isSuspicious && !customer.blacklisted && (
+                            {customer.refusalRate <= 30 && !customer.blacklisted && (
                                 <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-lg border border-emerald-100 flex items-center gap-1">
                                     <CheckCircle2 className="w-3.5 h-3.5" /> {t('crm.trusted', 'Trusted')} Account
                                 </span>
@@ -460,5 +474,34 @@ export default function CustomerProfile() {
                 </div>
             </div>
         </div>
+
+        {/* Blacklist confirm dialog */}
+        {blacklistConfirm && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
+                    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-4">
+                        <ShieldAlert className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <h3 className="text-base font-black text-gray-900 mb-2">
+                        {customer?.blacklisted ? t('crm.confirmPardon', 'Remove blacklist?') : t('crm.confirmBlacklist', 'Blacklist this customer?')}
+                    </h3>
+                    <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                        {customer?.blacklisted
+                            ? t('crm.confirmPardonDesc', 'This customer will be allowed to place orders again.')
+                            : t('crm.confirmBlacklistDesc', 'Future orders from this customer will be auto-flagged for review.')}
+                    </p>
+                    {blacklistError && <p className="text-xs text-red-600 font-semibold mb-3">{blacklistError}</p>}
+                    <div className="flex gap-3 justify-end">
+                        <button onClick={() => setBlacklistConfirm(false)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                            {t('common.cancel', 'Cancel')}
+                        </button>
+                        <button onClick={confirmToggleBlacklist} className="px-4 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors">
+                            {customer?.blacklisted ? t('crm.removeBlacklist', 'Remove Blacklist') : t('crm.addBlacklist', 'Blacklist')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }

@@ -1,6 +1,7 @@
 const Courier = require('../models/Courier');
 const Order = require('../models/Order');
-const Revenue = require('../models/Revenue');
+const OrderStatusHistory = require('../models/OrderStatusHistory');
+const CourierSettlement = require('../models/CourierSettlement');
 
 // Get all couriers with calculated KPIs
 exports.getCouriers = async (req, res) => {
@@ -42,19 +43,21 @@ exports.updateCourier = async (req, res) => {
 exports.settleCourierCash = async (req, res) => {
     try {
         const { id } = req.params;
-        const { amountToSettle } = req.body;
+        const { amountToSettle, notes } = req.body;
+        const tenantId = req.user.tenant;
 
         if (!amountToSettle || amountToSettle <= 0) {
             return res.status(400).json({ message: 'Settlement amount must be a positive number' });
         }
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user?.tenant });
+        const courier = await Courier.findOne({ _id: id, tenant: tenantId });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         if (amountToSettle > courier.pendingRemittance) {
             return res.status(400).json({ message: `Settlement amount (${amountToSettle}) exceeds pending remittance (${courier.pendingRemittance})` });
         }
 
+        const previousPendingRemittance = courier.pendingRemittance;
         courier.cashSettled += amountToSettle;
         await courier.save(); // pre-save hook updates pendingRemittance naturally
 
@@ -62,11 +65,12 @@ exports.settleCourierCash = async (req, res) => {
         // Otherwise, the Finance Hub has 'Delivered' orders that never flip to 'Paid' (Settled Revenue)
         // Determine which orders are fully covered by this settlement (oldest first)
         const unpaidOrders = await Order.find({
-            tenant: req.user.tenant,
+            tenant: tenantId,
             courier: id,
             status: 'Delivered',
-            paymentStatus: { $ne: 'Paid' }
-        }, { _id: 1, financials: 1, totalAmount: 1 }).sort({ date: 1 }).lean();
+            paymentStatus: { $ne: 'Paid' },
+            deletedAt: null
+        }, { _id: 1, financials: 1, totalAmount: 1 }).sort({ createdAt: 1 }).lean();
 
         let remainingToSettle = amountToSettle;
         const settledOrderIds = [];
@@ -85,18 +89,63 @@ exports.settleCourierCash = async (req, res) => {
         // Single batch update instead of N saves
         if (settledOrderIds.length > 0) {
             await Order.updateMany(
-                { _id: { $in: settledOrderIds }, tenant: req.user.tenant },
+                { _id: { $in: settledOrderIds }, tenant: tenantId },
                 { $set: { paymentStatus: 'Paid', status: 'Paid' } }
+            );
+
+            // Audit trail: create an OrderStatusHistory record for each settled order
+            const now = new Date();
+            await OrderStatusHistory.insertMany(
+                settledOrderIds.map(orderId => ({
+                    tenant: tenantId,
+                    orderId,
+                    status: 'Paid',
+                    previousStatus: 'Delivered',
+                    changedBy: req.user._id,
+                    changedAt: now,
+                    note: 'Settled via courier cash payment'
+                }))
             );
         }
 
-        const updatedOrders = settledOrderIds;
+        // Persist the settlement event for audit trail + finance reporting
+        const settlement = await CourierSettlement.create({
+            tenant: tenantId,
+            courier: id,
+            settledBy: req.user._id,
+            amountSettled: amountToSettle,
+            ordersSettled: settledOrderIds,
+            remainingAmount: remainingToSettle,
+            previousPendingRemittance,
+            notes: notes || ''
+        });
 
         res.json({
             message: 'Cash settled successfully and pushed to Financial Ledger via Order Payment Status.',
-            courier,
-            ordersSettled: updatedOrders.length
+            settlement,
+            ordersSettled: settledOrderIds.length
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Settlement history for a courier
+exports.getSettlementHistory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const tenantId = req.user.tenant;
+
+        const courier = await Courier.findOne({ _id: id, tenant: tenantId });
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
+
+        const settlements = await CourierSettlement.find({ courier: id, tenant: tenantId })
+            .populate('settledBy', 'name email')
+            .sort({ settledAt: -1 });
+
+        const totalSettled = settlements.reduce((sum, s) => sum + s.amountSettled, 0);
+
+        res.json({ courierId: id, totalSettled, settlements });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -133,7 +182,7 @@ exports.recalculateCourierKPIs = async (courierId) => {
         if (!courier) return;
 
         const [kpiData] = await Order.aggregate([
-            { $match: { courier: courier._id } },
+            { $match: { courier: courier._id, tenant: courier.tenant } },
             {
                 $group: {
                     _id: null,

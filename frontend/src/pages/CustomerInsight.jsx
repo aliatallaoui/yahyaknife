@@ -23,6 +23,7 @@ export default function CustomerInsight() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [saveError, setSaveError] = useState(null);
 
     useEffect(() => {
         const fetchCustomerData = async () => {
@@ -61,8 +62,9 @@ export default function CustomerInsight() {
             if (editingCustomer) await updateCustomer(editingCustomer._id, payload);
             else await createCustomer(payload);
             setIsModalOpen(false);
+            setSaveError(null);
         } catch (error) {
-            alert("Failed to save customer.");
+            setSaveError(error?.response?.data?.message || error?.message || 'Failed to save customer.');
         }
     };
 
@@ -274,7 +276,7 @@ export default function CustomerInsight() {
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-1 rounded-md w-fit border border-rose-100">
                                                 <ShieldAlert className="w-3.5 h-3.5" /> {t('crm.blacklisted', 'Blacklisted')}
                                             </div>
-                                        ) : customer.isSuspicious ? (
+                                        ) : customer.refusalRate > 30 ? (
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md w-fit border border-amber-100">
                                                     <AlertCircle className="w-3.5 h-3.5" /> {t('crm.highRisk', 'High Risk')} ({Math.round(customer.refusalRate)}% {t('crm.refusalText', 'Refusal')})
@@ -311,10 +313,18 @@ export default function CustomerInsight() {
             {isModalOpen && (
                 <CustomerModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={() => { setIsModalOpen(false); setSaveError(null); }}
                     onSubmit={handleModalSubmit}
                     initialData={editingCustomer}
                 />
+            )}
+
+            {saveError && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl max-w-sm">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="flex-1 leading-snug">{saveError}</span>
+                    <button onClick={() => setSaveError(null)} className="ml-2 text-gray-400 hover:text-white transition-colors shrink-0">✕</button>
+                </div>
             )}
         </div>
     );

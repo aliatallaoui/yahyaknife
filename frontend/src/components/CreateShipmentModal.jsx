@@ -87,7 +87,8 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                 shipping: o.shipping || {}
             }));
 
-            const pendingCust = custRes.data.filter(o => ['Pending', 'Confirmed', 'In Production'].includes(o.status)).map(o => ({
+            const custList = custRes.data?.data ?? (Array.isArray(custRes.data) ? custRes.data : []);
+            const pendingCust = custList.filter(o => ['Pending', 'Confirmed', 'In Production'].includes(o.status)).map(o => ({
                 id: o._id,
                 displayId: o.customOrderId,
                 customer: o.clientName,

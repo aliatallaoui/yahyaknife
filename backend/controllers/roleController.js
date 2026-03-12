@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Role = require('../models/Role');
 const { PERMISSIONS } = require('../config/permissions');
 
@@ -52,6 +53,8 @@ exports.createRole = async (req, res) => {
 // @access  Private (roles.manage)
 exports.updateRole = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid ID' });
         const { name, description, permissions } = req.body;
         const role = await Role.findById(req.params.id);
 
@@ -76,6 +79,8 @@ exports.updateRole = async (req, res) => {
 // @access  Private (roles.manage)
 exports.deleteRole = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid ID' });
         const role = await Role.findById(req.params.id);
         if (!role) return res.status(404).json({ message: 'Role not found' });
         if (role.isSystemRole) {

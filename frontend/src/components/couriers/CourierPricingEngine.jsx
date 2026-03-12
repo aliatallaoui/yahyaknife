@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Edit3, ShieldAlert, ArrowDownUp } from 'lucide-react';
+import { Plus, Trash2, Edit3, ShieldAlert, ArrowDownUp, AlertTriangle, Save } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function CourierPricingEngine({ courierId }) {
@@ -11,6 +11,8 @@ export default function CourierPricingEngine({ courierId }) {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+    const [confirmDelete, setConfirmDelete] = useState(null); // ruleId
     
     // Form state
     const [formData, setFormData] = useState({
@@ -69,12 +71,15 @@ export default function CourierPricingEngine({ courierId }) {
             handleCancelEdit();
         } catch (error) {
             console.error('Error saving pricing rule:', error);
-            alert(error.response?.data?.message || 'Error saving rule');
+            setErrorMsg(error.response?.data?.message || 'Error saving rule');
         }
     };
 
-    const handleDelete = async (ruleId) => {
-        if (!window.confirm(t('common.confirm_delete', 'Are you sure you want to delete this rule?'))) return;
+    const handleDelete = (ruleId) => setConfirmDelete(ruleId);
+
+    const confirmDeleteRule = async () => {
+        const ruleId = confirmDelete;
+        setConfirmDelete(null);
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/pricing/${ruleId}`, {
@@ -83,6 +88,7 @@ export default function CourierPricingEngine({ courierId }) {
             fetchRules();
         } catch (error) {
             console.error('Error deleting pricing rule:', error);
+            setErrorMsg('Failed to delete pricing rule.');
         }
     };
 
@@ -120,6 +126,31 @@ export default function CourierPricingEngine({ courierId }) {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Error banner */}
+            {errorMsg && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{errorMsg}</span>
+                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
+            {/* Delete rule confirm */}
+            {confirmDelete && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">{t('common.confirm_delete', 'Delete this pricing rule?')}</h3>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={confirmDeleteRule} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 text-start">
                 <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>

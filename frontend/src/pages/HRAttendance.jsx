@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, CheckSquare, XCircle, AlertCircle, RefreshCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock, CheckSquare, XCircle, AlertCircle, RefreshCcw, Search } from 'lucide-react';
+import { useHotkey } from '../hooks/useHotkey';
+import { getAttendanceStatusColor } from '../constants/statusColors';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 import axios from 'axios';
@@ -9,7 +11,7 @@ import { AuthContext } from '../context/AuthContext';
 
 export default function HRAttendance() {
     const { t } = useTranslation();
-    const { hasPermission } = React.useContext(AuthContext);
+    const { hasPermission, token } = React.useContext(AuthContext);
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,12 +19,13 @@ export default function HRAttendance() {
     const fetchAttendance = async () => {
         setLoading(true);
         try {
+            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             const [empRes, attRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${date}`)
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, authHeader),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${date}`, authHeader)
             ]);
-            const employees = empRes.data;
-            const attendances = attRes.data;
+            const employees = empRes.data?.data ?? empRes.data;
+            const attendances = attRes.data?.data ?? attRes.data;
 
             // Merge active employees with valid pointage
             const activeEmployees = employees.filter(e => e.status !== 'Terminated');
@@ -45,25 +48,27 @@ export default function HRAttendance() {
         fetchAttendance();
     }, [date]);
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'Present': return 'bg-emerald-100 text-emerald-800';
-            case 'Late': return 'bg-amber-100 text-amber-800';
-            case 'Completed with Recovery': return 'bg-blue-100 text-blue-800';
-            case 'Incomplete': return 'bg-orange-100 text-orange-800';
-            case 'Absent': return 'bg-rose-100 text-rose-800';
-            case 'Overtime': return 'bg-indigo-100 text-indigo-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
+    const getStatusStyle = getAttendanceStatusColor;
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
+
+    const filteredRecords = records.filter(item =>
+        item.employeeId.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.employeeId.department?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     // Modal State
     const [modalConfig, setModalConfig] = useState(null); // { employeeId, type, existingTime }
     const [timeInput, setTimeInput] = useState('');
+    const [modalError, setModalError] = useState(null);
 
     const openModal = (employeeId, type, existingTime = '') => {
         setModalConfig({ employeeId, type, existingTime });
         setTimeInput(existingTime || moment().format('HH:mm'));
+        setModalError(null);
     };
 
     const submitModal = async () => {
@@ -73,28 +78,20 @@ export default function HRAttendance() {
         let timestamp = null;
         if (timeInput.trim() !== '') {
             if (!/^\d{2}:\d{2}$/.test(timeInput)) {
-                alert(t('hr.alertInvalidFormat'));
+                setModalError(t('hr.alertInvalidFormat', 'Invalid time format. Use HH:MM.'));
                 return;
             }
             timestamp = moment(`${date} ${timeInput}`, 'YYYY-MM-DD HH:mm').toISOString();
         }
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
-                employeeId,
-                type,
-                timestamp,
-                date
-            });
-            if (res.status === 200 || res.status === 201) {
-                fetchAttendance();
-                setModalConfig(null);
-            } else {
-                alert(t('hr.alertFailedRecord'));
-            }
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
+                employeeId, type, timestamp, date
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchAttendance();
+            setModalConfig(null);
         } catch (error) {
-            console.error(error);
-            alert(error.response?.data?.error || t('hr.alertNetworkErrorRecord'));
+            setModalError(error.response?.data?.error || t('hr.alertNetworkErrorRecord', 'Failed to record attendance.'));
         }
     };
 
@@ -103,21 +100,13 @@ export default function HRAttendance() {
         const { employeeId, type } = modalConfig;
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
-                employeeId,
-                type,
-                timestamp: null,
-                date
-            });
-            if (res.status === 200 || res.status === 201) {
-                fetchAttendance();
-                setModalConfig(null);
-            } else {
-                alert(t('hr.alertFailedClear'));
-            }
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
+                employeeId, type, timestamp: null, date
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchAttendance();
+            setModalConfig(null);
         } catch (error) {
-            console.error(error);
-            alert(error.response?.data?.error || t('hr.alertNetworkErrorClear'));
+            setModalError(error.response?.data?.error || t('hr.alertNetworkErrorClear', 'Failed to clear attendance.'));
         }
     };
 
@@ -129,7 +118,18 @@ export default function HRAttendance() {
                 variant="hr"
                 actions={
                     <div className="flex flex-wrap gap-3">
-                        <div className="flex items-center gap-2 bg-white border border-emerald-300 rounded-xl px-3 py-1.5 shadow-sm ring-1 ring-emerald-500/5">
+                            <div className="relative">
+                            <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                ref={searchRef}
+                                type="text"
+                                placeholder={t('hr.searchEmployeePlaceholder', 'Search... (Press /)')}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="ps-9 pe-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all w-44 font-bold"
+                            />
+                        </div>
+                    <div className="flex items-center gap-2 bg-white border border-emerald-300 rounded-xl px-3 py-1.5 shadow-sm ring-1 ring-emerald-500/5">
                             <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">{t('hr.lblDate', 'Date')}</span>
                             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                                 className="bg-transparent text-gray-900 text-sm outline-none cursor-pointer font-black" />
@@ -141,6 +141,23 @@ export default function HRAttendance() {
                     </div>
                 }
             />
+
+            {/* Clock-in alert strip — only for today */}
+            {!loading && date === moment().format('YYYY-MM-DD') && (() => {
+                const notIn = records.filter(item => !item.record?.morningIn);
+                if (notIn.length === 0) return null;
+                return (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                        <span className="font-semibold text-amber-800">
+                            {notIn.length} employee{notIn.length !== 1 ? 's' : ''} {t('hr.notClockedIn', 'have not clocked in yet')}:
+                        </span>
+                        <span className="text-amber-700 truncate">
+                            {notIn.map(item => item.employeeId.name).join(', ')}
+                        </span>
+                    </div>
+                );
+            })()}
 
             {/* Attendance Grid */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
@@ -157,7 +174,10 @@ export default function HRAttendance() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {records.map(item => {
+                            {!loading && filteredRecords.length === 0 && (
+                                <tr><td colSpan="6" className="p-8 text-center text-sm text-gray-400">{t('hr.noEmployeesFound', 'No employees match your search.')}</td></tr>
+                            )}
+                            {filteredRecords.map(item => {
                                 const emp = item.employeeId;
                                 const att = item.record || {};
                                 return (
@@ -230,9 +250,15 @@ export default function HRAttendance() {
                             <input
                                 type="time"
                                 value={timeInput}
-                                onChange={(e) => setTimeInput(e.target.value)}
+                                onChange={(e) => { setTimeInput(e.target.value); setModalError(null); }}
                                 className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-lg font-mono px-4 py-3 border outline-none cursor-pointer"
                             />
+                            {modalError && (
+                                <div className="mt-3 flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                    {modalError}
+                                </div>
+                            )}
                         </div>
 
                         <div className="px-6 py-4 bg-gray-50 flex gap-3 ltr:flex-row-reverse rtl:flex-row border-t border-gray-100">

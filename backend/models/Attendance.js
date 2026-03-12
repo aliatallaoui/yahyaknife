@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
     date: { type: String, required: true }, // Format: YYYY-MM-DD
 
@@ -27,7 +28,7 @@ const attendanceSchema = new mongoose.Schema({
     notes: { type: String }
 }, { timestamps: true });
 
-// Ensure one record per employee per day
-attendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
+// Ensure one record per employee per day per tenant
+attendanceSchema.index({ tenant: 1, employeeId: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

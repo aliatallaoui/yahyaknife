@@ -52,9 +52,17 @@ const PERMISSIONS = {
         'overview.read',
         'callcenter.process_orders', 'callcenter.view_reports', 'callcenter.manage_assignments'
     ],
+    // ── Analytics ─────────────────────────────────────────────────────────────
+    analytics: [
+        'analytics.view', 'analytics.financial.view'
+    ],
+    // ── Intelligence ──────────────────────────────────────────────────────────
+    intelligence: [
+        'intelligence.view'
+    ],
     // ── Support ───────────────────────────────────────────────────────────────
     support: [
-        'support.view', 'support.create_ticket', 'support.send_reply', 'support.update_status', 'support.process_rma'
+        'support.view', 'support.edit', 'support.create_ticket', 'support.send_reply', 'support.update_status', 'support.process_rma'
     ],
     // ── Legacy / other domains (unchanged) ───────────────────────────────────
     financial: [
@@ -84,7 +92,13 @@ const PERMISSIONS = {
         'manufacturing.update_bom', 'manufacturing.create_production_order', 'manufacturing.start_production',
         'manufacturing.complete_stage', 'manufacturing.complete_production', 'manufacturing.view_costs'
     ],
+    // ── Workshop (knife cards, tools, custom orders) ──────────────────────────
+    workshop: [
+        'workshop.view', 'workshop.edit'
+    ],
     projects: [
+        'projects.view', 'projects.edit',
+        // legacy strings kept for existing roles
         'projects.read', 'projects.create', 'projects.update', 'projects.manage_tasks',
         'projects.manage_milestones', 'projects.export'
     ],

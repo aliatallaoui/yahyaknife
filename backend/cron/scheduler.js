@@ -1,12 +1,10 @@
 const cron = require('node-cron');
 const ProductVariant = require('../models/ProductVariant');
-const Order = require('../models/Order');
 const Customer = require('../models/Customer');
-const Courier = require('../models/Courier');
-const Supplier = require('../models/Supplier');
-const moment = require('moment');
+const Tenant = require('../models/Tenant');
 const { initCronJobs } = require('./trackerSync');
 const { generateKPISnapshots } = require('../jobs/kpiGenerator');
+const { runDailyRollup, runWeeklyReport } = require('../jobs/dailyRollup');
 
 // Background Worker Scheduler
 const initJobs = () => {
@@ -29,33 +27,7 @@ const initJobs = () => {
         }
     });
 
-    // 2. Weekly Financial Report (Runs every Sunday at 11:59 PM)
-    cron.schedule('59 23 * * 0', async () => {
-        console.log("[CRON] Compiling Weekly Financial Report...");
-        try {
-            const startOfWeek = moment().startOf('week').toDate();
-            const endOfWeek = moment().endOf('week').toDate();
-
-            const weeklySales = await Order.aggregate([
-                { $match: { date: { $gte: startOfWeek, $lte: endOfWeek }, status: { $ne: 'Cancelled' } } },
-                { $group: { _id: null, total: { $sum: "$totalAmount" }, count: { $sum: 1 }, netProfit: { $sum: "$financials.netProfit" } } }
-            ]);
-
-            const report = {
-                period: `${moment(startOfWeek).format('YYYY-MM-DD')} to ${moment(endOfWeek).format('YYYY-MM-DD')}`,
-                grossSales: weeklySales[0]?.total || 0,
-                orders: weeklySales[0]?.count || 0,
-                netProfit: weeklySales[0]?.netProfit || 0
-            };
-
-            console.log("[CRON] Weekly Report Compiled:", report);
-            // Save this to a 'Reports' collection or email the Admin
-        } catch (err) {
-            console.error("[CRON] Error (Weekly Report):", err);
-        }
-    });
-
-    // 3. Daily Fraud Sweep & Courier Auto-Assignment logic (Runs at 1 AM)
+    // 2. Daily Fraud Sweep & Courier Auto-Assignment logic (Runs at 1 AM)
     cron.schedule('0 1 * * *', async () => {
         console.log("[CRON] Running COD Fraud Sweep & Courier Sync...");
         try {
@@ -80,10 +52,22 @@ const initJobs = () => {
         }
     });
 
-    // 4. Ecotrack API Status Syncer
+    // 3. Nightly Daily Rollup (Runs at 00:30 — previous day is fully closed by then)
+    cron.schedule('30 0 * * *', async () => {
+        console.log("[CRON] Running nightly DailyRollup...");
+        await runDailyRollup(); // defaults to yesterday
+    });
+
+    // 4. Weekly Report (Runs Sunday at 23:59 — aggregates Mon–Sun daily rollups)
+    cron.schedule('59 23 * * 0', async () => {
+        console.log("[CRON] Running weekly WeeklyReport...");
+        await runWeeklyReport();
+    });
+
+    // 5. Ecotrack API Status Syncer
     initCronJobs();
 
-    // 5. High-Performance Dashboard Materialized View Generator (Runs every 5 minutes)
+    // 6. High-Performance Dashboard Materialized View Generator (Runs every 5 minutes)
     cron.schedule('*/5 * * * *', async () => {
         // Also run it off-cycle to pre-warm the DB. In production we might detach this if workers scale horizontally.
         await generateKPISnapshots();

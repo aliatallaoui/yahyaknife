@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CalendarDays, Flag, MessageSquare, Paperclip, Activity, Target, AlignLeft } from 'lucide-react';
+import { ArrowLeft, Clock, CalendarDays, Flag, MessageSquare, Paperclip, Activity, Target, AlignLeft, CheckCircle2, Circle, AlertCircle, FileText, FolderOpen } from 'lucide-react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +12,7 @@ export default function ProjectDetail() {
     const isAr = i18n.language === 'ar';
     const TAB_OPTIONS = [t('tabTasks'), t('tabMilestones'), t('tabDocs'), t('tabActivity')];
 
+    const { token } = useContext(AuthContext);
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -21,9 +23,12 @@ export default function ProjectDetail() {
     useEffect(() => {
         const fetchDeepProject = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/${id}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 if (res.ok) {
-                    setProjectData(await res.json());
+                    const json = await res.json();
+                    setProjectData(json.data ?? json);
                 } else {
                     console.error("Failed to load project details");
                 }
@@ -45,6 +50,12 @@ export default function ProjectDetail() {
     if (!projectData || !projectData.project) return <div className="p-8 text-center text-gray-500">{t('projectNotFound')}</div>;
 
     const { project, tasks, milestones, activity } = projectData;
+
+    const tabCounts = {
+        [t('tabTasks')]: tasks?.length || 0,
+        [t('tabMilestones')]: milestones?.length || 0,
+        [t('tabActivity')]: activity?.length || 0,
+    };
 
     return (
         <div className="flex flex-col gap-6 w-full max-w-[1400px]">
@@ -125,15 +136,21 @@ export default function ProjectDetail() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
 
                 <div className="flex flex-nowrap overflow-x-auto border-b border-gray-100 bg-gray-50/50 styled-scrollbar">
-                    {TAB_OPTIONS.map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={clsx("px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap", activeTab === tab ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100/50")}
-                        >
-                            {tab}
-                        </button>
-                    ))}
+                    {TAB_OPTIONS.map(tab => {
+                        const count = tabCounts[tab];
+                        return (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={clsx("flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap", activeTab === tab ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100/50")}
+                            >
+                                {tab}
+                                {count > 0 && (
+                                    <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', activeTab === tab ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-500')}>{count}</span>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <div className="p-6 flex-1 bg-gray-50/20">
@@ -171,6 +188,53 @@ export default function ProjectDetail() {
                                     </div>
                                 )
                             })}
+                        </div>
+                    )}
+
+                    {activeTab === t('tabMilestones') && (
+                        <div className="space-y-3 max-w-2xl mx-auto">
+                            {milestones && milestones.length > 0 ? milestones.map(ms => {
+                                const isOverdue = ms.dueDate && new Date(ms.dueDate) < new Date() && ms.status !== 'Completed';
+                                const isDone = ms.status === 'Completed';
+                                return (
+                                    <div key={ms._id} className="flex items-start gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                        <div className={clsx('mt-0.5 shrink-0', isDone ? 'text-emerald-500' : isOverdue ? 'text-rose-400' : 'text-gray-300')}>
+                                            {isDone ? <CheckCircle2 className="w-5 h-5" /> : isOverdue ? <AlertCircle className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={clsx('text-sm font-bold', isDone ? 'line-through text-gray-400' : 'text-gray-900')}>{ms.title || ms.name}</p>
+                                            {ms.description && <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{ms.description}</p>}
+                                        </div>
+                                        <div className="shrink-0 text-right">
+                                            {ms.dueDate && (
+                                                <p className={clsx('text-[11px] font-semibold', isOverdue ? 'text-rose-500' : 'text-gray-400')}>
+                                                    {isOverdue ? '⚠ ' : ''}{moment(ms.dueDate).format('MMM D, YYYY')}
+                                                </p>
+                                            )}
+                                            <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded mt-1 inline-block',
+                                                isDone ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-500'
+                                            )}>{ms.status}</span>
+                                        </div>
+                                    </div>
+                                );
+                            }) : (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <Target className="w-10 h-10 text-gray-200 mb-3" />
+                                    <p className="text-sm font-bold text-gray-400">{t('noMilestones', 'No milestones defined')}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{t('noMilestonesHint', 'Add milestones to track key project checkpoints.')}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === t('tabDocs') && (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+                                <FolderOpen className="w-8 h-8 text-indigo-300" />
+                            </div>
+                            <p className="text-base font-bold text-gray-500 mb-1">{t('docsComingSoon', 'Document Management')}</p>
+                            <p className="text-sm text-gray-400 max-w-xs leading-relaxed">{t('docsComingSoonHint', 'Attach briefs, specs, and deliverables directly to this project. Coming in the next update.')}</p>
+                            <span className="mt-4 px-3 py-1 bg-indigo-50 text-indigo-500 text-xs font-bold rounded-full border border-indigo-100">{t('comingSoon', 'Coming Soon')}</span>
                         </div>
                     )}
 

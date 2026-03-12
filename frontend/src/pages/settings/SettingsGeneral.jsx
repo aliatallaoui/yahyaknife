@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Globe, Clock, Palette, Monitor, CheckCircle2 } from 'lucide-react';
+import { Globe, Clock, Palette, Monitor, CheckCircle2, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,7 @@ export default function SettingsGeneral() {
     // UI Feedback
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [saveError, setSaveError] = useState(null);
 
     // Sync from global user state on mount/update
     useEffect(() => {
@@ -57,10 +58,14 @@ export default function SettingsGeneral() {
                 setSaveSuccess(true);
                 setTimeout(() => setSaveSuccess(false), 3000);
             } else {
-                console.error("Failed to save preferences");
+                const data = await res.json().catch(() => ({}));
+                setSaveError(data.message || t('saveError', 'Failed to save preferences.'));
+                setTimeout(() => setSaveError(null), 4000);
             }
         } catch (error) {
             console.error("Error saving preferences:", error);
+            setSaveError(t('saveError', 'Failed to save preferences.'));
+            setTimeout(() => setSaveError(null), 4000);
         } finally {
             setIsSaving(false);
         }
@@ -149,6 +154,11 @@ export default function SettingsGeneral() {
                     {saveSuccess && (
                         <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5 animate-in slide-in-from-end-2">
                             <CheckCircle2 className="w-4 h-4" /> {t('saved')}
+                        </span>
+                    )}
+                    {saveError && (
+                        <span className="text-sm font-semibold text-rose-600 flex items-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4" /> {saveError}
                         </span>
                     )}
                     <button

@@ -1,8 +1,12 @@
 const Order = require('../models/Order');
 const CallNote = require('../models/CallNote');
+const OrderStatusHistory = require('../models/OrderStatusHistory');
 const AgentProfile = require('../models/AgentProfile');
+const User = require('../models/User');
+const ProductVariant = require('../models/ProductVariant');
 const cacheService = require('../services/cacheService');
 const { assertTransition } = require('../domains/orders/order.statemachine');
+const { updateCustomerMetrics } = require('./customerController');
 
 // ─── Action → Status mapping (call center vocabulary → order status) ──────────
 const ACTION_STATUS_MAP = {
@@ -29,7 +33,7 @@ exports.getAgentDashboard = async (req, res) => {
             const todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
 
-            const baseFilter = { tenant: tenantId, assignedAgent: agentId };
+            const baseFilter = { tenant: tenantId, assignedAgent: agentId, deletedAt: null };
 
             const [
                 totalAssigned,
@@ -82,28 +86,76 @@ exports.logCallAction = async (req, res) => {
             return res.status(403).json({ message: 'Order is assigned to another agent' });
         }
 
-        await CallNote.create({ order: orderId, agent: agentId, actionType, note: note || '', callDurationSeconds: 0 });
+        const statusBefore = order.status;
 
         // Apply state transition if the action maps to a status change
         const newStatus = ACTION_STATUS_MAP[actionType];
         if (newStatus && newStatus !== order.status) {
             assertTransition(order.status, newStatus);
             order.status = newStatus;
-            if (newStatus === 'Postponed' && postponedUntil) {
-                order.postponedUntil = new Date(postponedUntil);
-            } else if (newStatus !== 'Postponed') {
+            if (newStatus === 'Postponed') {
+                if (!postponedUntil) return res.status(400).json({ message: 'postponedUntil is required when postponing' });
+                const postponedDate = new Date(postponedUntil);
+                if (isNaN(postponedDate.getTime()) || postponedDate <= new Date()) {
+                    return res.status(400).json({ message: 'postponedUntil must be a valid future date' });
+                }
+                order.postponedUntil = postponedDate;
+            } else {
                 order.postponedUntil = null;
             }
         }
 
+        // Count how many call attempts have been made on this order (tenant-scoped via order reference)
+        const prevAttempts = await CallNote.countDocuments({ order: orderId, tenant: tenantId });
+
+        await CallNote.create({
+            tenant: tenantId,
+            order: orderId,
+            agent: agentId,
+            actionType,
+            note: note || '',
+            callDurationSeconds: req.body.callDurationSeconds || 0,
+            statusBefore,
+            statusAfter: order.status,
+            callAttemptNumber: prevAttempts + 1
+        });
+
         // Address correction (no status change involved)
         if (actionType === 'Address_Updated') {
-            if (newAddress) order.shippingAddress = newAddress;
+            if (newAddress && order.shipping) order.shipping.address = newAddress;
             if (newWilaya) order.wilaya = newWilaya;
             if (newCommune) order.commune = newCommune;
         }
 
         await order.save();
+
+        // Audit trail: record status change in OrderStatusHistory
+        if (newStatus && newStatus !== statusBefore) {
+            OrderStatusHistory.create({
+                tenant: tenantId,
+                orderId: order._id,
+                status: newStatus,
+                previousStatus: statusBefore,
+                changedBy: agentId,
+                note: `Call center action: ${actionType}${note ? ` — ${note}` : ''}`
+            }).catch(console.error);
+        }
+
+        // Post-save side effects for status changes
+        if (newStatus && newStatus !== statusBefore) {
+            // Restore reserved stock when order is cancelled via call center
+            if (['Cancelled', 'Cancelled by Customer'].includes(newStatus) &&
+                !['Cancelled', 'Cancelled by Customer', 'Returned', 'Refused'].includes(statusBefore)) {
+                for (const item of order.products) {
+                    if (!item.variantId) continue;
+                    ProductVariant.findByIdAndUpdate(item.variantId, {
+                        $inc: { reservedStock: -item.quantity, totalSold: -item.quantity }
+                    }).catch(console.error);
+                }
+            }
+            // Update customer metrics on any status change
+            if (order.customer) updateCustomerMetrics(order.customer).catch(console.error);
+        }
 
         res.status(200).json({ message: 'Call logged successfully', order });
     } catch (error) {
@@ -119,6 +171,12 @@ exports.assignOrders = async (req, res) => {
     try {
         const { mode, targetAgentId, orderIds, region } = req.body;
         const tenantId = req.user.tenant;
+
+        // Validate targetAgentId belongs to this tenant (for Manual and Region modes)
+        if ((mode === 'Manual' || mode === 'Region') && targetAgentId) {
+            const agentUser = await User.findOne({ _id: targetAgentId, tenant: tenantId });
+            if (!agentUser) return res.status(400).json({ message: 'Target agent not found in this workspace' });
+        }
 
         if (mode === 'Manual') {
             await Order.updateMany(
@@ -175,42 +233,85 @@ exports.assignOrders = async (req, res) => {
     }
 };
 
+exports.getOrderCallHistory = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const { orderId } = req.params;
+
+        if (!require('mongoose').Types.ObjectId.isValid(orderId))
+            return res.status(400).json({ message: 'Invalid order ID' });
+
+        const calls = await CallNote.find({ order: orderId, tenant: tenantId })
+            .populate('agent', 'firstName lastName email')
+            .sort({ createdAt: 1 });
+
+        res.json({ orderId, totalAttempts: calls.length, calls });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error fetching call history' });
+    }
+};
+
 exports.getManagerAnalytics = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const agents = await AgentProfile.find({ isActive: true }).populate('user', 'firstName lastName email');
 
-        const leaderboard = await Promise.all(agents.map(async (profile) => {
+        if (agents.length === 0) return res.json({ leaderboard: [] });
+
+        const agentIds = agents.map(a => a.user._id);
+
+        // Single aggregation for Order counts — replaces N×4 individual countDocuments calls
+        const [orderStats, callStats] = await Promise.all([
+            Order.aggregate([
+                { $match: { tenant: tenantId, assignedAgent: { $in: agentIds }, deletedAt: null } },
+                {
+                    $group: {
+                        _id: '$assignedAgent',
+                        totalAssigned: { $sum: 1 },
+                        totalConfirmed: { $sum: { $cond: [{ $nin: ['$status', ['New', 'Refused']] }, 1, 0] } },
+                        totalDelivered: { $sum: { $cond: [{ $in:  ['$status', ['Delivered', 'Paid']] }, 1, 0] } }
+                    }
+                }
+            ]),
+            CallNote.aggregate([
+                { $match: { tenant: tenantId, agent: { $in: agentIds } } },
+                { $group: { _id: '$agent', totalCalls: { $sum: 1 } } }
+            ])
+        ]);
+
+        // Build O(1) lookup maps
+        const orderMap = {};
+        orderStats.forEach(s => { orderMap[s._id.toString()] = s; });
+        const callMap = {};
+        callStats.forEach(s => { callMap[s._id.toString()] = s.totalCalls; });
+
+        const leaderboard = agents.map(profile => {
             const agentId = profile.user._id;
-            const baseFilter = { tenant: tenantId, assignedAgent: agentId };
+            const key = agentId.toString();
+            const stats = orderMap[key] || { totalAssigned: 0, totalConfirmed: 0, totalDelivered: 0 };
+            const totalCalls = callMap[key] || 0;
 
-            // Run all counts in parallel per agent
-            const [totalAssigned, totalConfirmed, totalDelivered, totalCalls] = await Promise.all([
-                Order.countDocuments(baseFilter),
-                Order.countDocuments({ ...baseFilter, status: { $nin: ['New', 'Refused'] } }),
-                Order.countDocuments({ ...baseFilter, status: { $in: ['Delivered', 'Paid'] } }),
-                CallNote.countDocuments({ agent: agentId })
-            ]);
-
-            const confirmedRate = totalAssigned > 0 ? ((totalConfirmed / totalAssigned) * 100).toFixed(1) : 0;
+            const confirmedRate = stats.totalAssigned > 0
+                ? ((stats.totalConfirmed / stats.totalAssigned) * 100).toFixed(1)
+                : 0;
 
             let commissionEarned = 0;
             if (profile.compensationModel === 'Commission' || profile.compensationModel === 'Hybrid') {
-                commissionEarned = totalDelivered * profile.commissionPerDelivery;
+                commissionEarned = stats.totalDelivered * profile.commissionPerDelivery;
             }
 
             return {
                 agentId,
                 name: `${profile.user.firstName} ${profile.user.lastName}`,
-                totalAssigned,
-                totalConfirmed,
-                confirmedRate: parseFloat(confirmedRate),
-                totalDelivered,
+                totalAssigned:  stats.totalAssigned,
+                totalConfirmed: stats.totalConfirmed,
+                confirmedRate:  parseFloat(confirmedRate),
+                totalDelivered: stats.totalDelivered,
                 totalCalls,
                 commissionEarned,
                 baseSalary: profile.baseSalary
             };
-        }));
+        });
 
         res.json({ leaderboard });
     } catch (error) {

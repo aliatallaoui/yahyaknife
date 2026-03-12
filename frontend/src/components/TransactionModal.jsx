@@ -33,7 +33,8 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
             setPayrollLoading(true);
             fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
                 .then(r => r.ok ? r.json() : [])
-                .then(data => {
+                .then(json => {
+                    const data = json.data ?? (Array.isArray(json) ? json : []);
                     // Only show unpaid payroll records
                     const unpaid = data.filter(p => p.status !== 'Paid');
                     setPayrollRecords(unpaid);
@@ -113,7 +114,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
             // If HR category and a worker is selected, also sync payroll
             if (isHR && selectedPayrollId) {
-                const payRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${selectedPayrollId}/approve`, {
+                const payRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${selectedPayrollId}/pay`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

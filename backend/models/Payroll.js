@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const payrollSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
     period: { type: String, required: true }, // Format: MM-YYYY (e.g., "03-2026")
 
@@ -26,7 +27,7 @@ const payrollSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['Draft', 'Pending Approval', 'Partially Paid', 'Paid'],
+        enum: ['Draft', 'Pending Approval', 'Approved', 'Partially Paid', 'Paid'],
         default: 'Draft'
     },
 
@@ -34,7 +35,7 @@ const payrollSchema = new mongoose.Schema({
     approvedAt: { type: Date }
 }, { timestamps: true });
 
-// Ensure one payroll generated per employee per month
-payrollSchema.index({ employeeId: 1, period: 1 }, { unique: true });
+// Ensure one payroll generated per employee per month per tenant
+payrollSchema.index({ tenant: 1, employeeId: 1, period: 1 }, { unique: true });
 
 module.exports = mongoose.model('Payroll', payrollSchema);

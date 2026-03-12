@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext, useRef } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserCheck, CalendarDays, Search, CheckCircle, XCircle, Clock, Banknote, Filter, Plus, UserPlus } from 'lucide-react';
+import { Users, UserCheck, CalendarDays, Search, CheckCircle, XCircle, Clock, Banknote, Filter, UserPlus, AlertTriangle } from 'lucide-react';
+import { useHotkey } from '../hooks/useHotkey';
+import EmployeeModal from '../components/hr/EmployeeModal';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
@@ -11,6 +14,7 @@ const COLORS = ['#1A73E8', '#C58AF9', '#EE6C4D', '#3D5A80', '#98C1D9', '#E0FBFC'
 
 export default function HRSnapshot() {
     const navigate = useNavigate();
+    const { token } = useContext(AuthContext);
     const { t, i18n } = useTranslation();
     const isAr = i18n.language === 'ar';
     const [metrics, setMetrics] = useState(null);
@@ -26,21 +30,29 @@ export default function HRSnapshot() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [leaveError, setLeaveError] = useState(null);
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const fetchHRData = async () => {
         setLoading(true);
         try {
             const todayStr = moment().format('YYYY-MM-DD');
+            const h = { headers: { Authorization: `Bearer ${token}` } };
             const [metricsRes, empRes, leaveRes, attRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${todayStr}`)
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`, h),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, h),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves`, h),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${todayStr}`, h)
             ]);
 
-            const empData = await empRes.json();
-            const leaveData = await leaveRes.json();
-            const attData = await attRes.json();
+            const empRaw = await empRes.json();
+            const empData = empRaw.data ?? empRaw;
+            const leaveRaw = await leaveRes.json();
+            const leaveData = leaveRaw.data ?? leaveRaw;
+            const attRaw = await attRes.json();
+            const attData = attRaw.data ?? attRaw;
 
             // Map today's attendance status to employees
             const attMap = {};
@@ -53,13 +65,14 @@ export default function HRSnapshot() {
                 });
             }
 
-            const empsArray = Array.isArray(empData) ? empData : [];
+            const empsArray = Array.isArray(empData) ? empData : (empData || []);
             const empsWithAtt = empsArray.map(e => ({
                 ...e,
                 todayAttendance: attMap[e._id] || 'Not Marked'
             }));
 
-            setMetrics(await metricsRes.json());
+            const metricsJson = await metricsRes.json();
+            setMetrics(metricsJson.data ?? metricsJson);
             setEmployees(empsWithAtt);
             setLeaves(Array.isArray(leaveData) ? leaveData : []);
         } catch (error) {
@@ -113,21 +126,28 @@ export default function HRSnapshot() {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves/${id}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ status: newStatus })
             });
             if (res.ok) {
-                const updated = await res.json();
-                setLeaves(leaves.map(l => l._id === id ? updated : l));
+                const updJson = await res.json();
+                setLeaves(leaves.map(l => l._id === id ? (updJson.data ?? updJson) : l));
 
                 // Refresh employees to reflect deducted balance
                 if (newStatus === 'Approved') {
-                    const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`);
-                    setEmployees(await empRes.json());
+                    const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, { headers: { Authorization: `Bearer ${token}` } });
+                    const empJson = await empRes.json();
+                    setEmployees(empJson.data ?? (Array.isArray(empJson) ? empJson : []));
                 }
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setLeaveError(data.message || t('hr.leaveUpdateError', 'Failed to update leave status.'));
+                setTimeout(() => setLeaveError(null), 4000);
             }
         } catch (error) {
             console.error('Failed to update leave status', error);
+            setLeaveError(t('hr.leaveUpdateError', 'Failed to update leave status.'));
+            setTimeout(() => setLeaveError(null), 4000);
         }
     };
 
@@ -219,8 +239,9 @@ export default function HRSnapshot() {
                         <div className="relative flex-1 md:flex-none">
                             <Search className="w-4 h-4 absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('hr.searchEmployeePlaceholder')}
+                                placeholder={t('hr.searchEmployeePlaceholder', 'Search... (Press /)')}
                                 className="w-full md:w-48 bg-gray-50 border border-gray-200 focus:border-blue-400 outline-none rounded-lg py-2 ltr:pl-9 ltr:pr-4 rtl:pr-9 rtl:pl-4 text-sm transition-all"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -364,6 +385,12 @@ export default function HRSnapshot() {
                         <h3 className="text-lg font-bold text-gray-900">{t('hr.recentLeaveRequests')}</h3>
                         <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{leaves.length} {t('hr.totalLabel')}</span>
                     </div>
+                    {leaveError && (
+                        <div className="mx-4 mt-3 flex items-center gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 shrink-0">
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
+                            <span>{leaveError}</span>
+                        </div>
+                    )}
                     <div className="flex-1 overflow-y-auto p-4 styled-scrollbar space-y-3">
                         {leaves.map(req => {
                             const statusConfig = {
@@ -467,211 +494,12 @@ export default function HRSnapshot() {
                     onClose={() => setIsModalOpen(false)}
                     onSave={async () => {
                         setIsModalOpen(false);
-                        const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`);
-                        setEmployees(await empRes.json());
+                        const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, { headers: { Authorization: `Bearer ${token}` } });
+                        const empRefJson = await empRes.json();
+                        setEmployees(empRefJson.data ?? (Array.isArray(empRefJson) ? empRefJson : []));
                     }}
                 />
             )}
-        </div>
-    );
-}
-
-function EmployeeModal({ employee, onClose, onSave }) {
-    const { t } = useTranslation();
-    const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-    const [formData, setFormData] = useState({
-        name: employee?.name || '',
-        email: employee?.email || '',
-        joinDate: employee?.joinDate ? moment(employee.joinDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
-        department: employee?.department || 'Manufacturing',
-        role: employee?.role || '',
-        workshopRole: employee?.workshopRole || 'None',
-        status: employee?.status || 'Active',
-        salary: employee?.salary || employee?.contractSettings?.monthlySalary || 0,
-        dailyRequiredMinutes: employee?.contractSettings?.dailyRequiredMinutes || 480,
-        morningStart: employee?.contractSettings?.schedule?.morningStart || '08:00',
-        morningEnd: employee?.contractSettings?.schedule?.morningEnd || '12:00',
-        eveningStart: employee?.contractSettings?.schedule?.eveningStart || '13:00',
-        eveningEnd: employee?.contractSettings?.schedule?.eveningEnd || '17:00',
-        workDays: employee?.contractSettings?.workDays?.map(d => daysMap.indexOf(d)).filter(i => i !== -1).join(',') || '0,1,2,3,4'
-    });
-
-    const [isSaving, setIsSaving] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSaving(true);
-
-        const payload = {
-            name: formData.name,
-            email: formData.email,
-            joinDate: formData.joinDate,
-            department: formData.department,
-            role: formData.role,
-            workshopRole: formData.workshopRole,
-            status: formData.status,
-            salary: Number(formData.salary),
-            contractSettings: {
-                monthlySalary: Number(formData.salary),
-                dailyRequiredMinutes: Number(formData.dailyRequiredMinutes),
-                schedule: {
-                    morningStart: formData.morningStart,
-                    morningEnd: formData.morningEnd,
-                    eveningStart: formData.eveningStart,
-                    eveningEnd: formData.eveningEnd
-                },
-                workDays: formData.workDays.split(',').map(n => daysMap[Number(n)]).filter(Boolean)
-            }
-        };
-
-        try {
-            const url = employee ? `/api/hr/employees/${employee._id}` : '/api/hr/employees';
-            const method = employee ? 'PUT' : 'POST';
-
-            await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            onSave();
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex justify-center items-center overflow-y-auto">
-            <div className="bg-white rounded-2xl w-full max-w-2xl my-8 p-6 shadow-2xl relative">
-                <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-                    <h2 className="text-xl font-bold text-gray-900">{employee ? t('hr.editEmployeeTitle') : t('hr.addEmployeeTitle')}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <XCircle className="w-6 h-6" />
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblFullName')}</label>
-                            <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.namePlaceholder')} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblEmail')}</label>
-                            <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.emailPlaceholder')} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStartDate', 'تاريخ البداية العمل')}</label>
-                            <input required type="date" value={formData.joinDate} onChange={e => setFormData({ ...formData, joinDate: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblDepartment')}</label>
-                            <select value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
-                                <option value="Manufacturing">{t('hr.deptManufacturing')}</option>
-                                <option value="Warehouse">{t('hr.deptWarehouse')}</option>
-                                <option value="Dispatch">{t('hr.deptDispatch')}</option>
-                                <option value="Customer Support">{t('hr.deptCustomerSupport')}</option>
-                                <option value="Engineering">{t('hr.deptEngineering')}</option>
-                                <option value="Finance">{t('hr.deptFinance')}</option>
-                                <option value="Sales">{t('hr.deptSales')}</option>
-                                <option value="Marketing">{t('hr.deptMarketing')}</option>
-                                <option value="HR">{t('hr.deptHR')}</option>
-                                <option value="Design">{t('hr.deptDesign')}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblRole')}</label>
-                            <input required type="text" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.rolePlaceholder')} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">Workshop Role</label>
-                            <select value={formData.workshopRole} onChange={e => setFormData({ ...formData, workshopRole: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
-                                <option value="None">None (Standard HR)</option>
-                                <option value="Master Bladesmith">Master Bladesmith</option>
-                                <option value="Grinder">Grinder</option>
-                                <option value="Handle Maker">Handle Maker</option>
-                                <option value="Finisher">Finisher</option>
-                                <option value="Apprentice">Apprentice</option>
-                                <option value="Packager">Packager</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStatus')}</label>
-                            <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
-                                <option value="Active">{t('hr.statusActive')}</option>
-                                <option value="On Leave">{t('hr.statusOnLeave')}</option>
-                                <option value="Terminated">{t('hr.statusTerminated')}</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                        <h3 className="text-sm font-bold text-blue-900 mb-4 flex items-center gap-2"><Banknote className="w-4 h-4" /> {t('hr.contractSchedule')}</h3>
-
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-blue-800 mb-1">{t('hr.lblMonthlySalary')}</label>
-                                <input required type="number" value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-blue-800 mb-1">{t('hr.lblRequiredMinutes')}</label>
-                                <input required type="number" value={formData.dailyRequiredMinutes} onChange={e => setFormData({ ...formData, dailyRequiredMinutes: e.target.value })} className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-4 mb-4">
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblMorningIn')}</label>
-                                <input type="time" value={formData.morningStart} onChange={e => setFormData({ ...formData, morningStart: e.target.value })} className="w-full bg-white border border-gray-200 rounded-md px-2 py-1 text-sm outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblMorningOut')}</label>
-                                <input type="time" value={formData.morningEnd} onChange={e => setFormData({ ...formData, morningEnd: e.target.value })} className="w-full bg-white border border-gray-200 rounded-md px-2 py-1 text-sm outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblEveningIn')}</label>
-                                <input type="time" value={formData.eveningStart} onChange={e => setFormData({ ...formData, eveningStart: e.target.value })} className="w-full bg-white border border-gray-200 rounded-md px-2 py-1 text-sm outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblEveningOut')}</label>
-                                <input type="time" value={formData.eveningEnd} onChange={e => setFormData({ ...formData, eveningEnd: e.target.value })} className="w-full bg-white border border-gray-200 rounded-md px-2 py-1 text-sm outline-none" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblActiveWorkDays')}</label>
-                            <input type="text" value={formData.workDays} onChange={e => setFormData({ ...formData, workDays: e.target.value })} className="w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none" placeholder="0,1,2,3,4" />
-                            <p className="text-[10px] text-gray-400 mt-1">{t('hr.activeWorkDaysDesc')}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-100">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">{t('hr.btnCancel')}</button>
-                        <button type="submit" disabled={isSaving} className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-md disabled:bg-blue-300">
-                            {isSaving ? t('hr.savingText') : t('hr.btnSaveEmployee')}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-}
-
-function HRCard({ title, value, icon: Icon, color, bg, highlight }) {
-    return (
-        <div className={clsx("p-4 sm:p-6 rounded-2xl border shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 transition-colors", highlight ? "bg-purple-50/30 border-purple-100" : "bg-white border-gray-100")}>
-            <div className={clsx("w-10 h-10 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0", bg, color)}>
-                <Icon className="w-5 h-5 sm:w-7 sm:h-7" />
-            </div>
-            <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1">{title}</p>
-                <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tight leading-none">{value}</h3>
-            </div>
         </div>
     );
 }

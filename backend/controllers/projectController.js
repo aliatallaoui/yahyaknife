@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Project = require('../models/Project');
 const ProjectTask = require('../models/ProjectTask');
 const ProjectMilestone = require('../models/ProjectMilestone');
@@ -19,6 +20,8 @@ exports.getProjects = async (req, res) => {
 
 exports.getProjectById = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid ID' });
         const project = await Project.findById(req.params.id).populate('owner', 'name email role department');
         if (!project) return res.status(404).json({ message: 'Project not found' });
 
@@ -35,8 +38,13 @@ exports.getProjectById = async (req, res) => {
 
 exports.createProject = async (req, res) => {
     try {
+        const {
+            name, description, owner, department, priority, startDate, deadline, status,
+            completionPercentage, healthIndicator, linkedModule, linkedEntityId, tags, notes
+        } = req.body;
         const project = new Project({
-            ...req.body,
+            name, description, owner, department, priority, startDate, deadline, status,
+            completionPercentage, healthIndicator, linkedModule, linkedEntityId, tags, notes,
             projectId: `PRJ-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`
         });
         const savedProject = await project.save();
@@ -55,8 +63,19 @@ exports.createProject = async (req, res) => {
 
 exports.updateProject = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid ID' });
+        const {
+            name, description, owner, department, priority, startDate, deadline, status,
+            completionPercentage, healthIndicator, linkedModule, linkedEntityId, tags, notes
+        } = req.body;
         const oldProject = await Project.findById(req.params.id);
-        const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedProject = await Project.findByIdAndUpdate(
+            req.params.id,
+            { name, description, owner, department, priority, startDate, deadline, status,
+              completionPercentage, healthIndicator, linkedModule, linkedEntityId, tags, notes },
+            { new: true }
+        );
 
         if (oldProject.status !== updatedProject.status) {
             await ProjectActivityLog.create({
@@ -81,8 +100,13 @@ exports.updateProject = async (req, res) => {
 
 exports.createTask = async (req, res) => {
     try {
+        const {
+            project, title, description, assignee, department, priority, status,
+            startDate, deadline, estimatedEffort, actualEffort, linkedEntity, dependencies
+        } = req.body;
         const task = new ProjectTask({
-            ...req.body,
+            project, title, description, assignee, department, priority, status,
+            startDate, deadline, estimatedEffort, actualEffort, linkedEntity, dependencies,
             taskId: `TSK-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`
         });
         const savedTask = await task.save();
@@ -102,8 +126,19 @@ exports.createTask = async (req, res) => {
 
 exports.updateTask = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.taskId))
+            return res.status(400).json({ message: 'Invalid ID' });
+        const {
+            title, description, assignee, department, priority, status,
+            startDate, deadline, estimatedEffort, actualEffort, linkedEntity, dependencies
+        } = req.body;
         const oldTask = await ProjectTask.findById(req.params.taskId);
-        const updatedTask = await ProjectTask.findByIdAndUpdate(req.params.taskId, req.body, { new: true }).populate('assignee', 'name');
+        const updatedTask = await ProjectTask.findByIdAndUpdate(
+            req.params.taskId,
+            { title, description, assignee, department, priority, status,
+              startDate, deadline, estimatedEffort, actualEffort, linkedEntity, dependencies },
+            { new: true }
+        ).populate('assignee', 'name');
 
         if (oldTask.status !== updatedTask.status) {
             await ProjectActivityLog.create({
@@ -132,6 +167,8 @@ exports.updateTask = async (req, res) => {
 
 exports.addTaskComment = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.taskId))
+            return res.status(400).json({ message: 'Invalid ID' });
         const { text, senderId } = req.body;
         const task = await ProjectTask.findById(req.params.taskId);
 

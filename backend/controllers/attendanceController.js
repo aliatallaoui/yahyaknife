@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const moment = require('moment');
@@ -23,23 +24,27 @@ const calculateWorkedMinutes = (morningIn, morningOut, eveningIn, eveningOut) =>
 
 exports.recordPointage = async (req, res) => {
     try {
-        const { employeeId, type, timestamp, date } = req.body; // type: morningIn, morningOut, eveningIn, eveningOut
+        const tenant = req.user.tenant;
+        const { employeeId, type, timestamp, date } = req.body;
 
-        const employee = await Employee.findById(employeeId);
+        const employee = await Employee.findOne({ _id: employeeId, tenant });
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
         const dateStr = date || (timestamp ? moment(timestamp).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'));
 
-        let attendance = await Attendance.findOne({ employeeId, date: dateStr });
+        let attendance = await Attendance.findOne({ tenant, employeeId, date: dateStr });
         if (!attendance) {
-            attendance = new Attendance({ employeeId, date: dateStr });
+            attendance = new Attendance({ tenant, employeeId, date: dateStr });
         }
 
-        // Register the pointage (Support clearing)
         if (['morningIn', 'morningOut', 'eveningIn', 'eveningOut'].includes(type)) {
             if (!timestamp) {
-                attendance[type] = undefined; // Nullify / Clear the slot
+                attendance[type] = undefined;
             } else {
+                // Reject duplicate clock-in/out — require explicit clear first
+                if (attendance[type]) {
+                    return res.status(409).json({ error: `${type} is already recorded for this date. Clear it first before re-recording.` });
+                }
                 attendance[type] = new Date(timestamp);
             }
         } else {
@@ -47,8 +52,6 @@ exports.recordPointage = async (req, res) => {
         }
 
         await attendance.save();
-
-        // Trigger background recalculation of metrics for today
         attendance = await exports.calculateDailyMetrics(attendance._id);
 
         res.json({ message: 'Pointage recorded successfully', attendance });
@@ -64,27 +67,21 @@ exports.calculateDailyMetrics = async (attendanceId) => {
     const employee = attendance.employeeId;
     const settings = employee.contractSettings || {};
 
-    const requiredMin = settings.dailyRequiredMinutes || 480; // Default 8 hours
+    const requiredMin = settings.dailyRequiredMinutes || 480;
     attendance.requiredMinutes = requiredMin;
 
-    // Edge Case: Weekend Work Array
     const workDays = settings.workDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Sunday'];
     const currentDayName = moment(attendance.date).format('dddd');
     const isWeekend = !workDays.includes(currentDayName);
 
-    // 1. Calculate Worked Minutes
     let worked = calculateWorkedMinutes(
         attendance.morningIn, attendance.morningOut,
         attendance.eveningIn, attendance.eveningOut
     );
 
-    // Edge Case: Forgotten Checkout & Partial Attendance
-    // If they checked in but didn't check out, we flag the times as incomplete. We won't give them free full hours.
     const forgottenCheckout = (attendance.morningIn && !attendance.morningOut) || (attendance.eveningIn && !attendance.eveningOut);
-
     attendance.workedMinutes = worked;
 
-    // 2. Calculate Late Minutes based on Morning/Evening Schedule
     let lateMin = 0;
     const gracePeriod = settings.latenessGracePeriodMin || 0;
 
@@ -93,23 +90,20 @@ exports.calculateDailyMetrics = async (attendanceId) => {
             const expectedStartMin = timeToMinutes(settings.schedule.morningStart);
             const actualStartMin = timeToMinutes(moment.utc(attendance.morningIn).format('HH:mm'));
             if (actualStartMin > (expectedStartMin + gracePeriod)) {
-                lateMin += (actualStartMin - expectedStartMin);
+                lateMin += (actualStartMin - expectedStartMin - gracePeriod);
             }
         }
-
         if (attendance.eveningIn && settings.schedule?.eveningStart) {
             const expectedStartMin = timeToMinutes(settings.schedule.eveningStart);
             const actualStartMin = timeToMinutes(moment.utc(attendance.eveningIn).format('HH:mm'));
             if (actualStartMin > (expectedStartMin + gracePeriod)) {
-                lateMin += (actualStartMin - expectedStartMin);
+                lateMin += (actualStartMin - expectedStartMin - gracePeriod);
             }
         }
     }
     attendance.lateMinutes = lateMin;
 
-    // 3. Missing vs Overtime
     if (isWeekend) {
-        // Weekend rules: All worked time is Overtime. No required/missing minutes.
         attendance.requiredMinutes = 0;
         attendance.missingMinutes = 0;
         attendance.overtimeMinutes = settings.overtimeEnabled !== false ? worked : 0;
@@ -126,23 +120,18 @@ exports.calculateDailyMetrics = async (attendanceId) => {
         }
     }
 
-    // 4. Determine Status
     if (attendance.status === 'Approved Leave' || attendance.status === 'Holiday') {
-        // Respect explicitly set HR overrides. Keep the status and grant them their hours so they aren't deducted.
         if (worked === 0) attendance.workedMinutes = requiredMin;
         attendance.missingMinutes = 0;
         attendance.lateMinutes = 0;
     } else if (!attendance.morningIn && !attendance.eveningIn) {
-        if (isWeekend) {
-            // Keep it blank if they didn't work on the weekend, rather than marking as 'Absent'.
-            // Actually, if it was automatically generated, we can just delete it, or leave status as blank.
-            // Let's set a specific status or just 'Absent' but the Payroll aggregator will ignore 0 missing minutes anyway.
-            attendance.status = 'Absent'; // Handled safely by payroll via missingMinutes=0
-        } else {
-            attendance.status = 'Absent';
-        }
+        attendance.status = 'Absent';
     } else if (forgottenCheckout) {
         attendance.status = 'Incomplete';
+        // Ensure salary deduction for missing time is recorded regardless of config
+        if (!isWeekend) {
+            attendance.missingMinutes = Math.max(0, requiredMin - worked);
+        }
     } else if (isWeekend && worked > 0) {
         attendance.status = 'Overtime';
     } else if (worked < requiredMin) {
@@ -160,10 +149,12 @@ exports.calculateDailyMetrics = async (attendanceId) => {
 
 exports.getDailyAttendance = async (req, res) => {
     try {
-        const { date } = req.query; // YYYY-MM-DD
+        const tenant = req.user.tenant;
+        const { date } = req.query;
         const targetDate = date || moment().format('YYYY-MM-DD');
 
-        const records = await Attendance.find({ date: targetDate }).populate('employeeId', 'name department role contractSettings');
+        const records = await Attendance.find({ tenant, date: targetDate })
+            .populate('employeeId', 'name department role contractSettings');
         res.json(records);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -172,9 +163,11 @@ exports.getDailyAttendance = async (req, res) => {
 
 exports.getEmployeeAttendance = async (req, res) => {
     try {
-        const records = await Attendance.find({ employeeId: req.params.id })
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid employee ID' });
+        const records = await Attendance.find({ tenant: req.user.tenant, employeeId: req.params.id })
             .sort({ date: -1 })
-            .limit(60); // Fetch up to 60 days of history
+            .limit(60);
         res.json(records);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -183,11 +176,17 @@ exports.getEmployeeAttendance = async (req, res) => {
 
 exports.updateAttendanceRecord = async (req, res) => {
     try {
-        const updated = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid attendance record ID' });
+        const { morningIn, morningOut, eveningIn, eveningOut, status } = req.body;
+        const updated = await Attendance.findOneAndUpdate(
+            { _id: req.params.id, tenant: req.user.tenant },
+            { morningIn, morningOut, eveningIn, eveningOut, status },
+            { new: true }
+        );
 
-        if (updated) {
-            await exports.calculateDailyMetrics(updated._id); // Recalculate if admin edits timestamps
-        }
+        if (!updated) return res.status(404).json({ error: 'Attendance record not found' });
+        await exports.calculateDailyMetrics(updated._id);
 
         res.json(updated);
     } catch (err) {

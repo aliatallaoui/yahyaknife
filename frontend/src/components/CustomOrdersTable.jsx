@@ -3,7 +3,8 @@ import { SalesContext } from '../context/SalesContext';
 import { useCustomer } from '../context/CustomerContext';
 import { format } from 'date-fns';
 
-import { Pencil, Trash2, Link, Edit3 } from 'lucide-react';
+import { Pencil, Trash2, Link, Edit3, AlertTriangle } from 'lucide-react';
+import PhoneChip from './PhoneChip';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 
@@ -19,6 +20,7 @@ const STATUS_STYLES = {
 export default function CustomOrdersTable({ searchTerm }) {
     const { t } = useTranslation();
     const { customOrders, deleteCustomOrder, updateCustomOrder } = useContext(SalesContext);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
     // Simple filter
     const filtered = (customOrders || []).filter(o =>
@@ -50,7 +52,7 @@ export default function CustomOrdersTable({ searchTerm }) {
                             <td className="p-4 font-bold text-gray-900">{order.orderId}</td>
                             <td className="p-4">
                                 <div className="font-bold text-gray-900">{order.customer?.name || 'Unknown'}</div>
-                                <div className="text-xs text-gray-500">{order.customer?.phone}</div>
+                                <PhoneChip phone={order.customer?.phone} />
                             </td>
                             <td className="p-4">
                                 <div className="font-semibold text-gray-700">{order.requestedType || 'Custom Knife'}</div>
@@ -79,9 +81,7 @@ export default function CustomOrdersTable({ searchTerm }) {
                             </td>
                             <td className="p-4 space-x-2 text-end">
                                 <button
-                                    onClick={() => {
-                                        if (window.confirm('Delete Custom Order?')) deleteCustomOrder(order._id);
-                                    }}
+                                    onClick={() => setPendingDeleteId(order._id)}
                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-block"
                                     title="Delete"
                                 >
@@ -92,6 +92,27 @@ export default function CustomOrdersTable({ searchTerm }) {
                     ))}
                 </tbody>
             </table>
+
+            {pendingDeleteId && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">{t('sales.deleteCustomOrder', 'Delete Custom Order?')}</h3>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setPendingDeleteId(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button onClick={() => { deleteCustomOrder(pendingDeleteId); setPendingDeleteId(null); }} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                                {t('common.delete', 'Delete')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

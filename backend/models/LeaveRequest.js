@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const leaveRequestSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
     type: {
         type: String,

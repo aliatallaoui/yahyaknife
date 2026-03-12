@@ -1,7 +1,11 @@
+const mongoose = require('mongoose');
 const KnifeCard = require('../models/KnifeCard');
 const KnifeModel = require('../models/KnifeModel');
 const RawMaterial = require('../models/RawMaterial');
 const { logStockMovement } = require('./stockController');
+const { ok, created, message, paginated } = require('../shared/utils/ApiResponse');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // ─── KNIFE CARD CRUD ───────────────────────────────────────────────
 
@@ -16,12 +20,16 @@ exports.getAllKnifeCards = async (req, res) => {
             { steelType: { $regex: search, $options: 'i' } }
         ];
 
-        const knives = await KnifeCard.find(filter)
-            .populate('maker', 'name role workshopRole')
-            .populate('customer', 'name phone')
-            .sort({ createdAt: -1 })
-            .lean();
-        res.json(knives);
+        const [knives, total] = await Promise.all([
+            KnifeCard.find(filter)
+                .populate('maker', 'name role workshopRole')
+                .populate('customer', 'name phone')
+                .sort({ createdAt: -1 })
+                .skip(req.skip).limit(req.limit)
+                .lean(),
+            KnifeCard.countDocuments(filter)
+        ]);
+        res.json(paginated(knives, { total, hasNextPage: req.skip + knives.length < total }));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -29,6 +37,7 @@ exports.getAllKnifeCards = async (req, res) => {
 
 exports.getKnifeCardById = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid ID' });
         const knife = await KnifeCard.findById(req.params.id)
             .populate('maker', 'name role workshopRole')
             .populate('customer', 'name phone')
@@ -56,7 +65,20 @@ exports.createKnifeCard = async (req, res) => {
                 req.body.suggestedPrice = req.body.suggestedPrice || model.suggestedPriceMin;
             }
         }
-        const knife = new KnifeCard(req.body);
+        const {
+            name, type, knifeModelRef, steelType, handleMaterial, guardMaterial, pins,
+            sheathRequired, sheathMaterial, bladeLength, totalLength, weight, hardnessHRC,
+            maker, productionStartDate, productionEndDate, bomRef, bom,
+            materialCost, laborCost, otherCosts, suggestedPrice, actualSalePrice,
+            saleOrderRef, customOrderRef, soldDate, customer, photos, notes, status
+        } = req.body;
+        const knife = new KnifeCard({
+            name, type, knifeModelRef, steelType, handleMaterial, guardMaterial, pins,
+            sheathRequired, sheathMaterial, bladeLength, totalLength, weight, hardnessHRC,
+            maker, productionStartDate, productionEndDate, bomRef, bom,
+            materialCost, laborCost, otherCosts, suggestedPrice, actualSalePrice,
+            saleOrderRef, customOrderRef, soldDate, customer, photos, notes, status
+        });
         const saved = await knife.save();
         res.status(201).json(saved);
     } catch (err) {
@@ -66,9 +88,13 @@ exports.createKnifeCard = async (req, res) => {
 
 exports.updateKnifeCard = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid ID' });
         const knife = await KnifeCard.findById(req.params.id);
         if (!knife) return res.status(404).json({ error: 'Knife not found' });
-        Object.assign(knife, req.body);
+        // Strip fields that must not be overwritten by the client
+        const { knifeId: _ki, materialsConsumed: _mc, historyLog: _hl,
+                productionStartDate: _ps, productionEndDate: _pe, ...safeBody } = req.body;
+        Object.assign(knife, safeBody);
         const saved = await knife.save();
         res.json(saved);
     } catch (err) {
@@ -78,6 +104,8 @@ exports.updateKnifeCard = async (req, res) => {
 
 exports.deleteKnifeCard = async (req, res) => {
     try {
+        if (!validId(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const knife = await KnifeCard.findByIdAndDelete(req.params.id);
         if (!knife) return res.status(404).json({ error: 'Knife not found' });
         res.json({ message: 'Knife card deleted' });
@@ -95,6 +123,7 @@ const STATUS_ORDER = [
 
 exports.advanceStatus = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid ID' });
         const knife = await KnifeCard.findById(req.params.id);
         if (!knife) return res.status(404).json({ error: 'Knife not found' });
 
@@ -128,6 +157,7 @@ exports.advanceStatus = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid ID' });
         const { status, notes, workerId } = req.body;
         const knife = await KnifeCard.findById(req.params.id);
         if (!knife) return res.status(404).json({ error: 'Knife not found' });
@@ -157,6 +187,7 @@ exports.updateStatus = async (req, res) => {
 
 exports.consumeMaterials = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid ID' });
         const knife = await KnifeCard.findById(req.params.id);
         if (!knife) return res.status(404).json({ error: 'Knife not found' });
 
@@ -198,9 +229,12 @@ exports.consumeMaterials = async (req, res) => {
 
 exports.addHistoryEntry = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid ID' });
         const knife = await KnifeCard.findById(req.params.id);
         if (!knife) return res.status(404).json({ error: 'Knife not found' });
-        knife.historyLog.push({ ...req.body, date: new Date() });
+        const { stage, notes, worker } = req.body;
+        if (!stage) return res.status(400).json({ error: 'stage is required' });
+        knife.historyLog.push({ stage, notes: notes || '', worker: worker || null, date: new Date() });
         await knife.save();
         res.json(knife.historyLog);
     } catch (err) {
@@ -249,7 +283,18 @@ exports.getAllKnifeModels = async (req, res) => {
 
 exports.createKnifeModel = async (req, res) => {
     try {
-        const model = new KnifeModel(req.body);
+        const {
+            name, type, description, defaultSteelType, defaultHandleMaterial, defaultGuardMaterial,
+            defaultPins, sheathRequired, bladeLengthMin, bladeLengthMax, typicalWeight,
+            defaultBOM, suggestedPriceMin, suggestedPriceMax, estimatedProductionCost,
+            photo, notes, isActive
+        } = req.body;
+        const model = new KnifeModel({
+            name, type, description, defaultSteelType, defaultHandleMaterial, defaultGuardMaterial,
+            defaultPins, sheathRequired, bladeLengthMin, bladeLengthMax, typicalWeight,
+            defaultBOM, suggestedPriceMin, suggestedPriceMax, estimatedProductionCost,
+            photo, notes, isActive
+        });
         const saved = await model.save();
         res.status(201).json(saved);
     } catch (err) {
@@ -259,7 +304,22 @@ exports.createKnifeModel = async (req, res) => {
 
 exports.updateKnifeModel = async (req, res) => {
     try {
-        const model = await KnifeModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const {
+            name, type, description, defaultSteelType, defaultHandleMaterial, defaultGuardMaterial,
+            defaultPins, sheathRequired, bladeLengthMin, bladeLengthMax, typicalWeight,
+            defaultBOM, suggestedPriceMin, suggestedPriceMax, estimatedProductionCost,
+            photo, notes, isActive
+        } = req.body;
+        const model = await KnifeModel.findByIdAndUpdate(
+            req.params.id,
+            {
+                name, type, description, defaultSteelType, defaultHandleMaterial, defaultGuardMaterial,
+                defaultPins, sheathRequired, bladeLengthMin, bladeLengthMax, typicalWeight,
+                defaultBOM, suggestedPriceMin, suggestedPriceMax, estimatedProductionCost,
+                photo, notes, isActive
+            },
+            { new: true }
+        );
         if (!model) return res.status(404).json({ error: 'Model not found' });
         res.json(model);
     } catch (err) {
@@ -269,6 +329,8 @@ exports.updateKnifeModel = async (req, res) => {
 
 exports.deleteKnifeModel = async (req, res) => {
     try {
+        if (!validId(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         await KnifeModel.findByIdAndDelete(req.params.id);
         res.json({ message: 'Model deleted' });
     } catch (err) {

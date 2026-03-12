@@ -29,12 +29,19 @@ export default function ProjectStatus() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProj, setNewProj] = useState({ name: '', description: '', department: 'General', deadline: '', linkedModule: 'None' });
+    const [createError, setCreateError] = useState(null);
 
     const handleCreateProject = async (e) => {
         e.preventDefault();
-        await createProject(newProj);
-        setIsModalOpen(false);
-        setNewProj({ name: '', description: '', department: 'General', deadline: '', linkedModule: 'None' });
+        setCreateError(null);
+        const res = await createProject(newProj);
+        if (res?.ok) {
+            setIsModalOpen(false);
+            setNewProj({ name: '', description: '', department: 'General', deadline: '', linkedModule: 'None' });
+        } else {
+            const data = await res?.json().catch(() => ({}));
+            setCreateError(data?.message || t('createError', 'Failed to create project. Please try again.'));
+        }
     };
 
     if (loading) {
@@ -220,8 +227,14 @@ export default function ProjectStatus() {
                                 <input type="date" required value={newProj.deadline} onChange={e => setNewProj({ ...newProj, deadline: e.target.value })} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500" />
                             </div>
 
+                            {createError && (
+                                <div className="flex items-center gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                                    <span>{createError}</span>
+                                </div>
+                            )}
                             <div className="pt-4 flex justify-end gap-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">{t('cancelBtn')}</button>
+                                <button type="button" onClick={() => { setIsModalOpen(false); setCreateError(null); }} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">{t('cancelBtn')}</button>
                                 <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700">{t('submitBtn')}</button>
                             </div>
                         </form>

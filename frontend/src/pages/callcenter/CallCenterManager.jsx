@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Users, PhoneCall, CheckCircle, PackageCheck,
-    RefreshCw, Zap, Sliders, DollarSign
+    RefreshCw, Zap, DollarSign, AlertTriangle, X
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -11,6 +11,9 @@ export default function CallCenterManager() {
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [assignmentLoading, setAssignmentLoading] = useState(false);
+    const [period, setPeriod] = useState('today'); // 'today' | '7d' | '30d'
+    const [assignError, setAssignError] = useState(null);
+    const [assignSuccess, setAssignSuccess] = useState(null);
     const [stats, setStats] = useState({
         totalCalls: 0,
         averageConfirmRate: 0,
@@ -21,7 +24,7 @@ export default function CallCenterManager() {
     const fetchAnalytics = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/call-center/manager-analytics`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/call-center/manager-analytics?range=${period}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = response.data.leaderboard || [];
@@ -58,19 +61,23 @@ export default function CallCenterManager() {
 
     useEffect(() => {
         fetchAnalytics();
-    }, []);
+    }, [period]);
 
     const triggerAutoAssignment = async () => {
         setAssignmentLoading(true);
+        setAssignError(null);
+        setAssignSuccess(null);
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/call-center/assign-orders`, { mode: 'Auto_RoundRobin' }, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            alert("Auto assignment completed successfully.");
-            fetchAnalytics(); // Refresh stats
+            const res = await axios.post(
+                `${import.meta.env.VITE_API_URL || ''}/api/call-center/assign-orders`,
+                { mode: 'Auto_RoundRobin' },
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            );
+            const count = res.data?.assignedCount ?? res.data?.count ?? '?';
+            setAssignSuccess(`${count} orders assigned successfully.`);
+            fetchAnalytics();
         } catch (error) {
-            console.error("Assignment Error", error);
-            alert("Assignment simulation triggered (Mock Data fallback active).");
+            setAssignError(error.response?.data?.message || error.message || 'Auto-assignment failed.');
         } finally {
             setAssignmentLoading(false);
         }
@@ -99,7 +106,7 @@ export default function CallCenterManager() {
                     </h1>
                     <p className="text-gray-500 text-sm mt-1">{t('callcenter.manager_subtitle', 'Monitor agent performance and distribute workloads.')}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={triggerAutoAssignment}
                         disabled={assignmentLoading}
@@ -113,6 +120,26 @@ export default function CallCenterManager() {
                     </button>
                 </div>
             </div>
+
+            {/* Auto-assign feedback banners */}
+            {assignSuccess && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 animate-in fade-in">
+                    <CheckCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{assignSuccess}</span>
+                    <button onClick={() => setAssignSuccess(null)} className="text-emerald-500 hover:text-emerald-700">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+            {assignError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 animate-in fade-in">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{assignError}</span>
+                    <button onClick={() => setAssignError(null)} className="text-rose-400 hover:text-rose-600">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Global KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -129,9 +156,21 @@ export default function CallCenterManager() {
                         <Users className="w-5 h-5 text-indigo-600" />
                         {t('callcenter.leaderboard.title', 'Agent Performance Leaderboard')}
                     </h3>
-                    <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 font-medium">
-                        <Sliders className="w-4 h-4" /> Filters
-                    </button>
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        {[
+                            { key: 'today', label: t('callcenter.period.today', 'Today') },
+                            { key: '7d', label: t('callcenter.period.7d', '7 Days') },
+                            { key: '30d', label: t('callcenter.period.30d', '30 Days') },
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setPeriod(key)}
+                                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${period === key ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">

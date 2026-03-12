@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { FileText, Download, Calendar, User, Clock, AlertTriangle, Briefcase, FileSpreadsheet } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
@@ -11,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function HRReports() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [activeReport, setActiveReport] = useState('monthly');
     const [period, setPeriod] = useState(moment().format('MM-YYYY'));
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
@@ -26,12 +28,13 @@ export default function HRReports() {
         setLoading(true);
         try {
             let res;
+            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             if (activeReport === 'daily') {
-                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily?date=${date}`);
+                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily?date=${date}`, authHeader);
             } else {
-                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/${activeReport}?period=${period}`);
+                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/${activeReport}?period=${period}`, authHeader);
             }
-            setData(res.data);
+            setData(res.data?.data ?? res.data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -72,6 +75,9 @@ export default function HRReports() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
+                            {data.records.length === 0 && (
+                                <tr><td colSpan="4" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                            )}
                             {data.records.map((r, i) => (
                                 <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name} <span className="text-xs text-gray-400 block">{r.employeeId?.role}</span></td>
@@ -106,6 +112,9 @@ export default function HRReports() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
+                            {data.records.length === 0 && (
+                                <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                            )}
                             {data.records.map((r, i) => (
                                 <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
@@ -138,6 +147,9 @@ export default function HRReports() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
+                            {data.records.length === 0 && (
+                                <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                            )}
                             {data.records.map((r, i) => (
                                 <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
@@ -168,6 +180,9 @@ export default function HRReports() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
+                            {data.leaders.length === 0 && (
+                                <tr><td colSpan="3" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                            )}
                             {data.leaders.map((r, i) => (
                                 <tr key={i} className="hover:bg-gray-50">
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employee?.name} <span className="text-xs text-gray-400 block">{r.employee?.role}</span></td>
@@ -198,7 +213,7 @@ export default function HRReports() {
             return [t('hr.colEmployee'), t('hr.colRole'), t('hr.colWorkedTime'), t('hr.colLateOvertime'), t('hr.colStatus')];
         }
         if (activeReport === 'monthly') {
-            return [t('hr.colEmployee'), t('hr.colRole'), t('hr.colDaysPresent'), t('hr.colLateDays'), t('hr.colAbsentDays'), t('hr.colTotalMissingMins'), t('hr.colEstSalary')];
+            return [t('hr.colEmployee'), t('hr.colRole'), t('hr.colDaysPresent'), t('hr.colLateDays'), t('hr.colAbsentDays'), t('hr.colTotalLateMin'), t('hr.colTotalOvertimeMin')];
         }
         if (activeReport === 'payroll') {
             return [t('hr.colEmployee'), t('hr.colBaseSalary'), t('hr.colDeductionsTotal'), t('hr.colOvertimeAddition'), t('hr.colFinalClearedSalary')];
@@ -224,15 +239,20 @@ export default function HRReports() {
             ]);
         }
         else if (activeReport === 'monthly' && data?.data) {
-            rows = data.data.map(r => [
-                r.employee?.name || t('hr.unknown'),
-                r.employee?.role || t('hr.unknown'),
-                r.metricsTotal?.presentDays || 0,
-                r.metricsTotal?.lateDays || 0,
-                r.metricsTotal?.absentDays || 0,
-                `${r.metricsTotal?.totalMissingMinutes || 0}${t('hr.lblMinutes')}`,
-                `${(r.projectedSalary || 0).toLocaleString()} ${t('hr.dzdCurrency')}`
-            ]);
+            rows = data.data.map(r => {
+                const days = Object.values(r.days || {});
+                const presentDays = days.filter(d => d.status !== 'Absent').length;
+                const totalLateMin = days.reduce((acc, d) => acc + (d.lateMin || 0), 0);
+                return [
+                    r.employee?.name || t('hr.unknown'),
+                    r.employee?.role || t('hr.unknown'),
+                    presentDays,
+                    r.monthSummary?.lateDays || 0,
+                    r.monthSummary?.absentDays || 0,
+                    `${totalLateMin}${t('hr.lblMinutes')}`,
+                    `${r.monthSummary?.totalOvertimeMin || 0}${t('hr.lblMinutes')}`
+                ];
+            });
         }
         else if (activeReport === 'payroll' && data?.records) {
             rows = data.records.map(r => [
@@ -306,8 +326,10 @@ export default function HRReports() {
                             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all cursor-pointer" />
                         ) : (
                             <select value={period} onChange={(e) => setPeriod(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all">
-                                <option value={moment().format('MM-YYYY')} className="text-gray-900">{moment().format('MMMM YYYY')}</option>
-                                <option value={moment().subtract(1, 'months').format('MM-YYYY')} className="text-gray-900">{moment().subtract(1, 'months').format('MMMM YYYY')}</option>
+                                {Array.from({ length: 6 }, (_, i) => {
+                                    const m = moment().subtract(i, 'months');
+                                    return <option key={i} value={m.format('MM-YYYY')}>{m.format('MMMM YYYY')}</option>;
+                                })}
                             </select>
                         )}
                         <button onClick={handleExportExcel} disabled={!data} className="flex items-center gap-2 px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 leading-none disabled:opacity-50">

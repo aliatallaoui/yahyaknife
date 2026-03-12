@@ -1,18 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Plus, Clock, Search, GripVertical, User } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import KnifeCardModal from '../components/KnifeCardModal';
 import { getStageTranslation } from './KnifeDashboard';
+import { useHotkey } from '../hooks/useHotkey';
 
 const COLUMNS = ['Design', 'In Production', 'Heat Treatment', 'Grinding', 'Handle Installation', 'Finishing', 'Sharpening', 'Completed'];
 
 export default function KnivesInProduction() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [knives, setKnives] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchQuery(''); searchRef.current?.blur(); } });
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,8 +27,11 @@ export default function KnivesInProduction() {
     const fetchKnives = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards`);
-            const data = await res.json();
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const data = Array.isArray(json) ? json : (json.data ?? []);
             // We only want knives currently in the workshop, not Sold.
             setKnives(data.filter(k => k.status !== 'Sold'));
         } catch (e) { console.error(e); }
@@ -38,7 +47,7 @@ export default function KnivesInProduction() {
 
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${knifeId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ status: newStatus })
             });
             if (!res.ok) throw new Error('Failed to update status');
@@ -89,8 +98,9 @@ export default function KnivesInProduction() {
                         <div className="relative">
                             <Search className="w-4 h-4 text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('knives.searchDb', 'Search blades...')}
+                                placeholder={t('knives.searchDb', 'Search blades... (Press /)')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-9 pr-4 py-2 bg-white border border-indigo-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all w-48 sm:w-64 shadow-sm font-bold"

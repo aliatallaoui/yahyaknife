@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
     Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Briefcase, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
-    Star, Clock, ChevronDown, X, Layers, UserCircle, Hammer, PhoneCall, Headset
+    Star, Clock, ChevronDown, X, Layers, UserCircle, Hammer, PhoneCall, Headset, AlertTriangle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -223,6 +223,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     const [searchTerm, setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
     const [openDomain, setOpenDomain] = useState(null);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const toggleFavorite = (path, label) => {
         setFavorites(prev => {
@@ -314,7 +315,8 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 { label: t('knives.cards', 'Work Orders'), path: '/knives', icon: Layers, permission: 'manufacturing.read' },
                 { label: t('knives.library', 'BOM / Library'), path: '/knives/library', icon: Search, permission: 'manufacturing.read' },
                 { label: t('knives.production', 'Manufacturing Status'), path: '/knives/production', icon: Layers, permission: 'manufacturing.read' },
-                { label: t('sidebar.production_tools', 'Tool Management'), path: '/production/tools', icon: Gear, permission: 'manufacturing.read' }
+                { label: t('sidebar.production_tools', 'Tool Management'), path: '/production/tools', icon: Gear, permission: 'manufacturing.read' },
+                { label: t('sidebar.my_work', 'My Work'), path: '/workshop/my-work', icon: Hammer, permission: 'workshop.view' }
             ]
         },
         {
@@ -382,11 +384,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         if (setMobileOpen) setMobileOpen(false);
     };
 
-    const handleSignOut = () => {
-        if (window.confirm(t('sidebar.confirmLogout', 'Are you sure you want to sign out?'))) {
-            logout();
-        }
-    };
+    const handleSignOut = () => setShowLogoutConfirm(true);
 
     return (
         <>
@@ -535,6 +533,28 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     )}
                 </div>
             </div>
+
+            {/* Logout confirm dialog */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">{t('sidebar.confirmLogout', 'Sign out?')}</h3>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setShowLogoutConfirm(false)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button onClick={() => { setShowLogoutConfirm(false); logout(); }} className="px-4 py-2 text-sm font-bold text-white bg-gray-900 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1.5">
+                                <LogOut className="w-3.5 h-3.5" /> {t('sidebar.signOut', 'Sign Out')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

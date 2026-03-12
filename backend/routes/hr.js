@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const hrController = require('../controllers/hrController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
+const paginate = require('../shared/middleware/paginate');
 
 router.use(protect);
 
@@ -9,7 +10,7 @@ router.use(protect);
 router.get('/metrics', requirePermission('hr.employees.view'), hrController.getHRMetrics);
 
 // /api/hr/employees
-router.get('/employees', requirePermission('hr.employees.view'), hrController.getEmployees);
+router.get('/employees', requirePermission('hr.employees.view'), paginate, hrController.getEmployees);
 router.post('/employees', requirePermission('hr.employees.edit'), hrController.createEmployee);
 router.get('/employees/:id', requirePermission('hr.employees.view'), hrController.getEmployeeById);
 router.put('/employees/:id', requirePermission('hr.employees.edit'), hrController.updateEmployee);
@@ -34,6 +35,7 @@ router.put('/attendance/:id', requirePermission('hr.employees.edit'), attendance
 router.post('/payroll/generate', requirePermission('hr.payroll.run'), payrollController.generateMonthlyPayroll);
 router.get('/payroll', requirePermission('hr.payroll.view'), payrollController.getPayrollRecords);
 router.put('/payroll/:id/approve', requirePermission('hr.payroll.approve'), payrollController.approvePayroll);
+router.put('/payroll/:id/pay', requirePermission('hr.payroll.approve'), payrollController.recordPayment);
 
 const hrReportsController = require('../controllers/hrReportsController');
 

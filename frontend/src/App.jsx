@@ -26,6 +26,7 @@ import KnifeDashboard from './pages/KnifeDashboard';
 import KnifeLibrary from './pages/KnifeLibrary';
 import KnivesInProduction from './pages/KnivesInProduction';
 import KnifeBuilder from './pages/KnifeBuilder';
+import WorkshopMyWork from './pages/WorkshopMyWork';
 import ToolManagement from './pages/ToolManagement';
 import ProcurementHub from './pages/ProcurementHub';
 import SettingsLayout from './pages/settings/SettingsLayout';
@@ -139,6 +140,7 @@ const Layout = () => {
               <Route path="/procurement" element={<ProcurementHub />} />
               <Route path="/support" element={<SupportDesk />} />
               <Route path="/production/tools" element={<ToolManagement />} />
+              <Route path="/workshop/my-work" element={<WorkshopMyWork />} />
 
               {/* Call Center Routes */}
               <Route path="/call-center" element={<CallCenterDashboard />} />

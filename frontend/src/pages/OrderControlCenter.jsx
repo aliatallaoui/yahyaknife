@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useContext, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -12,6 +14,7 @@ import clsx from 'clsx';
 import moment from 'moment';
 
 const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
+const FILTER_KEYS = ['status', 'courier', 'agent', 'wilaya', 'channel', 'priority', 'tags', 'dateFrom', 'dateTo'];
 
 const STATUS_STYLES = {
     'New': 'bg-gray-100 text-gray-700 border-gray-200',
@@ -117,21 +120,34 @@ export default function OrderControlCenter() {
     const [sortField, setSortField] = useState('date');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // Filters State
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filters, setFilters] = useState({
-        status: '',
-        courier: '',
-        agent: '',
-        wilaya: '',
-        channel: '',
-        priority: '',
-        tags: '',
-        dateFrom: '',
-        dateTo: ''
-    });
+    // Filters State — synced to URL so views are bookmarkable and shareable
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    const [activeStage, setActiveStage] = useState('pre-dispatch'); // 'all', 'pre-dispatch', 'post-dispatch', 'returns'
+    const searchTerm = searchParams.get('q') || '';
+    const activeStage = searchParams.get('tab') || 'pre-dispatch';
+
+    const filters = useMemo(() => Object.fromEntries(
+        FILTER_KEYS.map(k => [k, searchParams.get(k) || ''])
+    ), [searchParams]);
+
+    const setSearchTerm = useCallback((val) => {
+        setSearchParams(prev => { const n = new URLSearchParams(prev); val ? n.set('q', val) : n.delete('q'); return n; }, { replace: true });
+    }, [setSearchParams]);
+
+    const setActiveStage = useCallback((val) => {
+        setSearchParams(prev => { const n = new URLSearchParams(prev); n.set('tab', val); n.delete('q'); FILTER_KEYS.forEach(k => n.delete(k)); return n; }, { replace: true });
+    }, [setSearchParams]);
+
+    const setFilters = useCallback((updaterOrValue) => {
+        setSearchParams(prev => {
+            const n = new URLSearchParams(prev);
+            const next = typeof updaterOrValue === 'function'
+                ? updaterOrValue(Object.fromEntries(FILTER_KEYS.map(k => [k, prev.get(k) || ''])))
+                : updaterOrValue;
+            FILTER_KEYS.forEach(k => next[k] ? n.set(k, next[k]) : n.delete(k));
+            return n;
+        }, { replace: true });
+    }, [setSearchParams]);
 
     // Drawer / Modals
     const [focusedOrderId, setFocusedOrderId] = useState(null);
@@ -139,15 +155,45 @@ export default function OrderControlCenter() {
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [editOrderData, setEditOrderData] = useState(null);
 
+    // Auto-open new order modal when navigated from CustomerProfile (?newOrder=1)
+    useEffect(() => {
+        if (searchParams.get('newOrder') !== '1') return;
+        const phone = searchParams.get('phone') || '';
+        const name = searchParams.get('name') || '';
+        if (phone || name) setEditOrderData({ _prefill: true, customerPhone: phone, customerName: name });
+        setIsOrderModalOpen(true);
+        // Remove the trigger params so refresh doesn't re-open
+        setSearchParams(prev => {
+            const n = new URLSearchParams(prev);
+            n.delete('newOrder'); n.delete('phone'); n.delete('name');
+            return n;
+        }, { replace: true });
+    }, []); // run once on mount
+
     // Bulk Actions
     const [bulkActionType, setBulkActionType] = useState(null); // 'status' | 'agent' | 'courier'
     const [bulkActionValue, setBulkActionValue] = useState('');
 
+    // In-app confirm dialog (replaces window.confirm for destructive bulk ops)
+    const [confirmDialog, setConfirmDialog] = useState(null); // { title, body, danger, onConfirm }
+
     // Inline sync message (fixes alert suppression)
     const [syncMessage, setSyncMessage] = useState(null);
 
+    // Error toast — replaces all window.alert() calls
+    const [errorToast, setErrorToast] = useState(null);
+    const showError = (msg) => {
+        setErrorToast(msg);
+        setTimeout(() => setErrorToast(null), 5000);
+    };
+
     // CSV Export Background Queue State
     const [exportState, setExportState] = useState({ isExporting: false, progress: 0, jobId: null });
+
+    // Search ref for keyboard focus shortcut
+    const searchInputRef = useRef(null);
+    useHotkey('/', () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchInputRef.current) { setSearchTerm(''); searchInputRef.current?.blur(); } });
 
     // Virtualization Engine
     const parentRef = React.useRef(null);
@@ -176,7 +222,7 @@ export default function OrderControlCenter() {
                 pollExportStatus(res.data.jobId);
             }
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to trigger export');
+            showError(err.response?.data?.message || 'Failed to trigger export');
         }
     };
 
@@ -202,7 +248,7 @@ export default function OrderControlCenter() {
                 } else if (res.data.status === 'failed') {
                     clearInterval(interval);
                     setExportState({ isExporting: false, progress: 0, jobId: null });
-                    alert(`Export Failed: ${res.data.error}`);
+                    showError(`Export Failed: ${res.data.error}`);
                 } else {
                     // Update progress
                     setExportState(prev => ({ ...prev, progress: res.data.progress || 0 }));
@@ -416,7 +462,7 @@ export default function OrderControlCenter() {
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
         }
@@ -438,7 +484,7 @@ export default function OrderControlCenter() {
             setPostponeDate('');
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         }
     }, [postponeOrderId, postponeDate, fetchOrders]);
 
@@ -450,7 +496,7 @@ export default function OrderControlCenter() {
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         }
     }, [fetchOrders]);
 
@@ -462,24 +508,30 @@ export default function OrderControlCenter() {
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         }
     }, [fetchOrders]);
 
-    const handleBulkDelete = useCallback(async () => {
+    const handleBulkDelete = useCallback(() => {
         if (selectedIds.size === 0) return;
-        if (!window.confirm(`Move ${selectedIds.size} order(s) to Trash?`)) return;
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/delete`,
-                { orderIds: Array.from(selectedIds) },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setSelectedIds(new Set());
-            fetchOrders();
-        } catch (err) {
-            alert(err.response?.data?.message || err.message);
-        }
+        setConfirmDialog({
+            title: `Move ${selectedIds.size} order${selectedIds.size > 1 ? 's' : ''} to Trash?`,
+            body: 'Orders can be restored from the Trash tab before they are permanently deleted.',
+            danger: false,
+            onConfirm: async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/delete`,
+                        { orderIds: Array.from(selectedIds) },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    setSelectedIds(new Set());
+                    fetchOrders();
+                } catch (err) {
+                    showError(err.response?.data?.message || err.message);
+                }
+            },
+        });
     }, [selectedIds, fetchOrders]);
 
     const handleBulkRestore = useCallback(async () => {
@@ -493,24 +545,30 @@ export default function OrderControlCenter() {
             setSelectedIds(new Set());
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         }
     }, [selectedIds, fetchOrders]);
 
-    const handleBulkPurge = useCallback(async () => {
+    const handleBulkPurge = useCallback(() => {
         if (selectedIds.size === 0) return;
-        if (!window.confirm(`PERMANENTLY delete ${selectedIds.size} order(s)? This cannot be undone.`)) return;
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/purge`,
-                { orderIds: Array.from(selectedIds) },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setSelectedIds(new Set());
-            fetchOrders();
-        } catch (err) {
-            alert(err.response?.data?.message || err.message);
-        }
+        setConfirmDialog({
+            title: `Permanently delete ${selectedIds.size} order${selectedIds.size > 1 ? 's' : ''}?`,
+            body: 'This action cannot be undone. All order data, history, and notes will be destroyed forever.',
+            danger: true,
+            onConfirm: async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/bulk/purge`,
+                        { orderIds: Array.from(selectedIds) },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    setSelectedIds(new Set());
+                    fetchOrders();
+                } catch (err) {
+                    showError(err.response?.data?.message || err.message);
+                }
+            },
+        });
     }, [selectedIds, fetchOrders]);
 
     const handleAgentChange = useCallback(async (orderId, agentId) => {
@@ -524,7 +582,7 @@ export default function OrderControlCenter() {
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
         }
@@ -541,7 +599,7 @@ export default function OrderControlCenter() {
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
         }
@@ -593,18 +651,19 @@ export default function OrderControlCenter() {
                 payload
             }, { headers: { Authorization: `Bearer ${token}` } });
 
-            alert(res.data.message);
+            if (res.data.message) setSyncMessage({ type: 'success', text: res.data.message });
             setSelectedIds(new Set());
             setBulkActionType(null);
             setBulkActionValue('');
             fetchOrders();
         } catch (err) {
-            alert(err.response?.data?.message || err.message);
+            showError(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
         }
     };
 
+// Gate bulk execution through confirm dialog (prevents accidental mass changes)    const requestBulkConfirm = () => {        if (!bulkActionValue) return;        const count = selectedIds.size;        const isDestructive = bulkActionType === 'status' && ['Cancelled', 'Cancelled by Customer', 'Refused', 'Returned'].includes(bulkActionValue);        const actionLabel = bulkActionType === 'status' ? `change status to "${bulkActionValue}"` : bulkActionType === 'agent' ? 'assign to agent' : 'assign courier';        setConfirmDialog({            title: `Apply to ${count} order${count !== 1 ? 's' : ''}?`,            body: `You are about to ${actionLabel} for ${count} selected order${count !== 1 ? 's' : ''}. This will take effect immediately.`,            danger: isDestructive,            onConfirm: executeBulkAction,        });    };
     // Columns configuration (Static Definitions)
     const columnDefinitions = useMemo(() => ({
         index: { id: 'index', label: '#' },
@@ -730,11 +789,13 @@ export default function OrderControlCenter() {
                         <div className="relative shrink-0">
                             <Search className="w-3.5 h-3.5 text-gray-400 absolute start-2.5 top-1/2 -translate-y-1/2" />
                             <input
+                                ref={searchInputRef}
                                 type="text"
                                 placeholder={t('ordersControl.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); }}
                                 className="bg-gray-50 border border-gray-200 text-xs font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-[140px] md:w-[150px] xl:w-[200px] ps-8 pe-2.5 py-1.5 xl:py-2 outline-none transition-all shadow-inner focus:bg-white placeholder:font-medium"
+                                title="Press / to focus"
                             />
                             {searchTerm && (
                                 <button onClick={() => setSearchTerm('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -747,7 +808,13 @@ export default function OrderControlCenter() {
                             onClick={() => setShowFilters(!showFilters)}
                             className={clsx("flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border transition-all h-[32px] xl:h-[36px] shrink-0", showFilters ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm")}
                         >
-                            <SlidersHorizontal className="w-3.5 h-3.5" /> <span className="hidden lg:inline">{t('ordersControl.filtersBtn')}</span> {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            <span className="hidden lg:inline">{t('ordersControl.filtersBtn')}</span>
+                            {Object.values(filters).filter(Boolean).length > 0 && (
+                                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-black leading-none">
+                                    {Object.values(filters).filter(Boolean).length}
+                                </span>
+                            )}
                         </button>
                     </div>{/* end left group */}
 
@@ -1231,8 +1298,25 @@ export default function OrderControlCenter() {
                             <tbody className="divide-y divide-gray-100 text-sm">
                                 <tr>
                                     <td colSpan={visibleColumns.length + 1} className="py-24 text-center">
-                                        <LayoutTemplate className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-sm font-bold text-gray-500">{t('ordersControl.grid.empty')}</p>
+                                        {(searchTerm || FILTER_KEYS.some(k => filters[k])) ? (
+                                            <>
+                                                <Filter className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                                                <p className="text-sm font-bold text-gray-500">{t('ordersControl.grid.emptyFiltered', 'No orders match your filters')}</p>
+                                                <p className="text-xs text-gray-400 mt-1">{t('ordersControl.grid.emptyFilteredHint', 'Try adjusting or clearing your active filters.')}</p>
+                                                <button
+                                                    onClick={() => { setFilters({ status: '', priority: '', channel: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' }); setSearchTerm(''); }}
+                                                    className="mt-4 px-4 py-2 text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
+                                                >
+                                                    {t('ordersControl.grid.clearFilters', 'Clear Filters')}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <PackageOpen className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                                <p className="text-sm font-bold text-gray-500">{t('ordersControl.grid.empty')}</p>
+                                                <p className="text-xs text-gray-400 mt-1">{t('ordersControl.grid.emptyHint', 'New orders will appear here once created.')}</p>
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             </tbody>
@@ -1303,7 +1387,7 @@ export default function OrderControlCenter() {
                                                     );
                                                     fetchOrders();
                                                 } catch (err) {
-                                                    alert(err.response?.data?.message || err.message);
+                                                    showError(err.response?.data?.message || err.message);
                                                 }
                                             }}
                                             onRestore={async (orderId) => {
@@ -1315,7 +1399,7 @@ export default function OrderControlCenter() {
                                                     );
                                                     fetchOrders();
                                                 } catch (err) {
-                                                    alert(err.response?.data?.message || err.message);
+                                                    showError(err.response?.data?.message || err.message);
                                                 }
                                             }}
                                             onPurge={async (orderId) => {
@@ -1327,7 +1411,7 @@ export default function OrderControlCenter() {
                                                     );
                                                     fetchOrders();
                                                 } catch (err) {
-                                                    alert(err.response?.data?.message || err.message);
+                                                    showError(err.response?.data?.message || err.message);
                                                 }
                                             }}
                                             onPostpone={(orderId) => {
@@ -1424,7 +1508,7 @@ export default function OrderControlCenter() {
                                         ...couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)
                                     ]}
                                 </select>
-                                <button onClick={executeBulkAction} disabled={!bulkActionValue} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
+                                <button onClick={requestBulkConfirm} disabled={!bulkActionValue} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
                                     {t('ordersControl.bulk.applyAll')}
                                 </button>
                                 <button onClick={() => { setBulkActionType(null); setBulkActionValue(''); }} className="text-gray-400 hover:text-white text-xs font-bold px-2 uppercase">{t('ordersControl.bulk.cancel')}</button>
@@ -1468,6 +1552,44 @@ export default function OrderControlCenter() {
                 inventoryProducts={productsList}
                 couriers={couriers}
             />
+
+            {/* Error toast — replaces window.alert for all error cases */}
+            {errorToast && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-200 max-w-sm">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="leading-snug">{errorToast}</span>
+                    <button onClick={() => setErrorToast(null)} className="ml-2 text-gray-400 hover:text-white transition-colors shrink-0">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Bulk action confirm dialog */}
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${confirmDialog.danger ? 'bg-red-100' : 'bg-amber-100'}`}>
+                            <AlertTriangle className={`w-5 h-5 ${confirmDialog.danger ? 'text-red-600' : 'text-amber-600'}`} />
+                        </div>
+                        <h3 className="text-base font-black text-gray-900 mb-2">{confirmDialog.title}</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed mb-6">{confirmDialog.body}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setConfirmDialog(null)}
+                                className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => { setConfirmDialog(null); confirmDialog.onConfirm(); }}
+                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors ${confirmDialog.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}
+                            >
+                                {confirmDialog.danger ? 'Delete Forever' : 'Move to Trash'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

@@ -4,7 +4,8 @@ const shipmentActivitySchema = new mongoose.Schema({
     status: { type: String, required: true },
     date: { type: Date, default: Date.now },
     location: { type: String },
-    remarks: { type: String }
+    remarks: { type: String },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }  // actor (null = system/cron)
 });
 
 const shipmentSchema = new mongoose.Schema({

@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { Wrench, Settings, AlertCircle, Plus, CheckCircle2, Clock, Calendar, Hash, User, FileText } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
+import { Wrench, Settings, AlertCircle, Plus, CheckCircle2, Clock, Calendar, Hash, User, FileText, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
+import clsx from 'clsx';
+import { useHotkey } from '../hooks/useHotkey';
 
 export default function ToolManagement() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [tools, setTools] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -18,16 +22,34 @@ export default function ToolManagement() {
     const [newTool, setNewTool] = useState({ name: '', category: 'Hand Tool', serialNumber: '', status: 'Operational', assignedTo: '' });
     const [maintenanceRecord, setMaintenanceRecord] = useState({ note: '', status: '' });
     const [employees, setEmployees] = useState([]);
+    const [errorMsg, setErrorMsg] = useState(null);
+    const showError = (msg) => { setErrorMsg(msg); setTimeout(() => setErrorMsg(null), 5000); };
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('All');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
+
+    const filteredTools = tools.filter(tool => {
+        if (filterStatus !== 'All' && tool.status !== filterStatus) return false;
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            if (!tool.name?.toLowerCase().includes(q) && !tool.serialNumber?.toLowerCase().includes(q) && !tool.category?.toLowerCase().includes(q)) return false;
+        }
+        return true;
+    });
 
     const fetchTools = async () => {
         try {
             setLoading(true);
+            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             const [toolsRes, empRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/tools`),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`)
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/tools`, authHeader),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, authHeader)
             ]);
-            setTools(toolsRes.data);
-            setEmployees(empRes.data);
+            setTools(toolsRes.data?.data ?? toolsRes.data);
+            setEmployees(empRes.data?.data ?? empRes.data);
         } catch (error) {
             console.error('Error fetching tools:', error);
         } finally {
@@ -44,15 +66,16 @@ export default function ToolManagement() {
             const payload = { ...newTool };
             if (payload.assignedTo === '') payload.assignedTo = null;
 
+            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             if (selectedTool) {
-                await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/tools/${selectedTool._id}`, payload);
+                await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/tools/${selectedTool._id}`, payload, authHeader);
             } else {
-                await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/tools`, payload);
+                await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/tools`, payload, authHeader);
             }
             fetchTools();
             setModalOpen(false);
         } catch (error) {
-            alert('Failed to save tool: ' + (error.response?.data?.error || error.message));
+            showError('Failed to save tool: ' + (error.response?.data?.error || error.message));
         }
     };
 
@@ -61,11 +84,11 @@ export default function ToolManagement() {
             await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/tools/${selectedTool._id}/maintenance`, {
                 note: maintenanceRecord.note,
                 status: maintenanceRecord.status || selectedTool.status
-            });
+            }, { headers: { Authorization: `Bearer ${token}` } });
             fetchTools();
             setMaintenanceModalOpen(false);
         } catch (error) {
-            alert('Failed to log maintenance');
+            showError(error.response?.data?.error || 'Failed to log maintenance.');
         }
     };
 
@@ -152,6 +175,39 @@ export default function ToolManagement() {
                 </div>
             </div>
 
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                    <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                    <input
+                        ref={searchRef}
+                        type="text"
+                        placeholder={t('tools.searchPlaceholder', 'Search... (Press /)')}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full ps-9 pe-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all font-bold"
+                    />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {['All', 'Operational', 'Needs Maintenance', 'Under Repair', 'Decommissioned'].map(status => {
+                        const count = status === 'All' ? tools.length : tools.filter(tool => tool.status === status).length;
+                        return (
+                            <button key={status} onClick={() => setFilterStatus(status)}
+                                className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors',
+                                    filterStatus === status ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                )}>
+                                {status === 'All' ? t('tools.filterAll', 'All') : status}
+                                {count > 0 && (
+                                    <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
+                                        filterStatus === status ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                                    )}>{count}</span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             {/* Main Table */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -167,9 +223,25 @@ export default function ToolManagement() {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading && <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading tools...</td></tr>}
-                            {!loading && tools.length === 0 && <tr><td colSpan="6" className="p-8 text-center text-gray-500">No machinery registered.</td></tr>}
-                            {tools.map(tool => (
+                            {loading && (
+                                <tr><td colSpan="6" className="p-12 text-center">
+                                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                                        <div className="w-7 h-7 rounded-full border-4 border-gray-200 border-t-slate-600 animate-spin" />
+                                        <span className="text-sm font-medium">{t('tools.loading', 'Loading tools...')}</span>
+                                    </div>
+                                </td></tr>
+                            )}
+                            {!loading && tools.length === 0 && (
+                                <tr><td colSpan="6" className="p-12 text-center">
+                                    <Wrench className="w-10 h-10 mx-auto mb-3 text-gray-200" />
+                                    <p className="text-gray-500 font-semibold">{t('tools.noTools', 'No machinery registered yet.')}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{t('tools.noToolsHint', 'Use "Register Tool" to add equipment.')}</p>
+                                </td></tr>
+                            )}
+                            {!loading && tools.length > 0 && filteredTools.length === 0 && (
+                                <tr><td colSpan="6" className="p-8 text-center text-sm text-gray-400">{t('tools.noMatch', 'No tools match your search or filter.')}</td></tr>
+                            )}
+                            {filteredTools.map(tool => (
                                 <tr key={tool._id} className="border-b border-gray-100 hover:bg-slate-50/50 transition-colors">
                                     <td className="p-4">
                                         <div className="font-bold text-gray-900">{tool.name}</div>
@@ -300,6 +372,14 @@ export default function ToolManagement() {
                             <button onClick={handleSaveMaintenance} className="px-5 py-2.5 font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow transition-colors">Log Maintenance</button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {errorMsg && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl max-w-sm">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="flex-1 leading-snug">{errorMsg}</span>
+                    <button onClick={() => setErrorMsg(null)} className="ml-2 text-gray-400 hover:text-white transition-colors shrink-0">✕</button>
                 </div>
             )}
         </div>

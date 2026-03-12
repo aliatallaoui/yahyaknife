@@ -3,27 +3,46 @@ const Revenue = require('../models/Revenue');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Payroll = require('../models/Payroll');
+const Courier = require('../models/Courier');
+const { ok } = require('../shared/utils/ApiResponse');
 
 // Get financial overview metrics (total revenue, total expenses, net profit, profit margin)
 exports.getFinancialOverview = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
+        if (!tenantId) return res.status(401).json({ error: 'Tenant context required' });
 
-        // 1. Manual Expenses & Revenues — scoped to tenant
-        const [expenseAgg, revenueAgg, payrollAgg] = await Promise.all([
+        // Optional date range — defaults to all-time if not provided
+        let dateFilter = {};
+        let txDateFilter = {};
+        if (req.query.startDate && req.query.endDate) {
+            const start = new Date(req.query.startDate);
+            const end   = new Date(req.query.endDate);
+            if (!isNaN(start) && !isNaN(end)) {
+                end.setHours(23, 59, 59, 999);
+                dateFilter   = { createdAt: { $gte: start, $lte: end } };
+                txDateFilter = { date:      { $gte: start.toISOString().slice(0, 10),
+                                              $lte: end.toISOString().slice(0, 10) } };
+            }
+        }
+
+        // 1. Manual Expenses & Revenues — scoped to tenant + optional date range
+        const [expenseAgg, revenueAgg, payrollAgg, courierList] = await Promise.all([
             Expense.aggregate([
-                { $match: { tenant: tenantId } },
+                { $match: { tenant: tenantId, ...txDateFilter } },
                 { $group: { _id: null, total: { $sum: '$amount' } } }
             ]),
             Revenue.aggregate([
-                { $match: { tenant: tenantId } },
+                { $match: { tenant: tenantId, ...txDateFilter } },
                 { $group: { _id: null, total: { $sum: '$amount' } } }
             ]),
-            // Payroll is workshop-internal (no tenant field) — aggregates all paid salary disbursements
+            // Payroll is tenant-scoped — filter to current tenant's paid disbursements only
             Payroll.aggregate([
-                { $match: { status: { $in: ['Paid', 'Partially Paid'] } } },
+                { $match: { tenant: tenantId, status: { $in: ['Paid', 'Partially Paid'] }, ...dateFilter } },
                 { $group: { _id: null, total: { $sum: '$amountPaid' } } }
-            ])
+            ]),
+            // Courier settlements — always all-time (COD remittance is not date-bound)
+            Courier.find({ tenant: tenantId }).select('name pendingRemittance cashCollected reliabilityScore').lean()
         ]);
 
         const manualExpenses = expenseAgg[0]?.total || 0;
@@ -32,7 +51,7 @@ exports.getFinancialOverview = async (req, res) => {
 
         // 2. Automated Orders P&L Pipeline
         const orderAgg = await Order.aggregate([
-            { $match: { tenant: tenantId, status: { $ne: 'Cancelled' } } },
+            { $match: { tenant: tenantId, status: { $ne: 'Cancelled' }, ...dateFilter } },
             {
                 $group: {
                     _id: "$status",
@@ -70,7 +89,18 @@ exports.getFinancialOverview = async (req, res) => {
         const netProfit = totalRevenue - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
-        res.json({
+        // 4. Courier settlement summary
+        const courierSettlements = courierList.map(c => ({
+            _id:              c._id,
+            name:             c.name,
+            pendingRemittance: c.pendingRemittance || 0,
+            cashCollected:    c.cashCollected || 0,
+            reliabilityScore: c.reliabilityScore || null,
+        })).filter(c => c.pendingRemittance > 0 || c.cashCollected > 0);
+
+        const totalPendingSettlements = courierList.reduce((s, c) => s + (c.pendingRemittance || 0), 0);
+
+        res.json(ok({
             pipeline: {
                 expectedRevenue,
                 transitRevenue,
@@ -85,8 +115,10 @@ exports.getFinancialOverview = async (req, res) => {
             totalRecognizedRevenue: totalRevenue,
             totalExpenses,
             netProfit,
-            profitMargin: profitMargin.toFixed(2)
-        });
+            profitMargin: profitMargin.toFixed(2),
+            courierSettlements,
+            totalPendingSettlements,
+        }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -95,7 +127,7 @@ exports.getFinancialOverview = async (req, res) => {
 exports.getExpenses = async (req, res) => {
     try {
         const expenses = await Expense.find({ tenant: req.user.tenant }).sort({ date: -1 });
-        res.json(expenses);
+        res.json(ok(expenses));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -104,7 +136,7 @@ exports.getExpenses = async (req, res) => {
 exports.getRevenues = async (req, res) => {
     try {
         const revenues = await Revenue.find({ tenant: req.user.tenant }).sort({ date: -1 });
-        res.json(revenues);
+        res.json(ok(revenues));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

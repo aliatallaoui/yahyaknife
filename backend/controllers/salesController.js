@@ -34,7 +34,7 @@ exports.getOrders = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         let skip = (page - 1) * limit;
 
-        const query = { tenant: req.user.tenant };
+        const query = { tenant: req.user.tenant, deletedAt: null };
 
         // Opt-in Cursor Pagination for massive datasets
         if (req.query.lastId) {
@@ -78,7 +78,9 @@ exports.getAdvancedOrders = async (req, res) => {
         const { limit = 50 } = req.query;
         let queryLimit = parseInt(limit);
 
-        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
+        const ALLOWED_SORT_FIELDS = new Set(['_id', 'totalAmount', 'createdAt', 'status', 'priority', 'date']);
+        let { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
+        if (!ALLOWED_SORT_FIELDS.has(sortField)) sortField = 'date';
 
         const query = { tenant: req.user.tenant };
 
@@ -113,9 +115,9 @@ exports.getAdvancedOrders = async (req, res) => {
         if (channel) query.channel = channel;
 
         if (dateFrom || dateTo) {
-            query.date = {};
-            if (dateFrom) query.date.$gte = new Date(dateFrom);
-            if (dateTo) query.date.$lte = new Date(dateTo);
+            query.createdAt = {};
+            if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+            if (dateTo) query.createdAt.$lte = new Date(dateTo);
         }
 
         // 2. Search Logic — regex for partial matching (orderId prefix, phone, tracking, customer name)
@@ -226,14 +228,36 @@ exports.updateBulkOrders = async (req, res) => {
             return res.status(400).json({ message: 'No orders selected' });
         }
 
-        const updateDoc = {};
+        const tenantId = req.user.tenant;
 
+        if (action === 'change_status') {
+            // Must go through order service to enforce state machine + inventory
+            const bypass = req.user?.computedPermissions?.includes('orders.override_status');
+            const results = { updated: 0, failed: [] };
+            for (const orderId of orderIds) {
+                try {
+                    await OrderService.updateOrder({
+                        orderId,
+                        tenantId,
+                        userId: req.user._id,
+                        updateData: { status: payload.status },
+                        bypassStateMachine: bypass
+                    });
+                    results.updated++;
+                } catch (err) {
+                    results.failed.push({ orderId, reason: err.message });
+                }
+            }
+            return res.json({
+                message: `${results.updated} orders updated, ${results.failed.length} failed`,
+                ...results
+            });
+        }
+
+        const updateDoc = {};
         switch (action) {
             case 'assign_agent':
                 updateDoc.assignedAgent = payload.agentId === 'unassigned' ? null : payload.agentId;
-                break;
-            case 'change_status':
-                updateDoc.status = payload.status;
                 break;
             case 'assign_courier':
                 updateDoc.courier = payload.courierId === 'unassigned' ? null : payload.courierId;
@@ -243,7 +267,7 @@ exports.updateBulkOrders = async (req, res) => {
         }
 
         const result = await Order.updateMany(
-            { _id: { $in: orderIds }, tenant: req.user.tenant },
+            { _id: { $in: orderIds }, tenant: tenantId },
             { $set: updateDoc }
         );
 
@@ -287,7 +311,7 @@ exports.getSalesPerformance = async (req, res) => {
 
         const cachedPerformance = await cacheService.getOrSet(cacheKey, async () => {
             const pipelineResult = await Order.aggregate([
-                { $match: { tenant: tenantId } },
+                { $match: { tenant: tenantId, deletedAt: null } },
                 {
                     $facet: {
                         totals: [
@@ -364,6 +388,7 @@ exports.updateOrder = async (req, res) => {
                        req.user?.computedPermissions?.includes('orders.override_status');
         const updatedOrder = await OrderService.updateOrder({
             orderId: req.params.id,
+            tenantId: req.user.tenant,
             userId: req.user._id,
             updateData: req.body,
             bypassStateMachine: bypass

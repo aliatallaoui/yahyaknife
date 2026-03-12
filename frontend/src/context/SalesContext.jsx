@@ -36,7 +36,8 @@ export const SalesProvider = ({ children }) => {
             }
 
             if (customRes.ok) {
-                setCustomOrders(await customRes.json());
+                const cj = await customRes.json();
+                setCustomOrders(cj.data ?? (Array.isArray(cj) ? cj : []));
             }
         } catch (error) {
             console.error('Failed to fetch sales data:', error);

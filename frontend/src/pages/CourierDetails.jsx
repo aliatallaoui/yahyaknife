@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, Truck, Key, MapPin, DollarSign, Activity, Settings2 } from 'lucide-react';
+import { ArrowLeft, Save, Truck, Key, MapPin, DollarSign, Activity, Settings2, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -24,6 +24,7 @@ export default function CourierDetails() {
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
+    const [saveToast, setSaveToast] = useState(null); // { type: 'success'|'error', msg }
 
     const [courier, setCourier] = useState({
         name: '',
@@ -65,16 +66,19 @@ export default function CourierDetails() {
                 navigate(`/couriers/${res.data._id}`);
             } else {
                 await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${id}`, courier, { headers: { Authorization: `Bearer ${token}` } });
+                showSuccess();
             }
         } catch (error) {
             console.error('Error saving courier:', error);
-            alert(error.response?.data?.message || 'Error saving courier');
+            setSaveToast({ type: 'error', msg: error.response?.data?.message || 'Error saving courier.' });
         } finally {
             setSaving(false);
-            if (!isNew) {
-                alert(t('common.saved_successfully', 'Saved successfully!'));
-            }
         }
+    };
+
+    const showSuccess = () => {
+        setSaveToast({ type: 'success', msg: t('common.saved_successfully', 'Saved successfully!') });
+        setTimeout(() => setSaveToast(null), 3000);
     };
 
     const tabs = [
@@ -85,7 +89,12 @@ export default function CourierDetails() {
         { id: 'mapping', label: t('couriers.tabs.mapping', 'Status Mapping'), icon: <Activity className="w-4 h-4" />, disabled: isNew }
     ];
 
-    if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading...')}</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
+            <span className="text-sm font-medium">{t('common.loading', 'Loading...')}</span>
+        </div>
+    );
 
     return (
         <div className="space-y-6">
@@ -204,6 +213,16 @@ export default function CourierDetails() {
                     )}
                 </div>
             </div>
+
+            {saveToast && (
+                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl max-w-sm ${saveToast.type === 'success' ? 'bg-emerald-600' : 'bg-gray-900'}`}>
+                    {saveToast.type === 'success'
+                        ? <CheckCircle className="w-4 h-4 shrink-0" />
+                        : <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />}
+                    <span className="flex-1 leading-snug">{saveToast.msg}</span>
+                    <button onClick={() => setSaveToast(null)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity shrink-0"><X className="w-4 h-4" /></button>
+                </div>
+            )}
         </div>
     );
 }

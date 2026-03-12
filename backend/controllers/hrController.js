@@ -1,23 +1,22 @@
+const mongoose = require('mongoose');
 const Employee = require('../models/Employee');
 const LeaveRequest = require('../models/LeaveRequest');
 const Attendance = require('../models/Attendance');
 const moment = require('moment');
+const { ok, created, message, paginated } = require('../shared/utils/ApiResponse');
 
 exports.getHRMetrics = async (req, res) => {
     try {
-        const employees = await Employee.find();
+        const tenant = req.user.tenant;
+        const employees = await Employee.find({ tenant });
 
         const departmentDistribution = {};
         let activeEmployees = 0;
         let estimatedPayrollDZD = 0;
 
         employees.forEach(emp => {
-            // Dept distribution
-            if (!departmentDistribution[emp.department]) {
-                departmentDistribution[emp.department] = 0;
-            }
+            if (!departmentDistribution[emp.department]) departmentDistribution[emp.department] = 0;
             departmentDistribution[emp.department]++;
-
             if (emp.status === 'Active') {
                 activeEmployees++;
                 estimatedPayrollDZD += (emp.contractSettings?.monthlySalary || emp.salary || 0);
@@ -25,31 +24,24 @@ exports.getHRMetrics = async (req, res) => {
         });
 
         const today = moment().format('YYYY-MM-DD');
-        const todayAttendance = await Attendance.find({ date: today }).lean();
+        const todayAttendance = await Attendance.find({ tenant, date: today }).lean();
 
         let presentToday = 0;
         let lateToday = 0;
-
         todayAttendance.forEach(att => {
-            if (['Present', 'Completed with Recovery', 'Overtime', 'Incomplete', 'Late'].includes(att.status) || (!att.status && att.morningIn)) {
-                presentToday++;
-            }
-            if (att.lateMinutes > 0) {
-                lateToday++;
-            }
+            if (['Present', 'Completed with Recovery', 'Overtime', 'Incomplete', 'Late'].includes(att.status) || (!att.status && att.morningIn)) presentToday++;
+            if (att.lateMinutes > 0) lateToday++;
         });
 
-        const absentToday = Math.max(0, activeEmployees - presentToday);
-
-        res.json({
+        res.json(ok({
             totalEmployees: employees.length,
             activeEmployees,
             departmentDistribution,
             estimatedPayrollDZD,
             presentToday,
             lateToday,
-            absentToday
-        });
+            absentToday: Math.max(0, activeEmployees - presentToday)
+        }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -57,8 +49,12 @@ exports.getHRMetrics = async (req, res) => {
 
 exports.getEmployees = async (req, res) => {
     try {
-        const employees = await Employee.find().sort({ joinDate: -1 });
-        res.json(employees);
+        const filter = { tenant: req.user.tenant };
+        const [employees, total] = await Promise.all([
+            Employee.find(filter).sort({ joinDate: -1 }).skip(req.skip).limit(req.limit),
+            Employee.countDocuments(filter)
+        ]);
+        res.json(paginated(employees, { total, hasNextPage: req.skip + employees.length < total }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -66,9 +62,11 @@ exports.getEmployees = async (req, res) => {
 
 exports.getEmployeeById = async (req, res) => {
     try {
-        const employee = await Employee.findById(req.params.id);
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const employee = await Employee.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
-        res.json(employee);
+        res.json(ok(employee));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -76,11 +74,16 @@ exports.getEmployeeById = async (req, res) => {
 
 exports.getLeaveRequests = async (req, res) => {
     try {
-        const query = req.query.employeeId ? { employeeId: req.query.employeeId } : {};
+        const query = { tenant: req.user.tenant };
+        if (req.query.employeeId) {
+            if (!mongoose.Types.ObjectId.isValid(req.query.employeeId))
+                return res.status(400).json({ error: 'Invalid employeeId' });
+            query.employeeId = req.query.employeeId;
+        }
         const requests = await LeaveRequest.find(query)
             .populate('employeeId', 'name department role')
             .sort({ requestDate: -1 });
-        res.json(requests);
+        res.json(ok(requests));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -88,9 +91,17 @@ exports.getLeaveRequests = async (req, res) => {
 
 exports.createEmployee = async (req, res) => {
     try {
-        const employee = new Employee(req.body);
+        const {
+            name, email, phone, role, department, salary, performanceScore, leaveBalance,
+            joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings
+        } = req.body;
+        const employee = new Employee({
+            tenant: req.user.tenant,
+            name, email, phone, role, department, salary, performanceScore, leaveBalance,
+            joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings
+        });
         const saved = await employee.save();
-        res.status(201).json(saved);
+        res.status(201).json(created(saved));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -98,9 +109,20 @@ exports.createEmployee = async (req, res) => {
 
 exports.updateEmployee = async (req, res) => {
     try {
-        const updated = await Employee.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const {
+            name, email, phone, role, department, salary, performanceScore, leaveBalance,
+            joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings
+        } = req.body;
+        const updated = await Employee.findOneAndUpdate(
+            { _id: req.params.id, tenant: req.user.tenant },
+            { name, email, phone, role, department, salary, performanceScore, leaveBalance,
+              joinDate, status, managerId, workshopRole, skills, productivityMultiplier, contractSettings },
+            { new: true }
+        );
         if (!updated) return res.status(404).json({ error: 'Employee not found' });
-        res.json(updated);
+        res.json(ok(updated));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -108,9 +130,11 @@ exports.updateEmployee = async (req, res) => {
 
 exports.deleteEmployee = async (req, res) => {
     try {
-        const deleted = await Employee.findByIdAndDelete(req.params.id);
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const deleted = await Employee.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
         if (!deleted) return res.status(404).json({ error: 'Employee not found' });
-        res.json({ message: 'Employee deleted' });
+        res.json(message('Employee deleted'));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -118,9 +142,32 @@ exports.deleteEmployee = async (req, res) => {
 
 exports.createLeaveRequest = async (req, res) => {
     try {
-        const reqData = new LeaveRequest(req.body);
+        const { employeeId, type, startDate, endDate, reason } = req.body;
+        if (!employeeId || !startDate || !endDate) {
+            return res.status(400).json({ error: 'employeeId, startDate, and endDate are required' });
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+            return res.status(400).json({ error: 'Invalid date range' });
+        }
+
+        // Check for overlapping approved or pending leaves for the same employee
+        const overlap = await LeaveRequest.findOne({
+            tenant: req.user.tenant,
+            employeeId,
+            status: { $in: ['Pending', 'Approved'] },
+            startDate: { $lte: end },
+            endDate:   { $gte: start }
+        });
+        if (overlap) {
+            return res.status(409).json({ error: 'Leave request overlaps with an existing pending or approved leave' });
+        }
+
+        const reqData = new LeaveRequest({ tenant: req.user.tenant, employeeId, type, startDate: start, endDate: end, reason });
         const saved = await reqData.save();
-        res.status(201).json(saved);
+        res.status(201).json(created(saved));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -128,18 +175,23 @@ exports.createLeaveRequest = async (req, res) => {
 
 exports.updateLeaveRequestStatus = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const { status } = req.body;
-        const request = await LeaveRequest.findById(req.params.id);
+        const request = await LeaveRequest.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!request) return res.status(404).json({ error: 'Leave Request not found' });
 
-        if (status === 'Approved' && request.status !== 'Approved') {
-            const employee = await Employee.findById(request.employeeId);
+        if (status === 'Approved') {
+            if (request.status === 'Approved') {
+                return res.status(400).json({ error: 'Leave request is already approved' });
+            }
+            if (request.status === 'Rejected') {
+                return res.status(400).json({ error: 'Cannot re-approve a rejected leave request. Create a new request instead.' });
+            }
+            // Only deduct from 'Pending' → 'Approved'
+            const employee = await Employee.findOne({ _id: request.employeeId, tenant: req.user.tenant });
             if (employee) {
-                const start = new Date(request.startDate);
-                const end = new Date(request.endDate);
-                const diffTime = Math.abs(end - start);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
+                const diffDays = Math.ceil(Math.abs(new Date(request.endDate) - new Date(request.startDate)) / (1000 * 60 * 60 * 24)) + 1;
                 if (employee.leaveBalance >= diffDays || request.type === 'Unpaid') {
                     if (request.type !== 'Unpaid') {
                         employee.leaveBalance -= diffDays;
@@ -153,7 +205,7 @@ exports.updateLeaveRequestStatus = async (req, res) => {
 
         request.status = status;
         await request.save();
-        res.json(request);
+        res.json(ok(request));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

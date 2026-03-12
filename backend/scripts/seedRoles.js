@@ -36,8 +36,11 @@ const defaultRoles = [
             ...PERMISSIONS.dispatch,
             ...PERMISSIONS.procurement,
             ...PERMISSIONS.manufacturing,
+            ...PERMISSIONS.workshop,
             ...PERMISSIONS.customer_legacy,
             ...PERMISSIONS.projects,
+            ...PERMISSIONS.analytics,
+            ...PERMISSIONS.intelligence,
             'financial.read', 'finance.view', // Read summaries only
             'hr.read', 'hr.employees.view' // Read basic HR but no payroll editing
         ]
@@ -52,6 +55,7 @@ const defaultRoles = [
             ...PERMISSIONS.customers,
             ...PERMISSIONS.sales_legacy,
             ...PERMISSIONS.customer_legacy,
+            'analytics.view',
             'shipments.view',
             'inventory.read', 'inventory.view' // Can view stock but not edit or see cost
         ]
@@ -79,23 +83,25 @@ const defaultRoles = [
     },
     {
         name: 'Workshop Manager',
-        description: 'Controls the manufacturing floor, BOMs, and production tracking.',
+        description: 'Controls the manufacturing floor, BOMs, production tracking, knife cards, and tools.',
         isSystemRole: true,
         permissions: [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.manufacturing,
+            ...PERMISSIONS.workshop,
             'inventory.read', 'warehouse.read',
             'hr.read' // To see worker productivity metrics
         ]
     },
     {
         name: 'Workshop Worker',
-        description: 'Limited access to view assigned tasks and update production stages.',
+        description: 'Limited access to view assigned tasks, knife cards, and update production stages.',
         isSystemRole: true,
         permissions: [
             'overview.read',
             'manufacturing.read',
-            'manufacturing.complete_stage'
+            'manufacturing.complete_stage',
+            'workshop.view' // Can view knife cards and production status
         ]
     },
     {
@@ -115,6 +121,8 @@ const defaultRoles = [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.financial,
             ...PERMISSIONS.finance,
+            ...PERMISSIONS.analytics,
+            ...PERMISSIONS.intelligence,
             'hr.read', 'hr.view_salary', 'hr.approve_payroll', 'hr.payroll.view', 'hr.payroll.approve',
             'dispatch.read', 'dispatch.view_courier_financials',
             'inventory.read', 'inventory.view_cost',
@@ -156,7 +164,9 @@ const defaultRoles = [
             'couriers.view', 'hr.employees.view', 'hr.payroll.view',
             'financial.read', 'sales.read', 'inventory.read',
             'warehouse.read', 'dispatch.read', 'procurement.read', 'manufacturing.read',
-            'hr.read', 'projects.read', 'customer.read'
+            'hr.read', 'projects.read', 'projects.view', 'customer.read',
+            'analytics.view', 'support.view',
+            'workshop.view' // Read-only access to knife cards and workshop tools
         ]
     }
 ];

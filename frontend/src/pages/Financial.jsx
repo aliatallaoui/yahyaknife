@@ -1,5 +1,5 @@
-import { useEffect, useState, useContext } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2, Search, Filter, CheckSquare, Users, Wallet, Building2 } from 'lucide-react';
+import { useEffect, useState, useContext, useCallback } from 'react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2, Search, Wallet, AlertTriangle, RefreshCw, LayoutDashboard, BookOpen } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
@@ -12,9 +12,31 @@ import { AuthContext } from '../context/AuthContext';
 import TransactionModal from '../components/TransactionModal';
 import { useTranslation } from 'react-i18next';
 
+// Compute ISO date range from a period key
+function periodToRange(period) {
+    const now = new Date();
+    const fmt = (d) => d.toISOString().slice(0, 10);
+    if (period === 'thisMonth') {
+        return { startDate: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), endDate: fmt(now) };
+    }
+    if (period === 'lastMonth') {
+        const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const last  = new Date(now.getFullYear(), now.getMonth(), 0);
+        return { startDate: fmt(first), endDate: fmt(last) };
+    }
+    if (period === '3m') {
+        const from = new Date(now); from.setMonth(from.getMonth() - 3);
+        return { startDate: fmt(from), endDate: fmt(now) };
+    }
+    if (period === 'ytd') {
+        return { startDate: `${now.getFullYear()}-01-01`, endDate: fmt(now) };
+    }
+    return {}; // 'all' — no date filter
+}
+
 export default function Financial() {
     const { transactions, loading: txLoading, addTransaction, updateTransaction, deleteTransaction, fetchTransactions } = useContext(TransactionContext);
-    const { hasPermission } = useContext(AuthContext);
+    const { hasPermission, token } = useContext(AuthContext);
     const { t } = useTranslation();
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(true);
@@ -22,8 +44,16 @@ export default function Financial() {
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    // editingTx: { id, field, value }
     const [editingTx, setEditingTx] = useState(null);
+
+    // Period selector for KPI overview
+    const [period, setPeriod] = useState('thisMonth');
+
+    // In-app confirm dialog — replaces window.confirm
+    const [confirmDialog, setConfirmDialog] = useState(null);
+
+    // Tab navigation
+    const [activeTab, setActiveTab] = useState('overview');
 
     // Multi-select & filters
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -66,14 +96,30 @@ export default function Financial() {
     };
     const isAllSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.has(t._id));
 
-    const handleBatchDelete = async () => {
-        if (!window.confirm(`Delete ${selectedIds.size} selected transactions?`)) return;
-        setBatchDeleting(true);
-        for (const id of selectedIds) {
-            try { await deleteTransaction(id); } catch (e) { console.error('Failed to delete', id, e); }
-        }
-        setSelectedIds(new Set());
-        setBatchDeleting(false);
+    const handleBatchDelete = () => {
+        if (selectedIds.size === 0) return;
+        setConfirmDialog({
+            title: `Delete ${selectedIds.size} transaction${selectedIds.size > 1 ? 's' : ''}?`,
+            body: 'This will permanently remove the selected entries from the ledger.',
+            danger: true,
+            onConfirm: async () => {
+                setBatchDeleting(true);
+                for (const id of selectedIds) {
+                    try { await deleteTransaction(id); } catch (e) { console.error('Failed to delete', id, e); }
+                }
+                setSelectedIds(new Set());
+                setBatchDeleting(false);
+            },
+        });
+    };
+
+    const handleSingleDelete = (id) => {
+        setConfirmDialog({
+            title: 'Delete this transaction?',
+            body: 'This entry will be permanently removed from the manual ledger.',
+            danger: true,
+            onConfirm: () => deleteTransaction(id),
+        });
     };
 
     // Inline save helper — backend needs type + full fields to route to correct collection
@@ -105,20 +151,24 @@ export default function Financial() {
         setEditingTx(null);
     };
 
-    useEffect(() => {
-        const fetchOverview = async () => {
-            try {
-                const finRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/finance/overview`);
-                const data = await finRes.json();
-                setOverview(data);
-            } catch (error) {
-                console.error("Error fetching financial overview:", error);
-            } finally {
-                setLoadingOverview(false);
-            }
-        };
-        fetchOverview();
-    }, [transactions]);
+    const fetchOverview = useCallback(async () => {
+        setLoadingOverview(true);
+        try {
+            const params = new URLSearchParams(periodToRange(period));
+            const finRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/finance/overview?${params}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (finRes.ok) { const json = await finRes.json(); setOverview(json.data ?? json); }
+        } catch (error) {
+            console.error("Error fetching financial overview:", error);
+        } finally {
+            setLoadingOverview(false);
+        }
+    }, [token, period]);
+
+    // Re-fetch when period changes or after a transaction is mutated (tracked via length)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { fetchOverview(); }, [period, transactions.length]);
 
     // Listen for payroll-synced event from TransactionModal
     useEffect(() => {
@@ -171,15 +221,70 @@ export default function Financial() {
                 subtitle={t('finance.subtitle', 'Real-time COD revenue tracking and global P&L')}
                 variant="finance"
                 actions={
-                    hasPermission('financial.manage_manual_transactions') && (
-                        <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
-                            <Plus className="w-5 h-5" /> {t('finance.addManual', 'Add Manual Transaction')}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Period selector */}
+                        <div className="flex bg-white/10 backdrop-blur-sm border border-white/20 p-0.5 rounded-xl">
+                            {[
+                                { key: 'thisMonth', label: 'This Month' },
+                                { key: 'lastMonth', label: 'Last Month' },
+                                { key: '3m',        label: '3 Months' },
+                                { key: 'ytd',       label: 'YTD' },
+                                { key: 'all',       label: 'All Time' },
+                            ].map(p => (
+                                <button
+                                    key={p.key}
+                                    onClick={() => setPeriod(p.key)}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${period === p.key ? 'bg-white text-gray-900 shadow-sm' : 'text-white/70 hover:text-white'}`}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={fetchOverview} className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors border border-white/20" title="Refresh">
+                            <RefreshCw className={`w-4 h-4 ${loadingOverview ? 'animate-spin' : ''}`} />
                         </button>
-                    )
+                        {hasPermission('financial.manage_manual_transactions') && (
+                            <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-700 font-bold rounded-xl transition-all shadow-lg active:scale-95 leading-none text-sm">
+                                <Plus className="w-4 h-4" /> {t('finance.addManual', 'Add')}
+                            </button>
+                        )}
+                    </div>
                 }
             />
 
+            {/* Tab Bar */}
+            <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl w-fit">
+                {[
+                    { key: 'overview',     label: t('finance.tab.overview', 'Overview'),     icon: LayoutDashboard },
+                    { key: 'settlements',  label: t('finance.tab.settlements', 'Settlements'), icon: Truck,
+                      badge: overview?.totalPendingSettlements > 0 ? overview.totalPendingSettlements.toLocaleString() : null },
+                    { key: 'ledger',       label: t('finance.tab.ledger', 'Ledger'),          icon: BookOpen,
+                      badge: transactions.length > 0 ? transactions.length : null },
+                ].map(({ key, label, icon: Icon, badge }) => (
+                    <button
+                        key={key}
+                        onClick={() => setActiveTab(key)}
+                        className={clsx(
+                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all',
+                            activeTab === key
+                                ? 'bg-white text-gray-900 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                        )}
+                    >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {label}
+                        {badge && (
+                            <span className={clsx(
+                                'text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
+                                key === 'settlements' ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-600'
+                            )}>{badge}</span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
             {/* Profitability Overview */}
+            {activeTab === 'overview' && <>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm col-span-1 md:col-span-2 flex items-center justify-between">
                     <div>
@@ -274,8 +379,74 @@ export default function Financial() {
                 </div>
 
             </div>
+            </>}
+
+            {/* Courier Settlement Panel */}
+            {activeTab === 'settlements' && (overview?.courierSettlements?.length > 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <Truck className="w-5 h-5 text-amber-500" />
+                            {t('finance.courierSettlements', 'Courier Settlements')}
+                        </h3>
+                        {overview.totalPendingSettlements > 0 && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-black">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                {overview.totalPendingSettlements.toLocaleString()} DZ pending
+                            </span>
+                        )}
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left min-w-[500px]">
+                            <thead>
+                                <tr className="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                    <th className="pb-3 pl-1">{t('finance.courier', 'Courier')}</th>
+                                    <th className="pb-3 text-right">{t('finance.cashCollected', 'Cash Collected')}</th>
+                                    <th className="pb-3 text-right">{t('finance.pendingRemittance', 'Pending Remittance')}</th>
+                                    <th className="pb-3 text-right">{t('finance.reliabilityScore', 'Score')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {overview.courierSettlements.map(c => (
+                                    <tr key={c._id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="py-3 pl-1 font-bold text-gray-900">{c.name}</td>
+                                        <td className="py-3 text-right font-semibold text-emerald-700 tabular-nums">
+                                            {c.cashCollected.toLocaleString()} <span className="text-xs text-gray-400">DZ</span>
+                                        </td>
+                                        <td className="py-3 text-right tabular-nums">
+                                            {c.pendingRemittance > 0 ? (
+                                                <span className="inline-flex items-center gap-1 font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                                                    {c.pendingRemittance.toLocaleString()} <span className="text-[10px]">DZ</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-emerald-600 font-bold flex items-center gap-1 justify-end">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> Settled
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="py-3 text-right">
+                                            {c.reliabilityScore != null ? (
+                                                <span className={clsx('text-xs font-black px-2 py-0.5 rounded-full', c.reliabilityScore >= 80 ? 'bg-emerald-100 text-emerald-700' : c.reliabilityScore >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700')}>
+                                                    {c.reliabilityScore}%
+                                                </span>
+                                            ) : <span className="text-gray-300">—</span>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm text-center">
+                    <Truck className="w-10 h-10 text-gray-200 mb-3" />
+                    <p className="font-bold text-gray-400">{t('finance.noSettlements', 'No courier settlements to display.')}</p>
+                    <p className="text-sm text-gray-300 mt-1">{t('finance.noSettlementsSub', 'Settlements appear once orders reach Delivered status.')}</p>
+                </div>
+            ))}
 
             {/* Manual Ledger List */}
+            {activeTab === 'ledger' && <>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 p-5 border-b border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900">{t('finance.manualLedger', 'Manual Operating Ledger')}</h3>
@@ -493,7 +664,7 @@ export default function Financial() {
                                                     <button onClick={() => handleOpenModal(tx)} className="p-1.5 text-gray-400 hover:text-blue-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
-                                                    <button onClick={() => deleteTransaction(tx._id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
+                                                    <button onClick={() => handleSingleDelete(tx._id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
@@ -571,6 +742,7 @@ export default function Financial() {
                     );
                 })()}
             </div>
+            </>}
 
             {isModalOpen && (
                 <TransactionModal
@@ -579,6 +751,36 @@ export default function Financial() {
                     onSubmit={handleFormSubmit}
                     initialData={selectedTransaction}
                 />
+            )}
+
+            {/* In-app confirm dialog */}
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm animate-in zoom-in-95 duration-150">
+                        <div className="p-5 border-b border-red-100 bg-red-50/40">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-gray-900 leading-snug">{confirmDialog.title}</p>
+                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{confirmDialog.body}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 p-4">
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+                                className="px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

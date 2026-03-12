@@ -23,12 +23,21 @@ exports.getDashboardData = async (req, res) => {
             endPeriod = now.clone().endOf('month');
         }
 
-        const dateQuery = { tenant: tenantId, date: { $gte: startPeriod.toDate(), $lte: endPeriod.toDate() } };
+        const dateQuery = { tenant: tenantId, createdAt: { $gte: startPeriod.toDate(), $lte: endPeriod.toDate() } };
 
         // --- ORDER METRICS ---
         const orderStatusAgg = await Order.aggregate([
             { $match: dateQuery },
-            { $group: { _id: "$status", count: { $sum: 1 }, totalAmount: { $sum: "$totalAmount" }, netProfit: { $sum: "$financials.netProfit" } } }
+            {
+                $group: {
+                    _id: "$status",
+                    count:       { $sum: 1 },
+                    totalAmount: { $sum: "$totalAmount" },
+                    cogs:        { $sum: "$financials.cogs" },
+                    courierFee:  { $sum: "$financials.courierFee" },
+                    fees:        { $sum: { $add: ["$financials.gatewayFees", "$financials.marketplaceFees"] } }
+                }
+            }
         ]);
 
         let totalOrders = 0;
@@ -47,7 +56,9 @@ exports.getDashboardData = async (req, res) => {
         orderStatusAgg.forEach(s => {
             totalOrders += s.count;
             totalRevenue += s.totalAmount;
-            realProfit += s.netProfit;
+            if (['Delivered', 'Paid'].includes(s._id)) {
+                realProfit += s.totalAmount - (s.cogs || 0) - (s.courierFee || 0) - (s.fees || 0);
+            }
 
             if (s._id === 'New') awaitingConfirmation += s.count;
             if (['Confirmed', 'Preparing', 'Ready for Pickup'].includes(s._id)) awaitingDispatch += s.count;
@@ -96,7 +107,7 @@ exports.getDashboardData = async (req, res) => {
         // --- REAL COMPUTED METRICS ---
         // Average delivery time from orders that have a recorded deliveryTimeMinutes
         const deliveryTimeAgg = await Order.aggregate([
-            { $match: { tenant: tenantId, date: dateQuery.date, 'deliveryStatus.deliveryTimeMinutes': { $gt: 0 } } },
+            { $match: { tenant: tenantId, createdAt: dateQuery.createdAt, 'deliveryStatus.deliveryTimeMinutes': { $gt: 0 } } },
             { $group: { _id: null, avgMinutes: { $avg: '$deliveryStatus.deliveryTimeMinutes' }, count: { $sum: 1 } } }
         ]);
         const avgDeliveryMinutes = deliveryTimeAgg[0]?.avgMinutes || null;
@@ -170,9 +181,17 @@ exports.getDashboardData = async (req, res) => {
         }
 
         // Leverage AI Intelligence summaries here
-        const [criticalStock, suspiciousCustomers] = await Promise.all([
+        const [criticalStock, suspiciousCustomers, absentToday] = await Promise.all([
             ProductVariant.countDocuments({ status: 'Active', $expr: { $lte: [{ $subtract: ["$totalStock", "$reservedStock"] }, "$reorderLevel"] } }),
-            Customer.countDocuments({ tenant: tenantId, isSuspicious: true })
+            Customer.countDocuments({ tenant: tenantId, blacklisted: true }),
+            (async () => {
+                try {
+                    const Attendance = require('../models/Attendance');
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
+                    const todayStr = today.toISOString().slice(0, 10);
+                    return await Attendance.countDocuments({ tenant: tenantId, date: todayStr, status: 'Absent' });
+                } catch { return 0; }
+            })()
         ]);
 
         const realInsights = [];
@@ -180,13 +199,21 @@ exports.getDashboardData = async (req, res) => {
             realInsights.push(`Stockout Risk: ${criticalStock} variants require immediate restock.`);
         }
         if (suspiciousCustomers > 0) {
-            realInsights.push(`Fraud Alert: ${suspiciousCustomers} customers flagged as Suspicious based on refusal behavior.`);
+            realInsights.push(`Fraud Alert: ${suspiciousCustomers} customers blacklisted based on refusal behavior.`);
         }
         if (data.deliveryMetrics.refusalRate > 10) {
             realInsights.push(`High Refusal Rate (${data.deliveryMetrics.refusalRate}%). Consider enforcing Phone Confirmation.`);
         }
 
         data.aiSummary = realInsights.length > 0 ? realInsights : ["All systems operating normally. Outstanding balanced delivery active."];
+
+        // Briefing counters — used by the Morning Briefing strip on the Overview page
+        data.briefing = {
+            awaitingConfirmation: data.orderMetrics.awaitingConfirmation,
+            pendingSettlements:   data.financialMetrics.courierSettlementsPending,
+            lowStockVariants:     criticalStock,
+            absentToday,
+        };
 
         return res.json(data);
     } catch (error) {

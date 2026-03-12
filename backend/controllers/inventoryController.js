@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const ProductVariant = require('../models/ProductVariant');
 const Supplier = require('../models/Supplier');
@@ -114,45 +115,12 @@ exports.getInventoryMetrics = async (req, res) => {
     }
 };
 
-exports.getSuppliers = async (req, res) => {
-    try {
-        const suppliers = await Supplier.find({ active: true });
-        res.json(suppliers);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-exports.createSupplier = async (req, res) => {
-    try {
-        const newSupplier = await Supplier.create(req.body);
-        res.status(201).json(newSupplier);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-exports.updateSupplier = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const supplier = await Supplier.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-        if (!supplier) return res.status(404).json({ message: "Supplier not found." });
-        res.json(supplier);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-exports.deleteSupplier = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const supplier = await Supplier.findByIdAndUpdate(id, { active: false }, { new: true });
-        if (!supplier) return res.status(404).json({ message: "Supplier not found." });
-        res.json({ message: "Supplier archived." });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
+// Supplier CRUD — canonical implementation lives in procurementController (single source of truth)
+const procurementCtrl = require('./procurementController');
+exports.getSuppliers   = procurementCtrl.getSuppliers;
+exports.createSupplier = procurementCtrl.createSupplier;
+exports.updateSupplier = procurementCtrl.updateSupplier;
+exports.deleteSupplier = procurementCtrl.deleteSupplier;
 
 const Category = require('../models/Category');
 
@@ -167,7 +135,8 @@ exports.getCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
     try {
-        const newCategory = await Category.create(req.body);
+        const { name, description, isActive } = req.body;
+        const newCategory = await Category.create({ name, description, isActive });
         res.status(201).json(newCategory);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -177,7 +146,8 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        const category = await Category.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+        const { name, description, isActive } = req.body;
+        const category = await Category.findByIdAndUpdate(id, { name, description, isActive }, { new: true, runValidators: true });
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json(category);
     } catch (error) {
@@ -209,7 +179,8 @@ exports.getWarehouses = async (req, res) => {
 
 exports.createWarehouse = async (req, res) => {
     try {
-        const w = await Warehouse.create(req.body);
+        const { name, code, location, manager, capacity, status } = req.body;
+        const w = await Warehouse.create({ name, code, location, manager, capacity, status });
         res.status(201).json(w);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -218,7 +189,10 @@ exports.createWarehouse = async (req, res) => {
 
 exports.updateWarehouse = async (req, res) => {
     try {
-        const w = await Warehouse.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const { name, code, location, manager, capacity, status } = req.body;
+        const w = await Warehouse.findByIdAndUpdate(req.params.id, { name, code, location, manager, capacity, status }, { new: true });
         res.json(w);
     } catch (error) {
         res.status(500).json({ error: error.message });

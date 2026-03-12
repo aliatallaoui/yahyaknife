@@ -8,6 +8,7 @@ const orderItemSchema = new mongoose.Schema({
     name: { type: String, required: true }, // Snapshot of the name at time of order
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true, min: 0 },
+    costPrice: { type: Number, default: 0 },
     lineTotal: { type: Number, required: true },
     weightPerUnit: { type: Number, default: 0 }
 }, { timestamps: true });

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Edit2, Trash2, BookOpen, ChevronRight, Loader2, X, Save } from 'lucide-react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { Plus, RefreshCw, Edit2, Trash2, BookOpen, ChevronRight, Loader2, X, Save, AlertTriangle, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
 import BOMBuilder from '../components/BOMBuilder';
 import { useTranslation } from 'react-i18next';
+import { useHotkey } from '../hooks/useHotkey';
 
 const KNIFE_TYPES = ['Hunter', 'Chef', 'Tactical', 'Utility', 'Damascus', 'Cleaver', 'Fillet', 'Bowie', 'Custom', 'Other'];
 const STEEL_TYPES = ['D2', '1095', 'O1', 'AEB-L', 'Damascus', '5160', '52100', 'S30V', 'VG-10', 'Other'];
@@ -21,6 +23,7 @@ const EMPTY = {
 
 function ModelModal({ isOpen, onClose, onSaved, initial = null }) {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [form, setForm] = useState(EMPTY);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -35,9 +38,10 @@ function ModelModal({ isOpen, onClose, onSaved, initial = null }) {
         if (!form.name.trim()) { setError('Model name required'); return; }
         setSaving(true);
         try {
-            const url = initial?._id ? `/api/knives/models/${initial._id}` : '/api/knives/models';
+            const base = import.meta.env.VITE_API_URL || '';
+            const url = initial?._id ? `${base}/api/knives/models/${initial._id}` : `${base}/api/knives/models`;
             const method = initial?._id ? 'PUT' : 'POST';
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) });
             if (!res.ok) throw new Error((await res.json()).error || 'Failed');
             onSaved();
             onClose();
@@ -144,27 +148,47 @@ function ModelModal({ isOpen, onClose, onSaved, initial = null }) {
 
 export default function KnifeLibrary() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingModel, setEditingModel] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('All');
     const navigate = useNavigate();
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
+
+    const filteredModels = models.filter(m => {
+        if (filterType !== 'All' && m.type !== filterType) return false;
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            if (!m.name?.toLowerCase().includes(q) && !m.type?.toLowerCase().includes(q)) return false;
+        }
+        return true;
+    });
 
     const fetchModels = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`);
-            setModels(await res.json());
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`, { headers: { Authorization: `Bearer ${token}` } });
+            const json = await res.json();
+            setModels(json.data ?? (Array.isArray(json) ? json : []));
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
     useEffect(() => { fetchModels(); }, []);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Delete this knife model?')) return;
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models/${id}`, { method: 'DELETE' });
-        fetchModels();
+    const handleDelete = (id) => {
+        setConfirmDialog({
+            onConfirm: async () => {
+                await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                fetchModels();
+            }
+        });
     };
 
     // Navigate to Knife Dashboard with this model pre-selected
@@ -201,6 +225,40 @@ export default function KnifeLibrary() {
                 }
             />
 
+            {/* Filter Bar */}
+            {!loading && models.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px] max-w-xs">
+                        <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            ref={searchRef}
+                            type="text"
+                            placeholder={t('knives.searchModels', 'Search models... (Press /)')}
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full ps-9 pe-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all font-bold"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {['All', ...KNIFE_TYPES].map(type => {
+                            const count = type === 'All' ? models.length : models.filter(m => m.type === type).length;
+                            if (type !== 'All' && count === 0) return null;
+                            return (
+                                <button key={type} onClick={() => setFilterType(type)}
+                                    className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors',
+                                        filterType === type ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                    )}>
+                                    {type === 'All' ? t('knives.allTypes', 'All') : type}
+                                    <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
+                                        filterType === type ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                                    )}>{count}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {loading ? (
                 <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" /></div>
             ) : models.length === 0 ? (
@@ -209,9 +267,14 @@ export default function KnifeLibrary() {
                     <p className="text-gray-500 font-medium">{t('knives.emptyLibrary', 'No knife models yet. Add your first template!')}</p>
                     <button onClick={() => setModalOpen(true)} className="mt-4 px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl">{t('knives.addModel', 'Add Model')}</button>
                 </div>
+            ) : filteredModels.length === 0 ? (
+                <div className="bg-white rounded-3xl border border-gray-100 py-16 text-center">
+                    <Search className="w-8 h-8 text-gray-200 mx-auto mb-3" />
+                    <p className="text-gray-400 font-medium text-sm">{t('knives.noModelMatch', 'No models match your search or filter.')}</p>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {models.map(model => (
+                    {filteredModels.map(model => (
                         <div key={model._id} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col">
                             <div className="p-5 flex-1">
                                 <div className="flex items-start justify-between mb-3">
@@ -270,6 +333,22 @@ export default function KnifeLibrary() {
                 onSaved={fetchModels}
                 initial={editingModel}
             />
+
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                            <AlertTriangle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <h3 className="text-base font-black text-gray-900 mb-2">Delete knife model?</h3>
+                        <p className="text-sm text-gray-500 mb-6">This model and its BOM will be permanently removed.</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={() => { setConfirmDialog(null); confirmDialog.onConfirm(); }} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

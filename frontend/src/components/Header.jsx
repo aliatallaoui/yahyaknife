@@ -35,9 +35,7 @@ export default function Header({ setMobileMenuOpen }) {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const handleSignOut = () => {
-        if (window.confirm('Are you sure you want to sign out?')) logout();
-    };
+    const handleSignOut = () => logout();
 
     const handleLangChange = async (code) => {
         // 1. Update UI and LocalStorage instantly

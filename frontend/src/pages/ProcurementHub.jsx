@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download, Search } from 'lucide-react';
@@ -7,10 +7,11 @@ import moment from 'moment';
 import NewPOModal from '../components/NewPOModal';
 import NewSupplierModal from '../components/NewSupplierModal';
 import { AuthContext } from '../context/AuthContext';
+import { useHotkey } from '../hooks/useHotkey';
 
 export default function ProcurementHub() {
     const { t } = useTranslation();
-    const { hasPermission } = useContext(AuthContext);
+    const { hasPermission, token } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'suppliers'
     const [orders, setOrders] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
@@ -18,16 +19,20 @@ export default function ProcurementHub() {
     const [loading, setLoading] = useState(true);
     const [isPOModalOpen, setIsPOModalOpen] = useState(false);
     const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const fetchData = async () => {
         try {
             setLoading(true);
+            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             const [ordersRes, suppliersRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/suppliers`)
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`, authHeader),
+                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/suppliers`, authHeader)
             ]);
-            setOrders(ordersRes.data);
-            setSuppliers(suppliersRes.data);
+            setOrders(ordersRes.data?.data ?? ordersRes.data);
+            setSuppliers(suppliersRes.data?.data ?? suppliersRes.data);
         } catch (error) {
             console.error('Error fetching procurement data', error);
         } finally {
@@ -57,6 +62,16 @@ export default function ProcurementHub() {
         return 'text-red-600 bg-red-50 border-red-200';
     };
 
+    const term = searchTerm.toLowerCase();
+    const filteredOrders = orders.filter(o =>
+        o.poNumber?.toLowerCase().includes(term) ||
+        o.supplier?.name?.toLowerCase().includes(term)
+    );
+    const filteredSuppliers = suppliers.filter(s =>
+        s.name?.toLowerCase().includes(term) ||
+        s.contactPerson?.name?.toLowerCase().includes(term)
+    );
+
     return (
         <div className="p-8 pb-32">
             <PageHeader
@@ -68,8 +83,9 @@ export default function ProcurementHub() {
                         <div className="relative">
                             <Search className="w-4 h-4 text-purple-500 absolute start-3 top-1/2 -translate-y-1/2" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('procurement.searchPlaceholder', 'Search PO or Supplier...')}
+                                placeholder={t('procurement.searchPlaceholder', 'Search... (Press /)')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="ps-9 pe-4 py-2 bg-white border border-purple-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
@@ -150,17 +166,26 @@ export default function ProcurementHub() {
                         className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors border-b-2 ${activeTab === 'orders' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     >
                         <FileText className="w-4 h-4" /> {t('procurement.tabActivePos')}
+                        {filteredOrders.length > 0 && (
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${activeTab === 'orders' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'}`}>{filteredOrders.length}</span>
+                        )}
                     </button>
                     <button
                         onClick={() => setActiveTab('suppliers')}
                         className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors border-b-2 ${activeTab === 'suppliers' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     >
                         <Users className="w-4 h-4" /> {t('procurement.tabVendorDir')}
+                        {filteredSuppliers.length > 0 && (
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${activeTab === 'suppliers' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'}`}>{filteredSuppliers.length}</span>
+                        )}
                     </button>
                 </div>
 
                 {loading ? (
-                    <div className="p-12 text-center text-gray-500">{t('procurement.loadingData')}</div>
+                    <div className="p-12 flex flex-col items-center gap-3 text-gray-400">
+                        <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
+                        <span className="text-sm font-medium">{t('procurement.loadingData', 'Loading...')}</span>
+                    </div>
                 ) : (
                     <div className="p-0">
                         {activeTab === 'orders' && (
@@ -177,15 +202,9 @@ export default function ProcurementHub() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {orders.filter(o =>
-                                            o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            o.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                        ).length === 0 ? (
+                                        {filteredOrders.length === 0 ? (
                                             <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noPosFound')}</td></tr>
-                                        ) : orders.filter(o =>
-                                            o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            o.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                        ).map(order => (
+                                        ) : filteredOrders.map(order => (
                                             <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                                                 <td className="p-4 font-bold text-gray-900">{order.poNumber}</td>
                                                 <td className="p-4">
@@ -235,15 +254,9 @@ export default function ProcurementHub() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {suppliers.filter(s =>
-                                            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            s.contactPerson?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-                                        ).length === 0 ? (
+                                        {filteredSuppliers.length === 0 ? (
                                             <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noSuppliersFound')}</td></tr>
-                                        ) : suppliers.filter(s =>
-                                            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            s.contactPerson?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-                                        ).map(sup => (
+                                        ) : filteredSuppliers.map(sup => (
                                             <tr key={sup._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                                                 <td className="p-4 font-bold text-gray-900">
                                                     {sup.name}

@@ -154,9 +154,11 @@ exports.getEcommerceAnalytics = async (req, res) => {
             {
                 $group: {
                     _id: "$status",
-                    count: { $sum: 1 },
-                    revenue: { $sum: "$totalAmount" },
-                    profit: { $sum: "$financials.netProfit" }
+                    count:      { $sum: 1 },
+                    revenue:    { $sum: "$totalAmount" },
+                    cogs:       { $sum: "$financials.cogs" },
+                    courierFee: { $sum: "$financials.courierFee" },
+                    fees:       { $sum: { $add: ["$financials.gatewayFees", "$financials.marketplaceFees"] } }
                 }
             }
         ]);
@@ -170,7 +172,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
             totalOrders += status.count;
             if (['Delivered', 'Paid'].includes(status._id)) {
                 totalRevenue += status.revenue;
-                netProfit += status.profit;
+                netProfit += status.revenue - (status.cogs || 0) - (status.courierFee || 0) - (status.fees || 0);
             }
 
             if (status._id === 'New') pending += status.count;
@@ -204,11 +206,9 @@ exports.getEcommerceAnalytics = async (req, res) => {
                         }
                     },
                     orders: { $sum: 1 },
-                    profit: {
-                        $sum: {
-                            $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$financials.netProfit", 0]
-                        }
-                    }
+                    cogs:       { $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$financials.cogs", 0] } },
+                    courierFee: { $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$financials.courierFee", 0] } },
+                    fees:       { $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, { $add: ["$financials.gatewayFees", "$financials.marketplaceFees"] }, 0] } }
                 }
             },
             { $sort: { "_id": 1 } }
@@ -225,7 +225,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 date: moment(d).format('DD/MM'),
                 revenue: data ? data.revenue : 0,
                 orders: data ? data.orders : 0,
-                profit: data ? data.profit : 0
+                profit: data ? data.revenue - (data.cogs || 0) - (data.courierFee || 0) - (data.fees || 0) : 0
             });
         }
 

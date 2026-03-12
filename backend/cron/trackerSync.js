@@ -3,6 +3,7 @@ const Shipment = require('../models/Shipment');
 const { ecotrackRequest } = require('../utils/ecotrackRequest');
 const Order = require('../models/Order');
 const CustomOrder = require('../models/CustomOrder');
+const OrderService = require('../domains/orders/order.service');
 
 /**
  * Maps raw Ecotrack statuses to our Internal ERP Shipment status paradigm
@@ -114,29 +115,37 @@ const syncActiveShipments = async () => {
                         updatedCount++;
 
                         // Mirror status back to Internal Order if appropriate
-                        if (newShipmentStatus === 'Delivered' || newShipmentStatus === 'Returned') {
-                            const internalModel = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-') ? CustomOrder : Order;
+                        if (newShipmentStatus === 'Delivered' || newShipmentStatus === 'Returned' || newPaymentStatus === 'Paid_and_Settled') {
+                            const isCustom = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-');
 
-                            // Find the order using the correct reference field
-                            const order = await internalModel.findById(shipment.internalOrder);
-
-                            if (order) {
-                                // 1. Map to exact correct ERP statuses, not generic 'Completed' which breaks Finances
-                                if (newShipmentStatus === 'Delivered') {
-                                    order.status = 'Delivered';
-                                    if (!order.deliveryStatus) order.deliveryStatus = {};
-                                    order.deliveryStatus.deliveredAt = new Date();
-                                } else if (newShipmentStatus === 'Returned') {
-                                    order.status = 'Returned';
+                            if (isCustom) {
+                                const customOrder = await CustomOrder.findById(shipment.internalOrder);
+                                if (customOrder) {
+                                    if (newShipmentStatus === 'Delivered') customOrder.status = 'Delivered';
+                                    else if (newShipmentStatus === 'Returned') customOrder.status = 'Returned';
+                                    if (newPaymentStatus === 'Paid_and_Settled') { customOrder.status = 'Paid'; customOrder.paymentStatus = 'Paid'; }
+                                    await customOrder.save();
                                 }
-
-                                // 2. Map Payment COD statuses properly to Order financials
+                            } else if (shipment.internalOrder && shipment.tenant) {
+                                // Route through OrderService to trigger inventory delta + audit trail + metrics
+                                let targetStatus = null;
+                                const extraData = {};
                                 if (newPaymentStatus === 'Paid_and_Settled') {
-                                    order.status = 'Paid';
-                                    order.paymentStatus = 'Paid';
+                                    targetStatus = 'Paid';
+                                    extraData.paymentStatus = 'Paid';
+                                } else if (newShipmentStatus === 'Delivered') {
+                                    targetStatus = 'Delivered';
+                                } else if (newShipmentStatus === 'Returned') {
+                                    targetStatus = 'Returned';
                                 }
-
-                                await order.save();
+                                if (targetStatus) {
+                                    await OrderService.updateOrder({
+                                        orderId: shipment.internalOrder.toString(),
+                                        tenantId: shipment.tenant,
+                                        updateData: { status: targetStatus, ...extraData },
+                                        bypassStateMachine: true
+                                    }).catch(err => console.error(`[CRON] Failed to sync order status for ${shipment.internalOrderId}:`, err.message));
+                                }
                             }
                         }
                     }

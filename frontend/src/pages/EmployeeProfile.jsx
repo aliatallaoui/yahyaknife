@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, User, Briefcase, Calendar, MapPin, Phone, Mail,
@@ -13,6 +14,7 @@ import PageHeader from '../components/PageHeader';
 
 export default function EmployeeProfile() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -27,19 +29,24 @@ export default function EmployeeProfile() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const h = { headers: { Authorization: `Bearer ${token}` } };
                 const [empRes, attRes, payRes, leaveRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}/attendance`),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll?employeeId=${id}`),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves?employeeId=${id}`)
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`, h),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}/attendance`, h),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll?employeeId=${id}`, h),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves?employeeId=${id}`, h)
                 ]);
 
                 if (!empRes.ok) throw new Error('Employee not found');
 
-                setEmployee(await empRes.json());
-                setAttendance(await attRes.json());
-                setPayrolls(await payRes.json());
-                setLeaves(await leaveRes.json());
+                const empJson = await empRes.json();
+                setEmployee(empJson.data ?? empJson);
+                const attJson = await attRes.json();
+                setAttendance(attJson.data ?? (Array.isArray(attJson) ? attJson : []));
+                const payJson = await payRes.json();
+                setPayrolls(payJson.data ?? (Array.isArray(payJson) ? payJson : []));
+                const leaveJson = await leaveRes.json();
+                setLeaves(leaveJson.data ?? (Array.isArray(leaveJson) ? leaveJson : []));
             } catch (err) {
                 console.error(err);
             } finally {

@@ -29,13 +29,13 @@ const lookupCustomerByPhone = async (req, res) => {
                 tenant: tenantId,
                 'shipping.phone1': phone,
                 status: { $in: ['New', 'Calling', 'No Answer', 'Postponed', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery'] }
-            }).select('orderId status products totalAmount date')
+            }).select('orderId status products totalAmount createdAt')
         ]);
 
-        const riskIndicator = activeOrders.length > 0 ? 'High' : (customer?.isSuspicious ? 'High' : 'Low');
+        const riskIndicator = activeOrders.length > 0 ? 'High' : (customer?.blacklisted ? 'High' : 'Low');
         const warning = activeOrders.length > 0
             ? 'Duplicate active orders found for this phone'
-            : (customer?.isSuspicious ? 'High return risk customer' : null);
+            : (customer?.blacklisted ? 'High return risk customer' : null);
 
         res.json({
             exists: !!customer,
@@ -103,7 +103,7 @@ const getCustomerOrders = async (req, res) => {
     try {
         const orders = await Order.find({ customer: req.params.id, tenant: req.user.tenant })
             .populate('products.variantId')
-            .sort({ date: -1 });
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -239,7 +239,6 @@ const updateCustomerMetrics = async (customerId) => {
         customer.trustScore = Math.max(0, 100 - (customer.refusalRate || 0));
         customer.fraudProbability = Math.min(100, customer.refusalRate * 1.5);
 
-        customer.isSuspicious = customer.refusalRate > 30;
         customer.repeatedRefusalFlag = customer.totalRefusals >= 2;
         customer.requiresDeliveryVerification = customer.refusalRate > 20 || customer.fraudProbability > 50;
 

@@ -37,8 +37,8 @@ const updateUserAccess = async (req, res) => {
 
             // Log this security change
             await AuditLog.create({
-                actor: req.user._id,
-                targetUser: updatedUser._id,
+                actorUserId: req.user._id,
+                targetUserId: updatedUser._id,
                 action: 'UPDATE_ACCESS',
                 module: 'users',
                 metadata: {
@@ -80,8 +80,8 @@ const deleteUser = async (req, res) => {
 
             // Log the deletion
             await AuditLog.create({
-                actor: req.user._id,
-                targetUser: req.params.id,
+                actorUserId: req.user._id,
+                targetUserId: req.params.id,
                 action: 'DELETE_USER',
                 module: 'users',
                 metadata: { email: user.email }

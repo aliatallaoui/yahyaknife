@@ -82,7 +82,7 @@ export const TransactionProvider = ({ children }) => {
 
     const deleteTransaction = async (id, type) => {
         try {
-            const url = type ? `/api/transactions/${id}?type=${type}` : `/api/transactions/${id}`;
+            const url = type ? `${import.meta.env.VITE_API_URL || ''}/api/transactions/${id}?type=${type}` : `${import.meta.env.VITE_API_URL || ''}/api/transactions/${id}`;
             const res = await fetch(url, {
                 method: 'DELETE',
                 headers: {

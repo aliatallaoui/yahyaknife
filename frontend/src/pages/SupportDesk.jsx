@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, MessageSquare, Send, Clock, CheckCircle2, AlertCircle, X, ShieldAlert, Plus } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
@@ -6,15 +6,21 @@ import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 
 export default function SupportDesk() {
     const { t } = useTranslation();
-    const { hasPermission } = useContext(AuthContext);
+    const { hasPermission, token } = useContext(AuthContext);
     const [tickets, setTickets] = useState([]);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [loading, setLoading] = useState(true);
     const [replyText, setReplyText] = useState('');
+    const [replyError, setReplyError] = useState(null);
     const [filter, setFilter] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchQuery(''); searchRef.current?.blur(); } });
 
     useEffect(() => {
         fetchTickets();
@@ -23,9 +29,12 @@ export default function SupportDesk() {
     const fetchTickets = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support`);
-            const data = await res.json();
-            setTickets(Array.isArray(data) ? data : []);
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const data = Array.isArray(json) ? json : (json.data ?? []);
+            setTickets(data);
         } catch (error) {
             console.error("Failed to fetch tickets", error);
         } finally {
@@ -36,9 +45,11 @@ export default function SupportDesk() {
     const handleSelectTicket = async (ticket) => {
         try {
             // Fetch populated ticket
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${ticket._id}`);
-            const data = await res.json();
-            setSelectedTicket(data);
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${ticket._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const json = await res.json();
+            setSelectedTicket(json.data ?? json);
         } catch (error) {
             console.error("Error fetching ticket", error);
         }
@@ -50,7 +61,7 @@ export default function SupportDesk() {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${selectedTicket._id}/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                     message: replyText,
                     sender: 'Agent'
@@ -58,13 +69,19 @@ export default function SupportDesk() {
             });
 
             if (res.ok) {
-                const updatedTicket = await res.json();
+                const json = await res.json();
+                const updatedTicket = json.data ?? json;
                 setSelectedTicket(updatedTicket);
                 setTickets(tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t));
                 setReplyText('');
+                setReplyError(null);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setReplyError(data.message || t('support.replyError', 'Failed to send reply.'));
             }
         } catch (error) {
             console.error("Failed to send reply", error);
+            setReplyError(t('support.replyError', 'Failed to send reply.'));
         }
     };
 
@@ -73,23 +90,38 @@ export default function SupportDesk() {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${selectedTicket._id}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ status })
             });
             if (res.ok) {
-                const updatedTicket = await res.json();
+                const json = await res.json();
+                const updatedTicket = json.data ?? json;
                 setSelectedTicket(updatedTicket);
                 setTickets(tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t));
+                setReplyError(null);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setReplyError(data.message || t('support.statusError', 'Failed to update ticket status.'));
             }
         } catch (error) {
             console.error("Failed to update status", error);
+            setReplyError(t('support.statusError', 'Failed to update ticket status.'));
         }
     };
 
     const filteredTickets = tickets.filter(t => {
-        if (filter === 'All') return true;
-        if (filter === 'Open') return t.status === 'Open' || t.status === 'In Progress';
-        return t.status === filter;
+        if (filter !== 'All') {
+            if (filter === 'Open' && t.status !== 'Open' && t.status !== 'In Progress') return false;
+            if (filter !== 'Open' && t.status !== filter) return false;
+        }
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            const matchName = t.customerId?.name?.toLowerCase().includes(q);
+            const matchSubject = t.subject?.toLowerCase().includes(q);
+            const matchNumber = t.ticketNumber?.toLowerCase().includes(q);
+            if (!matchName && !matchSubject && !matchNumber) return false;
+        }
+        return true;
     });
 
     const getPriorityColor = (p) => {
@@ -134,30 +166,43 @@ export default function SupportDesk() {
                         <div className="relative mb-4">
                             <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
+                                ref={searchRef}
                                 type="text"
-                                placeholder={t('crm.searchTicket', "Search tickets or customers...")}
+                                placeholder={t('crm.searchTicket', "Search tickets... (Press / to focus)")}
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
                                 className="w-full ps-9 pe-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none"
                             />
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                             {[
-                                { label: t('crm.filterAll', 'All'), value: 'All' },
-                                { label: t('crm.filterOpen', 'Open'), value: 'Open' },
-                                { label: t('crm.filterWaiting', 'Waiting on Customer'), value: 'Waiting on Customer' },
-                                { label: t('crm.filterResolved', 'Resolved'), value: 'Resolved' }
+                                { label: t('crm.filterAll', 'All'), value: 'All',
+                                  count: tickets.length },
+                                { label: t('crm.filterOpen', 'Open'), value: 'Open',
+                                  count: tickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length },
+                                { label: t('crm.filterWaiting', 'Waiting'), value: 'Waiting on Customer',
+                                  count: tickets.filter(t => t.status === 'Waiting on Customer').length },
+                                { label: t('crm.filterResolved', 'Resolved'), value: 'Resolved',
+                                  count: tickets.filter(t => t.status === 'Resolved').length }
                             ].map(f => (
                                 <button
                                     key={f.value}
                                     onClick={() => setFilter(f.value)}
                                     className={clsx(
-                                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
                                         filter === f.value
                                             ? "bg-indigo-600 text-white shadow-md"
                                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     )}
                                 >
                                     {f.label}
+                                    {f.count > 0 && (
+                                        <span className={clsx(
+                                            "text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none",
+                                            filter === f.value ? "bg-white/30 text-white" : "bg-white text-gray-600"
+                                        )}>{f.count}</span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -299,6 +344,13 @@ export default function SupportDesk() {
 
                             {/* Composer Bottom */}
                             <div className="p-4 bg-white border-t border-gray-200 shrink-0">
+                                {replyError && (
+                                    <div className="mb-3 flex items-center gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                                        <AlertCircle className="w-4 h-4 shrink-0" />
+                                        <span className="flex-1">{replyError}</span>
+                                        <button onClick={() => setReplyError(null)} className="opacity-60 hover:opacity-100 transition-opacity"><X className="w-4 h-4" /></button>
+                                    </div>
+                                )}
                                 <div className="max-w-3xl mx-auto border border-gray-200 rounded-2xl shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all bg-white relative overflow-hidden flex flex-col">
                                     <textarea
                                         className="w-full p-4 text-sm resize-none outline-none bg-transparent min-h-[120px]"

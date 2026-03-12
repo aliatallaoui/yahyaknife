@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const paginate = require('../shared/middleware/paginate');
 const {
     getSuppliers,
     createSupplier,
@@ -15,7 +16,7 @@ router.use(protect);
 
 // Supplier Routes
 router.route('/suppliers')
-    .get(getSuppliers)
+    .get(paginate, getSuppliers)
     .post(createSupplier);
 
 router.route('/suppliers/:id')
@@ -23,7 +24,7 @@ router.route('/suppliers/:id')
 
 // Purchase Order Routes
 router.route('/orders')
-    .get(getPurchaseOrders)
+    .get(paginate, getPurchaseOrders)
     .post(createPurchaseOrder);
 
 // Active Delivery Receiving Hook

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Wrench, Star, Zap, Award, Activity, CheckCircle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, User, Wrench, Star, Zap, Award, Activity, CheckCircle, TrendingUp, Clock } from 'lucide-react';
 import moment from 'moment';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +9,7 @@ import PageHeader from '../components/PageHeader';
 
 export default function WorkerCard() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -19,17 +21,21 @@ export default function WorkerCard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const h = { headers: { Authorization: `Bearer ${token}` } };
                 const [workerRes, prodRes, rewRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/productivity?employeeId=${id}`),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/rewards?employeeId=${id}`)
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`, h),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/productivity?employeeId=${id}`, h),
+                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/rewards?employeeId=${id}`, h)
                 ]);
 
                 if (!workerRes.ok) throw new Error('Worker not found');
 
-                setWorker(await workerRes.json());
-                setProductivity(await prodRes.json());
-                setRewards(await rewRes.json());
+                const workerJson = await workerRes.json();
+                setWorker(workerJson.data ?? workerJson);
+                const prodJson = await prodRes.json();
+                setProductivity(prodJson.data ?? (Array.isArray(prodJson) ? prodJson : []));
+                const rewJson = await rewRes.json();
+                setRewards(rewJson.data ?? (Array.isArray(rewJson) ? rewJson : []));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -162,12 +168,12 @@ export default function WorkerCard() {
                             <div className="flex justify-between items-center">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.starts', 'Starts')}</span>
-                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.morningStart || '08:00'}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.schedule?.morningStart || '08:00'}</span>
                                 </div>
                                 <div className="w-8 h-px bg-gray-200"></div>
                                 <div className="flex flex-col text-right">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.ends', 'Ends')}</span>
-                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.morningEnd || '12:00'}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.schedule?.morningEnd || '12:00'}</span>
                                 </div>
                             </div>
                         </div>
@@ -179,12 +185,12 @@ export default function WorkerCard() {
                             <div className="flex justify-between items-center">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.starts', 'Starts')}</span>
-                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.eveningStart || '13:00'}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.schedule?.eveningStart || '13:00'}</span>
                                 </div>
                                 <div className="w-8 h-px bg-gray-200"></div>
                                 <div className="flex flex-col text-right">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{t('hr.ends', 'Ends')}</span>
-                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.eveningEnd || '17:00'}</span>
+                                    <span className="text-xl font-black text-gray-900">{worker.contractSettings?.schedule?.eveningEnd || '17:00'}</span>
                                 </div>
                             </div>
                         </div>

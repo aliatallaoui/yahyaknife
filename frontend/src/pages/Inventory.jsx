@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { InventoryContext } from '../context/InventoryContext';
@@ -63,6 +63,8 @@ export default function Inventory() {
     const [selectedLedgerProduct, setSelectedLedgerProduct] = useState(null);
 
     const [isPOModalOpen, setIsPOModalOpen] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
 
     const handleCreateClick = () => {
         setEditingProduct(null);
@@ -74,27 +76,35 @@ export default function Inventory() {
         setIsModalOpen(true);
     };
 
-    const handleDeleteClick = async (id) => {
-        if (window.confirm(t('inventory.confirmArchiveProduct', "Are you sure you want to completely archive this product? This will remove it from active stock."))) {
-            try {
-                await deleteProduct(id);
-            } catch (error) {
-                alert("Failed to archive product. Check console.");
-                console.error(error);
-            }
-        }
+    const handleDeleteClick = (id) => {
+        setConfirmDialog({
+            title: t('inventory.confirmArchiveProduct', 'Archive this product?'),
+            body: t('inventory.confirmArchiveProductBody', 'This will remove it from active stock.'),
+            onConfirm: async () => {
+                try { await deleteProduct(id); }
+                catch (error) { setErrorMsg('Failed to archive product.'); console.error(error); }
+            },
+        });
     };
 
     const handleCreateSupplier = () => { setEditingSupplier(null); setIsSupplierModalOpen(true); };
     const handleEditSupplier = (supplier) => { setEditingSupplier(supplier); setIsSupplierModalOpen(true); };
-    const handleDeleteSupplier = async (id) => {
-        if (window.confirm(t('inventory.confirmArchiveSupplier', "Archive this supplier?"))) await deleteSupplier(id);
+    const handleDeleteSupplier = (id) => {
+        setConfirmDialog({
+            title: t('inventory.confirmArchiveSupplier', 'Archive this supplier?'),
+            body: '',
+            onConfirm: () => deleteSupplier(id),
+        });
     };
 
     const handleCreateCategory = () => { setEditingCategory(null); setIsCategoryModalOpen(true); };
     const handleEditCategory = (category) => { setEditingCategory(category); setIsCategoryModalOpen(true); };
-    const handleDeleteCategory = async (id) => {
-        if (window.confirm(t('inventory.confirmArchiveCategory', "Archive this category?"))) await deleteCategory(id);
+    const handleDeleteCategory = (id) => {
+        setConfirmDialog({
+            title: t('inventory.confirmArchiveCategory', 'Archive this category?'),
+            body: '',
+            onConfirm: () => deleteCategory(id),
+        });
     };
 
     const handleModalSubmit = async (payload) => {
@@ -103,7 +113,7 @@ export default function Inventory() {
             else await createProduct(payload);
             setIsModalOpen(false);
         } catch (error) {
-            alert(`Failed to save product: ${error.message}`);
+            setErrorMsg(`Failed to save product: ${error.message}`);
             console.error(error);
         }
     };
@@ -655,6 +665,45 @@ export default function Inventory() {
                     isOpen={isPOModalOpen}
                     onClose={() => setIsPOModalOpen(false)}
                 />
+            )}
+
+            {/* Inline error toast */}
+            {errorMsg && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-red-600 text-white rounded-xl shadow-xl text-sm font-semibold max-w-sm">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{errorMsg}</span>
+                    <button onClick={() => setErrorMsg(null)} className="p-1 hover:bg-red-700 rounded transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            )}
+
+            {/* Confirm dialog */}
+            {confirmDialog && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">{confirmDialog.title}</h3>
+                                {confirmDialog.body && <p className="text-sm text-gray-500 mt-1">{confirmDialog.body}</p>}
+                            </div>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+                                className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                            >
+                                {t('common.confirm', 'Confirm')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

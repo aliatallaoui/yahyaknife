@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const PurchaseOrder = require('../models/PurchaseOrder');
 const ProductVariant = require('../models/ProductVariant');
 const { logStockMovement } = require('./stockController');
@@ -10,8 +11,8 @@ exports.getPurchaseOrders = async (req, res) => {
         const pos = await PurchaseOrder.find()
             .populate('supplier')
             .populate({
-                path: 'items.variant',
-                populate: { path: 'productId' }
+                path: 'items.itemRef', // Changed from variant to itemRef
+                populate: { path: 'productId' } // For ProductVariant cases
             })
             .sort({ createdAt: -1 });
         res.json(pos);
@@ -45,7 +46,7 @@ exports.createPurchaseOrder = async (req, res) => {
         const populatedPO = await PurchaseOrder.findById(newPO._id)
             .populate('supplier')
             .populate({
-                path: 'items.variant',
+                path: 'items.itemRef', // Changed from variant to itemRef
                 populate: { path: 'productId' }
             });
 
@@ -61,10 +62,12 @@ exports.createPurchaseOrder = async (req, res) => {
 exports.updatePOStatus = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id))
+            return res.status(400).json({ message: 'Invalid purchase order ID' });
         const { status } = req.body;
 
         const po = await PurchaseOrder.findById(id).populate({
-            path: 'items.variant',
+            path: 'items.itemRef', // Changed from variant to itemRef
             populate: { path: 'productId' }
         });
         if (!po) return res.status(404).json({ message: "Purchase Order not found." });
@@ -85,26 +88,36 @@ exports.updatePOStatus = async (req, res) => {
                     const match = receivedItems.find(ri => ri.variantId && String(ri.variantId) === String(item.variant._id));
                     if (match) {
                         newReceiveQty = Number(match.quantity);
+                        if (!Number.isInteger(newReceiveQty) || newReceiveQty <= 0) newReceiveQty = 0;
                     }
                 }
 
                 if (newReceiveQty > 0) {
                     item.receivedQuantity += newReceiveQty;
 
-                    // Increment totalStock
-                    await ProductVariant.findByIdAndUpdate(item.variant._id, {
-                        $inc: { totalStock: newReceiveQty }
-                    });
+                    if (item.itemModel === 'ProductVariant') {
+                        // Increment totalStock
+                        await ProductVariant.findByIdAndUpdate(item.itemRef._id, {
+                            $inc: { totalStock: newReceiveQty }
+                        });
 
-                    // Log movement in InventoryLedger
-                    await logStockMovement(
-                        item.variant._id,
-                        newReceiveQty,
-                        'Purchase', // Maps to 'Received'
-                        `${status} PO ${po.poNumber}`,
-                        po._id,
-                        'PurchaseOrder'
-                    );
+                        // Log movement in InventoryLedger
+                        await logStockMovement(
+                            item.itemRef._id,
+                            newReceiveQty,
+                            'Purchase', // Maps to 'Received'
+                            `${status} PO ${po.poNumber}`,
+                            po._id,
+                            'PurchaseOrder'
+                        );
+                    } else if (item.itemModel === 'RawMaterial') {
+                        // Handle Raw Material stock update (Assuming RawMaterial model exists)
+                        const RawMaterial = require('../models/RawMaterial');
+                        await RawMaterial.findByIdAndUpdate(item.itemRef._id, {
+                            $inc: { currentStock: newReceiveQty }
+                        });
+                        // Add RawMaterial ledger movement if RawMaterial has tracking
+                    }
                 }
             }
             if (status === 'Received') {
@@ -118,7 +131,7 @@ exports.updatePOStatus = async (req, res) => {
         const updatedPO = await PurchaseOrder.findById(id)
             .populate('supplier')
             .populate({
-                path: 'items.variant',
+                path: 'items.itemRef', // Changed from variant to itemRef
                 populate: { path: 'productId' }
             });
 

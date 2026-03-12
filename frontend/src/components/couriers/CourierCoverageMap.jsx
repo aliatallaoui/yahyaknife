@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Plus, Trash2, Home, Building2, HelpCircle, RefreshCw } from 'lucide-react';
+import { MapPin, Plus, Trash2, Home, Building2, HelpCircle, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function CourierCoverageMap({ courierId }) {
@@ -14,6 +14,10 @@ export default function CourierCoverageMap({ courierId }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 50;
+    const [errorMsg, setErrorMsg] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
+    const [confirmDelete, setConfirmDelete] = useState(null); // coverageId
+    const [confirmSync, setConfirmSync] = useState(false);
 
     const [formData, setFormData] = useState({
         wilayaCode: '',
@@ -59,12 +63,15 @@ export default function CourierCoverageMap({ courierId }) {
             fetchCoverage();
         } catch (error) {
             console.error('Error adding coverage:', error);
-            alert(error.response?.data?.message || 'Error adding coverage region');
+            setErrorMsg(error.response?.data?.message || 'Error adding coverage region');
         }
     };
 
-    const handleDelete = async (coverageId) => {
-        if (!window.confirm('Delete this coverage region?')) return;
+    const handleDelete = (coverageId) => setConfirmDelete(coverageId);
+
+    const confirmDeleteCoverage = async () => {
+        const coverageId = confirmDelete;
+        setConfirmDelete(null);
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage/${coverageId}`, {
@@ -73,23 +80,25 @@ export default function CourierCoverageMap({ courierId }) {
             fetchCoverage();
         } catch (error) {
             console.error('Error deleting coverage:', error);
+            setErrorMsg('Failed to delete coverage region.');
         }
     };
 
-    const handleSync = async () => {
-        if (!window.confirm(t('couriers.confirmSync', 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds. Continue?'))) return;
-        
+    const handleSync = () => setConfirmSync(true);
+
+    const confirmSyncCoverage = async () => {
+        setConfirmSync(false);
         setSyncing(true);
         try {
             const token = localStorage.getItem('token');
             const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage/sync`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            alert(res.data.message || 'Sync successful');
+            setSuccessMsg(res.data.message || 'Sync successful');
             fetchCoverage();
         } catch (error) {
             console.error('Error syncing coverage:', error);
-            alert(error.response?.data?.message || error.response?.data?.error || 'Error syncing coverage. Check API credentials.');
+            setErrorMsg(error.response?.data?.message || error.response?.data?.error || 'Error syncing coverage. Check API credentials.');
         } finally {
             setSyncing(false);
         }
@@ -114,6 +123,56 @@ export default function CourierCoverageMap({ courierId }) {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Error / Success banners */}
+            {errorMsg && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{errorMsg}</span>
+                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
+            {successMsg && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{successMsg}</span>
+                    <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600">✕</button>
+                </div>
+            )}
+            {/* Delete coverage confirm */}
+            {confirmDelete && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">Delete this coverage region?</h3>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={confirmDeleteCoverage} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Sync confirm */}
+            {confirmSync && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                                <RefreshCw className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">{t('couriers.btnSyncCoverage', 'Sync API Coverage')}</h3>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-5 ms-[52px]">{t('couriers.confirmSync', 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds.')}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmSync(false)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={confirmSyncCoverage} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors">Continue</button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex gap-3 text-start">
                 <HelpCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div>

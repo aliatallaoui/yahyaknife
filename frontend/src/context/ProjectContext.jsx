@@ -21,9 +21,9 @@ export const ProjectProvider = ({ children }) => {
                 fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/analytics`, { headers })
             ]);
 
-            setProjects(await projRes.json());
-            setGlobalTasks(await tasksRes.json());
-            setAnalytics(await analyticsRes.json());
+            if (projRes.ok) { const projJson = await projRes.json(); setProjects(projJson.data ?? (Array.isArray(projJson) ? projJson : [])); }
+            if (tasksRes.ok) { const tasksJson = await tasksRes.json(); setGlobalTasks(tasksJson.data ?? (Array.isArray(tasksJson) ? tasksJson : [])); }
+            if (analyticsRes.ok) { const analyticsJson = await analyticsRes.json(); setAnalytics(analyticsJson.data ?? analyticsJson); }
 
         } catch (error) {
             console.error('Error fetching Project Data:', error);
@@ -39,7 +39,7 @@ export const ProjectProvider = ({ children }) => {
     const createProject = async (data) => {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(data)
         });
         if (res.ok) await fetchDashboardData();
@@ -49,7 +49,7 @@ export const ProjectProvider = ({ children }) => {
     const updateTaskStatus = async (taskId, status) => {
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/projects/tasks/${taskId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ status })
         });
         if (res.ok) await fetchDashboardData();

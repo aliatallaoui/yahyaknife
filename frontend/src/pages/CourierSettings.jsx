@@ -75,7 +75,12 @@ export default function CourierSettings() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Configuration...</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
+            <span className="text-sm font-medium">Loading Configuration...</span>
+        </div>
+    );
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Users, Shield, Edit2, Trash2, CheckCircle, XCircle, UserPlus, Key } from 'lucide-react';
+import { Users, Shield, Edit2, Trash2, CheckCircle, XCircle, UserPlus, Key, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,9 @@ export default function SettingsUsers() {
     });
 
     const [rolesAvailable, setRolesAvailable] = useState([]);
+    const [modalError, setModalError] = useState('');
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const [pageError, setPageError] = useState('');
 
     const fetchData = async () => {
         try {
@@ -51,6 +54,7 @@ export default function SettingsUsers() {
     }, [token]);
 
     const handleOpenEdit = (user) => {
+        setModalError('');
         setEditUser(user);
         setModalData({
             name: user.name,
@@ -63,6 +67,7 @@ export default function SettingsUsers() {
     };
 
     const handleOpenCreate = () => {
+        setModalError('');
         setEditUser(null);
         setModalData({
             name: '',
@@ -95,7 +100,7 @@ export default function SettingsUsers() {
                     setIsModalOpen(false);
                 } else {
                     const errorData = await res.json();
-                    alert(errorData.message || t('errUpdate'));
+                    setModalError(errorData.message || t('errUpdate'));
                 }
             } else {
                 // Create new user (Hits auth endpoint since we don't have a rigid create user in standard userController yet, usually auth handles registration)
@@ -115,30 +120,35 @@ export default function SettingsUsers() {
                     setIsModalOpen(false);
                 } else {
                     const errorData = await res.json();
-                    alert(errorData.message || t('errCreate'));
+                    setModalError(errorData.message || t('errCreate'));
                 }
             }
         } catch (err) {
-            alert('A network error occurred.');
+            setModalError('A network error occurred.');
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm(t('confirmDelete'))) return;
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setUsers(users.filter(u => u._id !== id));
-            } else {
-                const errorData = await res.json();
-                alert(errorData.message || t('errDelete'));
+    const handleDelete = (id) => {
+        setConfirmDialog({
+            title: t('confirmDelete', 'Remove this user?'),
+            body: t('confirmDeleteBody', 'This will revoke their access permanently.'),
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/${id}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        setUsers(prev => prev.filter(u => u._id !== id));
+                    } else {
+                        const errorData = await res.json();
+                        setPageError(errorData.message || t('errDelete'));
+                    }
+                } catch {
+                    setPageError('A network error occurred.');
+                }
             }
-        } catch (err) {
-            alert('A network error occurred.');
-        }
+        });
     };
 
     if (loading) return <div className="p-8 text-gray-500 font-medium">{t('loading')}</div>;
@@ -155,6 +165,14 @@ export default function SettingsUsers() {
 
     return (
         <div className="max-w-6xl mx-auto">
+            {/* Page-level error toast */}
+            {pageError && (
+                <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{pageError}</span>
+                    <button onClick={() => setPageError('')} className="text-red-400 hover:text-red-700"><XCircle className="w-4 h-4" /></button>
+                </div>
+            )}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 {/* Unified Table Header */}
                 <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
@@ -252,6 +270,25 @@ export default function SettingsUsers() {
                 </div>
             </div>
 
+            {/* Confirm Dialog */}
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">{confirmDialog.title}</h3>
+                        </div>
+                        {confirmDialog.body && <p className="text-sm text-gray-500 mb-5 ms-[52px]">{confirmDialog.body}</p>}
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Config Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
@@ -347,6 +384,13 @@ export default function SettingsUsers() {
                                 </div>
                             )}
                         </div>
+                        {modalError && (
+                            <div className="mx-6 mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-semibold text-red-700 flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                <span className="flex-1">{modalError}</span>
+                                <button onClick={() => setModalError('')} className="text-red-400 hover:text-red-700">✕</button>
+                            </div>
+                        )}
                         <div className={clsx("px-6 py-4 bg-gray-50 flex gap-3 border-t border-gray-100", isAr ? "justify-start" : "justify-end")}>
                             <button
                                 onClick={() => setIsModalOpen(false)}

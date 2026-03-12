@@ -393,6 +393,7 @@ const resources = {
                 hr_payroll: "Payroll",
                 hr_reports: "HR Reports",
                 production_tools: "Tool Management",
+                my_work: "My Work",
                 projects: "Projects",
                 knives: {
                     cards: "Work Orders",
@@ -2059,6 +2060,16 @@ const resources = {
                 title: "No shipments found",
                 subtitle: "Adjust filters or create a new dispatch order."
             }
+        },
+        workshop: {
+            mywork: {
+                title: "Workshop Floor",
+                subtitle: "Active blades · tap to advance stage",
+                allDone: "All blades completed!",
+                allDoneHint: "No active production orders right now.",
+                completed: "Completed",
+                advanceError: "Failed to advance stage. Please try again."
+            }
         }
     },
     ar: {
@@ -2519,6 +2530,7 @@ const resources = {
                 hr_payroll: "الرواتب",
                 hr_reports: "تقارير الموارد البشرية",
                 production_tools: "إدارة الأدوات",
+                my_work: "عملي",
                 projects: "المشاريع",
                 knives: {
                     cards: "أوامر العمل",
@@ -4257,6 +4269,16 @@ const resources = {
                 statusFailedAttempt: "محاولة فاشلة",
                 statusReturned: "مرتجع",
                 statusCancelled: "ملغى"
+            }
+        },
+        workshop: {
+            mywork: {
+                title: "طابق الورشة",
+                subtitle: "النصال النشطة · اضغط للانتقال للمرحلة التالية",
+                allDone: "جميع النصال مكتملة!",
+                allDoneHint: "لا توجد أوامر إنتاج نشطة الآن.",
+                completed: "مكتملة",
+                advanceError: "فشل الانتقال للمرحلة التالية. يرجى المحاولة مرة أخرى."
             }
         }
     }

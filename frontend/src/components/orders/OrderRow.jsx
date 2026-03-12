@@ -2,8 +2,9 @@ import React, { useState, useContext } from 'react';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
-import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2 } from 'lucide-react';
+import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2, Copy } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
+import { ORDER_STATUS_COLORS } from '../../constants/statusColors';
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -11,28 +12,7 @@ const PRIORITY_STYLES = {
     'Urgent': 'border-l-4 border-l-red-500 bg-red-50/20'
 };
 
-const STATUS_STYLES = {
-    'New': 'bg-gray-100 text-gray-700 border-gray-200',
-    'Call 1': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    'Call 2': 'bg-violet-50 text-violet-700 border-violet-200',
-    'Call 3': 'bg-purple-50 text-purple-700 border-purple-200',
-    'No Answer': 'bg-slate-50 text-slate-600 border-slate-200',
-    'Out of Coverage': 'bg-slate-100 text-slate-500 border-slate-200',
-    'Wrong Number': 'bg-rose-50 text-rose-700 border-rose-200',
-    'Postponed': 'bg-yellow-50 text-yellow-700 border-yellow-300',
-    'Cancelled by Customer': 'bg-gray-50 text-gray-400 border-gray-200',
-    'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
-    'Preparing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    'Ready for Pickup': 'bg-violet-50 text-violet-700 border-violet-200',
-    'Dispatched': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    'Shipped': 'bg-amber-50 text-amber-700 border-amber-200',
-    'Out for Delivery': 'bg-orange-50 text-orange-700 border-orange-200',
-    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    'Paid': 'bg-green-50 text-green-700 border-green-200',
-    'Refused': 'bg-red-50 text-red-700 border-red-200',
-    'Returned': 'bg-rose-50 text-rose-700 border-rose-200',
-    'Cancelled': 'bg-gray-50 text-gray-400 border-gray-200 line-through',
-};
+const STATUS_STYLES = ORDER_STATUS_COLORS;
 
 const COD_STATUSES = ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 
@@ -71,6 +51,18 @@ const OrderRow = React.memo(({
     const { hasPermission } = useContext(AuthContext);
     const [isEditingTags, setIsEditingTags] = useState(false);
     const [tagInput, setTagInput] = useState('');
+    const [copiedPhone, setCopiedPhone] = useState(false);
+
+    const copyPhone = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const phone = order.customer?.phone || order.shipping?.phone1;
+        if (!phone) return;
+        navigator.clipboard.writeText(phone).then(() => {
+            setCopiedPhone(true);
+            setTimeout(() => setCopiedPhone(false), 1500);
+        }).catch(() => {});
+    };
 
     const handleAddTag = (e) => {
         if (e.key === 'Enter' && tagInput.trim()) {
@@ -89,17 +81,29 @@ const OrderRow = React.memo(({
         onTagUpdate(order._id, (order.tags || []).filter(t => t !== tagToRemove));
     };
 
+    const ageHours = order.createdAt ? (Date.now() - new Date(order.createdAt).getTime()) / 3600000 : 0;
+    const isStaleNew = order.status === 'New' && ageHours > 24;
+    const isHighRisk = order.customer?.blacklisted || (order.customer?.riskScore ?? 0) > 70;
+
     return (
-        <tbody 
-            ref={virtualMeasureRef} 
-            data-index={virtualIndex} 
+        <tbody
+            ref={virtualMeasureRef}
+            data-index={virtualIndex}
             className="text-sm border-b border-gray-100"
         >
             <tr
                 onClick={() => toggleRowExpansion(order._id)}
                 className={clsx(
                     "group cursor-pointer transition-all divide-x divide-x-reverse divide-gray-100/60",
-                    isSelected ? "bg-blue-50 hover:bg-blue-100" : (isExpanded ? "bg-gray-50/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]" : "hover:bg-gray-50/80 bg-white"),
+                    isSelected
+                        ? "bg-blue-50 hover:bg-blue-100"
+                        : isExpanded
+                            ? "bg-gray-50/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                            : isStaleNew
+                                ? "bg-amber-50/60 hover:bg-amber-50"
+                                : isHighRisk
+                                    ? "bg-rose-50/40 hover:bg-rose-50/60"
+                                    : "hover:bg-gray-50/80 bg-white",
                     PRIORITY_STYLES[order.priority] || ''
                 )}
             >
@@ -138,7 +142,7 @@ const OrderRow = React.memo(({
                                                     <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-gray-900 z-10 shrink-0 mt-0.5"></div>
                                                     <div className="flex flex-col text-xs leading-none">
                                                         <span className="font-bold text-gray-100">{t('ordersControl.timeline.created')}</span>
-                                                        <span className="text-[10px] text-gray-400 font-mono mt-1">{moment(order.date).format('DD MMM, HH:mm')}</span>
+                                                        <span className="text-[10px] text-gray-400 font-mono mt-1">{moment(order.createdAt).format('DD MMM, HH:mm')}</span>
                                                     </div>
                                                 </div>
                                                 {order.status !== 'New' && (
@@ -444,14 +448,25 @@ const OrderRow = React.memo(({
                         case 'phone':
                             return (
                                 <td key={col.id} className="px-4 py-2 font-mono" onClick={e => e.stopPropagation()}>
-                                    <a
-                                        href={`tel:${order.customer?.phone || order.shipping?.phone1 || ''}`}
-                                        className="flex items-center gap-1.5 w-fit px-2 py-1 bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-md border border-emerald-100/50 cursor-pointer"
-                                        title={t('ordersControl.grid.callCustomer', { defaultValue: 'Call Customer' })}
-                                    >
-                                        <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
-                                        <span className="font-bold text-emerald-800 text-[13px] tracking-wider">{order.customer?.phone || order.shipping?.phone1 || '-'}</span>
-                                    </a>
+                                    <div className="flex items-center gap-1">
+                                        <a
+                                            href={`tel:${order.customer?.phone || order.shipping?.phone1 || ''}`}
+                                            className="flex items-center gap-1.5 w-fit px-2 py-1 bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-md border border-emerald-100/50 cursor-pointer"
+                                            title={t('ordersControl.grid.callCustomer', { defaultValue: 'Call Customer' })}
+                                        >
+                                            <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                                            <span className="font-bold text-emerald-800 text-[13px] tracking-wider">{order.customer?.phone || order.shipping?.phone1 || '-'}</span>
+                                        </a>
+                                        <button
+                                            onClick={copyPhone}
+                                            className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                            title="Copy number"
+                                        >
+                                            {copiedPhone
+                                                ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                                : <Copy className="w-3 h-3" />}
+                                        </button>
+                                    </div>
                                 </td>
                             );
                         case 'location':
@@ -527,8 +542,8 @@ const OrderRow = React.memo(({
                             return (
                                 <td key={col.id} className="px-4 py-2 text-xs w-28 whitespace-nowrap overflow-hidden text-ellipsis">
                                     <div className="flex flex-col">
-                                        <span className={clsx("font-bold", moment().diff(moment(order.date), 'hours') > 24 && order.status === 'New' ? "text-rose-600" : "text-gray-600")} title={moment(order.date).format('PPpp')}>
-                                            {getAge(order.date)} {t('ordersControl.grid.ago')}
+                                        <span className={clsx("font-bold", moment().diff(moment(order.createdAt), 'hours') > 24 && order.status === 'New' ? "text-rose-600" : "text-gray-600")} title={moment(order.createdAt).format('PPpp')}>
+                                            {getAge(order.createdAt)} {t('ordersControl.grid.ago')}
                                         </span>
                                     </div>
                                 </td>

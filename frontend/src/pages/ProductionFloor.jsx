@@ -121,6 +121,7 @@ function MaterialsPanel() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [modalError, setModalError] = useState(null);
 
     const handleAddClick = () => {
         setEditingItem(null);
@@ -133,12 +134,13 @@ function MaterialsPanel() {
     };
 
     const handleModalSubmit = async (payload) => {
+        setModalError(null);
         try {
             if (editingItem) await updateMaterial(editingItem._id, payload);
             else await createMaterial(payload);
             setIsModalOpen(false);
         } catch (error) {
-            alert("Failed to save raw material.");
+            setModalError(t('manufacturing.errSaveMaterial', 'Failed to save raw material.'));
         }
     };
 
@@ -191,9 +193,15 @@ function MaterialsPanel() {
                 </table>
             </div>
 
+            {modalError && (
+                <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2 font-semibold">
+                    {modalError}
+                </div>
+            )}
+
             <RawMaterialModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => { setIsModalOpen(false); setModalError(null); }}
                 onSubmit={handleModalSubmit}
                 initialData={editingItem}
                 suppliers={suppliers}
@@ -214,6 +222,7 @@ function BOPanel() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [modalError, setModalError] = useState(null);
 
     const handleAddClick = () => {
         setEditingItem(null);
@@ -226,12 +235,13 @@ function BOPanel() {
     };
 
     const handleModalSubmit = async (payload) => {
+        setModalError(null);
         try {
             if (editingItem) await updateBOM(editingItem._id, payload);
             else await createBOM(payload);
             setIsModalOpen(false);
         } catch (error) {
-            alert("Failed to save BOM.");
+            setModalError(t('manufacturing.errSaveBOM', 'Failed to save BOM.'));
         }
     };
 
@@ -285,6 +295,11 @@ function BOPanel() {
                 variants={variants}
                 rawMaterials={materials}
             />
+            {modalError && (
+                <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2 font-semibold">
+                    {modalError}
+                </div>
+            )}
         </div>
     );
 }
@@ -300,6 +315,7 @@ function OrdersPanel() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [panelError, setPanelError] = useState(null);
 
     const handleAddClick = () => {
         setEditingItem(null);
@@ -312,29 +328,26 @@ function OrdersPanel() {
     };
 
     const handleModalSubmit = async (payload) => {
+        setPanelError(null);
         try {
             if (editingItem) {
-                // Notice: Update production status has a specific format.
-                // However, standard updates might need a different API route.
-                // For simplicity, we assume create is the primary flow here, or update handles all.
-                // In a real app, separate edit vs status transition.
                 await updateProductionStatus(editingItem._id, payload);
             } else {
                 await createProductionOrder(payload);
             }
             setIsModalOpen(false);
         } catch (error) {
-            alert("Failed to save Production Order.");
+            setPanelError(t('manufacturing.errSaveOrder', 'Failed to save Production Order.'));
         }
     };
 
     const handleStatusTransition = async (po, newStatus) => {
+        setPanelError(null);
         try {
-            // Calculate completed quantity if completed (assume full planned qty for simplicity in UI)
             const qty = newStatus === 'Completed' ? po.quantityPlanned : po.quantityCompleted;
             await updateProductionStatus(po._id, { status: newStatus, quantityCompleted: qty });
         } catch (error) {
-            alert("Failed to transition status.");
+            setPanelError(t('manufacturing.errTransitionStatus', 'Failed to transition status.'));
         }
     };
 
@@ -400,6 +413,12 @@ function OrdersPanel() {
                     </tbody>
                 </table>
             </div>
+
+            {panelError && (
+                <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2 font-semibold">
+                    {panelError}
+                </div>
+            )}
 
             <ProductionOrderModal
                 isOpen={isModalOpen}

@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Sparkles, TrendingUp, DollarSign, Package, Truck, AlertTriangle, CheckCircle, Clock, ChevronRight, ShoppingCart, Timer, PackageCheck, Users, UserCheck, UserX, CalendarClock, FileBarChart2, BarChart3, CreditCard } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 export default function DashboardGrid({ data }) {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [hrMetrics, setHrMetrics] = useState(null);
     const [dailyReport, setDailyReport] = useState(null);
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`).then(r => r.json()).then(setHrMetrics).catch(() => { });
-        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily`).then(r => r.json()).then(setDailyReport).catch(() => { });
-    }, []);
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`, { headers }).then(r => r.json()).then(json => setHrMetrics(json.data ?? json)).catch(() => { });
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily`, { headers }).then(r => r.json()).then(json => setDailyReport(json.data ?? json)).catch(() => { });
+    }, [token]);
     if (!data) return (
         <div className="flex items-center justify-center h-64 flex-col gap-3">
             <AlertTriangle className="w-8 h-8 text-amber-400" />

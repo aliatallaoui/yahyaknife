@@ -1,64 +1,70 @@
+const mongoose = require('mongoose');
 const WorkshopTool = require('../models/WorkshopTool');
+const { ok, created, message } = require('../shared/utils/ApiResponse');
 
-// Get all tools
 exports.getTools = async (req, res) => {
     try {
         const tools = await WorkshopTool.find().populate('assignedTo', 'name role').sort({ createdAt: -1 });
-        res.json(tools);
+        res.json(ok(tools));
     } catch (err) {
         res.status(500).json({ error: 'Server Error' });
     }
 };
 
-// Add new tool
 exports.addTool = async (req, res) => {
     try {
-        const tool = new WorkshopTool(req.body);
+        const { name, category, serialNumber, status, assignedTo, acquisitionDate, nextMaintenanceDate } = req.body;
+        const tool = new WorkshopTool({ name, category, serialNumber, status, assignedTo, acquisitionDate, nextMaintenanceDate });
         await tool.save();
-        res.status(201).json(tool);
+        res.status(201).json(created(tool));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 };
 
-// Update a tool
 exports.updateTool = async (req, res) => {
     try {
-        const tool = await WorkshopTool.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('assignedTo', 'name');
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
+        const { name, category, serialNumber, status, assignedTo, acquisitionDate, nextMaintenanceDate } = req.body;
+        const tool = await WorkshopTool.findByIdAndUpdate(
+            req.params.id,
+            { name, category, serialNumber, status, assignedTo, acquisitionDate, nextMaintenanceDate },
+            { new: true }
+        ).populate('assignedTo', 'name');
         if (!tool) return res.status(404).json({ error: 'Tool not found' });
-        res.json(tool);
+        res.json(ok(tool));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 };
 
-// Add Maintenance Note
 exports.addMaintenanceNote = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const tool = await WorkshopTool.findById(req.params.id);
         if (!tool) return res.status(404).json({ error: 'Tool not found' });
 
-        tool.maintenanceNotes.push(req.body);
-        tool.lastMaintenanceDate = req.body.date || Date.now();
-
-        // Also update status if provided in request
-        if (req.body.status) {
-            tool.status = req.body.status;
-        }
+        const { note, date, performedBy, status: newStatus } = req.body;
+        tool.maintenanceNotes.push({ note, date, performedBy });
+        tool.lastMaintenanceDate = date || Date.now();
+        if (newStatus) tool.status = newStatus;
 
         await tool.save();
-        res.json(tool);
+        res.json(ok(tool));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 };
 
-// Delete a tool
 exports.deleteTool = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const tool = await WorkshopTool.findByIdAndDelete(req.params.id);
         if (!tool) return res.status(404).json({ error: 'Tool not found' });
-        res.json({ message: 'Tool removed' });
+        res.json(message('Tool removed'));
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }

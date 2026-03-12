@@ -9,7 +9,7 @@ exports.enqueueOrderExport = async (req, res) => {
         const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, stage } = req.query;
 
         // Build the identical query object as the frontend table
-        const query = {};
+        const query = { tenant: tenantId, deletedAt: null };
 
         if (stage) {
             if (stage === 'pre-dispatch') {
@@ -28,9 +28,9 @@ exports.enqueueOrderExport = async (req, res) => {
         if (channel) query.channel = channel;
 
         if (dateFrom || dateTo) {
-            query.date = {};
-            if (dateFrom) query.date.$gte = new Date(dateFrom);
-            if (dateTo) query.date.$lte = new Date(dateTo);
+            query.createdAt = {};
+            if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+            if (dateTo) query.createdAt.$lte = new Date(dateTo);
         }
 
         if (search) {

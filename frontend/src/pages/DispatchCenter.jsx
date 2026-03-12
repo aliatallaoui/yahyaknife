@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import RequireAction from '../components/Guards/RequireAction';
-import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package } from 'lucide-react';
+import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
 import CreateShipmentModal from '../components/CreateShipmentModal';
+import PhoneChip from '../components/PhoneChip';
 
 // Module-level i18n key map — single source of truth for all shipment status labels
 const SHIPMENT_STATUS_I18N = {
@@ -30,11 +32,15 @@ const FILTER_STATUSES = ['All', 'Created in Courier', 'Validated', 'In Transit',
 
 export default function DispatchCenter() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [shipments, setShipments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(null); // shipment id pending delete
+    const [errorMsg, setErrorMsg] = useState(null);
+    const showError = (msg) => { setErrorMsg(msg); setTimeout(() => setErrorMsg(null), 5000); };
 
     useEffect(() => {
         fetchShipments();
@@ -62,12 +68,15 @@ export default function DispatchCenter() {
             });
             fetchShipments();
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to validate shipment.');
+            showError(error.response?.data?.message || 'Failed to validate shipment.');
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this shipment/dispatch request?')) return;
+    const handleDelete = (id) => setConfirmDelete(id);
+
+    const confirmDeleteShipment = async () => {
+        const id = confirmDelete;
+        setConfirmDelete(null);
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}`, {
@@ -75,7 +84,7 @@ export default function DispatchCenter() {
             });
             fetchShipments();
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to delete shipment.');
+            showError(error.response?.data?.message || 'Failed to delete shipment.');
         }
     };
 
@@ -89,7 +98,7 @@ export default function DispatchCenter() {
                 window.open(res.data.url, '_blank');
             }
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to fetch printing label.');
+            showError(error.response?.data?.message || 'Failed to fetch printing label.');
         }
     };
 
@@ -140,8 +149,8 @@ export default function DispatchCenter() {
 
     const filteredShipments = shipments.filter(s => {
         const matchesSearch = s.externalTrackingId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.internalOrderId.toLowerCase().includes(searchTerm.toLowerCase());
+            (s.customerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (s.internalOrderId?.toLowerCase() || '').includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'All' || s.shipmentStatus === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -262,7 +271,12 @@ export default function DispatchCenter() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
-                                <tr><td colSpan="6" className="px-6 py-8 text-center text-sm text-gray-500">Loading shipments...</td></tr>
+                                <tr><td colSpan="6" className="px-6 py-12 text-center">
+                                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                                        <div className="w-7 h-7 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" />
+                                        <span className="text-sm font-medium">Loading shipments...</span>
+                                    </div>
+                                </td></tr>
                             ) : filteredShipments.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
@@ -282,7 +296,7 @@ export default function DispatchCenter() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">{shipment.customerName}</div>
-                                            <div className="text-xs text-gray-500">{shipment.phone1}</div>
+                                            <PhoneChip phone={shipment.phone1} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">{shipment.wilayaName}</div>
@@ -296,9 +310,9 @@ export default function DispatchCenter() {
                                             <div className="text-[10px] text-gray-400 mt-1">{moment(shipment.createdAt).format('MMM D, HH:mm')}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-bold text-gray-900">{shipment.codAmount.toLocaleString()} DZD</div>
+                                            <div className="text-sm font-bold text-gray-900">{(shipment.codAmount || 0).toLocaleString()} DZD</div>
                                             <div className="text-[10px] text-gray-500 border border-gray-200 bg-gray-50 rounded px-1.5 py-0.5 inline-block mt-1">
-                                                {shipment.paymentStatus.replace(/_/g, ' ')}
+                                                {shipment.paymentStatus?.replace(/_/g, ' ') || '—'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2 items-center">
@@ -327,7 +341,7 @@ export default function DispatchCenter() {
                                                 </RequireAction>
                                             )}
 
-                                            <button className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-2">{t('common.details', 'Details')}</button>
+                                            <button onClick={() => navigate(`/dispatch/${shipment._id}`)} className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-2">{t('common.details', 'Details')}</button>
                                         </td>
                                     </tr>
                                 ))
@@ -342,6 +356,32 @@ export default function DispatchCenter() {
                 onClose={() => setIsCreateModalOpen(false)}
                 onSuccess={fetchShipments}
             />
+
+            {/* Delete confirm dialog */}
+            {confirmDelete && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                            <Trash2 className="w-5 h-5 text-red-600" />
+                        </div>
+                        <h3 className="text-base font-black text-gray-900 mb-2">Delete this shipment?</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed mb-6">This will cancel the dispatch request. The linked order will revert to Confirmed status.</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={confirmDeleteShipment} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error toast */}
+            {errorMsg && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-200 max-w-sm">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="leading-snug">{errorMsg}</span>
+                    <button onClick={() => setErrorMsg(null)} className="ml-2 text-gray-400 hover:text-white transition-colors shrink-0"><X className="w-4 h-4" /></button>
+                </div>
+            )}
         </div>
     );
 }

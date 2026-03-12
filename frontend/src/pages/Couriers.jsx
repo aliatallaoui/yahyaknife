@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, LayoutGrid, CheckCircle, XCircle } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
+import PhoneChip from '../components/PhoneChip';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -47,7 +48,12 @@ export default function Couriers() {
     };
 
     if (loading) {
-        return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading Operations Data...')}</div>;
+        return (
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
+                <span className="text-sm font-medium">{t('common.loading', 'Loading...')}</span>
+            </div>
+        );
     }
 
     return (
@@ -232,7 +238,7 @@ export default function Couriers() {
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{c.name}</p>
-                                                        <p className="text-xs text-gray-500">{c.phone}</p>
+                                                        <PhoneChip phone={c.phone} />
                                                     </div>
                                                 </div>
                                             </td>

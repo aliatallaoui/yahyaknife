@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function BOMModal({ isOpen, onClose, onSubmit, initialData, variants = [], rawMaterials = [] }) {
@@ -9,6 +9,7 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
     const [variantId, setVariantId] = useState('');
     const [version, setVersion] = useState('1.0');
     const [components, setComponents] = useState([{ rawMaterialId: '', quantityRequired: 1 }]);
+    const [validationError, setValidationError] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -60,16 +61,16 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setValidationError(null);
 
-        // Validations
         if (!variantId) {
-            alert("Please select a target Product Variant.");
+            setValidationError(t('modals.bomErrNoVariant', 'Please select a target Product Variant.'));
             return;
         }
 
         const validComponents = components.filter(c => c.rawMaterialId && Number(c.quantityRequired) > 0);
         if (validComponents.length === 0) {
-            alert("BOM must contain at least one valid raw material component.");
+            setValidationError(t('modals.bomErrNoComponents', 'BOM must contain at least one valid raw material component.'));
             return;
         }
 
@@ -164,6 +165,12 @@ export default function BOMModal({ isOpen, onClose, onSubmit, initialData, varia
                     </form>
                 </div>
 
+                {validationError && (
+                    <div className="mx-6 mb-0 mt-2 flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        {validationError}
+                    </div>
+                )}
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
                     <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
                         {t('modals.btnCancel', 'Cancel')}

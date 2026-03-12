@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench, Truck, ShoppingBag } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench, Truck, ShoppingBag, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import axios from 'axios';
 import clsx from 'clsx';
@@ -67,6 +67,11 @@ export default function Sales() {
 
     // Row expansion
     const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+    // In-app feedback — replaces alert() / window.confirm()
+    const [confirmDialog, setConfirmDialog] = useState(null); // { title, body, danger, onConfirm }
+    const [toast, setToast] = useState(null); // { type: 'success'|'error', text }
+    const showToast = (type, text) => { setToast({ type, text }); setTimeout(() => setToast(null), 4000); };
     const [dispatchingOrderId, setDispatchingOrderId] = useState(null);
     const toggleExpand = (id) => setExpandedOrderId(prev => prev === id ? null : id);
 
@@ -110,52 +115,65 @@ export default function Sales() {
         setIsModalOpen(true);
     };
 
-    const handleDeleteClick = async (id) => {
-        if (window.confirm("Are you sure you want to cancel and remove this order?")) {
-            try {
-                await deleteOrder(id);
-                if (refreshInventory) refreshInventory();
-            } catch {
-                alert("Failed to delete order. See console limit.");
-            }
-        }
+    const handleDeleteClick = (id) => {
+        setConfirmDialog({
+            title: 'Move order to Trash?',
+            body: 'The order will be soft-deleted and can be restored from the Trash tab.',
+            danger: false,
+            onConfirm: async () => {
+                try {
+                    await deleteOrder(id);
+                    if (refreshInventory) refreshInventory();
+                } catch {
+                    showToast('error', 'Failed to delete order.');
+                }
+            },
+        });
     };
 
-    const handleQuickDispatch = async (orderId) => {
-        if (!window.confirm('Dispatch this order to ECOTRACK courier now?')) return;
-        setDispatchingOrderId(orderId);
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/quick-dispatch/${orderId}`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            alert('Order dispatched successfully! Tracking info has been saved.');
-            fetchSalesData(currentPage, perPage);
-        } catch (err) {
-            const msg = err.response?.data?.message || err.message;
-            alert('Dispatch failed: ' + msg);
-        } finally {
-            setDispatchingOrderId(null);
-        }
+    const handleQuickDispatch = (orderId) => {
+        setConfirmDialog({
+            title: 'Dispatch to Ecotrack now?',
+            body: 'This will create a shipment record and mark the order as Dispatched.',
+            danger: false,
+            onConfirm: async () => {
+                setDispatchingOrderId(orderId);
+                try {
+                    const token = localStorage.getItem('token');
+                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/quick-dispatch/${orderId}`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    showToast('success', 'Order dispatched — tracking info saved.');
+                    fetchSalesData(currentPage, perPage);
+                } catch (err) {
+                    showToast('error', 'Dispatch failed: ' + (err.response?.data?.message || err.message));
+                } finally {
+                    setDispatchingOrderId(null);
+                }
+            },
+        });
     };
 
     const handleBatchVerify = async () => {
         if (selectedOrderIds.size === 0) return;
-        if (!window.confirm(`Verify ${selectedOrderIds.size} orders as Phone Confirmed?`)) return;
-
-        try {
-            // Note: In a real app we'd have a batch update endpoint, 
-            // but for now we'll do promise all for simplicity.
-            const promises = Array.from(selectedOrderIds).map(id =>
-                updateOrder(id, { status: 'Confirmed', verificationStatus: 'Phone Confirmed' })
-            );
-            await Promise.all(promises);
-            setSelectedOrderIds(new Set());
-            fetchSalesData(currentPage, perPage);
-        } catch (err) {
-            console.error(err);
-            alert("Error batch verifying orders.");
-        }
+        setConfirmDialog({
+            title: `Confirm ${selectedOrderIds.size} orders as Phone Verified?`,
+            body: 'Status will be updated to Confirmed for all selected orders.',
+            danger: false,
+            onConfirm: async () => {
+                try {
+                    const promises = Array.from(selectedOrderIds).map(id =>
+                        updateOrder(id, { status: 'Confirmed', verificationStatus: 'Phone Confirmed' })
+                    );
+                    await Promise.all(promises);
+                    setSelectedOrderIds(new Set());
+                    fetchSalesData(currentPage, perPage);
+                } catch (err) {
+                    console.error(err);
+                    showToast('error', 'Error batch verifying orders.');
+                }
+            },
+        });
     };
 
     const toggleOrderSelect = (id) => {
@@ -440,7 +458,7 @@ export default function Sales() {
                                                     {/* Order ID + Date + Verification */}
                                                     <td className="px-4 py-3.5">
                                                         <p className="font-bold text-gray-800 text-sm">{order.orderId}</p>
-                                                        <p className="text-xs text-gray-400">{moment(order.date).format('MMM DD · HH:mm')}</p>
+                                                        <p className="text-xs text-gray-400">{moment(order.createdAt).format('MMM DD · HH:mm')}</p>
                                                         {isVerified && (
                                                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
                                                                 <CheckCircle2 className="w-2.5 h-2.5" /> Verified
@@ -855,6 +873,32 @@ export default function Sales() {
                     fetchSalesData(currentPage, perPage);
                 }}
             />
+
+            {/* Confirm dialog */}
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${confirmDialog.danger ? 'bg-red-100' : 'bg-amber-100'}`}>
+                            <AlertTriangle className={`w-5 h-5 ${confirmDialog.danger ? 'text-red-600' : 'text-amber-600'}`} />
+                        </div>
+                        <h3 className="text-base font-black text-gray-900 mb-2">{confirmDialog.title}</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed mb-6">{confirmDialog.body}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={() => { setConfirmDialog(null); confirmDialog.onConfirm(); }} className={`px-4 py-2 text-sm font-bold text-white rounded-xl transition-colors ${confirmDialog.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast */}
+            {toast && (
+                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-200 max-w-sm ${toast.type === 'error' ? 'bg-gray-900' : 'bg-emerald-700'}`}>
+                    {toast.type === 'error' ? <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" /> : <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />}
+                    <span className="leading-snug">{toast.text}</span>
+                    <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100 transition-opacity shrink-0"><X className="w-4 h-4" /></button>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { Box, MapPin, Search, Plus, List, ArrowRightLeft, ShieldCheck, ArrowDown, ArrowUp } from 'lucide-react';
+import { Box, MapPin, Search, Plus, List, ArrowRightLeft, ShieldCheck, ArrowDown, ArrowUp, AlertTriangle } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { AuthContext } from '../context/AuthContext';
 import clsx from 'clsx';
@@ -20,6 +20,7 @@ export default function Warehouses() {
     // Modals
     const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
     const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', location: '', capacity: 1000, type: 'Main' });
+    const [warehouseError, setWarehouseError] = useState(null);
 
     const fetchData = async () => {
         if (!token) return;
@@ -47,6 +48,7 @@ export default function Warehouses() {
 
     const handleCreateWarehouse = async (e) => {
         e.preventDefault();
+        setWarehouseError(null);
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/warehouses`, {
                 method: 'POST',
@@ -57,9 +59,13 @@ export default function Warehouses() {
                 fetchData();
                 setIsWarehouseModalOpen(false);
                 setWarehouseForm({ name: '', code: '', location: '', capacity: 1000, type: 'Main' });
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setWarehouseError(data.message || t('warehouses.saveError', 'Failed to save warehouse. Please try again.'));
             }
         } catch (error) {
             console.error(error);
+            setWarehouseError(t('warehouses.saveError', 'Failed to save warehouse. Please try again.'));
         }
     };
 
@@ -231,6 +237,12 @@ export default function Warehouses() {
                             <h2 className="text-lg font-bold">{t('warehouses.regTitle', 'Register Warehouse')}</h2>
                         </div>
                         <form onSubmit={handleCreateWarehouse} className="p-6 flex flex-col gap-4">
+                            {warehouseError && (
+                                <div className="flex items-center gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                                    <span>{warehouseError}</span>
+                                </div>
+                            )}
                             <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('warehouses.nameLabel', 'Warehouse Name')}</label><input type="text" required value={warehouseForm.name} onChange={e => setWarehouseForm({ ...warehouseForm, name: e.target.value })} className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-100 outline-none" /></div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('warehouses.codeLabel', 'Code')}</label><input type="text" required value={warehouseForm.code} onChange={e => setWarehouseForm({ ...warehouseForm, code: e.target.value })} className="w-full border rounded-lg p-2 uppercase focus:ring-2 focus:ring-indigo-100 outline-none" /></div>
@@ -238,7 +250,7 @@ export default function Warehouses() {
                             </div>
                             <div><label className="block text-sm font-semibold text-gray-700 mb-1">{t('warehouses.locLabel', 'Location / Address')}</label><input type="text" value={warehouseForm.location} onChange={e => setWarehouseForm({ ...warehouseForm, location: e.target.value })} className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-100 outline-none" /></div>
                             <div className="flex justify-end gap-3 mt-4">
-                                <button type="button" onClick={() => setIsWarehouseModalOpen(false)} className="px-5 py-2 font-bold text-gray-600 hover:bg-gray-100 rounded-lg">{t('warehouses.btnCancel', 'Cancel')}</button>
+                                <button type="button" onClick={() => { setIsWarehouseModalOpen(false); setWarehouseError(null); }} className="px-5 py-2 font-bold text-gray-600 hover:bg-gray-100 rounded-lg">{t('warehouses.btnCancel', 'Cancel')}</button>
                                 <button type="submit" className="px-5 py-2 font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{t('warehouses.btnSave', 'Save Warehouse')}</button>
                             </div>
                         </form>

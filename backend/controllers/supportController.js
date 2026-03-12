@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const SupportTicket = require('../models/SupportTicket');
+const { ok, created, paginated } = require('../shared/utils/ApiResponse');
 
 exports.createTicket = async (req, res) => {
     try {
@@ -25,7 +27,7 @@ exports.createTicket = async (req, res) => {
         const ticket = new SupportTicket(ticketData);
         await ticket.save();
 
-        res.status(201).json(ticket);
+        res.status(201).json(created(ticket));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -41,13 +43,17 @@ exports.getTickets = async (req, res) => {
         if (priority) query.priority = priority;
         if (customerId) query.customerId = customerId;
 
-        const tickets = await SupportTicket.find(query)
-            .populate('customerId', 'name email phone')
-            .populate('orderId', 'orderId totalAmount status')
-            .populate('assignedTo', 'name')
-            .sort({ createdAt: -1 });
+        const [tickets, total] = await Promise.all([
+            SupportTicket.find(query)
+                .populate('customerId', 'name email phone')
+                .populate('orderId', 'orderId totalAmount status')
+                .populate('assignedTo', 'name')
+                .sort({ createdAt: -1 })
+                .skip(req.skip).limit(req.limit),
+            SupportTicket.countDocuments(query)
+        ]);
 
-        res.json(tickets);
+        res.json(paginated(tickets, { total, hasNextPage: req.skip + tickets.length < total }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -55,6 +61,8 @@ exports.getTickets = async (req, res) => {
 
 exports.getTicketById = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const ticket = await SupportTicket.findById(req.params.id)
             .populate('customerId', 'name email phone')
             .populate('orderId', 'orderId totalAmount status items')
@@ -62,7 +70,7 @@ exports.getTicketById = async (req, res) => {
             .populate('messages.senderId', 'name');
 
         if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        res.json(ticket);
+        res.json(ok(ticket));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -70,6 +78,8 @@ exports.getTicketById = async (req, res) => {
 
 exports.addMessage = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const { message, sender, senderId } = req.body;
 
         const ticket = await SupportTicket.findById(req.params.id);
@@ -98,7 +108,7 @@ exports.addMessage = async (req, res) => {
             .populate('assignedTo', 'name')
             .populate('messages.senderId', 'name');
 
-        res.json(populatedTicket);
+        res.json(ok(populatedTicket));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -106,6 +116,8 @@ exports.addMessage = async (req, res) => {
 
 exports.updateTicketStatus = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid ID' });
         const { status, resolutionNotes } = req.body;
         const updateData = { status };
 
@@ -120,7 +132,7 @@ exports.updateTicketStatus = async (req, res) => {
             .populate('messages.senderId', 'name');
 
         if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        res.json(ticket);
+        res.json(ok(ticket));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

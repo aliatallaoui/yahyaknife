@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, Filter, ChevronRight, Swords, Flame, CheckCircle2, ShoppingBag, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { Plus, Search, RefreshCw, ChevronRight, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { useHotkey } from '../hooks/useHotkey';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import KnifeCardModal from '../components/KnifeCardModal';
@@ -125,6 +127,7 @@ function KnifeCard({ knife, onEdit, onDelete, onAdvance }) {
 
 export default function KnifeDashboard() {
     const { t } = useTranslation();
+    const { token } = useContext(AuthContext);
     const [knives, setKnives] = useState([]);
     const [knifeModels, setKnifeModels] = useState([]);
     const [workers, setWorkers] = useState([]);
@@ -133,22 +136,26 @@ export default function KnifeDashboard() {
     const [filterStatus, setFilterStatus] = useState('All');
     const [modalOpen, setModalOpen] = useState(false);
     const [editingKnife, setEditingKnife] = useState(null);
-    const [stats, setStats] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearch(''); searchRef.current?.blur(); } });
 
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const [knivesRes, modelsRes, workersRes, statsRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/stats`),
+            const h = { headers: { Authorization: `Bearer ${token}` } };
+            const [knivesRes, modelsRes, workersRes] = await Promise.all([
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards`, h),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/models`, h),
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, h),
             ]);
-            setKnives(await knivesRes.json());
-            setKnifeModels(await modelsRes.json());
-            const w = await workersRes.json();
-            setWorkers(Array.isArray(w) ? w : []);
-            setStats(await statsRes.json());
+            const knivesJson = await knivesRes.json();
+            setKnives(knivesJson.data ?? (Array.isArray(knivesJson) ? knivesJson : []));
+            const modelsJson = await modelsRes.json();
+            setKnifeModels(modelsJson.data ?? (Array.isArray(modelsJson) ? modelsJson : []));
+            const workersJson = await workersRes.json();
+            setWorkers(workersJson.data ?? (Array.isArray(workersJson) ? workersJson : []));
         } catch (e) {
             console.error(e);
         } finally {
@@ -162,14 +169,18 @@ export default function KnifeDashboard() {
     const handleNew = () => { setEditingKnife(null); setModalOpen(true); };
     const handleSaved = () => fetchAll();
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Delete this knife card?')) return;
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${id}`, { method: 'DELETE' });
-        fetchAll();
+    const handleDelete = (id) => {
+        setConfirmDialog({
+            body: 'This knife card will be permanently deleted.',
+            onConfirm: async () => {
+                await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                fetchAll();
+            }
+        });
     };
 
     const handleAdvance = async (id) => {
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${id}/advance`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/knives/cards/${id}/advance`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({}) });
         fetchAll();
     };
 
@@ -224,8 +235,9 @@ export default function KnifeDashboard() {
                     <div className="relative flex-1">
                         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
+                            ref={searchRef}
                             className="w-full ps-9 pe-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                            placeholder={t('knives.searchBy', 'Search by name or ID...')}
+                            placeholder={t('knives.searchBy', 'Search... (Press /)')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
@@ -235,18 +247,27 @@ export default function KnifeDashboard() {
                     </button>
                 </div>
                 <div className="flex flex-wrap gap-2 flex-1">
-                    {FILTER_OPTIONS.map(opt => (
-                        <button
-                            key={opt}
-                            onClick={() => setFilterStatus(opt)}
-                            className={clsx(
-                                'px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors',
-                                filterStatus === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                            )}
-                        >
-                            {opt === 'All' ? t('knives.all', 'All') : getStageTranslation(t, opt)}
-                        </button>
-                    ))}
+                    {FILTER_OPTIONS.map(opt => {
+                        const count = opt === 'All' ? knives.length : knives.filter(k => k.status === opt).length;
+                        return (
+                            <button
+                                key={opt}
+                                onClick={() => setFilterStatus(opt)}
+                                className={clsx(
+                                    'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors',
+                                    filterStatus === opt ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                )}
+                            >
+                                {opt === 'All' ? t('knives.all', 'All') : getStageTranslation(t, opt)}
+                                {count > 0 && (
+                                    <span className={clsx(
+                                        'text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
+                                        filterStatus === opt ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
+                                    )}>{count}</span>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -286,6 +307,22 @@ export default function KnifeDashboard() {
                 knifeModels={knifeModels}
                 workers={workers}
             />
+
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                            <AlertTriangle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <h3 className="text-base font-black text-gray-900 mb-2">Delete knife card?</h3>
+                        <p className="text-sm text-gray-500 mb-6">{confirmDialog.body}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={() => { setConfirmDialog(null); confirmDialog.onConfirm(); }} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

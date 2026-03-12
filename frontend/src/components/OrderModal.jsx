@@ -34,7 +34,7 @@ const getSafeCommunesForWilaya = (wilayaCode) => {
 
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], couriers = [] }) {
     const { t } = useTranslation();
-    const isEdit = !!initialData;
+    const isEdit = !!initialData && !initialData._prefill;
 
     const store = useOrderFormStore();
     const [formError, setFormError] = useState('');
@@ -56,6 +56,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 store.setInitialData(initialData);
             } else {
                 store.resetForm();
+                // Pre-fill from CustomerProfile deep-link
+                if (initialData?._prefill) {
+                    if (initialData.customerPhone) store.updateField('customerPhone', initialData.customerPhone);
+                    if (initialData.customerName) store.updateField('customerName', initialData.customerName);
+                }
             }
         }
     }, [isOpen, isEdit, initialData]);

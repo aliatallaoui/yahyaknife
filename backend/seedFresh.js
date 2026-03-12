@@ -80,11 +80,17 @@ async function seed() {
     await mongoose.connect(MONGO_URI);
     console.log('✅ MongoDB connected');
 
+    // ---- Resolve tenant ----
+    const Tenant = require('./models/Tenant');
+    let tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) { console.error('No active tenant found. Run setupLocal.js first.'); process.exit(1); }
+    console.log('Using tenant:', tenant.name, tenant._id);
+
     // ---- WIPE ----
     console.log('🗑️  Wiping Orders, Customers, Shipments...');
-    await Order.deleteMany({});
-    await Customer.deleteMany({});
-    await Shipment.deleteMany({});
+    await Order.deleteMany({ tenant: tenant._id });
+    await Customer.deleteMany({ tenant: tenant._id });
+    await Shipment.deleteMany({ tenant: tenant._id });
     console.log('   Done.');
 
     // ---- Skip product linking, use product names directly ----
@@ -100,6 +106,7 @@ async function seed() {
             acquisitionChannel: rand(['Direct Traffic', 'Social Media', 'Paid Ads', 'Referral']),
             status: 'Active',
             joinDate: new Date(2025, randInt(0, 11), randInt(1, 28)),
+            tenant: tenant._id,
         });
         customers.push(c);
     }
@@ -158,10 +165,13 @@ async function seed() {
 
             const order = await Order.create({
                 orderId: `ORD-${String(orderNum).padStart(5, '0')}`,
+                tenant: tenant._id,
                 date: orderDate,
                 customer: customer._id,
                 products: orderProducts,
                 totalAmount,
+                wilaya: wilaya.name,
+                commune,
                 channel: 'Website',
                 status: sw.status,
                 verificationStatus: ['New'].includes(sw.status) ? 'Pending' : 'Phone Confirmed',

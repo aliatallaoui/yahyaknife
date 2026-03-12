@@ -76,6 +76,25 @@ export default function EcommerceAnalytics() {
         </div>
     );
 
+    if (!dashData && isRefreshing) {
+        return (
+            <div className="max-w-[1600px] mx-auto pb-12 space-y-6 animate-pulse">
+                <div className="h-20 bg-white rounded-2xl border border-gray-100" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {[...Array(5)].map((_, i) => <div key={i} className="h-28 bg-white rounded-2xl border border-gray-100" />)}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="h-72 bg-white rounded-2xl border border-gray-100" />
+                    <div className="h-72 bg-white rounded-2xl border border-gray-100" />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="h-72 bg-white rounded-2xl border border-gray-100 lg:col-span-2" />
+                    <div className="h-72 bg-white rounded-2xl border border-gray-100" />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-[1600px] mx-auto pb-12 space-y-6">
 
@@ -105,10 +124,16 @@ export default function EcommerceAnalytics() {
                     >
                         <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-500' : ''}`} />
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
+                    <a
+                        href={`${import.meta.env.VITE_API_URL || ''}/api/exports/orders?stage=all`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
+                        title={t('analytics.exportHint', 'Export all orders as CSV')}
+                    >
                         <Download className="w-4 h-4" />
                         {t('analytics.export', 'Export')}
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -248,7 +273,7 @@ export default function EcommerceAnalytics() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {dashData?.courierData?.map((c, idx) => (
+                                {dashData?.courierData?.length > 0 ? dashData.courierData.map((c) => (
                                     <tr key={c.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                                         <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                                         <td className="px-4 py-3 text-gray-600">{c.orders}</td>
@@ -263,7 +288,9 @@ export default function EcommerceAnalytics() {
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                )) : (
+                                    <tr><td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">No courier data for this period</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -306,14 +333,16 @@ export default function EcommerceAnalytics() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50 border-t border-gray-100">
-                                {dashData?.topProductsData?.map((p) => (
+                                {dashData?.topProductsData?.length > 0 ? dashData.topProductsData.map((p) => (
                                     <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-4 py-3 font-medium text-gray-900">{p.name || 'Unknown'}</td>
                                         <td className="px-4 py-3 text-gray-600">{p.units || 0}</td>
                                         <td className="px-4 py-3 text-gray-900 font-medium">{(p.revenue || 0).toLocaleString()} DZD</td>
                                         <td className="px-4 py-3 text-indigo-600 font-medium">{p.conv || 0}%</td>
                                     </tr>
-                                ))}
+                                )) : (
+                                    <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">No sales data for this period</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -331,7 +360,7 @@ export default function EcommerceAnalytics() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50 border-t border-gray-100">
-                                {dashData?.customerData?.map((c) => (
+                                {dashData?.customerData?.length > 0 ? dashData.customerData.map((c) => (
                                     <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
@@ -345,7 +374,9 @@ export default function EcommerceAnalytics() {
                                         <td className="px-4 py-3 text-gray-900 font-medium">{(c.revenue || 0).toLocaleString()} DZD</td>
                                         <td className="px-4 py-3 text-gray-500">{(c.aov || 0).toLocaleString()} DZD</td>
                                     </tr>
-                                ))}
+                                )) : (
+                                    <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">No customer data for this period</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
