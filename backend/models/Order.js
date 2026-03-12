@@ -7,7 +7,6 @@ const orderSchema = new mongoose.Schema({
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     products: [{
         variantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant' },
-        knifeCardRef: { type: mongoose.Schema.Types.ObjectId, ref: 'KnifeCard' },
         name: { type: String }, // Storing snapshot of the product name
         quantity: { type: Number, required: true },
         unitPrice: { type: Number, required: true }

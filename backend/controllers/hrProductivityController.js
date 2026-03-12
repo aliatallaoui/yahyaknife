@@ -30,8 +30,7 @@ exports.getProductivity = async (req, res) => {
             return res.status(404).json({ error: 'Employee not found' });
 
         const productivity = await WorkerProductivity.find({ employeeId: { $in: employeeIds } })
-            .populate('employeeId', 'name workshopRole')
-            .populate('knivesWorkedOn', 'orderId status')
+            .populate('employeeId', 'name')
             .sort({ date: -1 });
         res.json(productivity);
     } catch (error) {
@@ -42,7 +41,7 @@ exports.getProductivity = async (req, res) => {
 exports.logProductivity = async (req, res) => {
     try {
         const tenant = req.user.tenant;
-        const { employeeId, date, tasksCompleted, knivesWorkedOn, operations, notes } = req.body;
+        const { employeeId, date, tasksCompleted, operations, notes } = req.body;
         if (!employeeId || !mongoose.Types.ObjectId.isValid(employeeId))
             return res.status(400).json({ error: 'Valid employeeId is required' });
 
@@ -50,7 +49,7 @@ exports.logProductivity = async (req, res) => {
         const emp = await Employee.findOne({ _id: employeeId, tenant }).select('_id').lean();
         if (!emp) return res.status(404).json({ error: 'Employee not found' });
 
-        const prod = new WorkerProductivity({ employeeId, date, tasksCompleted, knivesWorkedOn, operations, notes });
+        const prod = new WorkerProductivity({ employeeId, date, tasksCompleted, operations, notes });
         const saved = await prod.save();
         res.status(201).json(saved);
     } catch (err) {

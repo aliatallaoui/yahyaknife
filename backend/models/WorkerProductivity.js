@@ -4,7 +4,6 @@ const workerProductivitySchema = new mongoose.Schema({
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
     date: { type: Date, default: Date.now },
     tasksCompleted: { type: Number, default: 0 },
-    knivesWorkedOn: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ProductionOrder' }],
     operations: [{
         operationName: { type: String, required: true }, // e.g., 'Grinding', 'Handle Shaping'
         quantity: { type: Number, default: 1 },
