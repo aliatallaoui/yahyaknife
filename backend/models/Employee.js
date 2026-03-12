@@ -9,7 +9,7 @@ const employeeSchema = new mongoose.Schema({
     department: {
         type: String,
         required: true,
-        enum: ['Manufacturing', 'Warehouse', 'Dispatch', 'Customer Support', 'Engineering', 'Finance', 'Sales', 'Marketing', 'HR', 'Design']
+        enum: ['Operations', 'Warehouse', 'Dispatch', 'Customer Support', 'Engineering', 'Finance', 'Sales', 'Marketing', 'HR', 'Design']
     },
     salary: { type: Number, required: true },
     performanceScore: { type: Number, default: 100, min: 0, max: 100 },

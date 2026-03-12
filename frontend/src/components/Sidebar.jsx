@@ -3,8 +3,8 @@ import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
-    Users, Briefcase, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
-    Star, Clock, ChevronDown, X, Layers, UserCircle, Hammer, PhoneCall, Headset, AlertTriangle
+    Users, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
+    Star, Clock, ChevronDown, X, Layers, UserCircle, PhoneCall, Headset, AlertTriangle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
