@@ -892,7 +892,12 @@ const resources = {
                 statusReturnInitiated: "Return Initiated",
                 statusFailedAttempt: "Failed Attempt",
                 statusReturned: "Returned",
-                statusCancelled: "Cancelled"
+                statusCancelled: "Cancelled",
+                searching: "Searching...",
+                noPendingOrders: "No pending orders found.",
+                errorLoadPending: "Could not load pending orders.",
+                errorRequiredFields: "Please fill all required operational fields (Order, Customer, Phone, Wilaya, Commune).",
+                errorDispatch: "Failed to dispatch shipment to courier."
             },
             inventory: {
                 title: "Inventory Tracking",
@@ -2709,6 +2714,12 @@ const resources = {
             },
             inventory: {
                 title: "تتبع المخزون",
+                errorLoadShipments: "فشل تحميل الشحنات.",
+                errorValidate: "فشل التحقق من صحة الشحنة.",
+                errorDelete: "فشل حذف الشحنة.",
+                errorLabel: "فشل جلب ملصق الطباعة.",
+                errorExport: "فشل التصدير. يرجى المحاولة مجددًا.",
+                pendingTrackingId: "معلق...",
                 subtitle: "إدارة كتالوج المنتجات وتتبع مستويات المخزون ومراقبة الموردين.",
                 receivePoBtn: "استلام طلب شراء",
                 addCategoryBtn: "إضافة فئة",
@@ -3656,13 +3667,7 @@ const resources = {
                 deleteConfirmTitle: "حذف هذه الشحنة؟",
                 deleteConfirmBody: "سيؤدي هذا إلى إلغاء طلب الإرسال. سيعود الطلب المرتبط إلى حالة «مؤكد».",
                 cancel: "إلغاء",
-                deleteBtn: "حذف",
-                errorLoadShipments: "فشل تحميل الشحنات.",
-                errorValidate: "فشل التحقق من صحة الشحنة.",
-                errorDelete: "فشل حذف الشحنة.",
-                errorLabel: "فشل جلب ملصق الطباعة.",
-                errorExport: "فشل التصدير. يرجى المحاولة مجددًا.",
-                pendingTrackingId: "معلق..."
+                deleteBtn: "حذف"
             }
         },
     }
