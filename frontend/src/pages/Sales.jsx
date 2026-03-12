@@ -10,7 +10,6 @@ import { InventoryContext } from '../context/InventoryContext';
 import { useCustomer } from '../context/CustomerContext';
 import OrderModal from '../components/OrderModal';
 import BatchDispatchModal from '../components/BatchDispatchModal';
-import CustomOrdersTable from '../components/CustomOrdersTable';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 
@@ -89,7 +88,7 @@ export default function Sales() {
         try {
             await updateOrder(order._id, { [editingOrderField.field]: editingOrderField.value });
         } catch (err) {
-            console.error('Order inline save failed', err);
+            showToast('error', 'Inline save failed: ' + (err.response?.data?.message || err.message));
         } finally {
             setUpdatingOrderId(null);
             setEditingOrderField(null);
@@ -336,13 +335,9 @@ export default function Sales() {
                                 <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">{newOrderCount}</span>
                             )}
                         </button>
-                        <button onClick={() => { setActiveTab('custom'); setSelectedOrderIds(new Set()); }} className={clsx("flex-1 xl:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex justify-center items-center gap-2 whitespace-nowrap", activeTab === 'custom' ? "bg-purple-50 text-purple-600 shadow-sm ring-1 ring-purple-200" : "text-gray-500 hover:text-gray-700")}>
-                            <Wrench className="w-4 h-4 shrink-0" /> {t('sales.customOrdersTab', 'Custom Orders')}
-                        </button>
                     </div>
 
-                    {activeTab !== 'custom' && (
-                        <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
                             {/* Status Filter */}
                             <select
                                 value={selectedStatusFilter}
@@ -393,12 +388,8 @@ export default function Sales() {
                                 </button>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
 
-                {activeTab === 'custom' ? (
-                    <CustomOrdersTable searchTerm={searchTerm} />
-                ) : (
                     <>
                         {/* Batch Actions Bar (Only visible if items selected) */}
                         {
@@ -820,12 +811,8 @@ export default function Sales() {
                                                 Next ›
                                             </button>
                                         </div>
-                                    </div>
-                                );
-                            })()
-                        }
+                            })()}
                     </>
-                )}
             </div>
 
             {/* Revenue by Channel — full width below table */}

@@ -16,7 +16,7 @@ export default function Inventory() {
     const { t } = useTranslation();
     const { hasPermission } = useContext(AuthContext);
     const {
-        products, rawMaterials, suppliers, categories, metrics, loading, completedKnives,
+        products, suppliers, categories, metrics, loading,
         createProduct, updateProduct, deleteProduct,
         deleteSupplier, deleteCategory
     } = useContext(InventoryContext);
@@ -28,7 +28,6 @@ export default function Inventory() {
     const [activeTab, setActiveTab] = useState('finished');
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    const [materialCategoryFilter, setMaterialCategoryFilter] = useState('All');
     // Inline editing: { id: variantId, productId, field, value }
     const [editingVariant, setEditingVariant] = useState(null);
 
@@ -48,7 +47,7 @@ export default function Inventory() {
             );
             await updateProduct(variant.baseProductId, { ...parentProduct, variants: updatedVariants });
         } catch (err) {
-            console.error('Variant inline save failed', err);
+            setErrorMsg(`Failed to save variant: ${err.message}`);
         } finally {
             setEditingVariant(null);
         }
@@ -141,26 +140,7 @@ export default function Inventory() {
         }));
     });
 
-    const flattenedKnives = (completedKnives || []).map(k => ({
-        _id: k._id,
-        isKnife: true,
-        baseProductId: k._id,
-        productName: k.name,
-        attributes: { Steel: k.steelType || 'N/A', Handle: k.handleMaterial || 'N/A' },
-        sku: k.knifeId,
-        category: `Knife - ${k.type}`,
-        price: k.suggestedPrice || 0,
-        cost: k.totalProductionCost || 0,
-        totalStock: 1,
-        reservedStock: 0,
-        availableStock: 1,
-        reorderLevel: 0,
-        totalSold: 0
-    }));
-
-    const unifiedFinishedGoods = [...flattenedVariants, ...flattenedKnives];
-
-    const filteredVariants = unifiedFinishedGoods.filter(v =>
+    const filteredVariants = flattenedVariants.filter(v =>
         v.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (typeof v.category === 'object' ? v.category?.name : v.category)?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -169,14 +149,8 @@ export default function Inventory() {
     const totalVariantPages = Math.max(1, Math.ceil(filteredVariants.length / perPage));
     const paginatedVariants = filteredVariants.slice((currentPage - 1) * perPage, currentPage * perPage);
 
-    const filteredMaterials = rawMaterials.filter(m => {
-        const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.sku.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCat = materialCategoryFilter === 'All' || m.category === materialCategoryFilter;
-        return matchesSearch && matchesCat;
-    });
-
-    const materialCategories = ['All', 'Steel', 'Handle', 'Pins', 'Leather', 'Belt', 'Epoxy', 'Packaging', 'Other'];
+    const totalVariantPages = Math.max(1, Math.ceil(filteredVariants.length / perPage));
+    const paginatedVariants = filteredVariants.slice((currentPage - 1) * perPage, currentPage * perPage);
 
     const filteredCategories = categories.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -265,12 +239,6 @@ export default function Inventory() {
                                 {t('inventory.tabFinished', 'Finished Goods')}
                             </button>
                             <button
-                                onClick={() => setActiveTab('raw')}
-                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'raw' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
-                            >
-                                {t('inventory.tabRaw', 'Workshop Materials')}
-                            </button>
-                            <button
                                 onClick={() => setActiveTab('categories')}
                                 className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'categories' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
                             >
@@ -278,24 +246,6 @@ export default function Inventory() {
                             </button>
                         </div>
                     </div>
-                    {activeTab === 'raw' && (
-                        <div className="px-6 py-3 border-b border-gray-100 bg-gray-50/30 flex gap-2 overflow-x-auto">
-                            {materialCategories.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setMaterialCategoryFilter(cat)}
-                                    className={clsx(
-                                        "px-3 py-1.5 text-xs font-bold rounded-full transition-all whitespace-nowrap",
-                                        materialCategoryFilter === cat
-                                            ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/30 ring-offset-1"
-                                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-indigo-600"
-                                    )}
-                                >
-                                    {cat === 'All' ? t('inventory.allCategories', 'All Materials') : cat}
-                                </button>
-                            ))}
-                        </div>
-                    )}
                     <div className="flex-1 overflow-x-auto">
                         <table className="w-full text-start border-collapse min-w-[700px]">
                             <thead>
@@ -304,15 +254,13 @@ export default function Inventory() {
                                     <th className="p-4 font-semibold">{t('inventory.colSku', 'SKU')}</th>
                                     <th className="p-4 font-semibold">{t('inventory.colCategory', 'Category')}</th>
                                     <th className="p-4 font-semibold text-end">{activeTab === 'finished' ? t('inventory.colPriceCost', 'Price/Cost') : t('inventory.colUnitCost', 'Unit Cost')}</th>
-                                    {activeTab === 'finished' ? (
+                                    {activeTab === 'finished' && (
                                         <>
                                             <th className="p-4 font-semibold text-end">{t('inventory.colTotal', 'Total')}</th>
                                             <th className="p-4 font-semibold text-end text-orange-600">{t('inventory.colReserved', 'Reserved')}</th>
                                             <th className="p-4 font-semibold text-end text-green-600">{t('inventory.colAvailable', 'Available')}</th>
                                             <th className="p-4 font-semibold text-end text-purple-600">{t('inventory.colSold', 'Sold')}</th>
                                         </>
-                                    ) : (
-                                        <th className="p-4 font-semibold text-end">{t('inventory.colStock', 'Stock')}</th>
                                     )}
                                     <th className="p-4 font-semibold text-center">{t('inventory.colStatus', 'Status')}</th>
                                     <th className="p-4 font-semibold text-end">{t('inventory.colActions', 'Actions')}</th>
@@ -351,7 +299,7 @@ export default function Inventory() {
                                                     <td className="p-4 text-end">
                                                         {/* Price — inline edit */}
                                                         {hasPermission('inventory.update_product') ? (
-                                                            editingVariant?.id === variant._id && editingVariant?.field === 'price' && !variant.isKnife ? (
+                                                            editingVariant?.id === variant._id && editingVariant?.field === 'price' ? (
                                                                 <input autoFocus type="number" step="0.01"
                                                                     value={editingVariant.value}
                                                                     onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
@@ -359,11 +307,11 @@ export default function Inventory() {
                                                                     onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
                                                                     className="w-24 border border-blue-400 rounded-lg px-2 py-1 text-sm font-bold text-end outline-none shadow-sm ml-auto block" />
                                                             ) : (
-                                                                <div onClick={() => { if (!variant.isKnife) startVariantEdit(variant, 'price'); }} className={clsx("group/p", !variant.isKnife && "cursor-pointer")} title={!variant.isKnife ? "Click to edit price" : ""}>
-                                                                    <div className={clsx("font-bold text-gray-900 transition-colors", !variant.isKnife && "group-hover/p:text-blue-600")}>${variant.price?.toLocaleString()}</div>
+                                                                <div onClick={() => startVariantEdit(variant, 'price')} className={"group/p cursor-pointer"} title={"Click to edit price"}>
+                                                                    <div className={"font-bold text-gray-900 transition-colors group-hover/p:text-blue-600"}>${variant.price?.toLocaleString()}</div>
                                                                     {/* Cost — inline edit */}
                                                                     {hasPermission('inventory.view_cost') && (
-                                                                        editingVariant?.id === variant._id && editingVariant?.field === 'cost' && !variant.isKnife ? (
+                                                                        editingVariant?.id === variant._id && editingVariant?.field === 'cost' ? (
                                                                             <input autoFocus type="number" step="0.01"
                                                                                 value={editingVariant.value}
                                                                                 onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
@@ -372,7 +320,7 @@ export default function Inventory() {
                                                                                 onClick={e => e.stopPropagation()}
                                                                                 className="w-20 border border-blue-400 rounded-lg px-1 py-0.5 text-xs font-bold text-end outline-none shadow-sm mt-0.5 ml-auto block" />
                                                                         ) : (
-                                                                            <div onClick={e => { e.stopPropagation(); if (!variant.isKnife) startVariantEdit(variant, 'cost'); }} className={clsx("text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5", !variant.isKnife && "cursor-pointer hover:text-blue-500")} title={!variant.isKnife ? "Click to edit cost" : ""}>{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
+                                                                            <div onClick={e => { e.stopPropagation(); startVariantEdit(variant, 'cost'); }} className={"text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5 cursor-pointer hover:text-blue-500"} title={"Click to edit cost"}>{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
                                                                         )
                                                                     )}
                                                                 </div>
@@ -424,65 +372,6 @@ export default function Inventory() {
                                                                 </button>
                                                             )}
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )
-                                )}
-
-                                {activeTab === 'raw' && (
-                                    filteredMaterials.length === 0 ? (
-                                        <tr><td colSpan="7" className="p-8 text-center text-gray-500">{t('inventory.noMaterials', 'No workshop materials found.')}</td></tr>
-                                    ) : (
-                                        filteredMaterials.map((material) => {
-                                            const isLowStock = material.stockLevel <= material.minimumStock;
-                                            const isCriticalType = ['Steel', 'Leather', 'Pins', 'Belt'].includes(material.category);
-                                            const showPulsingRed = isLowStock && isCriticalType;
-
-                                            return (
-                                                <tr key={material._id} className="hover:bg-gray-50/50 transition-colors">
-                                                    <td className="p-4">
-                                                        <div className="font-bold text-gray-900">{material.name}</div>
-                                                        {material.category === 'Steel' && material.dimensions && (
-                                                            <div className="text-[11px] font-mono text-gray-500 mt-1">
-                                                                {material.steelGrade && <span className="text-gray-700 font-bold me-2">{material.steelGrade}</span>}
-                                                                {material.dimensions.thickness}x{material.dimensions.width}x{material.dimensions.length}mm
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-4 text-gray-500 font-mono text-xs tracking-wider">{material.sku}</td>
-                                                    <td className="p-4">
-                                                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold uppercase rounded border border-gray-200/50 flex w-fit items-center gap-1.5">
-                                                            {material.category}
-                                                            {material.isCritical && <AlertTriangle className="w-3 h-3 text-red-500" />}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 text-end font-medium text-gray-900">
-                                                        ${material.costPerUnit?.toFixed(2)} <span className="text-xs text-gray-400 font-normal">/ {material.unitOfMeasure}</span>
-                                                    </td>
-                                                    <td className="p-4 text-end">
-                                                        <span className={clsx("font-bold text-lg tabular-nums", isLowStock ? "text-red-600" : "text-gray-900")}>
-                                                            {material.stockLevel?.toLocaleString()}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500 ms-1 font-medium">{material.unitOfMeasure}</span>
-                                                        {material.category === 'Steel' && material.dimensions?.length > 0 && (
-                                                            <div className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Est. {Math.floor((material.stockLevel * material.dimensions.length) / 250)} knives</div>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <span className={clsx(
-                                                            "px-2.5 py-1 rounded-md text-[11px] font-bold inline-flex items-center gap-1.5 uppercase tracking-wider relative",
-                                                            isLowStock ? "bg-red-50 text-red-700 border border-red-200 shadow-sm" : "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm"
-                                                        )}>
-                                                            {showPulsingRed && <span className="absolute top-0 end-0 w-1.5 h-1.5 bg-red-500 rounded-full animate-ping -mt-0.5 -me-0.5"></span>}
-                                                            {showPulsingRed && <span className="absolute top-0 end-0 w-1.5 h-1.5 bg-red-600 rounded-full -mt-0.5 -me-0.5"></span>}
-                                                            {isLowStock ? <AlertTriangle className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
-                                                            {isLowStock ? t('inventory.lowStockText', "Low Stock") : t('inventory.inStockText', "In Stock")}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 text-end">
-                                                        {/* Actions placeholder, could add edit raw material modal later as needed */}
                                                     </td>
                                                 </tr>
                                             );
