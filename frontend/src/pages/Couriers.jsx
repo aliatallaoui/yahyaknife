@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, LayoutGrid, CheckCircle, XCircle } from 'lucide-react';
+import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, LayoutGrid, CheckCircle, XCircle, Search } from 'lucide-react';
+import { useHotkey } from '../hooks/useHotkey';
 import PageHeader from '../components/PageHeader';
 import PhoneChip from '../components/PhoneChip';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -18,6 +19,11 @@ export default function Couriers() {
     const [loading, setLoading] = useState(true);
     const [couriers, setCouriers] = useState([]);
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'analytics'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('All');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const [stats, setStats] = useState({
         kpis: { totalShipments: 0, delivered: 0, returned: 0, inTransit: 0, successRate: 0, returnRate: 0, avgDeliveryTimeDays: 0 },
@@ -46,6 +52,15 @@ export default function Couriers() {
             setLoading(false);
         }
     };
+
+    const filteredCouriers = couriers.filter(c => {
+        if (filterStatus !== 'All' && c.status !== filterStatus) return false;
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            if (!c.name?.toLowerCase().includes(q) && !c.phone?.toLowerCase().includes(q)) return false;
+        }
+        return true;
+    });
 
     if (loading) {
         return (
@@ -206,6 +221,40 @@ export default function Couriers() {
                 </>
             ) : (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    {/* Filter bar */}
+                    {couriers.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/40">
+                            <div className="relative">
+                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                    ref={searchRef}
+                                    type="text"
+                                    placeholder={t('couriers.searchPlaceholder', 'Search couriers... (Press /)')}
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all w-52 shadow-sm font-bold"
+                                />
+                            </div>
+                            <div className="flex gap-1.5">
+                                {['All', 'Active', 'Inactive'].map(s => {
+                                    const count = s === 'All' ? couriers.length : couriers.filter(c => c.status === s).length;
+                                    return (
+                                        <button
+                                            key={s}
+                                            onClick={() => setFilterStatus(s)}
+                                            className={clsx(
+                                                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
+                                                filterStatus === s ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
+                                            )}
+                                        >
+                                            {s === 'All' ? t('common.all', 'All') : s}
+                                            <span className={clsx('text-[10px] font-black px-1 py-0.5 rounded-full leading-none', filterStatus === s ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500')}>{count}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                     <div className="overflow-x-auto">
                         <table className="w-full text-start rtl:text-right whitespace-nowrap">
                             <thead className="bg-gray-50/80 text-gray-500 text-[11px] uppercase tracking-wider">
@@ -224,8 +273,14 @@ export default function Couriers() {
                                             {t('couriers.empty', 'No couriers mapped yet.')}
                                         </td>
                                     </tr>
+                                ) : filteredCouriers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-400 font-medium">
+                                            {t('common.noMatch', 'No couriers match your search.')}
+                                        </td>
+                                    </tr>
                                 ) : (
-                                    couriers.map((c) => (
+                                    filteredCouriers.map((c) => (
                                         <tr 
                                             key={c._id} 
                                             onClick={() => navigate(`/couriers/${c._id}`)}

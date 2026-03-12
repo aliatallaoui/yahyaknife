@@ -47,13 +47,13 @@ export const InventoryProvider = ({ children }) => {
                 })
             ]);
 
-            if (prodRes.ok) setProducts(await prodRes.json());
+            if (prodRes.ok) { const prodJson = await prodRes.json(); setProducts(prodJson.data ?? (Array.isArray(prodJson) ? prodJson : [])); }
             if (matRes.ok) { const matJson = await matRes.json(); setRawMaterials(matJson.data ?? (Array.isArray(matJson) ? matJson : [])); }
             if (metricsRes.ok) setMetrics(await metricsRes.json());
-            if (suppRes.ok) setSuppliers(await suppRes.json());
-            if (catRes.ok) setCategories(await catRes.json());
-            if (poRes.ok) setPurchaseOrders(await poRes.json());
-            if (ledgerRes.ok) setGlobalLedger(await ledgerRes.json());
+            if (suppRes.ok) { const suppJson = await suppRes.json(); setSuppliers(suppJson.data ?? (Array.isArray(suppJson) ? suppJson : [])); }
+            if (catRes.ok) { const catJson = await catRes.json(); setCategories(catJson.data ?? (Array.isArray(catJson) ? catJson : [])); }
+            if (poRes.ok) { const poJson = await poRes.json(); setPurchaseOrders(poJson.data ?? (Array.isArray(poJson) ? poJson : [])); }
+            if (ledgerRes.ok) { const ledgerJson = await ledgerRes.json(); setGlobalLedger(ledgerJson.data ?? (Array.isArray(ledgerJson) ? ledgerJson : [])); }
             if (knivesRes.ok) { const knivesJson = await knivesRes.json(); setCompletedKnives(knivesJson.data ?? (Array.isArray(knivesJson) ? knivesJson : [])); }
         } catch (error) {
             console.error("Error fetching inventory data:", error);

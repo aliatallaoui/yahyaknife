@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { X, Search, FileText } from 'lucide-react';
+import { X, Search, FileText, AlertTriangle } from 'lucide-react';
 import moment from 'moment';
 import { InventoryContext } from '../context/InventoryContext';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
     const { fetchVariantLedger } = useContext(InventoryContext);
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         if (isOpen && product) {

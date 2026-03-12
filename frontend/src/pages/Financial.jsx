@@ -1,4 +1,5 @@
-import { useEffect, useState, useContext, useCallback } from 'react';
+import { useEffect, useState, useContext, useCallback, useRef } from 'react';
+import { useHotkey } from '../hooks/useHotkey';
 import { DollarSign, TrendingUp, TrendingDown, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2, Search, Wallet, AlertTriangle, RefreshCw, LayoutDashboard, BookOpen } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import {
@@ -60,6 +61,9 @@ export default function Financial() {
     const [filterType, setFilterType] = useState('all');
     const [filterCategory, setFilterCategory] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); setCurrentPage(1); searchRef.current?.blur(); } });
     const [batchDeleting, setBatchDeleting] = useState(false);
 
     // Deriving manual expenses and revenues from the unified context
@@ -468,11 +472,12 @@ export default function Financial() {
                     <div className="relative flex-1 min-w-[180px] max-w-xs">
                         <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
                         <input
+                            ref={searchRef}
                             type="text"
-                            placeholder="Search..."
+                            placeholder={t('finance.searchPlaceholder', 'Search... (Press /)')}
                             value={searchTerm}
                             onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                            className="w-full ps-9 pe-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                            className="w-full ps-9 pe-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors font-bold"
                         />
                     </div>
                     <select
