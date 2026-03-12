@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, CheckCircle, ShieldAlert, Download, Clock, AlertCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calculator, CheckCircle, ShieldAlert, Download, Clock, AlertCircle, X, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import clsx from 'clsx';
+import { useHotkey } from '../hooks/useHotkey';
 
 // Build a list of the last 6 months as { value, label } options
 function buildPeriodOptions() {
@@ -110,6 +112,21 @@ export default function HRPayroll() {
     const totalDeductions = records.reduce((acc, r) => acc + (r.missingTimeDeductions || 0) + (r.absenceDeductions || 0), 0);
     const totalOT = records.reduce((acc, r) => acc + (r.overtimeAdditions || 0), 0);
     const pendingCount = records.filter(r => r.status === 'Pending Approval').length;
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('All');
+    const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
+
+    const filteredRecords = records.filter(r => {
+        if (filterStatus !== 'All' && r.status !== filterStatus) return false;
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            if (!r.employeeId?.name?.toLowerCase().includes(q) && !r.employeeId?.role?.toLowerCase().includes(q)) return false;
+        }
+        return true;
+    });
 
     return (
         <div className="flex flex-col gap-6">
