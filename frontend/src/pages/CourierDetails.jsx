@@ -52,7 +52,7 @@ export default function CourierDetails() {
             }
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching courier:', error);
+            setSaveToast({ type: 'error', msg: error.response?.data?.message || 'Failed to load courier data.' });
             setLoading(false);
         }
     };

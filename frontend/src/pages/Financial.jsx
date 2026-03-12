@@ -41,6 +41,7 @@ export default function Financial() {
     const { t } = useTranslation();
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(true);
+    const [overviewError, setOverviewError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -157,14 +158,16 @@ export default function Financial() {
 
     const fetchOverview = useCallback(async () => {
         setLoadingOverview(true);
+        setOverviewError(null);
         try {
             const params = new URLSearchParams(periodToRange(period));
             const finRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/finance/overview?${params}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (finRes.ok) { const json = await finRes.json(); setOverview(json.data ?? json); }
+            else { const j = await finRes.json().catch(() => ({})); setOverviewError(j.error || 'Failed to load financial overview.'); }
         } catch (error) {
-            console.error("Error fetching financial overview:", error);
+            setOverviewError('Failed to load financial overview.');
         } finally {
             setLoadingOverview(false);
         }
@@ -255,6 +258,14 @@ export default function Financial() {
                     </div>
                 }
             />
+
+            {overviewError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{overviewError}</span>
+                    <button onClick={() => setOverviewError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* Tab Bar */}
             <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl w-fit">

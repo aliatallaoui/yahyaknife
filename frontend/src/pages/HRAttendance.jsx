@@ -15,9 +15,11 @@ export default function HRAttendance() {
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     const fetchAttendance = async () => {
         setLoading(true);
+        setFetchError(null);
         try {
             const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             const [empRes, attRes] = await Promise.all([
@@ -38,7 +40,7 @@ export default function HRAttendance() {
             });
             setRecords(merged);
         } catch (error) {
-            console.error('Error fetching pointage:', error);
+            setFetchError(error.response?.data?.error || 'Failed to load attendance records.');
         } finally {
             setLoading(false);
         }
@@ -141,6 +143,14 @@ export default function HRAttendance() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* Clock-in alert strip — only for today */}
             {!loading && date === moment().format('YYYY-MM-DD') && (() => {

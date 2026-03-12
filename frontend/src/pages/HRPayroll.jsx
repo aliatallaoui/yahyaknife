@@ -41,7 +41,7 @@ export default function HRPayroll() {
             const data = json.data ?? (Array.isArray(json) ? json : []);
             setRecords(data);
         } catch (error) {
-            console.error(error);
+            setErrorMsg(t('hr.alertFailedLoad', 'Failed to load payroll data.'));
         } finally {
             setLoading(false);
         }
@@ -59,8 +59,9 @@ export default function HRPayroll() {
                 body: JSON.stringify({ period })
             });
             if (res.ok) fetchPayroll(period);
+            else { const d = await res.json(); setErrorMsg(d.error || t('hr.alertFailedGenerate', 'Failed to generate payroll run.')); }
         } catch (error) {
-            console.error(t('hr.alertFailedGenerate'), error);
+            setErrorMsg(t('hr.alertFailedGenerate', 'Failed to generate payroll run.'));
         }
     };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, LayoutGrid, CheckCircle, XCircle, Search } from 'lucide-react';
+import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, LayoutGrid, CheckCircle, XCircle, Search, AlertTriangle } from 'lucide-react';
 import { useHotkey } from '../hooks/useHotkey';
 import PageHeader from '../components/PageHeader';
 import PhoneChip from '../components/PhoneChip';
@@ -17,6 +17,7 @@ export default function Couriers() {
     const isRTL = i18n.language === 'ar';
     
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
     const [couriers, setCouriers] = useState([]);
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'analytics'
     const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +48,7 @@ export default function Couriers() {
             setRegionalData(regionRes.data);
             setCouriers(couriersRes.data);
         } catch (error) {
-            console.error('Error fetching delivery data:', error);
+            setFetchError(error.response?.data?.error || error.message || 'Failed to load courier data.');
         } finally {
             setLoading(false);
         }
@@ -97,6 +98,14 @@ export default function Couriers() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {viewMode === 'analytics' ? (
                 <>

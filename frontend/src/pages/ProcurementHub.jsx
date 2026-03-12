@@ -17,6 +17,7 @@ export default function ProcurementHub() {
     const [suppliers, setSuppliers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
     const [isPOModalOpen, setIsPOModalOpen] = useState(false);
     const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
     const searchRef = useRef(null);
@@ -34,7 +35,7 @@ export default function ProcurementHub() {
             setOrders(ordersRes.data?.data ?? ordersRes.data);
             setSuppliers(suppliersRes.data?.data ?? suppliersRes.data);
         } catch (error) {
-            console.error('Error fetching procurement data', error);
+            setFetchError(error.response?.data?.error || error.message || 'Failed to load procurement data.');
         } finally {
             setLoading(false);
         }
@@ -110,6 +111,14 @@ export default function ProcurementHub() {
                     </div>
                 }
             />
+
+            {fetchError && (
+                <div className="flex items-center gap-3 px-4 py-3 mb-6 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                </div>
+            )}
 
             {/* KPI Widgets */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

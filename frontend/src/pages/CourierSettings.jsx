@@ -33,7 +33,7 @@ export default function CourierSettings() {
             setSettings(prev => ({ ...prev, ...res.data }));
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching courier settings:', error);
+            setMessage(error.response?.data?.message || t('courier.settingsLoadError', 'Failed to load courier settings.'));
             setLoading(false);
         }
     };
