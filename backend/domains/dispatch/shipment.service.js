@@ -93,7 +93,7 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
 // ─── Quick Dispatch ───────────────────────────────────────────────────────────
 
 exports.quickDispatch = async (orderId, tenantId) => {
-    const order = await Order.findOne({ _id: orderId, tenant: tenantId }).populate('customer', 'name phone');
+    const order = await Order.findOne({ _id: orderId, tenant: tenantId }).populate('customer', 'name phone').lean();
     if (!order) throw AppError.notFound('Order');
 
     if (!order.shipping?.phone1 || !order.shipping?.wilayaName || !order.shipping?.commune) {

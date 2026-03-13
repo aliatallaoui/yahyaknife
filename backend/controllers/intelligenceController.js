@@ -66,7 +66,7 @@ exports.evaluateOrderRisk = async (req, res) => {
         const { orderId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(orderId))
             return res.status(400).json({ message: 'Invalid order ID' });
-        const order = await Order.findOne({ _id: orderId, tenant: req.user.tenant, deletedAt: null }).populate('customer');
+        const order = await Order.findOne({ _id: orderId, tenant: req.user.tenant, deletedAt: null }).populate('customer').lean();
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         const customer = order.customer;

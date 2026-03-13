@@ -68,5 +68,6 @@ const callNoteSchema = new mongoose.Schema({
 // Fast lookups: all calls for a tenant today, all calls on an order
 callNoteSchema.index({ tenant: 1, createdAt: -1 });
 callNoteSchema.index({ order: 1, createdAt: 1 });
+callNoteSchema.index({ tenant: 1, order: 1 }); // Compound: call history per order within tenant
 
 module.exports = mongoose.model('CallNote', callNoteSchema);

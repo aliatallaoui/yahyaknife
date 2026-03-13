@@ -10,10 +10,10 @@ const { logStockMovement } = require('./stockController');
 exports.getPurchaseOrders = async (req, res) => {
     try {
         const pos = await PurchaseOrder.find()
-            .populate('supplier')
+            .populate('supplier', 'name email phone')
             .populate({
                 path: 'items.itemRef',
-                populate: { path: 'productId' }
+                populate: { path: 'productId', select: 'name sku' }
             })
             .sort({ createdAt: -1 })
             .limit(200)
@@ -48,10 +48,10 @@ exports.createPurchaseOrder = async (req, res) => {
         });
 
         const populatedPO = await PurchaseOrder.findById(newPO._id)
-            .populate('supplier')
+            .populate('supplier', 'name email phone')
             .populate({
                 path: 'items.itemRef', // Changed from variant to itemRef
-                populate: { path: 'productId' }
+                populate: { path: 'productId', select: 'name sku' }
             });
 
         res.status(201).json(populatedPO);
@@ -73,7 +73,7 @@ exports.updatePOStatus = async (req, res) => {
 
         const po = await PurchaseOrder.findById(id).populate({
             path: 'items.itemRef', // Changed from variant to itemRef
-            populate: { path: 'productId' }
+            populate: { path: 'productId', select: 'name sku' }
         });
         if (!po) return res.status(404).json({ message: "Purchase Order not found." });
 
@@ -127,10 +127,10 @@ exports.updatePOStatus = async (req, res) => {
         await po.save();
 
         const updatedPO = await PurchaseOrder.findById(id)
-            .populate('supplier')
+            .populate('supplier', 'name email phone')
             .populate({
                 path: 'items.itemRef', // Changed from variant to itemRef
-                populate: { path: 'productId' }
+                populate: { path: 'productId', select: 'name sku' }
             });
 
         res.json(updatedPO);

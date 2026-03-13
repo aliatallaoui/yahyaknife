@@ -677,7 +677,8 @@ exports.getBestTimeToCall = async (req, res) => {
                     _id: { wilaya: '$ord.wilaya', hour: { $hour: '$createdAt' } },
                     confirmations: { $sum: 1 }
                 }},
-                { $sort: { '_id.wilaya': 1, confirmations: -1 } }
+                { $sort: { '_id.wilaya': 1, confirmations: -1 } },
+                { $limit: 500 }
             ]);
 
             // Group by wilaya, pick top 3 hours

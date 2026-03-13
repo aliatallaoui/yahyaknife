@@ -5,6 +5,7 @@ const LeaveRequest = require('../models/LeaveRequest');
 const Attendance = require('../models/Attendance');
 const moment = require('moment');
 const { ok, created, message, paginated } = require('../shared/utils/ApiResponse');
+const audit = require('../shared/utils/auditLog');
 
 exports.getHRMetrics = async (req, res) => {
     try {
@@ -134,6 +135,7 @@ exports.createEmployee = async (req, res) => {
             joinDate, status, managerId, contractSettings
         });
         const saved = await employee.save();
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'CREATE_EMPLOYEE', module: 'hr', metadata: { employeeId: saved._id, name } });
         res.status(201).json(created(saved));
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -155,6 +157,7 @@ exports.updateEmployee = async (req, res) => {
             { new: true }
         ).lean();
         if (!updated) return res.status(404).json({ error: 'Employee not found' });
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id } });
         res.json(ok(updated));
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -171,6 +174,7 @@ exports.deleteEmployee = async (req, res) => {
             { new: true }
         );
         if (!deleted) return res.status(404).json({ error: 'Employee not found' });
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'DELETE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id, name: deleted.name } });
         res.json(message('Employee deleted'));
     } catch (err) {
         logger.error({ err }, 'Error deleting employee');
@@ -205,6 +209,7 @@ exports.createLeaveRequest = async (req, res) => {
 
         const reqData = new LeaveRequest({ tenant: req.user.tenant, employeeId, type, startDate: start, endDate: end, reason });
         const saved = await reqData.save();
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'CREATE_LEAVE_REQUEST', module: 'hr', metadata: { leaveId: saved._id, employeeId, type, startDate, endDate } });
         res.status(201).json(created(saved));
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -245,6 +250,7 @@ exports.updateLeaveRequestStatus = async (req, res) => {
 
         request.status = status;
         await request.save();
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_LEAVE_STATUS', module: 'hr', metadata: { leaveId: req.params.id, employeeId: request.employeeId, newStatus: status } });
         res.json(ok(request));
     } catch (err) {
         res.status(400).json({ error: err.message });

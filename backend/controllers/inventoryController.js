@@ -12,9 +12,9 @@ const audit = require('../shared/utils/auditLog');
 exports.getProducts = async (req, res) => {
     try {
         const products = await Product.find({ tenant: req.user.tenant, isActive: true })
-            .populate('supplier')
-            .populate('category')
-            .populate('variants')
+            .populate('supplier', 'name email phone')
+            .populate('category', 'name')
+            .populate('variants', 'sku name price cost totalStock reservedStock status')
             .limit(500)
             .lean();
         res.json(products);
@@ -62,11 +62,12 @@ exports.createProduct = async (req, res) => {
         }
 
         // Populate to match get request format
-        const populatedProduct = await Product.findById(newProduct._id)
-            .populate('supplier')
-            .populate('category')
-            .populate('variants');
+        const populatedProduct = await Product.findOne({ _id: newProduct._id, tenant: req.user.tenant })
+            .populate('supplier', 'name email phone')
+            .populate('category', 'name')
+            .populate('variants', 'sku name price cost totalStock reservedStock status');
 
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'CREATE_PRODUCT', module: 'inventory', metadata: { productId: newProduct._id, name: newProduct.name } });
         res.status(201).json(populatedProduct);
     } catch (error) {
         logger.error({ err: error }, 'Error creating product');
@@ -110,10 +111,11 @@ exports.updateProduct = async (req, res) => {
         }
 
         const updated = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, updates, { new: true, runValidators: true })
-            .populate('supplier').populate('category').populate('variants');
+            .populate('supplier', 'name email phone').populate('category', 'name').populate('variants', 'sku name price cost totalStock reservedStock status');
         if (!updated) {
             return res.status(404).json({ message: "Product not found." });
         }
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_PRODUCT', module: 'inventory', metadata: { productId: id } });
         res.json(updated);
     } catch (error) {
         logger.error({ err: error }, 'Error updating product');
@@ -135,6 +137,7 @@ exports.deleteProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ message: "Product not found." });
         }
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'DELETE_PRODUCT', module: 'inventory', metadata: { productId: id, name: product.name } });
         res.json({ message: "Product successfully archived." });
     } catch (error) {
         logger.error({ err: error }, 'Error deleting product');

@@ -3,6 +3,7 @@ const logger = require('../shared/logger');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const moment = require('moment');
+const audit = require('../shared/utils/auditLog');
 
 // Helper to convert HH:mm string to minutes from midnight
 const timeToMinutes = (timeStr) => {
@@ -55,6 +56,7 @@ exports.recordPointage = async (req, res) => {
         await attendance.save();
         attendance = await exports.calculateDailyMetrics(attendance._id);
 
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'RECORD_POINTAGE', module: 'hr', metadata: { attendanceId: attendance._id, employeeId: attendance.employeeId, date: attendance.date } });
         res.json({ message: 'Pointage recorded successfully', attendance });
     } catch (err) {
         logger.error({ err }, 'Error recording pointage');
@@ -196,7 +198,7 @@ exports.updateAttendanceRecord = async (req, res) => {
 
         if (!updated) return res.status(404).json({ error: 'Attendance record not found' });
         await exports.calculateDailyMetrics(updated._id);
-
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_ATTENDANCE', module: 'hr', metadata: { attendanceId: req.params.id, employeeId: updated.employeeId, date: updated.date } });
         res.json(updated);
     } catch (err) {
         logger.error({ err }, 'Error updating attendance record');

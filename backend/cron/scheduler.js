@@ -8,6 +8,14 @@ const { runReorderCheck } = require('../jobs/reorderCheck');
 const { runCallCenterFollowUp } = require('../jobs/callCenterFollowUp');
 const logger = require('../shared/logger');
 
+// Simple mutex: prevents overlapping runs of the same job
+const running = {};
+async function withMutex(name, fn) {
+    if (running[name]) { logger.warn({ job: name }, '[CRON] Skipped — previous run still in progress'); return; }
+    running[name] = true;
+    try { await fn(); } finally { running[name] = false; }
+}
+
 // Background Worker Scheduler
 const initJobs = () => {
     // 1. Daily Reorder Point Check (Runs every day at Midnight)
@@ -57,24 +65,24 @@ const initJobs = () => {
     });
 
     // 3. Nightly Daily Rollup (Runs at 00:30 — previous day is fully closed by then)
-    cron.schedule('30 0 * * *', async () => {
+    cron.schedule('30 0 * * *', () => withMutex('dailyRollup', async () => {
         logger.info('[CRON] Running nightly DailyRollup');
         try {
             await runDailyRollup(); // defaults to yesterday
         } catch (err) {
             logger.error({ err }, '[CRON] Error (DailyRollup)');
         }
-    });
+    }));
 
     // 4. Weekly Report (Runs Sunday at 23:59 — aggregates Mon–Sun daily rollups)
-    cron.schedule('59 23 * * 0', async () => {
+    cron.schedule('59 23 * * 0', () => withMutex('weeklyReport', async () => {
         logger.info('[CRON] Running weekly WeeklyReport');
         try {
             await runWeeklyReport();
         } catch (err) {
             logger.error({ err }, '[CRON] Error (WeeklyReport)');
         }
-    });
+    }));
 
     // 5. Call Center Follow-Up (Runs every 2 hours — requeues No Answer, escalates stale orders)
     cron.schedule('0 */2 * * *', async () => {
@@ -91,13 +99,13 @@ const initJobs = () => {
     initCronJobs();
 
     // 7. High-Performance Dashboard Materialized View Generator (Runs every 5 minutes)
-    cron.schedule('*/5 * * * *', async () => {
+    cron.schedule('*/5 * * * *', () => withMutex('kpi', async () => {
         try {
             await generateKPISnapshots();
         } catch (err) {
             logger.error({ err }, '[CRON] Error (KPI Snapshots)');
         }
-    });
+    }));
 
     // Run the KPI generator immediately on boot to pre-warm the dashboard
     generateKPISnapshots().catch(err => logger.error({ err }, '[CRON] Error (KPI boot pre-warm)'));

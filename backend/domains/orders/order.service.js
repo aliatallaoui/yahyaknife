@@ -51,11 +51,11 @@ async function resolveCustomer(tenantId, customerId, customerPhone, customerName
 }
 
 /** Fetch variant costs in one query → { variantId: cost } */
-async function fetchVariantCosts(products) {
+async function fetchVariantCosts(tenantId, products) {
     const variantIds = products.filter(p => p.variantId).map(p => p.variantId);
     if (variantIds.length === 0) return {};
 
-    const variants = await ProductVariant.find({ _id: { $in: variantIds } }, { cost: 1, status: 1 });
+    const variants = await ProductVariant.find({ _id: { $in: variantIds }, tenant: tenantId }, { cost: 1, status: 1 });
     const inactive = variants.filter(v => v.status && v.status !== 'Active');
     if (inactive.length > 0) {
         throw AppError.validationFailed({ products: `Inactive product variant(s): ${inactive.map(v => v._id).join(', ')}` });
@@ -122,7 +122,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     }
 
     // 2. Fetch costs
-    const costMap = await fetchVariantCosts(products);
+    const costMap = await fetchVariantCosts(tenantId, products);
 
     // 3. Compute financials
     let subtotalAmt = 0;

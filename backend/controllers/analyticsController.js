@@ -389,7 +389,8 @@ exports.getEcommerceAnalytics = async (req, res) => {
                         revenue: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, '$totalAmount', 0] } }
                     }
                 },
-                { $sort: { count: -1 } }
+                { $sort: { count: -1 } },
+                { $limit: 50 }
             ]);
             const channelData = channelAgg.map(c => ({
                 name: c._id || 'Other',
