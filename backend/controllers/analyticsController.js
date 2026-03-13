@@ -186,17 +186,29 @@ exports.getSupplierIntelligence = async (req, res) => {
 exports.getEcommerceAnalytics = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        const { range } = req.query; // e.g., 'today', 'yesterday', '7d', '30d'
+        const { range, startDate: customStart, endDate: customEnd } = req.query;
         let startDate = moment().subtract(7, 'days').startOf('day');
         let endDate = moment().endOf('day');
 
-        if (range === 'today') {
+        if (customStart && customEnd) {
+            // Custom date range: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+            startDate = moment(customStart).startOf('day');
+            endDate = moment(customEnd).endOf('day');
+            // Cap at 366 days
+            if (endDate.diff(startDate, 'days') > 366) {
+                return res.status(400).json({ error: 'Date range cannot exceed 366 days' });
+            }
+        } else if (range === 'today') {
             startDate = moment().startOf('day');
         } else if (range === 'yesterday') {
             startDate = moment().subtract(1, 'days').startOf('day');
             endDate = moment().subtract(1, 'days').endOf('day');
         } else if (range === '30d') {
             startDate = moment().subtract(30, 'days').startOf('day');
+        } else if (range === '90d') {
+            startDate = moment().subtract(90, 'days').startOf('day');
+        } else if (range === 'ytd') {
+            startDate = moment().startOf('year');
         }
 
         const dateQuery = { tenant: tenantId, deletedAt: null, createdAt: { $gte: startDate.toDate(), $lte: endDate.toDate() } };
@@ -211,7 +223,8 @@ exports.getEcommerceAnalytics = async (req, res) => {
         let ttl = 3600; // default 1 hour for larger historical ranges
         if (range === 'today') ttl = 300; // 5 mins for real-time today viewing
 
-        const cacheKey = `tenant:${tenantId}:analytics:ecommerce:${range}`;
+        const rangeKey = (customStart && customEnd) ? `${customStart}_${customEnd}` : (range || '7d');
+        const cacheKey = `tenant:${tenantId}:analytics:ecommerce:${rangeKey}`;
 
         const analyticsData = await cacheService.getOrSet(cacheKey, async () => {
             // 1. Overall KPIs & Funnel — current + previous period in parallel

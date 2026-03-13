@@ -30,6 +30,8 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
     const { t } = useTranslation();
     const isDark = useIsDark();
     const [dateRange, setDateRange] = useState('7d');
+    const [customStart, setCustomStart] = useState('');
+    const [customEnd, setCustomEnd] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dashData, setDashData] = useState(null);
     const [trendData, setTrendData] = useState([]);
@@ -53,7 +55,10 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
     const fetchAnalytics = async () => {
         setIsRefreshing(true);
         try {
-            const res = await apiFetch(`/api/analytics/ecommerce?range=${dateRange}`);
+            const params = dateRange === 'custom' && customStart && customEnd
+                ? `startDate=${customStart}&endDate=${customEnd}`
+                : `range=${dateRange}`;
+            const res = await apiFetch(`/api/analytics/ecommerce?${params}`);
             if (res.ok) {
                 const data = await res.json();
                 setDashData(data);
@@ -189,20 +194,36 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 <div className="flex items-center gap-2.5 flex-wrap">
                     {/* Date Range Pills */}
                     <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl border border-gray-200/50 dark:border-gray-600">
-                        {['today', 'yesterday', '7d', '30d'].map(range => (
+                        {['today', 'yesterday', '7d', '30d', '90d', 'ytd'].map(r => (
                             <button
-                                key={range}
-                                onClick={() => setDateRange(range)}
+                                key={r}
+                                onClick={() => setDateRange(r)}
                                 className={clsx(
                                     "px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200",
-                                    dateRange === range
+                                    dateRange === r
                                         ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-500'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                 )}
                             >
-                                {t(`analytics.date_${range}`, range.toUpperCase())}
+                                {t(`analytics.date_${r}`, r === 'ytd' ? 'YTD' : r.toUpperCase())}
                             </button>
                         ))}
+                    </div>
+                    {/* Custom Date Range */}
+                    <div className="flex items-center gap-1.5">
+                        <input
+                            type="date"
+                            value={customStart}
+                            onChange={e => { setCustomStart(e.target.value); if (customEnd && e.target.value) setDateRange('custom'); }}
+                            className="px-2 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        />
+                        <span className="text-gray-400 text-xs">—</span>
+                        <input
+                            type="date"
+                            value={customEnd}
+                            onChange={e => { setCustomEnd(e.target.value); if (customStart && e.target.value) setDateRange('custom'); }}
+                            className="px-2 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        />
                     </div>
                     <button
                         onClick={fetchAnalytics}

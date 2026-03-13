@@ -53,6 +53,8 @@ export default function Financial() {
 
     // Period selector for KPI overview
     const [period, setPeriod] = useState('thisMonth');
+    // Revenue trend data from daily rollups
+    const [revenueTrend, setRevenueTrend] = useState([]);
 
     // Shared confirm dialog
     const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
@@ -162,10 +164,26 @@ export default function Financial() {
         setLoadingOverview(true);
         setOverviewError(null);
         try {
-            const params = new URLSearchParams(periodToRange(period));
+            const range = periodToRange(period);
+            const params = new URLSearchParams(range);
             const finRes = await apiFetch(`/api/finance/overview?${params}`);
             if (finRes.ok) { const json = await finRes.json(); setOverview(json.data ?? json); }
             else { const j = await finRes.json().catch(() => ({})); setOverviewError(j.error || t('finance.errorLoadOverview', 'Failed to load financial overview.')); }
+
+            // Fetch daily rollups for trend chart
+            const from = range.startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const to = range.endDate || new Date().toISOString().slice(0, 10);
+            const trendRes = await apiFetch(`/api/analytics/daily?from=${from}&to=${to}`);
+            if (trendRes.ok) {
+                const tJson = await trendRes.json();
+                setRevenueTrend((tJson.data?.rollups ?? []).map(d => ({
+                    date: d.date.slice(5),
+                    revenue: d.revenue.gross || 0,
+                    profit: d.revenue.netProfit || 0,
+                    cogs: d.revenue.cogs || 0,
+                    orders: d.orders.created || 0,
+                })));
+            }
         } catch (error) {
             setOverviewError(t('finance.errorLoadOverview', 'Failed to load financial overview.'));
         } finally {
@@ -397,6 +415,29 @@ export default function Financial() {
                 </div>
 
             </div>
+
+            {/* Revenue & Profit Trend */}
+            {revenueTrend.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 sm:p-6">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-indigo-500" /> {t('finance.revenueTrend', 'Revenue & Profit Trend')}
+                    </h3>
+                    <div className="h-72 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={revenueTrend} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
+                                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }} />
+                                <Legend />
+                                <Line type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} dot={false} name={t('finance.revenue', 'Revenue')} />
+                                <Line type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2.5} dot={false} name={t('finance.profit', 'Profit')} />
+                                <Line type="monotone" dataKey="cogs" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="5 5" name={t('finance.cogs', 'COGS')} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
             </>}
 
             {/* Courier Settlement Panel */}

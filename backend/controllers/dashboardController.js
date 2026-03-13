@@ -32,7 +32,7 @@ exports.getDashboardData = async (req, res) => {
             const dateQuery = { tenant: tenantId, deletedAt: null, createdAt: { $gte: startPeriod.toDate(), $lte: endPeriod.toDate() } };
 
             // --- Parallel: order agg, courier list, inventory agg, delivery time, dispatch count, alerts ---
-            const [orderStatusAgg, couriers, inventoryAgg, deliveryTimeAgg, dispatchCount, criticalStock, suspiciousCustomers, absentToday] = await Promise.all([
+            const [orderStatusAgg, couriers, inventoryAgg, deliveryTimeAgg, dispatchCount, criticalStock, suspiciousCustomers, absentToday, agentProductivity] = await Promise.all([
                 Order.aggregate([
                     { $match: dateQuery },
                     {
@@ -75,7 +75,16 @@ exports.getDashboardData = async (req, res) => {
                         const todayStr = new Date().toISOString().slice(0, 10);
                         return await Attendance.countDocuments({ tenant: tenantId, date: todayStr, status: 'Absent' });
                     } catch { return 0; }
-                })()
+                })(),
+                Order.aggregate([
+                    { $match: { ...dateQuery, assignedAgent: { $ne: null } } },
+                    { $group: { _id: '$assignedAgent', totalOrders: { $sum: 1 }, delivered: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, 1, 0] } } } },
+                    { $sort: { totalOrders: -1 } },
+                    { $limit: 10 },
+                    { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'agent' } },
+                    { $unwind: { path: '$agent', preserveNullAndEmptyArrays: true } },
+                    { $project: { _id: 1, totalOrders: 1, delivered: 1, agentName: { $concat: [{ $ifNull: ['$agent.firstName', ''] }, ' ', { $ifNull: ['$agent.lastName', ''] }] } } }
+                ])
             ]);
 
             // --- Process order status aggregation ---
@@ -135,6 +144,17 @@ exports.getDashboardData = async (req, res) => {
                     availableStock: inv.totalAvailableStock,
                     deadStock: inv.deadStockVariants,
                     inventoryTurnoverRate
+                },
+                agentMetrics: {
+                    totalActiveAgents: agentProductivity.length,
+                    avgOrdersPerAgent: agentProductivity.length > 0 ? parseFloat((agentProductivity.reduce((s, a) => s + a.totalOrders, 0) / agentProductivity.length).toFixed(1)) : 0,
+                    topAgents: agentProductivity.map(a => ({
+                        agentId: a._id,
+                        name: a.agentName?.trim() || 'Unknown',
+                        totalOrders: a.totalOrders,
+                        delivered: a.delivered,
+                        deliveryRate: a.totalOrders > 0 ? parseFloat(((a.delivered / a.totalOrders) * 100).toFixed(1)) : 0
+                    }))
                 },
             };
 

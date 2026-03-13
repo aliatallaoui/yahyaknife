@@ -3,7 +3,7 @@ const Customer = require('../models/Customer');
 const Tenant = require('../models/Tenant');
 const { initCronJobs } = require('./trackerSync');
 const { generateKPISnapshots } = require('../jobs/kpiGenerator');
-const { runDailyRollup, runWeeklyReport } = require('../jobs/dailyRollup');
+const { runDailyRollup, runWeeklyReport, runMonthlyReport } = require('../jobs/dailyRollup');
 const { runReorderCheck } = require('../jobs/reorderCheck');
 const { runCallCenterFollowUp } = require('../jobs/callCenterFollowUp');
 const logger = require('../shared/logger');
@@ -84,7 +84,17 @@ const initJobs = () => {
         }
     }));
 
-    // 5. Call Center Follow-Up (Runs every 2 hours — requeues No Answer, escalates stale orders)
+    // 5. Monthly Report (Runs 1st of each month at 01:00 — aggregates previous month)
+    cron.schedule('0 1 1 * *', () => withMutex('monthlyReport', async () => {
+        logger.info('[CRON] Running monthly MonthlyReport');
+        try {
+            await runMonthlyReport();
+        } catch (err) {
+            logger.error({ err }, '[CRON] Error (MonthlyReport)');
+        }
+    }));
+
+    // 6. Call Center Follow-Up (Runs every 2 hours — requeues No Answer, escalates stale orders)
     cron.schedule('0 */2 * * *', async () => {
         logger.info('[CRON] Running Call Center Follow-Up...');
         try {
