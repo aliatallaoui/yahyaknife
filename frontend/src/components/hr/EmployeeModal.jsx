@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiFetch';
 import { XCircle, Banknote, AlertTriangle } from 'lucide-react';
 import useModalDismiss from '../../hooks/useModalDismiss';
-import moment from 'moment';
+import { toISODate } from '../../utils/dateUtils';
 
 const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -16,7 +16,7 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
     const [formData, setFormData] = useState({
         name: employee?.name || '',
         email: employee?.email || '',
-        joinDate: employee?.joinDate ? moment(employee.joinDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        joinDate: employee?.joinDate ? toISODate(employee.joinDate) : toISODate(),
         department: employee?.department || 'Manufacturing',
         role: employee?.role || '',
         status: employee?.status || 'Active',

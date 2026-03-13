@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../../utils/axiosInstance';
+import { apiFetch } from '../../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { Activity, Save, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -67,15 +67,20 @@ export default function CourierStatusMapping({ courier, setCourier }) {
                 if (k.trim()) cleanMapping[k.trim()] = mapping[k];
             });
 
-            const res = await api.put(`/api/couriers/${courier._id}`, {
-                ...courier,
-                statusMapping: cleanMapping
+            const res = await apiFetch(`/api/couriers/${courier._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...courier,
+                    statusMapping: cleanMapping
+                })
             });
-
-            setCourier(res.data);
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || t('couriers.saveMappingFailed', 'Error saving mapping'));
+            setCourier(json.data ?? json);
             setSuccessMsg(t('couriers.mapping_saved', 'Mapping configuration saved successfully.'));
         } catch (error) {
-            setErrorMsg(error.response?.data?.message || t('couriers.saveMappingFailed', 'Error saving mapping'));
+            setErrorMsg(error.message || t('couriers.saveMappingFailed', 'Error saving mapping'));
         } finally {
             setSaving(false);
         }
@@ -148,7 +153,7 @@ export default function CourierStatusMapping({ courier, setCourier }) {
                                 <button 
                                     onClick={() => handleDelete(extKey)}
                                     className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded transition-colors"
-                                    title="Remove Rule"
+                                    title={t('couriers.removeRule', 'Remove Rule')}
                                 >
                                     ×
                                 </button>

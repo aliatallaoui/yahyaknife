@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import clsx from 'clsx';
-import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import { fmtShortDateTime, fmtFullDateTime, diffHours } from '../../utils/dateUtils';
 import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2, Copy } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../../constants/statusColors';
@@ -13,6 +13,14 @@ const PRIORITY_STYLES = {
 };
 
 const STATUS_STYLES = ORDER_STATUS_COLORS;
+
+// Extracted to module scope — prevents new object on every render (breaks React.memo otherwise)
+const SELECT_ARROW_STYLE = {
+    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3e%3c/svg%3e")`,
+    backgroundPosition: `right 0.2rem center`,
+    backgroundRepeat: `no-repeat`,
+    backgroundSize: `1.2em 1.2em`,
+};
 
 const OrderRow = React.memo(({
     order,
@@ -140,7 +148,7 @@ const OrderRow = React.memo(({
                                                     <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-gray-900 z-10 shrink-0 mt-0.5"></div>
                                                     <div className="flex flex-col text-xs leading-none">
                                                         <span className="font-bold text-gray-100">{t('ordersControl.timeline.created')}</span>
-                                                        <span className="text-[10px] text-gray-400 font-mono mt-1">{moment(order.createdAt).format('DD MMM, HH:mm')}</span>
+                                                        <span className="text-[10px] text-gray-400 font-mono mt-1">{fmtShortDateTime(order.createdAt)}</span>
                                                     </div>
                                                 </div>
                                                 {order.status !== 'New' && (
@@ -206,12 +214,7 @@ const OrderRow = React.memo(({
                                                     "appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 rounded-full text-[11px] font-black uppercase tracking-wide border px-2.5 py-1 transition-colors pr-6 relative max-w-[140px] truncate",
                                                     STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600 border-gray-200 focus:ring-gray-300'
                                                 )}
-                                                style={{
-                                                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3e%3c/svg%3e")`,
-                                                    backgroundPosition: `right 0.2rem center`,
-                                                    backgroundRepeat: `no-repeat`,
-                                                    backgroundSize: `1.2em 1.2em`,
-                                                }}
+                                                style={SELECT_ARROW_STYLE}
                                             >
                                                 {COD_STATUSES.filter(s => {
                                                     if (activeStage === 'pre-dispatch') {
@@ -534,13 +537,20 @@ const OrderRow = React.memo(({
                                         <option value="unassigned">{t('ordersControl.filters.unassigned', { defaultValue: 'Unassigned' })}</option>
                                         {agents?.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
                                     </select>
+                                    {order.assignmentMode && (
+                                        <span className={`block mt-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded w-fit ${
+                                            { manual: 'text-violet-600', product: 'text-blue-600', store: 'text-cyan-600', round_robin: 'text-amber-600', claim: 'text-emerald-600' }[order.assignmentMode] || 'text-gray-500'
+                                        }`}>
+                                            {order.assignmentMode.replace('_', ' ')}
+                                        </span>
+                                    )}
                                 </td>
                             );
                         case 'date':
                             return (
                                 <td key={col.id} className="px-4 py-2 text-xs w-28 whitespace-nowrap overflow-hidden text-ellipsis">
                                     <div className="flex flex-col">
-                                        <span className={clsx("font-bold", moment().diff(moment(order.createdAt), 'hours') > 24 && order.status === 'New' ? "text-rose-600" : "text-gray-600")} title={moment(order.createdAt).format('PPpp')}>
+                                        <span className={clsx("font-bold", diffHours(new Date(), order.createdAt) > 24 && order.status === 'New' ? "text-rose-600" : "text-gray-600")} title={fmtFullDateTime(order.createdAt)}>
                                             {getAge(order.createdAt)} {t('ordersControl.grid.ago')}
                                         </span>
                                     </div>

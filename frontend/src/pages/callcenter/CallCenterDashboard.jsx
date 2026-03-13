@@ -1,16 +1,29 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useContext } from 'react';
 import { useHotkey } from '../../hooks/useHotkey';
 import { useTranslation } from 'react-i18next';
 import {
     PhoneCall, CheckCircle, Clock, AlertCircle, TrendingUp,
     Search, RefreshCw, Calendar, Shield, Zap, Target, Flame,
-    Truck, MessageSquare, Send as SendIcon
+    Truck, MessageSquare, Send as SendIcon, Inbox, Hand
 } from 'lucide-react';
 import { apiFetch } from '../../utils/apiFetch';
 import OrderActionDrawer from '../../components/callcenter/OrderActionDrawer';
 import PhoneChip from '../../components/PhoneChip';
 import { getOrderStatusLabel } from '../../constants/statusColors';
 import MessagePanel from '../../components/callcenter/MessagePanel';
+import { AuthContext } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
+
+const AssignmentBadge = ({ mode }) => {
+    if (!mode) return null;
+    const badge = ASSIGNMENT_MODE_BADGES[mode];
+    if (!badge) return null;
+    return (
+        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${badge.cls}`}>
+            {badge.label}
+        </span>
+    );
+};
 
 const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
     <div className="bg-white rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
@@ -27,17 +40,34 @@ const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
 const QUEUE_TABS = [
     { key: 'All', icon: null },
     { key: 'New', icon: null },
+    { key: 'Unassigned', icon: Inbox },
     { key: 'Follow-Up', icon: PhoneCall },
     { key: 'Callbacks', icon: Calendar },
     { key: 'Delivery', icon: Truck },
 ];
 
+const ASSIGNMENT_MODE_BADGES = {
+    manual:    { label: 'Manual',      cls: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300' },
+    product:   { label: 'Product',     cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' },
+    store:     { label: 'Store',       cls: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300' },
+    round_robin: { label: 'Round Robin', cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300' },
+    claim:     { label: 'Claimed',     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' },
+    auto_least_loaded: { label: 'Auto', cls: 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300' },
+};
+
 const FOLLOW_UP_STATUSES = new Set(['Call 1', 'Call 2', 'Call 3', 'No Answer']);
 
 const RISK_DOT = { Low: 'bg-emerald-400', Medium: 'bg-amber-400', High: 'bg-red-500' };
 
+const ADMIN_ROLES = new Set(['Super Admin', 'Owner / Founder']);
+
 export default function CallCenterDashboard() {
     const { t } = useTranslation();
+    const { hasPermission, user } = useContext(AuthContext);
+    const isAdmin = ADMIN_ROLES.has(user?.roleObject?.name) || ADMIN_ROLES.has(user?.role);
+    const canViewUnassigned = hasPermission('callcenter.view_unassigned');
+    const canClaimOrders = hasPermission('callcenter.claim_orders');
+
     const [stats, setStats] = useState({
         totalAssigned: 0, awaitingAction: 0, confirmedToday: 0,
         deliveredTotal: 0, callsMadeToday: 0, commissionEarnedToday: 0,
@@ -45,6 +75,7 @@ export default function CallCenterDashboard() {
     });
     const [allOrders, setAllOrders] = useState([]);
     const [deliveryOrders, setDeliveryOrders] = useState([]);
+    const [unassignedOrders, setUnassignedOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
@@ -52,6 +83,7 @@ export default function CallCenterDashboard() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [quickMsgOrder, setQuickMsgOrder] = useState(null);
+    const [claimingId, setClaimingId] = useState(null);
     const searchInputRef = useRef(null);
     useHotkey('/', () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); }, { preventDefault: true });
     useHotkey('escape', () => { if (document.activeElement === searchInputRef.current) { setSearch(''); searchInputRef.current?.blur(); } });
@@ -60,10 +92,17 @@ export default function CallCenterDashboard() {
         setLoading(true);
         setError(null);
         try {
-            const [dashRes, followUpRes] = await Promise.all([
+            const fetches = [
                 apiFetch('/api/call-center/agent-dashboard'),
                 apiFetch('/api/call-center/follow-up-queue'),
-            ]);
+            ];
+            if (canViewUnassigned) {
+                fetches.push(apiFetch('/api/call-center/unassigned-queue'));
+            }
+
+            const results = await Promise.all(fetches);
+            const [dashRes, followUpRes] = results;
+
             if (!dashRes.ok) throw new Error(`HTTP ${dashRes.status}`);
             const data = await dashRes.json();
             setStats(data.metrics || stats);
@@ -73,12 +112,34 @@ export default function CallCenterDashboard() {
                 const fuData = await followUpRes.json();
                 setDeliveryOrders((fuData.data ?? fuData) || []);
             }
+
+            if (canViewUnassigned && results[2]?.ok) {
+                const uData = await results[2].json();
+                setUnassignedOrders((uData.data ?? uData) || []);
+            }
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [canViewUnassigned]);
+
+    const handleClaimOrder = useCallback(async (orderId) => {
+        setClaimingId(orderId);
+        try {
+            const res = await apiFetch(`/api/call-center/claim/${orderId}`, { method: 'POST' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${res.status}`);
+            }
+            toast.success(t('callcenter.claimSuccess', 'Order claimed successfully'));
+            fetchDashboard();
+        } catch (err) {
+            toast.error(err.message || t('callcenter.claimFailed', 'Failed to claim order'));
+        } finally {
+            setClaimingId(null);
+        }
+    }, [fetchDashboard, t]);
 
     useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
@@ -86,22 +147,29 @@ export default function CallCenterDashboard() {
     const now = useMemo(() => new Date(), [allOrders]);
     const tabOrders = useMemo(() => {
         switch (queueTab) {
-            case 'New':       return allOrders.filter(o => o.status === 'New');
-            case 'Follow-Up': return allOrders.filter(o => FOLLOW_UP_STATUSES.has(o.status));
-            case 'Callbacks': return allOrders.filter(o => o.status === 'Postponed' && o.postponedUntil && new Date(o.postponedUntil) <= now);
-            case 'Delivery':  return deliveryOrders;
-            default:          return allOrders;
+            case 'New':        return allOrders.filter(o => o.status === 'New');
+            case 'Unassigned': return unassignedOrders;
+            case 'Follow-Up':  return allOrders.filter(o => FOLLOW_UP_STATUSES.has(o.status));
+            case 'Callbacks':  return allOrders.filter(o => o.status === 'Postponed' && o.postponedUntil && new Date(o.postponedUntil) <= now);
+            case 'Delivery':   return deliveryOrders;
+            default:           return allOrders;
         }
-    }, [allOrders, deliveryOrders, queueTab, now]);
+    }, [allOrders, unassignedOrders, deliveryOrders, queueTab, now]);
 
     // Tab counts
     const tabCounts = useMemo(() => ({
         All: allOrders.length,
         New: allOrders.filter(o => o.status === 'New').length,
+        Unassigned: unassignedOrders.length,
         'Follow-Up': allOrders.filter(o => FOLLOW_UP_STATUSES.has(o.status)).length,
         Callbacks: allOrders.filter(o => o.status === 'Postponed' && o.postponedUntil && new Date(o.postponedUntil) <= now).length,
         Delivery: deliveryOrders.length,
-    }), [allOrders, deliveryOrders, now]);
+    }), [allOrders, unassignedOrders, deliveryOrders, now]);
+
+    // Filter out the Unassigned tab if agent lacks permission
+    const visibleTabs = useMemo(() => {
+        return QUEUE_TABS.filter(tab => tab.key !== 'Unassigned' || canViewUnassigned);
+    }, [canViewUnassigned]);
 
     // Client-side search filter
     const filtered = tabOrders.filter(o => {
@@ -189,18 +257,33 @@ export default function CallCenterDashboard() {
                     </div>
                     <p className="font-bold text-gray-900 text-sm shrink-0">{(order.totalAmount || 0).toLocaleString()} <span className="text-[10px] text-gray-400">{t('common.dzd', 'DZD')}</span></p>
                 </div>
+                {isAdmin && order.assignedAgentName && (
+                    <p className="text-[11px] text-indigo-600 font-semibold mb-1">{order.assignedAgentName}</p>
+                )}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                         {statusBadge}
                         {orderStatusBadge}
+                        <AssignmentBadge mode={order.assignmentMode} />
                         {displayWilaya && <span className="text-[11px] text-gray-500">{displayWilaya}</span>}
                     </div>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setIsDrawerOpen(true); }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0"
-                    >
-                        <PhoneCall className="w-3.5 h-3.5" />
-                    </button>
+                    {queueTab === 'Unassigned' && canClaimOrders ? (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleClaimOrder(order._id); }}
+                            disabled={claimingId === order._id}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0 disabled:opacity-50"
+                        >
+                            <Hand className="w-3.5 h-3.5" />
+                            {claimingId === order._id ? '...' : t('callcenter.claim', 'Claim')}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setIsDrawerOpen(true); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0"
+                        >
+                            <PhoneCall className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                 </div>
             </div>
         );
@@ -276,6 +359,7 @@ export default function CallCenterDashboard() {
                 <th>{t('callcenter.queue.location', 'Location')}</th>
                 <th>{t('callcenter.queue.products', 'Products')}</th>
                 <th>{t('callcenter.queue.amount', 'Amount')}</th>
+                {isAdmin && <th>{t('callcenter.queue.agent', 'Assigned To')}</th>}
                 <th>{t('callcenter.queue.time', 'Wait')}</th>
                 <th className="text-end">{t('callcenter.queue.action', 'Action')}</th>
             </tr>
@@ -322,8 +406,8 @@ export default function CallCenterDashboard() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[400px]">
                 <div className="p-5 border-b border-gray-100 space-y-3 shrink-0">
                     {/* Tab Bar */}
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
-                        {QUEUE_TABS.map(tab => {
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
+                        {visibleTabs.map(tab => {
                             const count = tabCounts[tab.key];
                             const active = queueTab === tab.key;
                             return (
@@ -619,6 +703,15 @@ export default function CallCenterDashboard() {
                                                         )}
                                                     </td>
                                                     <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">{(o.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400">{t('common.dzd', 'DZD')}</span></td>
+                                                    {isAdmin && (
+                                                        <td className="px-5 py-3.5">
+                                                            {o.assignedAgentName ? (
+                                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{o.assignedAgentName}</span>
+                                                            ) : (
+                                                                <span className="text-[11px] text-gray-400 italic">{t('callcenter.unassigned', 'Unassigned')}</span>
+                                                            )}
+                                                        </td>
+                                                    )}
                                                     <td className="px-5 py-3.5">
                                                         <div className="flex flex-col gap-1 items-start">
                                                             {statusBadge}
@@ -627,16 +720,30 @@ export default function CallCenterDashboard() {
                                                                     {getOrderStatusLabel(t, o.status)}
                                                                 </span>
                                                             )}
+                                                            <AssignmentBadge mode={o.assignmentMode} />
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3.5 text-end">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); setIsDrawerOpen(true); }}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs"
-                                                        >
-                                                            <PhoneCall className="w-3.5 h-3.5" />
-                                                            {t('callcenter.action.call', 'Process')}
-                                                        </button>
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            {queueTab === 'Unassigned' && canClaimOrders ? (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); handleClaimOrder(o._id); }}
+                                                                    disabled={claimingId === o._id}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors font-bold text-xs disabled:opacity-50"
+                                                                >
+                                                                    <Hand className="w-3.5 h-3.5" />
+                                                                    {claimingId === o._id ? t('common.loading', '...') : t('callcenter.claim', 'Claim')}
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); setIsDrawerOpen(true); }}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs"
+                                                                >
+                                                                    <PhoneCall className="w-3.5 h-3.5" />
+                                                                    {t('callcenter.action.call', 'Process')}
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );

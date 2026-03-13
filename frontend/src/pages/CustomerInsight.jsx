@@ -7,10 +7,11 @@ import { AuthContext } from '../context/AuthContext';
 import CustomerModal from '../components/modals/CustomerModal';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { apiFetch } from '../utils/apiFetch';
 import PageHeader from '../components/PageHeader';
+import TableSkeleton from '../components/TableSkeleton';
 
 const COLORS = ['#4361EE', '#3B82F6', '#60A5FA', '#93C5FD', '#111827', '#6B7280'];
 const LTV_COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#94a3b8'];
@@ -36,6 +37,7 @@ export default function CustomerInsight() {
             if (!token) return;
             try {
                 const metricsRes = await apiFetch(`/api/customers/metrics`);
+                if (!metricsRes.ok) throw new Error('Failed to load metrics');
 
                 const data = await metricsRes.json();
                 setMetrics(Array.isArray(data) ? data : (data.error ? null : data));
@@ -49,11 +51,7 @@ export default function CustomerInsight() {
     }, [token]);
 
     if (loading || contextLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin"></div>
-            </div>
-        );
+        return <TableSkeleton showKpis kpiCount={4} rows={8} cols={6} />;
     }
 
     const handleCreateClick = () => {
@@ -67,8 +65,11 @@ export default function CustomerInsight() {
             else await createCustomer(payload);
             setIsModalOpen(false);
             setSaveError(null);
+            toast.success(editingCustomer ? t('crm.customerUpdated', 'Customer updated successfully') : t('crm.customerCreated', 'Customer created successfully'));
         } catch (error) {
-            setSaveError(error?.response?.data?.message || error?.message || t('crm.failedSave', 'Failed to save customer.'));
+            const errMsg = error?.response?.data?.message || error?.message || t('crm.failedSave', 'Failed to save customer.');
+            setSaveError(errMsg);
+            toast.error(errMsg);
         }
     };
 

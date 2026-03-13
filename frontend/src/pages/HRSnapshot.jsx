@@ -8,8 +8,10 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveCont
 import PageHeader from '../components/PageHeader';
 import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
-import moment from 'moment';
+import { toISODate, fmtShortDate, fmtMediumDate, diffDays, fromNow } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import TableSkeleton from '../components/TableSkeleton';
 
 const COLORS = ['#1A73E8', '#C58AF9', '#EE6C4D', '#3D5A80', '#98C1D9', '#E0FBFC', '#293241'];
 
@@ -41,13 +43,14 @@ export default function HRSnapshot() {
         setLoading(true);
         setFetchError(null);
         try {
-            const todayStr = moment().format('YYYY-MM-DD');
+            const todayStr = toISODate();
             const [metricsRes, empRes, leaveRes, attRes] = await Promise.all([
                 apiFetch(`/api/hr/metrics`),
                 apiFetch(`/api/hr/employees`),
                 apiFetch(`/api/hr/leaves`),
                 apiFetch(`/api/hr/attendance?date=${todayStr}`)
             ]);
+            if (!metricsRes.ok || !empRes.ok || !leaveRes.ok || !attRes.ok) throw new Error('fetch failed');
 
             const empRaw = await empRes.json();
             const empData = empRaw.data ?? empRaw;
@@ -89,11 +92,7 @@ export default function HRSnapshot() {
     }, []);
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin"></div>
-            </div>
-        );
+        return <TableSkeleton showKpis kpiCount={6} rows={8} cols={6} />;
     }
 
     // Format Department Data
@@ -134,6 +133,7 @@ export default function HRSnapshot() {
             if (res.ok) {
                 const updJson = await res.json();
                 setLeaves(leaves.map(l => l._id === id ? (updJson.data ?? updJson) : l));
+                toast.success(t('hr.leaveStatusUpdated', `Leave request ${newStatus.toLowerCase()} successfully`));
 
                 // Refresh employees to reflect deducted balance
                 if (newStatus === 'Approved') {
@@ -143,11 +143,15 @@ export default function HRSnapshot() {
                 }
             } else {
                 const data = await res.json().catch(() => ({}));
-                setLeaveError(data.message || t('hr.leaveUpdateError', 'Failed to update leave status.'));
+                const errMsg = data.message || t('hr.leaveUpdateError', 'Failed to update leave status.');
+                setLeaveError(errMsg);
+                toast.error(errMsg);
                 setTimeout(() => setLeaveError(null), 4000);
             }
         } catch (error) {
-            setLeaveError(t('hr.leaveUpdateError', 'Failed to update leave status.'));
+            const errMsg = t('hr.leaveUpdateError', 'Failed to update leave status.');
+            setLeaveError(errMsg);
+            toast.error(errMsg);
             setTimeout(() => setLeaveError(null), 4000);
         }
     };
@@ -417,13 +421,13 @@ export default function HRSnapshot() {
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-gray-900 text-sm">{req.employeeId?.name || 'Unknown'}</h4>
-                                            <p className="text-xs text-gray-500">{req.type} • {moment(req.startDate).format('MMM D')} - {moment(req.endDate).format('MMM D, YYYY')}</p>
+                                            <p className="text-xs text-gray-500">{req.type} • {fmtShortDate(req.startDate)} - {fmtMediumDate(req.endDate)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="ltr:text-right rtl:text-left hidden sm:block">
-                                            <div className="text-xs font-medium text-gray-900">{moment(req.endDate).diff(moment(req.startDate), 'days') + 1} {t('hr.daysLabel')}</div>
-                                            <div className="text-[10px] text-gray-400">{t('hr.requestedAgo')} {moment(req.requestDate).fromNow()}</div>
+                                            <div className="text-xs font-medium text-gray-900">{diffDays(req.endDate, req.startDate) + 1} {t('hr.daysLabel')}</div>
+                                            <div className="text-[10px] text-gray-400">{t('hr.requestedAgo')} {fromNow(req.requestDate)}</div>
                                         </div>
                                         {req.status === 'Pending' ? (
                                             <div className="flex gap-1 ltr:ml-2 rtl:mr-2">
@@ -503,6 +507,7 @@ export default function HRSnapshot() {
                     onClose={() => setIsModalOpen(false)}
                     onSave={async () => {
                         setIsModalOpen(false);
+                        toast.success(selectedEmployee ? t('hr.employeeUpdated', 'Employee updated successfully') : t('hr.employeeAdded', 'Employee added successfully'));
                         const empRes = await apiFetch(`/api/hr/employees`);
                         const empRefJson = await empRes.json();
                         setEmployees(empRefJson.data ?? (Array.isArray(empRefJson) ? empRefJson : []));

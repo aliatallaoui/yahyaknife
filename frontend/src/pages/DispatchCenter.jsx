@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
-import api from '../utils/axiosInstance';
+import { apiFetch } from '../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -10,7 +10,7 @@ import RequireAction from '../components/Guards/RequireAction';
 import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
-import moment from 'moment';
+import { fmtShortDateTime } from '../utils/dateUtils';
 import CreateShipmentModal from '../components/CreateShipmentModal';
 import PhoneChip from '../components/PhoneChip';
 
@@ -55,21 +55,24 @@ export default function DispatchCenter() {
 
     const fetchShipments = async () => {
         try {
-            const res = await api.get('/api/shipments');
-            setShipments(res.data);
+            const res = await apiFetch('/api/shipments');
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Failed to load shipments');
+            setShipments(json.data ?? json);
             setLoading(false);
         } catch (error) {
-            showError(error.response?.data?.message || t('dispatch.errorLoadShipments', 'Failed to load shipments.'));
+            showError(error.message || t('dispatch.errorLoadShipments', 'Failed to load shipments.'));
             setLoading(false);
         }
     };
 
     const handleValidate = async (id) => {
         try {
-            await api.post(`/api/shipments/${id}/validate`, { ask_collection: 1 });
+            const res = await apiFetch(`/api/shipments/${id}/validate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ask_collection: 1 }) });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Failed to validate shipment');
             fetchShipments();
         } catch (error) {
-            showError(error.response?.data?.message || t('dispatch.errorValidate', 'Failed to validate shipment.'));
+            showError(error.message || t('dispatch.errorValidate', 'Failed to validate shipment.'));
         }
     };
 
@@ -81,7 +84,8 @@ export default function DispatchCenter() {
         let failed = 0;
         for (const s of pendingValidation) {
             try {
-                await api.post(`/api/shipments/${s._id}/validate`, { ask_collection: 1 });
+                const res = await apiFetch(`/api/shipments/${s._id}/validate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ask_collection: 1 }) });
+                if (!res.ok) throw new Error('validate failed');
             } catch { failed++; }
         }
         setBulkValidating(false);
@@ -96,10 +100,11 @@ export default function DispatchCenter() {
             danger: true,
             onConfirm: async () => {
                 try {
-                    await api.delete(`/api/shipments/${id}`);
+                    const res = await apiFetch(`/api/shipments/${id}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Failed to delete shipment');
                     fetchShipments();
                 } catch (error) {
-                    showError(error.response?.data?.message || t('dispatch.errorDelete', 'Failed to delete shipment.'));
+                    showError(error.message || t('dispatch.errorDelete', 'Failed to delete shipment.'));
                 }
             },
         });
@@ -107,26 +112,31 @@ export default function DispatchCenter() {
 
     const handlePrintLabel = async (id) => {
         try {
-            const res = await api.get(`/api/shipments/${id}/label`);
-            if (res.data.url) {
-                window.open(res.data.url, '_blank');
+            const res = await apiFetch(`/api/shipments/${id}/label`);
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Failed to fetch printing label');
+            const data = json.data ?? json;
+            if (data.url) {
+                window.open(data.url, '_blank');
             }
         } catch (error) {
-            showError(error.response?.data?.message || t('dispatch.errorLabel', 'Failed to fetch printing label.'));
+            showError(error.message || t('dispatch.errorLabel', 'Failed to fetch printing label.'));
         }
     };
 
     const handleExport = async () => {
         try {
-            const res = await api.get('/api/shipments/export/csv', { responseType: 'blob' });
-            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const res = await apiFetch('/api/shipments/export/csv');
+            if (!res.ok) throw new Error('Export failed');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', 'dispatch_shipments.csv');
             document.body.appendChild(link);
             link.click();
         } catch (error) {
-            showError(error.response?.data?.message || t('dispatch.errorExport', 'Export failed. Please try again.'));
+            showError(error.message || t('dispatch.errorExport', 'Export failed. Please try again.'));
         }
     };
 
@@ -178,13 +188,13 @@ export default function DispatchCenter() {
                 variant="sales"
                 actions={
                     <div className="flex flex-wrap gap-3">
-                        <RequireAction permission="dispatch.export">
+                        <RequireAction permission="shipments.export">
                             <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-95">
                                 <FileText className="w-4 h-4 mr-2" />
                                 {t('dispatch.exportList', 'Export List')}
                             </button>
                         </RequireAction>
-                        <RequireAction permission="dispatch.create_shipment">
+                        <RequireAction permission="shipments.create">
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
                                 className="flex items-center gap-2 bg-blue-600 outline-none text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
@@ -324,7 +334,7 @@ export default function DispatchCenter() {
                                                 {getStatusIcon(shipment.shipmentStatus)}
                                                 {getShipmentStatusLabel(shipment.shipmentStatus, t)}
                                             </span>
-                                            <div className="text-[10px] text-gray-400 mt-1">{moment(shipment.createdAt).format('MMM D, HH:mm')}</div>
+                                            <div className="text-[10px] text-gray-400 mt-1">{fmtShortDateTime(shipment.createdAt)}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-bold text-gray-900">{(shipment.codAmount || 0).toLocaleString()} {t('common.dzd', 'DZD')}</div>
@@ -336,7 +346,7 @@ export default function DispatchCenter() {
                                             {/* Pre-validation Actions */}
                                             {['Created in Courier', 'Draft'].includes(shipment.shipmentStatus) && (
                                                 <>
-                                                    <RequireAction permission="dispatch.validate_shipment">
+                                                    <RequireAction permission="shipments.create">
                                                         <button onClick={() => handleValidate(shipment._id)} title="Validate & Dispatch" className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-1.5 rounded-lg transition-colors">
                                                             <CheckSquare className="w-4 h-4" />
                                                         </button>
@@ -351,7 +361,7 @@ export default function DispatchCenter() {
 
                                             {/* Post-validation Actions */}
                                             {!['Created in Courier', 'Draft', 'Cancelled'].includes(shipment.shipmentStatus) && (
-                                                <RequireAction permission="dispatch.generate_label">
+                                                <RequireAction permission="shipments.view">
                                                     <button onClick={() => handlePrintLabel(shipment._id)} title="Print Label" className="text-gray-600 hover:text-gray-900 bg-gray-100 p-1.5 rounded-lg transition-colors">
                                                         <Printer className="w-4 h-4" />
                                                     </button>

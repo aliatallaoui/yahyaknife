@@ -6,7 +6,7 @@ import {
     Clock, CheckCircle, XCircle, AlertCircle, Wallet, TrendingUp, TrendingDown,
     FileText, Activity
 } from 'lucide-react';
-import moment from 'moment';
+import { fmtShortDate, fmtMediumDate, fmtFullDate, fmtMonthYear, fmtWeekdayDate, fmtTime, toISODate, toMMYYYY, parseMMYYYY, diffDays } from '../utils/dateUtils';
 import clsx from 'clsx';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
@@ -42,12 +42,18 @@ export default function EmployeeProfile() {
 
                 const empJson = await empRes.json();
                 setEmployee(empJson.data ?? empJson);
-                const attJson = await attRes.json();
-                setAttendance(attJson.data ?? (Array.isArray(attJson) ? attJson : []));
-                const payJson = await payRes.json();
-                setPayrolls(payJson.data ?? (Array.isArray(payJson) ? payJson : []));
-                const leaveJson = await leaveRes.json();
-                setLeaves(leaveJson.data ?? (Array.isArray(leaveJson) ? leaveJson : []));
+                if (attRes.ok) {
+                    const attJson = await attRes.json();
+                    setAttendance(attJson.data ?? (Array.isArray(attJson) ? attJson : []));
+                }
+                if (payRes.ok) {
+                    const payJson = await payRes.json();
+                    setPayrolls(payJson.data ?? (Array.isArray(payJson) ? payJson : []));
+                }
+                if (leaveRes.ok) {
+                    const leaveJson = await leaveRes.json();
+                    setLeaves(leaveJson.data ?? (Array.isArray(leaveJson) ? leaveJson : []));
+                }
             } catch (err) {
                 setFetchError(err.message === 'Employee not found' ? null : t('hr.errorLoadEmployee', 'Failed to load employee data.'));
             } finally {
@@ -77,7 +83,7 @@ export default function EmployeeProfile() {
     // ==========================================
     // Analytics Math
     // ==========================================
-    const currentMonthPrefix = moment().format('YYYY-MM');
+    const currentMonthPrefix = toISODate().slice(0, 7);
     const thisMonthAttendance = attendance.filter(a => a.date.startsWith(currentMonthPrefix));
 
     // Attendance Summaries
@@ -100,20 +106,20 @@ export default function EmployeeProfile() {
     const estGrossSalary = Math.round(baseSalary + overtimeBonus - missingDeductions - absenceDeduct);
 
     // Calculate previously paid salary specifically for this month
-    const paidThisMonth = payrolls.filter(p => p.period === moment().format('MM-YYYY') && p.status === 'Paid')
+    const paidThisMonth = payrolls.filter(p => p.period === toMMYYYY() && p.status === 'Paid')
         .reduce((sum, p) => sum + p.finalPayableSalary, 0);
     const unpaidEst = Math.max(0, estGrossSalary - paidThisMonth);
 
     // Today status
-    const todayStr = moment().format('YYYY-MM-DD');
+    const todayStr = toISODate();
     const todayAtt = attendance.find(a => a.date === todayStr);
 
-    const formatHHMM = (dateStr) => dateStr ? moment(dateStr).format('HH:mm') : '--:--';
+    const formatHHMM = (dateStr) => dateStr ? fmtTime(dateStr) : '--:--';
     const formatHours = (mins) => `${Math.floor(mins / 60)}${t('hr.lblHours', 'h')} ${mins % 60}${t('hr.lblMinutes', 'm')}`;
 
     // Chart Data (Last 14 days work time)
     const chartData = [...attendance].slice(0, 14).reverse().map(a => ({
-        date: moment(a.date).format('MMM DD'),
+        date: fmtShortDate(a.date),
         worked: parseFloat((a.workedMinutes / 60).toFixed(1)),
         required: parseFloat((a.requiredMinutes / 60).toFixed(1))
     }));
@@ -153,7 +159,7 @@ export default function EmployeeProfile() {
                     <div className="w-full space-y-4">
                         <ProfileRow icon={HashIcon} label={t('hr.lblEmployeeId')} value={employee.employeeId || employee._id.slice(-6).toUpperCase()} />
                         <ProfileRow icon={LayersIcon} label={t('hr.lblDepartment')} value={employee.department} />
-                        <ProfileRow icon={Calendar} label={t('hr.lblStartDate')} value={moment(employee.joinDate).format('MMMM Do, YYYY')} />
+                        <ProfileRow icon={Calendar} label={t('hr.lblStartDate')} value={fmtFullDate(employee.joinDate)} />
                         <ProfileRow icon={Mail} label={t('hr.lblEmail')} value={employee.email || t('hr.na')} />
                         <ProfileRow icon={Activity} label={t('hr.lblContractStatus')} value={employee.status === 'Active' ? t('hr.activeLabel') || employee.status : employee.status} highlight={employee.status === 'Active'} />
                     </div>
@@ -164,7 +170,7 @@ export default function EmployeeProfile() {
                     <div>
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-500" /> {t('hr.livePayrollProjection')}</h3>
-                            <span className="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full">{moment().format('MMMM YYYY')}</span>
+                            <span className="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full">{fmtMonthYear()}</span>
                         </div>
 
                         <div className="mb-8">
@@ -223,7 +229,7 @@ export default function EmployeeProfile() {
                                 )}>
                                     {todayAtt?.status ? (todayAtt.status === 'Present' ? t('hr.statusPresent') : todayAtt.status === 'Completed' ? t('hr.statusCompleted') : todayAtt.status === 'Late' ? t('hr.statusLate') : todayAtt.status === 'Incomplete' ? t('hr.statusIncomplete') : todayAtt.status === 'Absent' ? t('hr.statusAbsent') : todayAtt.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : todayAtt.status === 'Overtime' ? t('hr.overtime') : todayAtt.status === 'Not Marked' ? t('hr.notMarked') : todayAtt.status) : t('hr.notMarked')}
                                 </h4>
-                                <p className="text-sm font-semibold text-gray-500">{moment().format('dddd, MMM Do')}</p>
+                                <p className="text-sm font-semibold text-gray-500">{fmtWeekdayDate()}</p>
                             </div>
                         </div>
 
@@ -298,7 +304,7 @@ export default function EmployeeProfile() {
                                 <tbody>
                                     {attendance.slice(0, 31).map(att => (
                                         <tr key={att._id}>
-                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{moment(att.date).format('MMM DD, YYYY')}</td>
+                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{fmtMediumDate(att.date)}</td>
                                             <td className="p-4 text-gray-500">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.morningIn ? "bg-blue-50 text-blue-600" : "text-gray-300")}>{formatHHMM(att.morningIn)}</span>
@@ -358,7 +364,7 @@ export default function EmployeeProfile() {
                                 <tbody>
                                     {payrolls.map(pay => (
                                         <tr key={pay._id}>
-                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{moment(pay.period, 'MM-YYYY').format('MMMM YYYY')}</td>
+                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{fmtMonthYear(parseMMYYYY(pay.period))}</td>
                                             <td className="p-4 text-gray-500">{pay.baseSalary?.toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 text-emerald-600">+{(pay.overtimeAdditions || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 text-rose-600">-{(pay.missingTimeDeductions + pay.absenceDeductions || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
@@ -393,13 +399,13 @@ export default function EmployeeProfile() {
                                 <tbody>
                                     {leaves.map(l => (
                                         <tr key={l._id}>
-                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{moment(l.requestDate).format('MMM DD, YYYY')}</td>
+                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{fmtMediumDate(l.requestDate)}</td>
                                             <td className="p-4 text-gray-700">
                                                 <span className="bg-gray-100 px-2.5 py-1 rounded-md text-xs font-bold">{l.type}</span>
                                             </td>
                                             <td className="p-4 text-gray-500">
                                                 <div className="flex items-center gap-1">
-                                                    {moment(l.startDate).format('MMM DD')} <span className="inline-block ltr:rotate-0 rtl:rotate-180">➔</span> {moment(l.endDate).format('MMM DD')} <span className="text-gray-400 font-normal ml-2">({moment(l.endDate).diff(moment(l.startDate), 'days') + 1} {t('hr.daysLabel')})</span>
+                                                    {fmtShortDate(l.startDate)} <span className="inline-block ltr:rotate-0 rtl:rotate-180">➔</span> {fmtShortDate(l.endDate)} <span className="text-gray-400 font-normal ml-2">({diffDays(l.endDate, l.startDate) + 1} {t('hr.daysLabel')})</span>
                                                 </div>
                                             </td>
                                             <td className="p-4 text-gray-500 max-w-xs truncate">{l.reason}</td>

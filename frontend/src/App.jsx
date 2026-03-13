@@ -9,7 +9,7 @@ import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
-import { SalesProvider } from './context/SalesContext';
+
 import { InventoryProvider } from './context/InventoryContext';
 import { CustomerProvider } from './context/CustomerContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -41,12 +41,23 @@ const SettingsSecurity = lazy(() => import('./pages/settings/SettingsSecurity'))
 const SettingsAlerts = lazy(() => import('./pages/settings/SettingsAlerts'));
 const SettingsUsers = lazy(() => import('./pages/settings/SettingsUsers'));
 const SettingsRoles = lazy(() => import('./pages/settings/SettingsRoles'));
+const SettingsWorkspace = lazy(() => import('./pages/settings/SettingsWorkspace'));
 const CourierSettings = lazy(() => import('./pages/CourierSettings'));
 const SupportDesk = lazy(() => import('./pages/SupportDesk'));
 const CallCenterDashboard = lazy(() => import('./pages/callcenter/CallCenterDashboard'));
 const CallCenterManager = lazy(() => import('./pages/callcenter/CallCenterManager'));
 const OrderControlCenter = lazy(() => import('./pages/OrderControlCenter'));
 const CopilotWidget = lazy(() => import('./components/CopilotWidget'));
+
+// Sales Channels
+const SalesChannels = lazy(() => import('./pages/SalesChannels'));
+const SalesChannelDetail = lazy(() => import('./pages/SalesChannelDetail'));
+const PageBuilder = lazy(() => import('./pages/PageBuilder'));
+const Storefront = lazy(() => import('./pages/Storefront'));
+const StorefrontPreview = lazy(() => import('./pages/StorefrontPreview'));
+
+const PlatformAdmin = lazy(() => import('./pages/PlatformAdmin'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -116,7 +127,7 @@ const Layout = () => {
 
   const navigate = useNavigate();
 
-  const isPublicRoute = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/' || location.pathname === '/forgot-password' || location.pathname.startsWith('/reset-password') || location.pathname === '/subscription-expired';
+  const isPublicRoute = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/' || location.pathname === '/forgot-password' || location.pathname.startsWith('/reset-password') || location.pathname === '/subscription-expired' || location.pathname.startsWith('/s/') || location.pathname === '/onboarding';
 
   // RTL DOM Flipper - reacts to i18n.language so any changeLanguage() call takes effect
   useEffect(() => {
@@ -138,6 +149,31 @@ const Layout = () => {
     return () => window.removeEventListener('subscription-expired', handler);
   }, [navigate]);
 
+  // Listen for plan-limit-reached events from apiFetch (403 + PLAN_LIMIT_*)
+  useEffect(() => {
+    const handler = (e) => {
+      const { message } = e.detail || {};
+      const toastMsg = message || 'Plan limit reached. Upgrade your plan.';
+      // Dynamic import to avoid loading toast eagerly
+      import('react-hot-toast').then(({ default: hotToast }) => {
+        hotToast.error(toastMsg, { duration: 6000, id: 'plan-limit' });
+      });
+    };
+    window.addEventListener('plan-limit-reached', handler);
+    return () => window.removeEventListener('plan-limit-reached', handler);
+  }, []);
+
+  // Redirect authenticated users away from auth pages to the dashboard (or onboarding)
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password' || location.pathname.startsWith('/reset-password') || location.pathname === '/';
+  const needsOnboarding = user && !user.onboardingCompleted;
+  if (user && isAuthPage) {
+    return <Navigate to={needsOnboarding ? '/onboarding' : '/orders-hub'} replace />;
+  }
+  // Redirect to onboarding if not completed (except when already on /onboarding or public pages)
+  if (needsOnboarding && !isPublicRoute) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   if (isPublicRoute) {
     return (
       <Suspense fallback={<PageSpinner />}>
@@ -148,6 +184,8 @@ const Layout = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/subscription-expired" element={<SubscriptionExpired />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/s/:channelSlug/:pageSlug" element={<Storefront />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Suspense>
@@ -202,9 +240,18 @@ const Layout = () => {
                 <Route path="/procurement" element={<ProcurementHub />} />
                 <Route path="/support" element={<SupportDesk />} />
 
+                {/* Sales Channels */}
+                <Route path="/sales-channels" element={<SalesChannels />} />
+                <Route path="/sales-channels/:id" element={<SalesChannelDetail />} />
+                <Route path="/sales-channels/:channelId/pages/:pageId/builder" element={<PageBuilder />} />
+                <Route path="/sales-channels/:channelId/pages/:pageId/preview" element={<StorefrontPreview />} />
+
                 {/* Call Center Routes */}
                 <Route path="/call-center" element={<CallCenterDashboard />} />
                 <Route path="/call-center/manager" element={<CallCenterManager />} />
+
+                {/* Platform Admin */}
+                <Route path="/platform-admin" element={<PlatformAdmin />} />
 
                 {/* Settings Hub Nested Routing */}
                 <Route path="/settings" element={<SettingsLayout />}>
@@ -214,6 +261,7 @@ const Layout = () => {
                   <Route path="alerts" element={<SettingsAlerts />} />
                   <Route path="users" element={<SettingsUsers />} />
                   <Route path="roles" element={<SettingsRoles />} />
+                  <Route path="workspace" element={<SettingsWorkspace />} />
                   <Route path="couriers" element={<CourierSettings />} />
                   {/* Default redirect for /settings */}
                   <Route path="" element={<Navigate to="profile" replace />} />
@@ -244,16 +292,14 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <TransactionProvider>
-            <SalesProvider>
-              <InventoryProvider>
-                <CustomerProvider>
-                  <Router>
-                    <Layout />
-                    <Toaster position="bottom-right" />
-                  </Router>
-                </CustomerProvider>
-              </InventoryProvider>
-            </SalesProvider>
+            <InventoryProvider>
+              <CustomerProvider>
+                <Router>
+                  <Layout />
+                  <Toaster position="bottom-right" />
+                </Router>
+              </CustomerProvider>
+            </InventoryProvider>
           </TransactionProvider>
         </ThemeProvider>
       </AuthProvider>

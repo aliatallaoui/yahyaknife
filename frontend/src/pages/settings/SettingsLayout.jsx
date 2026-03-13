@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { User, Settings, Shield, Bell, Users, Truck, ChevronLeft } from 'lucide-react';
+import { User, Settings, Shield, Bell, Users, Truck, Building2, ChevronLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { AuthContext } from '../../context/AuthContext';
@@ -17,6 +17,7 @@ export default function SettingsLayout() {
         { name: t('tabSecurity', 'Security & Access'), path: '/settings/security', icon: Shield },
         { name: t('tabAlerts', 'Alert Notifications'), path: '/settings/alerts', icon: Bell },
         { name: t('tabCouriers', 'Courier Integration'), path: '/settings/couriers', icon: Truck, permission: 'couriers.api.connect' },
+        { name: t('tabWorkspace', 'Workspace'), path: '/settings/workspace', icon: Building2, permission: 'tenant.view' },
         { name: t('tabUsers', 'Users & Roles'), path: '/settings/users', icon: Users, permission: 'system.users' },
         { name: t('tabRoles', 'Roles & Permissions'), path: '/settings/roles', icon: Shield, permission: 'system.roles' },
     ];

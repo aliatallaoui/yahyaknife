@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useContext, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
-import api from '../utils/axiosInstance';
+import { apiFetch } from '../utils/apiFetch';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -12,7 +12,7 @@ import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
 import OrderModal from '../components/OrderModal';
 import OrderRow from '../components/orders/OrderRow';
 import clsx from 'clsx';
-import moment from 'moment';
+import { toISODate, subtract, startOfMonth, endOfMonth, formatDuration } from '../utils/dateUtils';
 import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../constants/statusColors';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 
@@ -198,14 +198,18 @@ export default function OrderControlCenter() {
             };
 
             // Trigger background job
-            const res = await api.post(`/api/exports/orders`, {}, { params });
+            const qs = new URLSearchParams(params).toString();
+            const res = await apiFetch(`/api/exports/orders${qs ? '?' + qs : ''}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || 'Export trigger failed'); }
+            const json = await res.json();
+            const data = json.data ?? json;
 
-            if (res.data.jobId) {
-                setExportState({ isExporting: true, progress: 0, jobId: res.data.jobId });
-                pollExportStatus(res.data.jobId);
+            if (data.jobId) {
+                setExportState({ isExporting: true, progress: 0, jobId: data.jobId });
+                pollExportStatus(data.jobId);
             }
         } catch (err) {
-            showError(err.response?.data?.message || t('ordersControl.errorTriggerExport', 'Failed to trigger export'));
+            showError(err.message || t('ordersControl.errorTriggerExport', 'Failed to trigger export'));
         }
     };
 
@@ -213,34 +217,37 @@ export default function OrderControlCenter() {
         if (exportPollRef.current) clearInterval(exportPollRef.current);
         const interval = setInterval(async () => {
             try {
-                const res = await api.get(`/api/exports/${jobId}/status`);
+                const res = await apiFetch(`/api/exports/${jobId}/status`);
+                if (!res.ok) throw new Error('Failed to check export status');
+                const json = await res.json();
+                const data = json.data ?? json;
 
-                if (res.data.status === 'completed') {
+                if (data.status === 'completed') {
                     clearInterval(interval);
                     exportPollRef.current = null;
                     setExportState({ isExporting: false, progress: 100, jobId: null });
                     // Provide the download
-                    const url = `${import.meta.env.VITE_API_URL || ''}${res.data.downloadUrl}`;
+                    const url = `${import.meta.env.VITE_API_URL || ''}${data.downloadUrl}`;
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = res.data.fileName || 'export.csv';
+                    a.download = data.fileName || 'export.csv';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                } else if (res.data.status === 'failed') {
+                } else if (data.status === 'failed') {
                     clearInterval(interval);
                     exportPollRef.current = null;
                     setExportState({ isExporting: false, progress: 0, jobId: null });
-                    showError(`Export Failed: ${res.data.error}`);
+                    showError(`Export Failed: ${data.error}`);
                 } else {
                     // Update progress
-                    setExportState(prev => ({ ...prev, progress: res.data.progress || 0 }));
+                    setExportState(prev => ({ ...prev, progress: data.progress || 0 }));
                 }
             } catch (err) {
                 clearInterval(interval);
                 exportPollRef.current = null;
                 setExportState({ isExporting: false, progress: 0, jobId: null });
-                showError(err.response?.data?.message || t('ordersControl.errorExportFailed', 'Export failed. Please try again.'));
+                showError(err.message || t('ordersControl.errorExportFailed', 'Export failed. Please try again.'));
             }
         }, 1500);
         exportPollRef.current = interval;
@@ -251,35 +258,24 @@ export default function OrderControlCenter() {
         return () => { if (exportPollRef.current) clearInterval(exportPollRef.current); };
     }, []);
 
-    // Fetch Dependencies & KPIs
+    // Fetch Dependencies & KPIs (with abort on unmount)
     useEffect(() => {
-        const fetchDeps = async () => {
-            try {
-                // Fetch independently to prevent one failure (like KPIs) from blocking the others
-                api.get(`/api/couriers`)
-                    .then(res => setCouriers(res.data || []))
-                    .catch(() => toast.error(t('ordersControl.errorLoadCouriers', 'Failed to load couriers list')));
+        const controller = new AbortController();
+        const sig = controller.signal;
 
-                api.get(`/api/users`)
-                    .then(res => setAgents((res.data || []).filter(u => {
-                        const roleName = u.role?.name || u.role;
-                        return !roleName || ['Admin', 'Call Center Agent', 'Agent'].includes(roleName);
-                    })))
-                    .catch(() => toast.error(t('ordersControl.errorLoadAgents', 'Failed to load agents list')));
-
-                api.get(`/api/sales/orders/operations-kpi`)
-                    .then(res => setKpis(res.data))
-                    .catch(() => {}); // KPIs are non-critical, silently degrade
-
-                api.get(`/api/inventory/products`)
-                    .then(res => setProductsList(res.data.products || res.data || []))
-                    .catch(() => toast.error(t('ordersControl.errorLoadProducts', 'Failed to load products list')));
-
-            } catch (err) {
-                showError(t('ordersControl.errorLoadDropdowns', 'Failed to load dropdowns (couriers, agents, products). Refresh to retry.'));
-            }
+        const safeFetch = (url, setter, transform, errMsg) => {
+            apiFetch(url, { signal: sig })
+                .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+                .then(json => { if (!sig.aborted) setter(transform(json)); })
+                .catch(err => { if (!sig.aborted && err.name !== 'AbortError' && errMsg) toast.error(errMsg); });
         };
-        fetchDeps();
+
+        safeFetch('/api/couriers', setCouriers, j => (j.data ?? j) || [], t('ordersControl.errorLoadCouriers', 'Failed to load couriers list'));
+        safeFetch('/api/call-center/agents', setAgents, j => (j.data ?? j) || [], t('ordersControl.errorLoadAgents', 'Failed to load agents list'));
+        safeFetch('/api/sales/orders/operations-kpi', setKpis, j => j.data ?? j, null); // KPIs non-critical
+        safeFetch('/api/inventory/products', setProductsList, j => { const d = j.data ?? j; return d.products || d || []; }, t('ordersControl.errorLoadProducts', 'Failed to load products list'));
+
+        return () => controller.abort();
     }, []);
 
     // Main Fetch
@@ -302,26 +298,30 @@ export default function OrderControlCenter() {
             // Clean empty strings from params
             Object.keys(params).forEach(k => params[k] === '' && delete params[k]);
 
-            const res = await api.get(`/api/sales/orders/advanced`, { params });
+            const qs = new URLSearchParams(params).toString();
+            const res = await apiFetch(`/api/sales/orders/advanced${qs ? '?' + qs : ''}`);
+            if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || 'Failed to load orders'); }
+            const json = await res.json();
+            const data = json.data ?? json;
 
             if (loadMore) {
                 setOrders(prev => {
                     const existingIds = new Set(prev.map(o => o._id));
-                    const newUnique = (res.data.orders || []).filter(o => !existingIds.has(o._id));
+                    const newUnique = (data.orders || []).filter(o => !existingIds.has(o._id));
                     return [...prev, ...newUnique];
                 });
             } else {
-                setOrders(res.data.orders || []);
+                setOrders(data.orders || []);
             }
-            
-            setNextCursor(res.data.nextCursor || null);
-            setHasNextPage(res.data.hasNextPage || false);
 
-            if (res.data.totalOrders !== null && res.data.totalOrders !== undefined) {
-                setTotalOrders(res.data.totalOrders);
+            setNextCursor(data.nextCursor || null);
+            setHasNextPage(data.hasNextPage || false);
+
+            if (data.totalOrders !== null && data.totalOrders !== undefined) {
+                setTotalOrders(data.totalOrders);
             }
-            if (res.data.stageCounts) {
-                setStageCounts(res.data.stageCounts);
+            if (data.stageCounts) {
+                setStageCounts(data.stageCounts);
             }
 
             setError(null);
@@ -329,7 +329,7 @@ export default function OrderControlCenter() {
             // No selection reset — preserve user's selections across fetches
 
         } catch (err) {
-            setError(err.response?.data?.message || t('ordersControl.errorLoadOrders', 'Failed to load orders'));
+            setError(err.message || t('ordersControl.errorLoadOrders', 'Failed to load orders'));
         } finally {
             setLoading(false);
             setIsFetchingNextPage(false);
@@ -370,25 +370,29 @@ export default function OrderControlCenter() {
     // Handle create order from modal
     const handleCreateOrder = async (orderData) => {
         try {
-            await api.post(`/api/sales/orders`, orderData);
+            const res = await apiFetch(`/api/sales/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to create order'); }
             setIsOrderModalOpen(false);
             fetchOrders();
             setSyncMessage(t('ordersControl.orderCreated', { defaultValue: 'Order created successfully!' }));
             setTimeout(() => setSyncMessage(null), 3000);
             return { success: true };
         } catch (err) {
-            return { success: false, error: err.response?.data?.message || err.message };
+            return { success: false, error: err.message };
         }
     };
 
     // Handle update order from modal
     const handleUpdateOrder = async (orderData) => {
         try {
-            const response = await api.put(`/api/sales/orders/${editOrderData._id}`, orderData);
-            
+            const res = await apiFetch(`/api/sales/orders/${editOrderData._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update order'); }
+            const json = await res.json();
+            const responseData = json.data ?? json;
+
             // Immediate UI update without waiting for fetchOrders network delay
-            if (response.data && response.data._id) {
-                setOrders(prev => prev.map(o => o._id === response.data._id ? response.data : o));
+            if (responseData && responseData._id) {
+                setOrders(prev => prev.map(o => o._id === responseData._id ? responseData : o));
             }
 
             setIsOrderModalOpen(false);
@@ -401,7 +405,7 @@ export default function OrderControlCenter() {
             setTimeout(() => setSyncMessage(null), 3000);
             return { success: true };
         } catch (err) {
-            return { success: false, error: err.response?.data?.message || err.message };
+            return { success: false, error: err.message };
         }
     };
 
@@ -447,12 +451,11 @@ export default function OrderControlCenter() {
         try {
             setLoading(true);
 
-            await api.put(`/api/sales/orders/${orderId}`, {
-                status: newStatus
-            });
+            const res = await apiFetch(`/api/sales/orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update status'); }
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         } finally {
             setLoading(false);
         }
@@ -474,39 +477,35 @@ export default function OrderControlCenter() {
         if (!postponeOrderId || !postponeDate) return;
         try {
 
-            await api.put(`/api/sales/orders/${postponeOrderId}`, {
-                status: 'Postponed',
-                postponedUntil: new Date(postponeDate).toISOString()
-            });
+            const res = await apiFetch(`/api/sales/orders/${postponeOrderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Postponed', postponedUntil: new Date(postponeDate).toISOString() }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to postpone order'); }
             setPostponeOrderId(null);
             setPostponeDate('');
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         }
     }, [postponeOrderId, postponeDate, fetchOrders]);
 
     const handleTagUpdate = useCallback(async (orderId, newTags) => {
         try {
 
-            await api.put(`/api/sales/orders/${orderId}`, {
-                tags: newTags
-            });
+            const res = await apiFetch(`/api/sales/orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: newTags }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update tags'); }
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         }
     }, [fetchOrders]);
 
     const handlePriorityChange = useCallback(async (orderId, newPriority) => {
         try {
 
-            await api.put(`/api/sales/orders/${orderId}`, {
-                priority: newPriority
-            });
+            const res = await apiFetch(`/api/sales/orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: newPriority }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update priority'); }
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         }
     }, [fetchOrders]);
 
@@ -519,13 +518,12 @@ export default function OrderControlCenter() {
             onConfirm: async () => {
                 try {
         
-                    await api.post(`/api/sales/orders/bulk/delete`,
-                        { orderIds: Array.from(selectedIds) },
-                    );
+                    const res = await apiFetch(`/api/sales/orders/bulk/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: Array.from(selectedIds) }) });
+                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Bulk delete failed'); }
                     setSelectedIds(new Set());
                     fetchOrders();
                 } catch (err) {
-                    showError(err.response?.data?.message || err.message);
+                    showError(err.message);
                 }
             },
         });
@@ -535,13 +533,12 @@ export default function OrderControlCenter() {
         if (selectedIds.size === 0) return;
         try {
 
-            await api.post(`/api/sales/orders/bulk/restore`,
-                { orderIds: Array.from(selectedIds) },
-            );
+            const res = await apiFetch(`/api/sales/orders/bulk/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: Array.from(selectedIds) }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Bulk restore failed'); }
             setSelectedIds(new Set());
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         }
     }, [selectedIds, fetchOrders]);
 
@@ -554,13 +551,12 @@ export default function OrderControlCenter() {
             onConfirm: async () => {
                 try {
         
-                    await api.post(`/api/sales/orders/bulk/purge`,
-                        { orderIds: Array.from(selectedIds) },
-                    );
+                    const res = await apiFetch(`/api/sales/orders/bulk/purge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: Array.from(selectedIds) }) });
+                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Bulk purge failed'); }
                     setSelectedIds(new Set());
                     fetchOrders();
                 } catch (err) {
-                    showError(err.response?.data?.message || err.message);
+                    showError(err.message);
                 }
             },
         });
@@ -570,14 +566,11 @@ export default function OrderControlCenter() {
         try {
             setLoading(true);
 
-            await api.post(`/api/sales/orders/bulk/update`, {
-                orderIds: [orderId],
-                action: 'assign_agent',
-                payload: { agentId: agentId === 'unassigned' ? null : agentId }
-            });
+            const res = await apiFetch(`/api/sales/orders/bulk/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId], action: 'assign_agent', payload: { agentId: agentId === 'unassigned' ? null : agentId } }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to assign agent'); }
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         } finally {
             setLoading(false);
         }
@@ -587,14 +580,11 @@ export default function OrderControlCenter() {
         try {
             setLoading(true);
 
-            await api.post(`/api/sales/orders/bulk/update`, {
-                orderIds: [orderId],
-                action: 'assign_courier',
-                payload: { courierId: courierId === 'unassigned' ? null : courierId }
-            });
+            const res = await apiFetch(`/api/sales/orders/bulk/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId], action: 'assign_courier', payload: { courierId: courierId === 'unassigned' ? null : courierId } }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to assign courier'); }
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         } finally {
             setLoading(false);
         }
@@ -620,18 +610,15 @@ export default function OrderControlCenter() {
                 payload = { courierId: bulkActionValue === 'unassigned' ? null : bulkActionValue };
             }
 
-            await api.post(`/api/sales/orders/bulk/update`, {
-                orderIds: Array.from(selectedIds),
-                action,
-                payload
-            });
-            
+            const res = await apiFetch(`/api/sales/orders/bulk/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: Array.from(selectedIds), action, payload }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Bulk update failed'); }
+
             setSelectedIds(new Set());
             setBulkActionType(null);
             setBulkActionValue('');
             fetchOrders();
         } catch (err) {
-            showError(err.response?.data?.message || err.message);
+            showError(err.message);
         } finally {
             setLoading(false);
         }
@@ -733,13 +720,7 @@ export default function OrderControlCenter() {
 
     // Helper to calculate age string (e.g. "2d 4h ago", "5h ago")
     const getAge = (dateString) => {
-        const diff = moment().diff(moment(dateString));
-        const duration = moment.duration(diff);
-        const days = Math.floor(duration.asDays());
-        const hours = duration.hours();
-        if (days > 0) return `${days}d ${hours}h`;
-        if (hours > 0) return `${hours}h ${duration.minutes()}m`;
-        return `${duration.minutes()}m`;
+        return formatDuration(Date.now() - new Date(dateString).getTime());
     };
 
     return (
@@ -840,11 +821,16 @@ export default function OrderControlCenter() {
 
                         {hasPermission('orders.export') && selectedIds.size > 0 && (
                             <button
-                                onClick={() => {
-                        
+                                onClick={async () => {
                                     const ids = Array.from(selectedIds).join(',');
-                                    const authToken = localStorage.getItem('token');
-                                    window.open(`${import.meta.env.VITE_API_URL || ''}/api/shipments/export/manifest?ids=${ids}&token=${authToken}`, '_blank');
+                                    try {
+                                        const res = await apiFetch(`/api/shipments/export/manifest?ids=${ids}`);
+                                        if (!res.ok) throw new Error('Export failed');
+                                        const blob = await res.blob();
+                                        const url = URL.createObjectURL(blob);
+                                        const w = window.open(url, '_blank');
+                                        if (w) w.onload = () => URL.revokeObjectURL(url);
+                                    } catch { /* toast already handled by apiFetch on 401 */ }
                                 }}
                                 className="flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0"
                             >
@@ -1097,21 +1083,28 @@ export default function OrderControlCenter() {
                                     try {
                                         setLoading(true);
                                         setSyncMessage(null);
-                                        await api.post(`/api/sales/orders/sync-ecotrack`, {});
+                                        const res = await apiFetch(`/api/sales/orders/sync-ecotrack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+                                        if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}));
+                                            const err = new Error(errData.message || errData.error || 'Sync failed');
+                                            err.status = res.status;
+                                            err.serverError = errData.error;
+                                            throw err;
+                                        }
                                         fetchOrders();
                                         setSyncMessage({ type: 'success', text: t('ordersControl.messages.syncSuccess', { defaultValue: 'ECOTRACK sequence manually fired and completed.' }) });
                                         setTimeout(() => setSyncMessage(null), 5000);
                                     } catch (err) {
-                                        if (err.response?.status === 429 && err.response?.data?.error) {
+                                        if (err.status === 429 && err.serverError) {
                                             // Try to extract minutes left for translation parameters
-                                            const match = err.response.data.error.match(/wait (\d+) minutes/);
+                                            const match = err.serverError.match(/wait (\d+) minutes/);
                                             if (match && match[1]) {
-                                                setSyncMessage({ type: 'error', text: t('ordersControl.messages.syncRateLimit', { minutes: match[1], defaultValue: err.response.data.error }) });
+                                                setSyncMessage({ type: 'error', text: t('ordersControl.messages.syncRateLimit', { minutes: match[1], defaultValue: err.serverError }) });
                                             } else {
-                                                setSyncMessage({ type: 'error', text: err.response.data.error });
+                                                setSyncMessage({ type: 'error', text: err.serverError });
                                             }
                                         } else {
-                                            setSyncMessage({ type: 'error', text: err.response?.data?.error || t('ordersControl.messages.syncFailed', { defaultValue: 'Failed to sync with courier aggregator.' }) });
+                                            setSyncMessage({ type: 'error', text: err.serverError || err.message || t('ordersControl.messages.syncFailed', { defaultValue: 'Failed to sync with courier aggregator.' }) });
                                         }
                                         setTimeout(() => setSyncMessage(null), 8000);
                                     } finally {
@@ -1175,22 +1168,22 @@ export default function OrderControlCenter() {
                                         const preset = e.target.value;
                                         if (!preset) return;
                                         let from = '';
-                                        let to = moment().format('YYYY-MM-DD');
-                                        
+                                        let to = toISODate();
+
                                         if (preset === 'today') {
                                             from = to;
                                         } else if (preset === 'yesterday') {
-                                            from = moment().subtract(1, 'days').format('YYYY-MM-DD');
+                                            from = toISODate(subtract(new Date(), 1, 'days'));
                                             to = from;
                                         } else if (preset === 'last7') {
-                                            from = moment().subtract(7, 'days').format('YYYY-MM-DD');
+                                            from = toISODate(subtract(new Date(), 7, 'days'));
                                         } else if (preset === 'last30') {
-                                            from = moment().subtract(30, 'days').format('YYYY-MM-DD');
+                                            from = toISODate(subtract(new Date(), 30, 'days'));
                                         } else if (preset === 'thisMonth') {
-                                            from = moment().startOf('month').format('YYYY-MM-DD');
+                                            from = toISODate(startOfMonth());
                                         } else if (preset === 'lastMonth') {
-                                            from = moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
-                                            to = moment().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+                                            from = toISODate(startOfMonth(subtract(new Date(), 1, 'months')));
+                                            to = toISODate(endOfMonth(subtract(new Date(), 1, 'months')));
                                         }
                                         
                                         setFilters(prev => ({ ...prev, dateFrom: from, dateTo: to }));
@@ -1394,35 +1387,29 @@ export default function OrderControlCenter() {
                                             onEditClick={(o) => { setEditOrderData(o); setIsOrderModalOpen(true); }}
                                             onDelete={async (orderId) => {
                                                 try {
-                                        
-                                                    await api.post(`/api/sales/orders/bulk/delete`,
-                                                        { orderIds: [orderId] },
-                                                                                    );
+                                                    const res = await apiFetch(`/api/sales/orders/bulk/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
+                                                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Delete failed'); }
                                                     fetchOrders();
                                                 } catch (err) {
-                                                    showError(err.response?.data?.message || err.message);
+                                                    showError(err.message);
                                                 }
                                             }}
                                             onRestore={async (orderId) => {
                                                 try {
-                                        
-                                                    await api.post(`/api/sales/orders/bulk/restore`,
-                                                        { orderIds: [orderId] },
-                                                                                    );
+                                                    const res = await apiFetch(`/api/sales/orders/bulk/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
+                                                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Restore failed'); }
                                                     fetchOrders();
                                                 } catch (err) {
-                                                    showError(err.response?.data?.message || err.message);
+                                                    showError(err.message);
                                                 }
                                             }}
                                             onPurge={async (orderId) => {
                                                 try {
-                                        
-                                                    await api.post(`/api/sales/orders/bulk/purge`,
-                                                        { orderIds: [orderId] },
-                                                                                    );
+                                                    const res = await apiFetch(`/api/sales/orders/bulk/purge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
+                                                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Purge failed'); }
                                                     fetchOrders();
                                                 } catch (err) {
-                                                    showError(err.response?.data?.message || err.message);
+                                                    showError(err.message);
                                                 }
                                             }}
                                             onPostpone={(orderId) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/axiosInstance';
+import { apiFetch } from '../../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Plus, Trash2, Home, Building2, HelpCircle, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
@@ -36,10 +36,12 @@ export default function CourierCoverageMap({ courierId }) {
 
     const fetchCoverage = async () => {
         try {
-            const res = await api.get(`/api/couriers/${courierId}/coverage`);
-            setCoverage(res.data);
+            const res = await apiFetch(`/api/couriers/${courierId}/coverage`);
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || t('couriers.loadCoverageFailed', 'Failed to load coverage regions.'));
+            setCoverage(json.data ?? json);
         } catch (error) {
-            setErrorMsg(error.response?.data?.message || t('couriers.loadCoverageFailed', 'Failed to load coverage regions.'));
+            setErrorMsg(error.message || t('couriers.loadCoverageFailed', 'Failed to load coverage regions.'));
         } finally {
             setLoading(false);
         }
@@ -48,7 +50,15 @@ export default function CourierCoverageMap({ courierId }) {
     const handleAdd = async (e) => {
         e.preventDefault();
         try {
-            await api.post(`/api/couriers/${courierId}/coverage`, formData);
+            const res = await apiFetch(`/api/couriers/${courierId}/coverage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (!res.ok) {
+                const errJson = await res.json();
+                throw new Error(errJson.message || t('couriers.addCoverageFailed', 'Error adding coverage region'));
+            }
             // Reset form partly
             setFormData({
                 ...formData,
@@ -56,7 +66,7 @@ export default function CourierCoverageMap({ courierId }) {
             });
             fetchCoverage();
         } catch (error) {
-            setErrorMsg(error.response?.data?.message || t('couriers.addCoverageFailed', 'Error adding coverage region'));
+            setErrorMsg(error.message || t('couriers.addCoverageFailed', 'Error adding coverage region'));
         }
     };
 
@@ -66,7 +76,8 @@ export default function CourierCoverageMap({ courierId }) {
             danger: true,
             onConfirm: async () => {
                 try {
-                    await api.delete(`/api/couriers/${courierId}/coverage/${coverageId}`);
+                    const res = await apiFetch(`/api/couriers/${courierId}/coverage/${coverageId}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error();
                     fetchCoverage();
                 } catch (error) {
                     setErrorMsg(t('couriers.deleteCoverageFailed', 'Failed to delete coverage region.'));
@@ -82,11 +93,18 @@ export default function CourierCoverageMap({ courierId }) {
             onConfirm: async () => {
                 setSyncing(true);
                 try {
-                    const res = await api.post(`/api/couriers/${courierId}/coverage/sync`, {});
-                    setSuccessMsg(res.data.message || 'Sync successful');
+                    const res = await apiFetch(`/api/couriers/${courierId}/coverage/sync`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.message || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
+                    const data = json.data ?? json;
+                    setSuccessMsg(data.message || 'Sync successful');
                     fetchCoverage();
                 } catch (error) {
-                    setErrorMsg(error.response?.data?.message || error.response?.data?.error || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
+                    setErrorMsg(error.message || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
                 } finally {
                     setSyncing(false);
                 }
@@ -239,20 +257,20 @@ export default function CourierCoverageMap({ courierId }) {
                     <table className="w-full text-start rtl:text-right whitespace-nowrap text-sm">
                         <thead className="bg-gray-50/80 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
                             <tr>
-                                <th className="px-4 py-3 font-bold w-20">Wilaya</th>
-                                <th className="px-4 py-3 font-bold">Commune</th>
-                                <th className="px-4 py-3 font-bold text-center">Home Delv.</th>
-                                <th className="px-4 py-3 font-bold text-center">Stop Desk</th>
-                                <th className="px-4 py-3 font-bold text-center w-16">Actions</th>
+                                <th className="px-4 py-3 font-bold w-20">{t('couriers.wilayaLabel', 'Wilaya')}</th>
+                                <th className="px-4 py-3 font-bold">{t('couriers.commune', 'Commune')}</th>
+                                <th className="px-4 py-3 font-bold text-center">{t('couriers.homeDelivery', 'Home')}</th>
+                                <th className="px-4 py-3 font-bold text-center">{t('couriers.stopDesk', 'Stop Desk')}</th>
+                                <th className="px-4 py-3 font-bold text-center w-16">{t('common.actions', 'Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {currentCoverage.length === 0 ? (
                                 <tr>
                                     <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
-                                        {coverage.length === 0 
-                                            ? "No specific coverage configured. Default assumptions will apply depending on Courier integration level."
-                                            : "No coverage matches your search."}
+                                        {coverage.length === 0
+                                            ? t('couriers.noCoverage', 'No specific coverage configured. Default assumptions will apply depending on Courier integration level.')
+                                            : t('couriers.noCoverageMatch', 'No coverage matches your search.')}
                                     </td>
                                 </tr>
                             ) : (
@@ -261,10 +279,10 @@ export default function CourierCoverageMap({ courierId }) {
                                         <td className="px-4 py-3 font-black text-gray-900 bg-gray-50/50 text-center">{c.wilayaCode}</td>
                                         <td className="px-4 py-3 font-bold text-gray-700">{c.commune}</td>
                                         <td className="px-4 py-3 text-center">
-                                            {c.homeSupported ? <span className="text-green-600 font-bold">Yes</span> : <span className="text-gray-300">No</span>}
+                                            {c.homeSupported ? <span className="text-green-600 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300">{t('common.no', 'No')}</span>}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            {c.officeSupported ? <span className="text-indigo-600 font-bold">Yes</span> : <span className="text-gray-300">No</span>}
+                                            {c.officeSupported ? <span className="text-indigo-600 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300">{t('common.no', 'No')}</span>}
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <button onClick={() => handleDelete(c._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors">

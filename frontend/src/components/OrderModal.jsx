@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2, AlertCircle, AlertTriangle, Truck, Save, RefreshCw, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import moment from 'moment';
 import * as leblad from '@dzcode-io/leblad';
-import api from '../utils/axiosInstance';
+import { apiFetch } from '../utils/apiFetch';
 import { useOrderFormStore } from '../stores/useOrderFormStore';
 import useModalDismiss from '../hooks/useModalDismiss';
 import CustomerIntelligencePanel from './orders/CustomerIntelligencePanel';
@@ -90,7 +89,10 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             const timer = setTimeout(async () => {
                 setIsLookingUpPhone(true);
                 try {
-                    const { data } = await api.get(`/api/customers/lookup?phone=${encodeURIComponent(phone)}`);
+                    const res = await apiFetch(`/api/customers/lookup?phone=${encodeURIComponent(phone)}`);
+                    if (!res.ok) throw new Error('lookup failed');
+                    const json = await res.json();
+                    const data = json.data ?? json;
                     setIntelligenceData(data);
 
                     // Autofill if new and found
@@ -129,7 +131,10 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                     });
                     if (store.courierId) query.append('courierId', store.courierId);
 
-                    const { data } = await api.get(`/api/couriers/engine/coverage?${query.toString()}`);
+                    const covRes = await apiFetch(`/api/couriers/engine/coverage?${query.toString()}`);
+                    if (!covRes.ok) throw new Error('coverage failed');
+                    const covJson = await covRes.json();
+                    const data = covJson.data ?? covJson;
 
                     if (data && data.length > 0) {
                         // Filter standard communes to only those covered by returned rules
@@ -173,36 +178,45 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             setIsCalculatingPrice(true);
             try {
                 // First get recommendation
-                const recRes = await api.get('/api/couriers/engine/recommend', {
-                    params: {
-                        wilayaCode: store.shippingWilayaCode,
-                        commune: store.shippingCommune,
-                        deliveryType: store.shippingDeliveryType
-                    }
+                const recQuery = new URLSearchParams({
+                    wilayaCode: store.shippingWilayaCode,
+                    commune: store.shippingCommune,
+                    deliveryType: String(store.shippingDeliveryType)
                 });
+                const recRes = await apiFetch(`/api/couriers/engine/recommend?${recQuery.toString()}`);
+                if (!recRes.ok) throw new Error('recommend failed');
+                const recJson = await recRes.json();
+                const recData = recJson.data ?? recJson;
 
-                if (recRes.data.recommended) {
-                    setRecommendedCourier(recRes.data.recommended);
+                if (recData.recommended) {
+                    setRecommendedCourier(recData.recommended);
                 } else {
                     setRecommendedCourier(null);
                 }
 
                 // If courier is assigned, calculate exact price
                 if (store.courierId && !store.manualPricing) {
-                    const priceRes = await api.post('/api/couriers/engine/calculate-price', {
-                        courierId: store.courierId,
-                        wilayaCode: store.shippingWilayaCode,
-                        commune: store.shippingCommune,
-                        deliveryType: store.shippingDeliveryType,
-                        totalWeight: store.shippingWeight,
-                        productIds: store.products.map(p => p.variantId || p.baseProductId).filter(Boolean)
+                    const priceRes = await apiFetch('/api/couriers/engine/calculate-price', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            courierId: store.courierId,
+                            wilayaCode: store.shippingWilayaCode,
+                            commune: store.shippingCommune,
+                            deliveryType: store.shippingDeliveryType,
+                            totalWeight: store.shippingWeight,
+                            productIds: store.products.map(p => p.variantId || p.baseProductId).filter(Boolean)
+                        })
                     });
-                    if (priceRes.data && priceRes.data.price !== undefined) {
-                        store.updateField('courierFee', priceRes.data.price);
+                    if (!priceRes.ok) throw new Error('calculate-price failed');
+                    const priceJson = await priceRes.json();
+                    const priceData = priceJson.data ?? priceJson;
+                    if (priceData && priceData.price !== undefined) {
+                        store.updateField('courierFee', priceData.price);
                     }
-                } else if (!store.courierId && recRes.data.recommended && !store.manualPricing) {
+                } else if (!store.courierId && recData.recommended && !store.manualPricing) {
                     // Auto suggest price if no courier selected but we have a recommendation
-                     store.updateField('courierFee', recRes.data.recommended.price);
+                     store.updateField('courierFee', recData.recommended.price);
                 }
             } catch (err) {
                 // Pricing calculation is best-effort; user can set price manually

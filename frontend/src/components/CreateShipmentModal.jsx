@@ -69,7 +69,6 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
     const fetchPendingOrders = async () => {
         setLoadingOrders(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await apiFetch('/api/sales/orders');
             const json = await res.json();
 
@@ -126,7 +125,6 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
         setSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
             // Clean up flags before sending
             const payload = {
                 ...formData,

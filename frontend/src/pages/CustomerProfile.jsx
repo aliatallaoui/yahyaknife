@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { ArrowLeft, ArrowRight, User, Phone, MapPin, Mail, Calendar, ShieldAlert, CheckCircle2, Package, TrendingUp, AlertCircle, RefreshCw, MessageSquare, Plus } from 'lucide-react';
 import clsx from 'clsx';
-import moment from 'moment';
+import { fmtShortDate, fmtMediumDate, fmtShortDateTime, fromNow } from '../utils/dateUtils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import PageHeader from '../components/PageHeader';
@@ -102,7 +102,7 @@ export default function CustomerProfile() {
 
     // Process Orders for Chart
     const orderVolumeData = [...orders].reverse().map(o => ({
-        date: moment(o.createdAt).format('MMM DD'),
+        date: fmtShortDate(o.createdAt),
         amount: o.totalAmount || 0,
         status: o.status
     }));
@@ -205,14 +205,14 @@ export default function CustomerProfile() {
                         <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400"><Calendar className="w-5 h-5" /></div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase">{t('crm.joinedText', 'Joined')}</p>
-                            <p className="text-sm font-semibold text-gray-900">{moment(customer.joinDate).format('MMM DD, YYYY')}</p>
+                            <p className="text-sm font-semibold text-gray-900">{fmtMediumDate(customer.joinDate)}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400"><RefreshCw className="w-5 h-5" /></div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase">{t('crm.lastActiveText', 'Last Active')}</p>
-                            <p className="text-sm font-semibold text-gray-900">{customer.lastInteractionDate ? moment(customer.lastInteractionDate).fromNow() : t('crm.neverActive', 'Never')}</p>
+                            <p className="text-sm font-semibold text-gray-900">{customer.lastInteractionDate ? fromNow(customer.lastInteractionDate) : t('crm.neverActive', 'Never')}</p>
                         </div>
                     </div>
                 </div>
@@ -408,7 +408,7 @@ export default function CustomerProfile() {
                                                     {order.orderNumber || order._id.toString().substring(18)}
                                                 </td>
                                                 <td className="p-4 text-gray-500">
-                                                    {moment(order.createdAt).format('MMM DD, YYYY - HH:mm')}
+                                                    {fmtShortDateTime(order.createdAt)}
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col">
@@ -463,7 +463,7 @@ export default function CustomerProfile() {
                                                     {ticket.ticketNumber}
                                                 </td>
                                                 <td className="p-4 text-gray-500">
-                                                    {moment(ticket.createdAt).format('MMM DD, YYYY')}
+                                                    {fmtMediumDate(ticket.createdAt)}
                                                 </td>
                                                 <td className="p-4">
                                                     <span className="font-semibold text-gray-700 block truncate max-w-[250px]">{ticket.subject}</span>

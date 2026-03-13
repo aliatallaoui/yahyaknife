@@ -40,7 +40,6 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
         setIsRunning(true);
         setIsDone(false);
         abortRef.current = false;
-        const token = localStorage.getItem('token');
 
         for (let i = 0; i < dispatchItems.length; i++) {
             if (abortRef.current) break;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
-import api from '../../utils/axiosInstance';
+import { apiFetch } from '../../utils/apiFetch';
 import { Shield, Plus, Edit2, Trash2, Save, X, Copy, Search, Users, Lock } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import clsx from 'clsx';
@@ -32,11 +32,14 @@ export default function SettingsRoles() {
         try {
             setLoading(true);
             const [rolesRes, catalogRes] = await Promise.all([
-                api.get('/api/roles'),
-                api.get('/api/roles/catalog')
+                apiFetch('/api/roles'),
+                apiFetch('/api/roles/catalog')
             ]);
-            setRoles(rolesRes.data);
-            setCatalog(catalogRes.data);
+            if (!rolesRes.ok || !catalogRes.ok) throw new Error('Failed to load');
+            const rolesJson = await rolesRes.json();
+            const catalogJson = await catalogRes.json();
+            setRoles(rolesJson.data ?? rolesJson);
+            setCatalog(catalogJson.data ?? catalogJson);
         } catch (err) {
             setError(t('rbac.loadError', 'Failed to load roles data'));
         } finally {
@@ -124,11 +127,29 @@ export default function SettingsRoles() {
 
             let savedRole;
             if (selectedRole) {
-                const res = await api.put(`/api/roles/${selectedRole._id}`, editForm);
-                savedRole = res.data;
+                const res = await apiFetch(`/api/roles/${selectedRole._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editForm)
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || t('rbac.saveRoleError', 'Failed to save role'));
+                }
+                const json = await res.json();
+                savedRole = json.data ?? json;
             } else {
-                const res = await api.post('/api/roles', editForm);
-                savedRole = res.data;
+                const res = await apiFetch('/api/roles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editForm)
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || t('rbac.saveRoleError', 'Failed to save role'));
+                }
+                const json = await res.json();
+                savedRole = json.data ?? json;
             }
 
             await fetchData();
@@ -142,7 +163,7 @@ export default function SettingsRoles() {
                 setEditForm({ name: savedRole.name, description: savedRole.description || '', permissions: [...savedRole.permissions] });
             }
         } catch (err) {
-            setError(err.response?.data?.message || t('rbac.saveRoleError', 'Failed to save role'));
+            setError(err.message || t('rbac.saveRoleError', 'Failed to save role'));
         } finally {
             setSaving(false);
         }
@@ -159,12 +180,16 @@ export default function SettingsRoles() {
             danger: true,
             onConfirm: async () => {
                 try {
-                    await api.delete(`/api/roles/${selectedRole._id}`);
+                    const res = await apiFetch(`/api/roles/${selectedRole._id}`, { method: 'DELETE' });
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || t('rbac.deleteRoleError', 'Failed to delete role'));
+                    }
                     setSelectedRole(null);
                     setIsEditing(false);
                     await fetchData();
                 } catch (err) {
-                    setError(err.response?.data?.message || t('rbac.deleteRoleError', 'Failed to delete role'));
+                    setError(err.message || t('rbac.deleteRoleError', 'Failed to delete role'));
                 }
             },
         });

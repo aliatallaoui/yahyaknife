@@ -1,6 +1,6 @@
 import { AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import moment from 'moment';
+import { fromNow } from '../../utils/dateUtils';
 
 export default function CustomerIntelligencePanel({ data, isSearching }) {
     const { t } = useTranslation();
@@ -57,7 +57,7 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
                         {exists && <span className="text-xs font-medium px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">ID: {customer._id.substring(customer._id.length - 6)}</span>}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">
-                        {exists ? t('customerIntel.joined', { time: moment(customer.joinDate).fromNow() }) : t('customerIntel.noRecords')}
+                        {exists ? t('customerIntel.joined', { time: fromNow(customer.joinDate) }) : t('customerIntel.noRecords')}
                     </p>
                 </div>
                 <RiskBadge />
@@ -99,7 +99,7 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
                             <div key={dup._id} className="bg-gray-50 rounded-lg p-2.5 text-xs flex items-center justify-between border border-gray-100">
                                 <div>
                                     <span className="font-semibold text-gray-900 block">{dup.orderId}</span>
-                                    <span className="text-gray-500 block">{moment(dup.date).fromNow()}</span>
+                                    <span className="text-gray-500 block">{fromNow(dup.date)}</span>
                                 </div>
                                 <div className="text-right">
                                     <span className="font-semibold text-blue-600 block text-right" dir="ltr">{Number(dup.totalAmount).toLocaleString()} <span className="text-[10px] text-blue-500">{t('common.dzd', 'DZD')}</span></span>

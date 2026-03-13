@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { apiFetch } from '../../utils/apiFetch';
-import moment from 'moment';
 import { X, MapPin, Package, CreditCard, Truck, UserCircle, Save, Phone, Clock, FileText, CheckCircle2, Copy, Check, Lock } from 'lucide-react';
+import { fmtFullDateTime } from '../../utils/dateUtils';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
@@ -66,10 +66,9 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
     useEffect(() => {
         const fetchDeps = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const usrRes = await apiFetch('/api/users');
+                const usrRes = await apiFetch('/api/call-center/agents');
                 const usrData = await usrRes.json();
-                setAgents((usrData || []).filter(u => ['Admin', 'Call Center Agent'].includes(u.role?.name || u.role)));
+                setAgents((usrData.data ?? usrData) || []);
             } catch (err) { /* agent list fetch is best-effort */ }
         };
         fetchDeps();
@@ -80,7 +79,6 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
     const handleSavePrimary = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await apiFetch(`/api/sales/orders/${order._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -121,7 +119,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                         </div>
                         <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
-                            {moment(order.createdAt).format('MMMM Do YYYY, h:mm a')}
+                            {fmtFullDateTime(order.createdAt)}
                         </span>
                     </div>
                     <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
@@ -152,6 +150,13 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                                     <option value="">{t('ordersControl.bulk.unassignAgent', { defaultValue: 'Unassigned' })}</option>
                                     {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
                                 </select>
+                                {order?.assignmentMode && (
+                                    <span className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border w-fit ${
+                                        { manual: 'bg-violet-50 text-violet-700 border-violet-200', product: 'bg-blue-50 text-blue-700 border-blue-200', store: 'bg-cyan-50 text-cyan-700 border-cyan-200', round_robin: 'bg-amber-50 text-amber-700 border-amber-200', claim: 'bg-emerald-50 text-emerald-700 border-emerald-200' }[order.assignmentMode] || 'bg-gray-50 text-gray-600 border-gray-200'
+                                    }`}>
+                                        {t(`callcenter.mode.${order.assignmentMode}`, order.assignmentMode.replace('_', ' '))}
+                                    </span>
+                                )}
                             </div>
                         </div>
 

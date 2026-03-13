@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { X, Search, FileText, AlertTriangle } from 'lucide-react';
-import moment from 'moment';
 import { InventoryContext } from '../context/InventoryContext';
+import { fmtShortDateTime } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
 import useModalDismiss from '../hooks/useModalDismiss';
 
@@ -80,7 +80,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                                     {ledger.map((movement) => (
                                         <tr key={movement._id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {moment(movement.date).format('MMM DD, YYYY HH:mm')}
+                                                {fmtShortDateTime(movement.date)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border

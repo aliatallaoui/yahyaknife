@@ -91,7 +91,7 @@ export default function InsightFeed() {
                         {loading ? (
                             <div className="flex items-center gap-2 text-indigo-300">
                                 <RefreshCcw className="w-4 h-4 animate-spin" />
-                                <span className="text-sm font-medium">Analyzing ecosystem...</span>
+                                <span className="text-sm font-medium">{t('intelligence.analyzing', 'Analyzing ecosystem...')}</span>
                             </div>
                         ) : (
                             insights.alerts.map((alert, idx) => (

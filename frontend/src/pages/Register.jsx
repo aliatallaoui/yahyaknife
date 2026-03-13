@@ -31,7 +31,7 @@ export default function Register() {
 
         try {
             await register(name, email, password, businessName);
-            navigate('/orders-hub');
+            navigate('/onboarding');
         } catch (err) {
             setError(err.message);
         } finally {

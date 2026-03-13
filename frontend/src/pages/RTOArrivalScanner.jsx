@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PackageX, ScanLine, CheckCircle, RefreshCw, XCircle, FileText, ArrowLeftRight } from 'lucide-react';
+import { PackageX, ScanLine, CheckCircle, RefreshCw, XCircle, FileText, ArrowLeftRight, Lock } from 'lucide-react';
 import { apiFetch } from '../utils/apiFetch';
+import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function RTOArrivalScanner() {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!hasPermission('inventory.adjust')) navigate('/dashboard');
+    }, [hasPermission, navigate]);
     const [scanInput, setScanInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [lastProcessed, setLastProcessed] = useState(null);

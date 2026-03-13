@@ -194,7 +194,7 @@ export default function CourierSettings() {
                         <div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 font-bold">{t('couriers.reqMin', 'Requests / Minute')}</span>
-                                <span className="font-bold text-gray-900">{settings.currentUsage?.minuteCount || 0} used</span>
+                                <span className="font-bold text-gray-900">{settings.currentUsage?.minuteCount || 0} {t('couriers.used', 'used')}</span>
                             </div>
                             <div className="mt-3">
                                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{t('couriers.limitConfig', 'Configuration Limit')}</label>
@@ -215,7 +215,7 @@ export default function CourierSettings() {
                         <div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 font-bold">{t('couriers.reqHour', 'Requests / Hour')}</span>
-                                <span className="font-bold text-gray-900">{settings.currentUsage?.hourCount || 0} used</span>
+                                <span className="font-bold text-gray-900">{settings.currentUsage?.hourCount || 0} {t('couriers.used', 'used')}</span>
                             </div>
                             <div className="mt-3">
                                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{t('couriers.limitConfig', 'Configuration Limit')}</label>
@@ -236,7 +236,7 @@ export default function CourierSettings() {
                         <div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 font-bold">{t('couriers.dailyQuota', 'Daily Quota')}</span>
-                                <span className="font-bold text-gray-900">{settings.currentUsage?.dayCount || 0} used</span>
+                                <span className="font-bold text-gray-900">{settings.currentUsage?.dayCount || 0} {t('couriers.used', 'used')}</span>
                             </div>
                             <div className="mt-3">
                                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{t('couriers.limitConfig', 'Configuration Limit')}</label>

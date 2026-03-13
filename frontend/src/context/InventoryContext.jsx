@@ -58,11 +58,15 @@ export const InventoryProvider = ({ children }) => {
         } catch { /* non-fatal */ }
     };
 
-    const createProduct = async (productData) => {
+    const createProduct = async (formData) => {
+        // formData can be FormData (with images) or plain object (legacy)
+        const isFormData = formData instanceof FormData;
         const response = await apiFetch(`/api/inventory/products`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(productData)
+            ...(isFormData
+                ? { body: formData } // browser sets multipart Content-Type automatically
+                : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }
+            )
         });
 
         if (!response.ok) {
@@ -77,10 +81,13 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updateProduct = async (id, updates) => {
+        const isFormData = updates instanceof FormData;
         const response = await apiFetch(`/api/inventory/products/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updates)
+            ...(isFormData
+                ? { body: updates }
+                : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }
+            )
         });
 
         if (!response.ok) {

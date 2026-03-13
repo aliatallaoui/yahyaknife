@@ -1,13 +1,45 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { Camera, Mail, Phone, Building, Briefcase } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '../../utils/apiFetch';
+import toast from 'react-hot-toast';
 
 export default function SettingsProfile() {
-    const { user } = useContext(AuthContext);
+    const { user, refetchUser } = useContext(AuthContext);
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsProfile' });
     const isAr = i18n.language === 'ar';
+
+    const [name, setName] = useState(user?.name || '');
+    const [phone, setPhone] = useState(user?.phone || '');
+    const [jobTitle, setJobTitle] = useState(user?.jobTitle || '');
+    const [saving, setSaving] = useState(false);
+
+    const handleDiscard = () => {
+        setName(user?.name || '');
+        setPhone(user?.phone || '');
+        setJobTitle(user?.jobTitle || '');
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const res = await apiFetch('/api/users/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, jobTitle })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed');
+            toast.success(t('saveSuccess', 'Profile saved'));
+            await refetchUser();
+        } catch (err) {
+            toast.error(err.message || t('saveError', 'Failed to save profile'));
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <div className="p-8 animate-in fade-in duration-300">
@@ -29,11 +61,11 @@ export default function SettingsProfile() {
                 </div>
             </div>
 
-            <form className="space-y-6 max-w-2xl">
+            <form className="space-y-6 max-w-2xl" onSubmit={e => e.preventDefault()}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label htmlFor="prof-name" className="block text-xs font-bold text-gray-700 mb-1">{t('lblFullName')}</label>
-                        <input id="prof-name" type="text" autoComplete="name" defaultValue={user?.name} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <input id="prof-name" type="text" autoComplete="name" value={name} onChange={e => setName(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                     <div>
                         <label htmlFor="prof-display" className="block text-xs font-bold text-gray-700 mb-1">{t('lblDisplayName')}</label>
@@ -49,7 +81,7 @@ export default function SettingsProfile() {
                     </div>
                     <div>
                         <label htmlFor="prof-phone" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {t('lblPhone')}</label>
-                        <input id="prof-phone" type="tel" autoComplete="tel" dir="ltr" placeholder={t('phPhone')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <input id="prof-phone" type="tel" autoComplete="tel" dir="ltr" placeholder={t('phPhone')} value={phone} onChange={e => setPhone(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                 </div>
 
@@ -60,13 +92,15 @@ export default function SettingsProfile() {
                     </div>
                     <div>
                         <label htmlFor="prof-job" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {t('lblJobTitle')}</label>
-                        <input id="prof-job" type="text" placeholder={t('phJobTitle')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <input id="prof-job" type="text" placeholder={t('phJobTitle')} value={jobTitle} onChange={e => setJobTitle(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                 </div>
 
                 <div className={clsx("pt-6 flex gap-3", isAr ? "justify-start" : "justify-end")}>
-                    <button type="button" className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">{t('btnDiscard')}</button>
-                    <button type="button" className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700">{t('btnSave')}</button>
+                    <button type="button" onClick={handleDiscard} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-200">{t('btnDiscard')}</button>
+                    <button type="button" onClick={handleSave} disabled={saving} className={clsx("px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700", saving && "opacity-50 cursor-not-allowed")}>
+                        {saving ? t('btnSaving', 'Saving...') : t('btnSave')}
+                    </button>
                 </div>
             </form>
         </div>

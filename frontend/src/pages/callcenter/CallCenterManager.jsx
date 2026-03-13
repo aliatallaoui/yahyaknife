@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Users, PhoneCall, CheckCircle, PackageCheck,
     RefreshCw, Zap, DollarSign, AlertTriangle, X,
     Clock, XCircle, Inbox, Timer, BarChart3, Bell,
     TrendingUp, TrendingDown, MapPin, Activity,
-    ShieldAlert, Undo2
+    ShieldAlert, Undo2, Settings, Plus, Trash2, ToggleLeft, ToggleRight
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiFetch } from '../../utils/apiFetch';
 import AgentPerformanceModal from '../../components/callcenter/AgentPerformanceModal';
+import { AuthContext } from '../../context/AuthContext';
 
 function formatMs(ms) {
     if (!ms || ms <= 0) return '—';
@@ -21,6 +23,10 @@ function formatMs(ms) {
 
 export default function CallCenterManager() {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
+    const canManage = hasPermission('callcenter.manage_assignments');
+    const canViewReports = hasPermission('callcenter.view_reports');
+    const canManageRules = hasPermission('callcenter.manage_rules');
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [assignmentLoading, setAssignmentLoading] = useState(false);
@@ -128,7 +134,7 @@ export default function CallCenterManager() {
             const res = await apiFetch(`/api/call-center/assign-orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: 'Auto_RoundRobin' })
+                body: JSON.stringify({ mode: 'Auto_Distribute' })
             });
             const resData = await res.json();
             if (!res.ok) throw { response: { data: resData } };
@@ -198,6 +204,7 @@ export default function CallCenterManager() {
                     <p className="text-gray-500 text-sm mt-1">{t('callcenter.manager_subtitle', 'Monitor agent performance and distribute workloads.')}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {canManage && (
                     <button
                         onClick={triggerAutoAssignment}
                         disabled={assignmentLoading}
@@ -207,6 +214,7 @@ export default function CallCenterManager() {
                         <span className="hidden sm:inline">{t('callcenter.action.auto_assign', 'Auto-Assign Orders')}</span>
                         <span className="sm:hidden">{t('callcenter.action.auto_assign_short', 'Auto-Assign')}</span>
                     </button>
+                    )}
                     <button onClick={refresh} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -217,9 +225,10 @@ export default function CallCenterManager() {
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
                 {[
                     { key: 'operations', label: t('callcenter.tab.operations', 'Operations'), icon: Activity },
-                    { key: 'supervisor', label: t('callcenter.tab.supervisor', 'Review Queue'), icon: ShieldAlert, badge: supervisorQueue?.counts?.total },
-                    { key: 'analytics', label: t('callcenter.tab.analytics', 'Analytics'), icon: BarChart3 }
-                ].map(({ key, label, icon: Icon, badge }) => (
+                    canManage && { key: 'supervisor', label: t('callcenter.tab.supervisor', 'Review Queue'), icon: ShieldAlert, badge: supervisorQueue?.counts?.total },
+                    canViewReports && { key: 'analytics', label: t('callcenter.tab.analytics', 'Analytics'), icon: BarChart3 },
+                    canManageRules && { key: 'rules', label: t('callcenter.tab.rules', 'Assignment Rules'), icon: Settings }
+                ].filter(Boolean).map(({ key, label, icon: Icon, badge }) => (
                     <button
                         key={key}
                         onClick={() => setActiveTab(key)}
@@ -470,6 +479,11 @@ export default function CallCenterManager() {
                     setDays={setAnalyticsDays}
                     t={t}
                 />
+            )}
+
+            {/* ─── ASSIGNMENT RULES TAB ─── */}
+            {activeTab === 'rules' && canManageRules && (
+                <AssignmentRulesView t={t} />
             )}
 
             {/* Agent Performance Drill-down Modal */}
@@ -824,6 +838,283 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                             )}
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Assignment Rules View ────────────────────────────────────────
+function AssignmentRulesView({ t }) {
+    const [rules, setRules] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [form, setForm] = useState({ type: 'product', sourceId: '', agent: '' });
+    const [products, setProducts] = useState([]);
+    const [agents, setAgents] = useState([]);
+
+    const fetchRules = async () => {
+        setLoading(true);
+        try {
+            const res = await apiFetch('/api/call-center/assignment-rules');
+            const json = await res.json();
+            setRules((json.data ?? json) || []);
+        } catch {
+            setRules([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchOptions = async () => {
+        try {
+            const [prodRes, usersRes] = await Promise.all([
+                apiFetch('/api/inventory/products'),
+                apiFetch('/api/call-center/agents'),
+            ]);
+            const prodJson = await prodRes.json();
+            const usersJson = await usersRes.json();
+            setProducts((prodJson.data ?? prodJson)?.products || prodJson.data || []);
+            setAgents((usersJson.data ?? usersJson) || []);
+        } catch { /* ignore */ }
+    };
+
+    useEffect(() => {
+        fetchRules();
+        fetchOptions();
+    }, []);
+
+    const handleCreate = async () => {
+        if (!form.sourceId || !form.agent) {
+            toast.error(t('callcenter.rules.fillAll', 'Please fill all fields'));
+            return;
+        }
+        setSaving(true);
+        try {
+            const res = await apiFetch('/api/call-center/assignment-rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${res.status}`);
+            }
+            toast.success(t('callcenter.rules.created', 'Rule created'));
+            setShowForm(false);
+            setForm({ type: 'product', sourceId: '', agent: '' });
+            fetchRules();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleToggle = async (rule) => {
+        try {
+            const res = await apiFetch(`/api/call-center/assignment-rules/${rule._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !rule.isActive }),
+            });
+            if (!res.ok) throw new Error('Failed');
+            fetchRules();
+        } catch {
+            toast.error(t('callcenter.rules.toggleFailed', 'Failed to toggle rule'));
+        }
+    };
+
+    const handleDelete = async (ruleId) => {
+        try {
+            const res = await apiFetch(`/api/call-center/assignment-rules/${ruleId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed');
+            toast.success(t('callcenter.rules.deleted', 'Rule deleted'));
+            fetchRules();
+        } catch {
+            toast.error(t('callcenter.rules.deleteFailed', 'Failed to delete rule'));
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <RefreshCw className="w-6 h-6 animate-spin text-indigo-500" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 text-sm">
+                            <Settings className="w-4 h-4 text-indigo-600" />
+                            {t('callcenter.rules.title', 'Assignment Rules')}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {t('callcenter.rules.desc', 'Map products or stores to specific agents. Priority: Manual > Product > Store > Round-Robin.')}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-bold text-xs"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        {t('callcenter.rules.add', 'Add Rule')}
+                    </button>
+                </div>
+
+                {/* Create Form */}
+                {showForm && (
+                    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                    {t('callcenter.rules.type', 'Type')}
+                                </label>
+                                <select
+                                    value={form.type}
+                                    onChange={e => setForm({ ...form, type: e.target.value, sourceId: '' })}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                >
+                                    <option value="product">{t('callcenter.rules.typeProduct', 'Product')}</option>
+                                    <option value="store">{t('callcenter.rules.typeStore', 'Store / Sales Channel')}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                    {form.type === 'product' ? t('callcenter.rules.product', 'Product') : t('callcenter.rules.store', 'Store')}
+                                </label>
+                                <select
+                                    value={form.sourceId}
+                                    onChange={e => setForm({ ...form, sourceId: e.target.value })}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                >
+                                    <option value="">{t('callcenter.rules.select', '-- Select --')}</option>
+                                    {form.type === 'product' && products.map(p => (
+                                        <option key={p._id} value={p._id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                    {t('callcenter.rules.agent', 'Assign To Agent')}
+                                </label>
+                                <select
+                                    value={form.agent}
+                                    onChange={e => setForm({ ...form, agent: e.target.value })}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                >
+                                    <option value="">{t('callcenter.rules.select', '-- Select --')}</option>
+                                    {agents.map(a => (
+                                        <option key={a._id} value={a._id}>{a.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 justify-end">
+                            <button
+                                onClick={() => { setShowForm(false); setForm({ type: 'product', sourceId: '', agent: '' }); }}
+                                className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                onClick={handleCreate}
+                                disabled={saving}
+                                className="px-4 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                            >
+                                {saving ? t('common.saving', 'Saving...') : t('callcenter.rules.save', 'Save Rule')}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Rules Table */}
+                {rules.length === 0 ? (
+                    <div className="text-center py-12">
+                        <Inbox className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                            {t('callcenter.rules.empty', 'No assignment rules yet. Orders will use round-robin by default.')}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="cf-table">
+                            <thead>
+                                <tr>
+                                    <th>{t('callcenter.rules.type', 'Type')}</th>
+                                    <th>{t('callcenter.rules.source', 'Source')}</th>
+                                    <th>{t('callcenter.rules.agent', 'Agent')}</th>
+                                    <th>{t('callcenter.rules.status', 'Status')}</th>
+                                    <th className="text-end">{t('callcenter.rules.actions', 'Actions')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rules.map(rule => (
+                                    <tr key={rule._id}>
+                                        <td className="px-5 py-3">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                rule.type === 'product'
+                                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                                    : 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300'
+                                            }`}>
+                                                {rule.type === 'product' ? t('callcenter.rules.typeProduct', 'Product') : t('callcenter.rules.typeStore', 'Store')}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                            {rule.sourceName || (typeof rule.sourceId === 'object' ? rule.sourceId?.name : rule.sourceId) || '—'}
+                                        </td>
+                                        <td className="px-5 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                            {rule.agentName || (typeof rule.agent === 'object' ? rule.agent?.name : rule.agent) || '—'}
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <button onClick={() => handleToggle(rule)} className="focus:outline-none">
+                                                {rule.isActive ? (
+                                                    <ToggleRight className="w-6 h-6 text-emerald-500" />
+                                                ) : (
+                                                    <ToggleLeft className="w-6 h-6 text-gray-400" />
+                                                )}
+                                            </button>
+                                        </td>
+                                        <td className="px-5 py-3 text-end">
+                                            <button
+                                                onClick={() => handleDelete(rule._id)}
+                                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                title={t('common.delete', 'Delete')}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* Priority Explanation */}
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4">
+                <h4 className="font-bold text-indigo-800 dark:text-indigo-300 text-xs mb-2">
+                    {t('callcenter.rules.priorityTitle', 'Assignment Priority Order')}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                    {[
+                        { n: '1', label: t('callcenter.rules.p1', 'Manual (manager sets agent)'), cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
+                        { n: '2', label: t('callcenter.rules.p2', 'Product Rule'), cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+                        { n: '3', label: t('callcenter.rules.p3', 'Store Rule'), cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' },
+                        { n: '4', label: t('callcenter.rules.p4', 'Round-Robin (default)'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+                    ].map(p => (
+                        <span key={p.n} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${p.cls}`}>
+                            <span className="w-4 h-4 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-[10px] font-black">{p.n}</span>
+                            {p.label}
+                        </span>
+                    ))}
                 </div>
             </div>
         </div>

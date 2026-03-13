@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/axiosInstance';
+import { apiFetch } from '../../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Edit3, ShieldAlert, ArrowDownUp, AlertTriangle, Save } from 'lucide-react';
 import clsx from 'clsx';
@@ -38,10 +38,12 @@ export default function CourierPricingEngine({ courierId }) {
 
     const fetchRules = async () => {
         try {
-            const res = await api.get(`/api/couriers/${courierId}/pricing`);
-            setRules(res.data);
+            const res = await apiFetch(`/api/couriers/${courierId}/pricing`);
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || t('couriers.loadPricingFailed', 'Failed to load pricing rules.'));
+            setRules(json.data ?? json);
         } catch (error) {
-            setErrorMsg(error.response?.data?.message || t('couriers.loadPricingFailed', 'Failed to load pricing rules.'));
+            setErrorMsg(error.message || t('couriers.loadPricingFailed', 'Failed to load pricing rules.'));
         } finally {
             setLoading(false);
         }
@@ -55,15 +57,23 @@ export default function CourierPricingEngine({ courierId }) {
             if (payload.minWeight === '') delete payload.minWeight;
             if (payload.maxWeight === '') delete payload.maxWeight;
 
-            if (formData._id) {
-                await api.put(`/api/couriers/${courierId}/pricing/${formData._id}`, payload);
-            } else {
-                await api.post(`/api/couriers/${courierId}/pricing`, payload);
+            const url = formData._id
+                ? `/api/couriers/${courierId}/pricing/${formData._id}`
+                : `/api/couriers/${courierId}/pricing`;
+            const method = formData._id ? 'PUT' : 'POST';
+            const res = await apiFetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errJson = await res.json();
+                throw new Error(errJson.message || t('couriers.saveRuleFailed', 'Error saving rule'));
             }
             fetchRules();
             handleCancelEdit();
         } catch (error) {
-            setErrorMsg(error.response?.data?.message || t('couriers.saveRuleFailed', 'Error saving rule'));
+            setErrorMsg(error.message || t('couriers.saveRuleFailed', 'Error saving rule'));
         }
     };
 
@@ -73,7 +83,8 @@ export default function CourierPricingEngine({ courierId }) {
             danger: true,
             onConfirm: async () => {
                 try {
-                    await api.delete(`/api/couriers/${courierId}/pricing/${ruleId}`);
+                    const res = await apiFetch(`/api/couriers/${courierId}/pricing/${ruleId}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error();
                     fetchRules();
                 } catch (error) {
                     setErrorMsg(t('couriers.deleteRuleFailed', 'Failed to delete pricing rule.'));
@@ -112,7 +123,7 @@ export default function CourierPricingEngine({ courierId }) {
         setIsEditing(false);
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Pricing Engine...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading...')}</div>;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -155,10 +166,10 @@ export default function CourierPricingEngine({ courierId }) {
                                 onChange={e => setFormData({ ...formData, ruleType: e.target.value })}
                                 className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                             >
-                                <option value="Flat">🌍 Global Flat Rate (Fallback)</option>
-                                <option value="Wilaya">📍 Wilaya Based</option>
-                                <option value="Wilaya+Commune">📌 Wilaya + Specific Commune</option>
-                                <option value="Weight">⚖️ Weight Based</option>
+                                <option value="Flat">🌍 {t('couriers.ruleFlat', 'Global Flat Rate (Fallback)')}</option>
+                                <option value="Wilaya">📍 {t('couriers.ruleWilaya', 'Wilaya Based')}</option>
+                                <option value="Wilaya+Commune">📌 {t('couriers.ruleWilayaCommune', 'Wilaya + Specific Commune')}</option>
+                                <option value="Weight">⚖️ {t('couriers.ruleWeight', 'Weight Based')}</option>
                             </select>
                         </div>
 
@@ -195,7 +206,7 @@ export default function CourierPricingEngine({ courierId }) {
                         {formData.ruleType === 'Weight' && (
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label htmlFor="rule-min-weight" className="block text-xs font-bold text-gray-600 mb-1">Min Weight (kg)</label>
+                                    <label htmlFor="rule-min-weight" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.minWeight', 'Min Weight (kg)')}</label>
                                     <input
                                         id="rule-min-weight"
                                         type="number"
@@ -206,7 +217,7 @@ export default function CourierPricingEngine({ courierId }) {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="rule-max-weight" className="block text-xs font-bold text-gray-600 mb-1">Max Weight (kg)</label>
+                                    <label htmlFor="rule-max-weight" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.maxWeight', 'Max Weight (kg)')}</label>
                                     <input
                                         id="rule-max-weight"
                                         type="number"
@@ -227,9 +238,9 @@ export default function CourierPricingEngine({ courierId }) {
                                 onChange={e => setFormData({ ...formData, deliveryType: e.target.value })}
                                 className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                             >
-                                <option value="">Any Delivery Type (Default)</option>
-                                <option value="0">Home Delivery Only</option>
-                                <option value="1">Desk / Office Only</option>
+                                <option value="">{t('couriers.deliveryAny', 'Any Delivery Type (Default)')}</option>
+                                <option value="0">{t('couriers.deliveryHome', 'Home Delivery Only')}</option>
+                                <option value="1">{t('couriers.deliveryDesk', 'Desk / Office Only')}</option>
                             </select>
                         </div>
 
@@ -248,7 +259,7 @@ export default function CourierPricingEngine({ courierId }) {
                             </div>
                             <div>
                                 <label htmlFor="rule-priority" className="block text-xs font-black text-gray-900 mb-1 flex items-center justify-between">
-                                    Priority Index
+                                    {t('couriers.priorityIndex', 'Priority Index')}
                                     <ArrowDownUp className="w-3 h-3 text-gray-400" />
                                 </label>
                                 <input
@@ -279,18 +290,18 @@ export default function CourierPricingEngine({ courierId }) {
                         <table className="w-full text-start rtl:text-right whitespace-nowrap text-sm">
                             <thead className="bg-gray-50/80 text-gray-500 text-[10px] uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-4 py-3 font-bold">Priority</th>
-                                    <th className="px-4 py-3 font-bold">Rule Type</th>
-                                    <th className="px-4 py-3 font-bold">Target</th>
-                                    <th className="px-4 py-3 font-bold text-end">Price</th>
-                                    <th className="px-4 py-3 font-bold text-center">Actions</th>
+                                    <th className="px-4 py-3 font-bold">{t('couriers.colPriority', 'Priority')}</th>
+                                    <th className="px-4 py-3 font-bold">{t('couriers.colRuleType', 'Rule Type')}</th>
+                                    <th className="px-4 py-3 font-bold">{t('couriers.colTarget', 'Target')}</th>
+                                    <th className="px-4 py-3 font-bold text-end">{t('couriers.colPrice', 'Price')}</th>
+                                    <th className="px-4 py-3 font-bold text-center">{t('common.actions', 'Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {rules.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
-                                            No active pricing rules. Add a rule to calculate live delivery fees.
+                                            {t('couriers.noPricingRules', 'No active pricing rules. Add a rule to calculate live delivery fees.')}
                                         </td>
                                     </tr>
                                 ) : (
@@ -308,15 +319,15 @@ export default function CourierPricingEngine({ courierId }) {
                                                 {rule.ruleType}
                                                 {rule.deliveryType !== undefined && rule.deliveryType !== null && (
                                                     <span className="ml-2 inline-block px-2 border rounded text-[10px] text-gray-500 bg-white">
-                                                        {rule.deliveryType === 0 ? 'Home' : 'Office'}
+                                                        {rule.deliveryType === 0 ? t('couriers.homeDelivery', 'Home') : t('couriers.officeDelivery', 'Office')}
                                                     </span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 text-gray-600 font-medium">
-                                                {rule.ruleType === 'Flat' && <span className="text-gray-400 italic">Global Fallback</span>}
-                                                {rule.ruleType === 'Wilaya' && <span>Wilaya: {rule.wilayaCode}</span>}
+                                                {rule.ruleType === 'Flat' && <span className="text-gray-400 italic">{t('couriers.globalFallback', 'Global Fallback')}</span>}
+                                                {rule.ruleType === 'Wilaya' && <span>{t('couriers.wilayaLabel', 'Wilaya')}: {rule.wilayaCode}</span>}
                                                 {rule.ruleType === 'Wilaya+Commune' && <span>{rule.commune} ({rule.wilayaCode})</span>}
-                                                {rule.ruleType === 'Weight' && <span>{rule.minWeight || 0}kg - {rule.maxWeight || 'Max'}kg</span>}
+                                                {rule.ruleType === 'Weight' && <span>{rule.minWeight || 0}kg - {rule.maxWeight || t('common.max', 'Max')}kg</span>}
                                             </td>
                                             <td className="px-4 py-3 text-end">
                                                 <span className="font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">

@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import toast from 'react-hot-toast';
 
 export const AuthContext = createContext();
 
@@ -83,7 +84,11 @@ export const AuthProvider = ({ children }) => {
                             isActive: userData.isActive,
                             preferences: userData.preferences || {},
                             tenant: userData.tenant,
+                            tenantName: userData.tenantName || null,
                             subscription: userData.subscription || null,
+                            hasMultipleTenants: userData.hasMultipleTenants || false,
+                            platformRole: userData.platformRole || null,
+                            onboardingCompleted: userData.onboardingCompleted ?? true,
                         });
                         scheduleRefresh();
                     } else {
@@ -103,6 +108,37 @@ export const AuthProvider = ({ children }) => {
             if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
         };
     }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Exposed refetch for profile updates etc.
+    const refetchUser = useCallback(async () => {
+        const currentToken = localStorage.getItem('token');
+        if (!currentToken) return;
+        try {
+            const response = await fetch(`${API}/api/auth/me`, {
+                headers: { Authorization: `Bearer ${currentToken}` }
+            });
+            if (response.ok) {
+                const userData = await response.json();
+                setUser({
+                    _id: userData._id,
+                    name: userData.name,
+                    email: userData.email,
+                    role: userData.role,
+                    roleObject: userData.roleObject,
+                    permissions: userData.permissions || [],
+                    permissionOverrides: userData.permissionOverrides || [],
+                    isActive: userData.isActive,
+                    preferences: userData.preferences || {},
+                    tenant: userData.tenant,
+                    tenantName: userData.tenantName || null,
+                    subscription: userData.subscription || null,
+                    hasMultipleTenants: userData.hasMultipleTenants || false,
+                    platformRole: userData.platformRole || null,
+                    onboardingCompleted: userData.onboardingCompleted ?? true,
+                });
+            }
+        } catch { /* silent */ }
+    }, []);
 
     const login = async (email, password) => {
         const response = await fetch(`${API}/api/auth/login`, {
@@ -126,7 +162,11 @@ export const AuthProvider = ({ children }) => {
                 isActive: data.isActive,
                 preferences: data.preferences || {},
                 tenant: data.tenant,
+                tenantName: data.tenantName || null,
                 subscription: data.subscription || null,
+                hasMultipleTenants: data.hasMultipleTenants || false,
+                platformRole: data.platformRole || null,
+                onboardingCompleted: data.onboardingCompleted ?? true,
             });
             localStorage.setItem('token', data.token);
             if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
@@ -159,7 +199,11 @@ export const AuthProvider = ({ children }) => {
                 isActive: data.isActive,
                 preferences: data.preferences || {},
                 tenant: data.tenant,
+                tenantName: data.tenantName || null,
                 subscription: data.subscription || null,
+                hasMultipleTenants: false,
+                platformRole: data.platformRole || null,
+                onboardingCompleted: data.onboardingCompleted ?? false,
             });
             localStorage.setItem('token', data.token);
             if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
@@ -169,6 +213,48 @@ export const AuthProvider = ({ children }) => {
             throw new Error(data.message || 'Registration failed');
         }
     };
+
+    const switchTenant = useCallback(async (tenantId) => {
+        const currentToken = localStorage.getItem('token');
+        if (!currentToken) throw new Error('Not authenticated');
+
+        const res = await fetch(`${API}/api/auth/switch-tenant`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${currentToken}`,
+            },
+            body: JSON.stringify({ tenantId }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            toast.error(data.message || 'Failed to switch workspace');
+            throw new Error(data.message);
+        }
+
+        // Update tokens
+        localStorage.setItem('token', data.token);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        setToken(data.token);
+
+        // Update user context with new tenant info
+        setUser(prev => ({
+            ...prev,
+            tenant: data.tenant,
+            tenantName: data.tenantName || null,
+            role: data.role,
+            roleObject: data.roleObject,
+            permissions: data.permissions || [],
+            subscription: data.subscription || null,
+        }));
+
+        scheduleRefresh();
+        toast.success(`Switched to ${data.tenantName || 'workspace'}`);
+
+        // Force full page reload to re-fetch all tenant-scoped data
+        window.location.reload();
+    }, [scheduleRefresh]);
 
     const logout = () => {
         if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
@@ -223,7 +309,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateContextPreferences, hasPermission }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, switchTenant, updateContextPreferences, hasPermission, refetchUser }}>
             {children}
         </AuthContext.Provider>
     );

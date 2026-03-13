@@ -3,15 +3,15 @@ import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 import { FileText, Download, Calendar, User, Clock, AlertTriangle, Briefcase, FileSpreadsheet } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
-import moment from 'moment';
+import { toMMYYYY, toISODate, fmtMonthYear, subtract } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
 
 export default function HRReports() {
     const { t } = useTranslation();
     const { token } = useContext(AuthContext);
     const [activeReport, setActiveReport] = useState('monthly');
-    const [period, setPeriod] = useState(moment().format('MM-YYYY'));
-    const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
+    const [period, setPeriod] = useState(toMMYYYY());
+    const [date, setDate] = useState(toISODate());
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -328,8 +328,8 @@ export default function HRReports() {
                         ) : (
                             <select value={period} onChange={(e) => setPeriod(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all">
                                 {Array.from({ length: 6 }, (_, i) => {
-                                    const m = moment().subtract(i, 'months');
-                                    return <option key={i} value={m.format('MM-YYYY')}>{m.format('MMMM YYYY')}</option>;
+                                    const m = subtract(new Date(), i, 'months');
+                                    return <option key={i} value={toMMYYYY(m)}>{fmtMonthYear(m)}</option>;
                                 })}
                             </select>
                         )}

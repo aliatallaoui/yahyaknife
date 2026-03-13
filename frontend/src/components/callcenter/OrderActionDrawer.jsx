@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     X, PhoneCall, CheckCircle, XCircle, MapPin,
@@ -6,9 +6,10 @@ import {
     Clock, PhoneMissed, WifiOff, Phone, Shield,
     User, ShoppingBag, TrendingDown, Ban,
     ChevronLeft, ChevronRight, Truck, Route,
-    Loader2, Send as SendIcon
+    Loader2, Send as SendIcon, Lock
 } from 'lucide-react';
 import { apiFetch } from '../../utils/apiFetch';
+import { AuthContext } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import useModalDismiss from '../../hooks/useModalDismiss';
 import { useHotkey } from '../../hooks/useHotkey';
@@ -21,16 +22,18 @@ const TRUST_COLOR = (s) => s >= 70 ? 'text-emerald-600' : s >= 40 ? 'text-amber-
 
 function StatPill({ label, value, icon: Icon, className = '' }) {
     return (
-        <div className={`flex flex-col items-center p-2 rounded-lg bg-white border border-gray-100 ${className}`}>
-            {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 mb-0.5" />}
-            <span className="text-base font-black text-gray-900">{value}</span>
-            <span className="text-[10px] font-medium text-gray-500 uppercase leading-tight text-center">{label}</span>
+        <div className={`flex flex-col items-center p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${className}`}>
+            {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mb-0.5" />}
+            <span className="text-base font-black text-gray-900 dark:text-white">{value}</span>
+            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase leading-tight text-center">{label}</span>
         </div>
     );
 }
 
 export default function OrderActionDrawer({ order, onClose, onSuccess, orderIndex = -1, totalOrders = 0, onNavigate }) {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
+    const canProcess = hasPermission('callcenter.process_orders');
     const { backdropProps, panelProps } = useModalDismiss(onClose);
     const [note, setNote] = useState('');
     const [loadingAction, setLoadingAction] = useState(null);
@@ -94,7 +97,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
 
     if (!order) return null;
 
-    const handleAction = async (actionType, extra = {}) => {
+    const handleAction = useCallback(async (actionType, extra = {}) => {
         setLoadingAction(actionType);
         setError(null);
         try {
@@ -134,7 +137,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
         } finally {
             setLoadingAction(null);
         }
-    };
+    }, [order?._id, note, address, wilaya, commune, postponeDate, onSuccess, t]);
 
     // Quick dispatch handler
     const handleQuickDispatch = async () => {
@@ -158,7 +161,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
     };
 
     // Keyboard shortcuts
-    const safeAction = useCallback((action) => { if (!loadingAction) handleAction(action); }, [loadingAction]);
+    const safeAction = useCallback((action) => { if (!loadingAction) handleAction(action); }, [loadingAction, handleAction]);
     const triggerConfirm = useCallback(() => {
         if (loadingAction) return;
         if (showChecklist) {
@@ -168,7 +171,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
             setShowChecklist(true);
             setChecklist({ address: false, phone: false, stock: false });
         }
-    }, [loadingAction, showChecklist, checklist]);
+    }, [loadingAction, showChecklist, checklist, handleAction]);
     useHotkey('enter', () => triggerConfirm(), { preventDefault: true });
     useHotkey('n', () => safeAction('No Answer'));
     useHotkey('p', () => { if (!loadingAction) { setIsPostponing(true); setIsEditingAddress(false); } });
@@ -192,12 +195,12 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end bg-gray-900/50 backdrop-blur-sm animate-in fade-in" {...backdropProps}>
-            <div className="w-full sm:max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right" {...panelProps}>
+            <div className="w-full sm:max-w-md bg-white dark:bg-gray-900 h-full shadow-2xl flex flex-col animate-in slide-in-from-right" {...panelProps}>
 
                 {/* Header */}
-                <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
                     <div>
-                        <h2 className="text-lg font-bold text-gray-900">{t('callcenter.drawer.title', 'Process Order')}</h2>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('callcenter.drawer.title', 'Process Order')}</h2>
                         <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-gray-500 text-sm font-mono font-medium">{orderId}</p>
                             {totalOrders > 0 && orderIndex >= 0 && (
@@ -238,7 +241,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
 
                     {/* Error Banner */}
                     {error && (
-                        <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-700">
+                        <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg text-sm text-rose-700 dark:text-rose-400">
                             <AlertTriangle className="w-4 h-4 shrink-0" />
                             <span>{error}</span>
                             <button onClick={() => setError(null)} className="ms-auto text-rose-400 hover:text-rose-600"><X className="w-3.5 h-3.5" /></button>
@@ -254,14 +257,14 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                     )}
 
                     {/* Customer Card */}
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
                                 {customerName.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-gray-900 text-base truncate">{customerName}</h3>
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-base truncate">{customerName}</h3>
                                     {cust?.blacklisted && (
                                         <span className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0">
                                             <Ban className="w-2.5 h-2.5" /> BLOCKED
@@ -290,13 +293,13 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
 
                     {/* Customer Intelligence Card */}
                     {intelLoading ? (
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-center justify-center gap-2 text-sm text-gray-400">
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-2 text-sm text-gray-400">
                             <RefreshCw className="w-4 h-4 animate-spin" /> {t('callcenter.drawer.loadingCustomer', 'Loading customer data...')}
                         </div>
                     ) : cust && (
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3 animate-in fade-in">
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 space-y-3 animate-in fade-in">
                             <div className="flex items-center justify-between">
-                                <h4 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                                <h4 className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1.5">
                                     <Shield className="w-3.5 h-3.5 text-gray-500" />
                                     {t('callcenter.drawer.customerProfile', 'Customer Profile')}
                                 </h4>
@@ -373,8 +376,8 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
 
                     {/* Order Items */}
                     <div>
-                        <h4 className="font-bold text-gray-900 mb-3">{t('callcenter.drawer.items', 'Order Items')}</h4>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-3">{t('callcenter.drawer.items', 'Order Items')}</h4>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 space-y-3">
                             {items.length > 0 ? items.map((item, idx) => (
                                 <div key={idx} className="flex justify-between items-center text-sm font-medium text-gray-700 pb-3 border-b border-gray-200 last:border-0 last:pb-0">
                                     <div className="flex gap-2 items-start min-w-0">
@@ -389,7 +392,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                             )) : (
                                 <p className="text-sm text-gray-400 text-center py-2">{t('callcenter.drawer.no_items', 'No items loaded')}</p>
                             )}
-                            <div className="flex justify-between items-center pt-2 font-black text-gray-900 text-lg border-t border-gray-200">
+                            <div className="flex justify-between items-center pt-2 font-black text-gray-900 dark:text-white text-lg border-t border-gray-200 dark:border-gray-600">
                                 <span>{t('callcenter.drawer.total', 'Total COD')}</span>
                                 <span>{(order.totalAmount || 0).toLocaleString()} {t('common.dzd', 'DZD')}</span>
                             </div>
@@ -499,8 +502,8 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
 
                     {/* Interaction Note */}
                     <div>
-                        <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-                            <MessageSquare className="w-4 h-4 text-gray-500" />
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2 text-sm">
+                            <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             {t('callcenter.drawer.call_note', 'Interaction Note')}
                             <span className="text-xs font-normal text-gray-400">{t('general.optional', '(optional)')}</span>
                         </h4>
@@ -508,7 +511,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             placeholder={t('callcenter.drawer.note_placeholder', 'E.g., Customer asked for delivery after 5 PM…')}
-                            className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[80px] bg-gray-50 resize-none"
+                            className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[80px] bg-gray-50 dark:bg-gray-800 dark:text-white resize-none"
                         />
                         <div className="flex flex-wrap gap-1.5 mt-2">
                             {[
@@ -593,19 +596,19 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                     </div>
 
                     {/* Full Order Edit Panel (toggle) */}
-                    <div className="rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                         <button
                             onClick={() => setShowEditPanel(!showEditPanel)}
-                            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-sm font-bold text-gray-700"
+                            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors text-sm font-bold text-gray-700 dark:text-gray-200"
                         >
                             <span className="flex items-center gap-2">
-                                <Save className="w-4 h-4 text-gray-500" />
+                                <Save className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                                 {t('callcenter.drawer.editOrder', 'Edit Order Details')}
                             </span>
-                            <span className="text-xs text-gray-400">{showEditPanel ? '▲' : '▼'}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{showEditPanel ? '▲' : '▼'}</span>
                         </button>
                         {showEditPanel && (
-                            <div className="px-4 py-3 border-t border-gray-100">
+                            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
                                 <OrderEditPanel
                                     order={order}
                                     onSaved={onSuccess}
@@ -616,7 +619,12 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-3 sm:p-5 border-t border-gray-100 bg-white space-y-2">
+                <div className="p-3 sm:p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 space-y-2">
+                    {!canProcess ? (
+                        <div className="flex items-center justify-center gap-2 py-4 text-gray-400 font-bold text-sm">
+                            <Lock className="w-4 h-4" /> {t('general.readOnly', 'Read Only')}
+                        </div>
+                    ) : (<>
                     {/* Primary: Confirm (opens checklist first) */}
                     <button
                         onClick={triggerConfirm}
@@ -633,7 +641,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                         <button
                             onClick={() => handleAction('No Answer')}
                             disabled={!!loadingAction}
-                            className="flex justify-center items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl font-bold transition-colors disabled:opacity-50 text-sm"
+                            className="flex justify-center items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-bold transition-colors disabled:opacity-50 text-sm"
                         >
                             {isLoading('No Answer') ? <RefreshCw className="w-4 h-4 animate-spin" /> : <PhoneMissed className="w-4 h-4" />}
                             {t('callcenter.action.no_answer', 'No Answer')}
@@ -694,6 +702,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                             </button>
                         )}
                     </div>
+                    </>)}
                 </div>
             </div>
         </div>

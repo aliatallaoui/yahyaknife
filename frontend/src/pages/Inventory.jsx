@@ -1,7 +1,8 @@
 import { useState, useContext, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
-import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box, ImageOff } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 import clsx from 'clsx';
 import { InventoryContext } from '../context/InventoryContext';
 import { AuthContext } from '../context/AuthContext';
@@ -26,7 +27,7 @@ export default function Inventory() {
     const [searchTerm, setSearchTerm] = useState('');
     const searchRef = useRef(null);
     useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
-    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); setCurrentPage(1); searchRef.current?.blur(); } });
     const [activeTab, setActiveTab] = useState('finished');
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -76,8 +77,12 @@ export default function Inventory() {
         setIsModalOpen(true);
     };
 
-    const handleEditClick = (product) => {
-        setEditingProduct(product);
+    const handleEditClick = (productOrPartial) => {
+        // If passed a partial (from variant row), find the full product
+        const full = productOrPartial.name
+            ? productOrPartial
+            : products.find(p => p._id === productOrPartial._id) || productOrPartial;
+        setEditingProduct(full);
         setIsModalOpen(true);
     };
 
@@ -112,10 +117,10 @@ export default function Inventory() {
         });
     };
 
-    const handleModalSubmit = async (payload) => {
+    const handleModalSubmit = async (formData) => {
         try {
-            if (editingProduct) await updateProduct(editingProduct._id, payload);
-            else await createProduct(payload);
+            if (editingProduct) await updateProduct(editingProduct._id, formData);
+            else await createProduct(formData);
             setIsModalOpen(false);
         } catch (error) {
             notify.error(`Failed to save product: ${error.message}`);
@@ -136,6 +141,7 @@ export default function Inventory() {
             ...v,
             baseProductId: p._id,
             productName: p.name,
+            productImage: p.images?.[0] || null,
             category: p.category,
             brand: p.brand
         }));
@@ -171,24 +177,24 @@ export default function Inventory() {
                                 type="text"
                                 placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name... (Press /)')}
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                                 className="ps-9 pe-4 py-2 bg-white dark:bg-gray-700 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
                             />
                         </div>
                         {activeTab === 'categories' ? (
-                            hasPermission('inventory.create_product') && (
+                            hasPermission('inventory.adjust') && (
                                 <button onClick={handleCreateCategory} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
                                     <Plus className="w-5 h-5" /> {t('inventory.addCategoryBtn', 'Add Category')}
                                 </button>
                             )
                         ) : (
-                            hasPermission('inventory.create_product') && (
+                            hasPermission('inventory.adjust') && (
                                 <button onClick={handleCreateClick} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
                                     <Plus className="w-5 h-5" /> {t('inventory.addProductBtn', 'Add New Product')}
                                 </button>
                             )
                         )}
-                        {hasPermission('inventory.update_product') && (
+                        {hasPermission('inventory.adjust') && (
                             <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
                                 <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
                             </button>
@@ -239,13 +245,13 @@ export default function Inventory() {
                     <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 pb-4 gap-4">
                         <div className="flex flex-wrap gap-1 bg-gray-50/80 dark:bg-gray-900/80 p-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-inner w-full xl:w-auto">
                             <button
-                                onClick={() => setActiveTab('finished')}
+                                onClick={() => { setActiveTab('finished'); setCurrentPage(1); }}
                                 className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'finished' ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-600/50" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-700/50")}
                             >
                                 {t('inventory.tabFinished', 'Finished Goods')}
                             </button>
                             <button
-                                onClick={() => setActiveTab('categories')}
+                                onClick={() => { setActiveTab('categories'); setCurrentPage(1); }}
                                 className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'categories' ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-600/50" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-700/50")}
                             >
                                 {t('inventory.tabCategories', 'Categories')}
@@ -293,11 +299,20 @@ export default function Inventory() {
                                             return (
                                                 <tr key={variant._id} className="group">
                                                     <td className="p-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-bold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-hover:translate-x-1 duration-200" onClick={() => { setSelectedLedgerProduct(variant); setIsLedgerOpen(true); }}>
-                                                                {variant.productName}
-                                                            </span>
-                                                            <span className="text-xs text-indigo-600 font-semibold mt-0.5">{attrString || t('inventory.attrBase', 'Base')}</span>
+                                                        <div className="flex items-center gap-3">
+                                                            {variant.productImage ? (
+                                                                <img src={`${API_BASE}${variant.productImage}`} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-600 shrink-0" />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center shrink-0">
+                                                                    <ImageOff className="w-4 h-4 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-hover:translate-x-1 duration-200" onClick={() => { setSelectedLedgerProduct(variant); setIsLedgerOpen(true); }}>
+                                                                    {variant.productName}
+                                                                </span>
+                                                                <span className="text-xs text-indigo-600 font-semibold mt-0.5">{attrString || t('inventory.attrBase', 'Base')}</span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs tracking-wider font-semibold">{variant.sku}</td>
@@ -308,7 +323,7 @@ export default function Inventory() {
                                                     </td>
                                                     <td className="p-4 text-end">
                                                         {/* Price — inline edit */}
-                                                        {hasPermission('inventory.update_product') ? (
+                                                        {hasPermission('inventory.adjust') ? (
                                                             editingVariant?.id === variant._id && editingVariant?.field === 'price' ? (
                                                                 <input autoFocus type="number" step="0.01"
                                                                     value={editingVariant.value}
@@ -320,7 +335,7 @@ export default function Inventory() {
                                                                 <div onClick={() => startVariantEdit(variant, 'price')} className={"group/p cursor-pointer"} title={t('inventory.tooltipEditPrice', 'Click to edit price')}>
                                                                     <div className={"font-bold text-gray-900 dark:text-white transition-colors group-hover/p:text-blue-600 dark:group-hover/p:text-blue-400"}>${variant.price?.toLocaleString()}</div>
                                                                     {/* Cost — inline edit */}
-                                                                    {hasPermission('inventory.view_cost') && (
+                                                                    {hasPermission('inventory.view') && (
                                                                         editingVariant?.id === variant._id && editingVariant?.field === 'cost' ? (
                                                                             <input autoFocus type="number" step="0.01"
                                                                                 value={editingVariant.value}
@@ -338,7 +353,7 @@ export default function Inventory() {
                                                         ) : (
                                                             <div>
                                                                 <div className="font-bold text-gray-900 dark:text-white">${variant.price?.toLocaleString()}</div>
-                                                                {hasPermission('inventory.view_cost') && (
+                                                                {hasPermission('inventory.view') && (
                                                                     <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
                                                                 )}
                                                             </div>
@@ -371,12 +386,12 @@ export default function Inventory() {
                                                     </td>
                                                     <td className="p-4 text-end">
                                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            {hasPermission('inventory.update_product') && (
+                                                            {hasPermission('inventory.adjust') && (
                                                                 <button onClick={() => handleEditClick({ _id: variant.baseProductId })} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors" title={t('inventory.tooltipEditProduct', 'Edit Base Product')}>
                                                                     <Pencil className="w-4 h-4" />
                                                                 </button>
                                                             )}
-                                                            {hasPermission('inventory.export') && (
+                                                            {hasPermission('inventory.view') && (
                                                                 <button onClick={() => handleDeleteClick(variant.baseProductId)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title={t('inventory.tooltipArchiveProduct', 'Archive Entire Product')}>
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -399,12 +414,12 @@ export default function Inventory() {
                                                 <td colSpan="3" className="p-4 text-gray-500 dark:text-gray-400">{cat.description || t('inventory.noDescription', 'No description provided.')}</td>
                                                 <td className="p-4 text-end">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        {hasPermission('inventory.update_product') && (
+                                                        {hasPermission('inventory.adjust') && (
                                                             <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title={t('inventory.tooltipEditCategory', 'Edit Category')}>
                                                                 <Pencil className="w-4 h-4" />
                                                             </button>
                                                         )}
-                                                        {hasPermission('inventory.export') && (
+                                                        {hasPermission('inventory.view') && (
                                                             <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title={t('inventory.tooltipArchiveCategory', 'Archive Category')}>
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
@@ -480,7 +495,7 @@ export default function Inventory() {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
                     <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('inventory.activeSuppliers', 'Active Suppliers')}</h3>
-                        {hasPermission('inventory.create_product') && (
+                        {hasPermission('inventory.adjust') && (
                             <button onClick={handleCreateSupplier} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" title={t('inventory.tooltipAddSupplier', 'Add Supplier')}>
                                 <Plus className="w-5 h-5" />
                             </button>
@@ -495,10 +510,10 @@ export default function Inventory() {
                                     <h4 className="font-bold text-gray-900 dark:text-white">{supplier.name}</h4>
                                     <div className="flex items-center gap-2">
                                         <div className="hidden group-hover:flex items-center gap-1">
-                                            {hasPermission('inventory.update_product') && (
+                                            {hasPermission('inventory.adjust') && (
                                                 <button onClick={() => handleEditSupplier(supplier)} className="text-gray-400 hover:text-blue-600 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                                             )}
-                                            {hasPermission('inventory.export') && (
+                                            {hasPermission('inventory.view') && (
                                                 <button onClick={() => handleDeleteSupplier(supplier._id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                                             )}
                                         </div>

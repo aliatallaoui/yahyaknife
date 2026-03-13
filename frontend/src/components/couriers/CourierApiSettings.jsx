@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../../utils/axiosInstance';
+import { apiFetch } from '../../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { Key, Globe, CheckCircle, XCircle, RefreshCw, Save } from 'lucide-react';
 import clsx from 'clsx';
@@ -26,19 +26,28 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                 }
             }
 
-            await api.post('/api/couriers/test-connection', {
-                apiProvider: courier.apiProvider || 'Ecotrack',
-                apiId: courier.apiId,
-                apiBaseUrl: courier.apiBaseUrl,
-                authType: courier.authType || 'Bearer Token',
-                apiToken: courier.apiToken
+            const res = await apiFetch('/api/couriers/test-connection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    apiProvider: courier.apiProvider || 'Ecotrack',
+                    apiId: courier.apiId,
+                    apiBaseUrl: courier.apiBaseUrl,
+                    authType: courier.authType || 'Bearer Token',
+                    apiToken: courier.apiToken
+                })
             });
+
+            if (!res.ok) {
+                const errJson = await res.json();
+                throw new Error(errJson.message || t('couriers.connectionFailed', 'Connection failed. Please check credentials.'));
+            }
 
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Success' }));
             setTestResult({ success: true, message: t('couriers.connectionOk', 'Connection established successfully!') });
         } catch (error) {
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Failed' }));
-            setTestResult({ success: false, message: error.response?.data?.message || error.message || t('couriers.connectionFailed', 'Connection failed. Please check credentials.') });
+            setTestResult({ success: false, message: error.message || t('couriers.connectionFailed', 'Connection failed. Please check credentials.') });
         } finally {
             setTesting(false);
         }

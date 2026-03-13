@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, DollarSign, RefreshCw, CheckCircle, XCircle, Search, AlertTriangle, Layers } from 'lucide-react';
 import { apiFetch } from '../utils/apiFetch';
-import moment from 'moment';
+import { fmtShortDate } from '../utils/dateUtils';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +35,7 @@ export default function CourierFinanceDesk() {
     }, [selectedCourier]);
 
     useEffect(() => {
-        if (!hasPermission('finance.view') && !hasPermission('courier.manage')) {
+        if (!hasPermission('finance.view') && !hasPermission('couriers.edit')) {
             navigate('/dashboard');
         }
         fetchCouriers();
@@ -202,7 +202,7 @@ export default function CourierFinanceDesk() {
                                     <Truck className="w-5 h-5 text-emerald-600" />
                                     {t('finance.settleCourier', 'Settle Cash for')} {selectedCourier.name}
                                 </h2>
-                                <p className="text-sm text-gray-500 font-medium">Pending: <strong className="text-rose-600">{selectedCourier.pendingRemittance?.toLocaleString()} DZD</strong></p>
+                                <p className="text-sm text-gray-500 font-medium">{t('finance.pending', 'Pending')}: <strong className="text-rose-600">{selectedCourier.pendingRemittance?.toLocaleString()} {t('common.dzd', 'DZD')}</strong></p>
                             </div>
                             <button onClick={() => setSelectedCourier(null)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                                 <XCircle className="w-6 h-6 text-gray-400" />
@@ -260,7 +260,7 @@ export default function CourierFinanceDesk() {
                                                             <p className="font-semibold text-gray-900">{d.customer?.name}</p>
                                                             <p className="text-xs text-gray-500">{d.customer?.phone}</p>
                                                         </td>
-                                                        <td className="px-4 py-3 text-xs text-gray-500">{moment(d.date).format('MMM DD')}</td>
+                                                        <td className="px-4 py-3 text-xs text-gray-500">{fmtShortDate(d.date)}</td>
                                                         <td className="px-4 py-3 font-black text-gray-900 text-right">{d.financials?.codAmount?.toLocaleString()} {t('common.dzd', 'DZD')}</td>
                                                     </tr>
                                                 );

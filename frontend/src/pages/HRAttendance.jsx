@@ -3,17 +3,18 @@ import { Clock, CheckSquare, XCircle, AlertCircle, RefreshCcw, Search } from 'lu
 import { useHotkey } from '../hooks/useHotkey';
 import { getAttendanceStatusColor } from '../constants/statusColors';
 import PageHeader from '../components/PageHeader';
-import moment from 'moment';
-import api from '../utils/axiosInstance';
+import { toISODate, toHHMM } from '../utils/dateUtils';
+import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { AuthContext } from '../context/AuthContext';
 import TableSkeleton from '../components/TableSkeleton';
 
 export default function HRAttendance() {
     const { t } = useTranslation();
     const { hasPermission } = React.useContext(AuthContext);
-    const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
+    const [date, setDate] = useState(toISODate());
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
@@ -23,11 +24,14 @@ export default function HRAttendance() {
         setFetchError(null);
         try {
             const [empRes, attRes] = await Promise.all([
-                api.get('/api/hr/employees'),
-                api.get(`/api/hr/attendance?date=${date}`)
+                apiFetch('/api/hr/employees'),
+                apiFetch(`/api/hr/attendance?date=${date}`)
             ]);
-            const employees = empRes.data?.data ?? empRes.data;
-            const attendances = attRes.data?.data ?? attRes.data;
+            if (!empRes.ok || !attRes.ok) throw new Error('Failed');
+            const empJson = await empRes.json();
+            const attJson = await attRes.json();
+            const employees = empJson.data ?? empJson;
+            const attendances = attJson.data ?? attJson;
 
             // Merge active employees with valid pointage
             const activeEmployees = employees.filter(e => e.status !== 'Terminated');
@@ -40,7 +44,7 @@ export default function HRAttendance() {
             });
             setRecords(merged);
         } catch (error) {
-            setFetchError(error.response?.data?.error || t('hr.errorLoadAttendance', 'Failed to load attendance records.'));
+            setFetchError(error.message || t('hr.errorLoadAttendance', 'Failed to load attendance records.'));
         } finally {
             setLoading(false);
         }
@@ -77,7 +81,7 @@ export default function HRAttendance() {
 
     const openModal = (employeeId, type, existingTime = '') => {
         setModalConfig({ employeeId, type, existingTime });
-        setTimeInput(existingTime || moment().format('HH:mm'));
+        setTimeInput(existingTime || toHHMM());
         setModalError(null);
     };
 
@@ -91,17 +95,26 @@ export default function HRAttendance() {
                 setModalError(t('hr.alertInvalidFormat', 'Invalid time format. Use HH:MM.'));
                 return;
             }
-            timestamp = moment(`${date} ${timeInput}`, 'YYYY-MM-DD HH:mm').toISOString();
+            timestamp = new Date(`${date}T${timeInput}`).toISOString();
         }
 
         try {
-            await api.post('/api/hr/attendance/record', {
-                employeeId, type, timestamp, date
+            const res = await apiFetch('/api/hr/attendance/record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId, type, timestamp, date })
             });
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || t('hr.alertNetworkErrorRecord', 'Failed to record attendance.'));
+            }
             fetchAttendance();
             setModalConfig(null);
+            toast.success(t('hr.attendanceRecorded', 'Attendance recorded successfully'));
         } catch (error) {
-            setModalError(error.response?.data?.error || t('hr.alertNetworkErrorRecord', 'Failed to record attendance.'));
+            const errMsg = error.message || t('hr.alertNetworkErrorRecord', 'Failed to record attendance.');
+            setModalError(errMsg);
+            toast.error(errMsg);
         }
     };
 
@@ -110,13 +123,22 @@ export default function HRAttendance() {
         const { employeeId, type } = modalConfig;
 
         try {
-            await api.post('/api/hr/attendance/record', {
-                employeeId, type, timestamp: null, date
+            const res = await apiFetch('/api/hr/attendance/record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId, type, timestamp: null, date })
             });
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || t('hr.alertNetworkErrorClear', 'Failed to clear attendance.'));
+            }
             fetchAttendance();
             setModalConfig(null);
+            toast.success(t('hr.attendanceCleared', 'Attendance entry cleared'));
         } catch (error) {
-            setModalError(error.response?.data?.error || t('hr.alertNetworkErrorClear', 'Failed to clear attendance.'));
+            const errMsg = error.message || t('hr.alertNetworkErrorClear', 'Failed to clear attendance.');
+            setModalError(errMsg);
+            toast.error(errMsg);
         }
     };
 
@@ -128,16 +150,24 @@ export default function HRAttendance() {
         setBulkClocking(true);
         setFetchError(null);
         let failed = 0;
-        const now = moment().toISOString();
+        const now = new Date().toISOString();
         for (const item of notClockedIn) {
             try {
-                await api.post('/api/hr/attendance/record', {
-                    employeeId: item.employeeId._id, type: 'morningIn', timestamp: now, date
+                const res = await apiFetch('/api/hr/attendance/record', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: item.employeeId._id, type: 'morningIn', timestamp: now, date })
                 });
+                if (!res.ok) throw new Error('Failed');
             } catch { failed++; }
         }
         setBulkClocking(false);
-        if (failed > 0) setFetchError(`${failed} record(s) failed to clock in.`);
+        if (failed > 0) {
+            setFetchError(`${failed} record(s) failed to clock in.`);
+            toast.error(t('hr.bulkClockInPartialFail', `${failed} record(s) failed to clock in`));
+        } else {
+            toast.success(t('hr.bulkClockInSuccess', 'All employees clocked in successfully'));
+        }
         fetchAttendance();
     };
 
@@ -165,7 +195,7 @@ export default function HRAttendance() {
                             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                                 className="bg-transparent text-gray-900 text-sm outline-none cursor-pointer font-black" />
                         </div>
-                        {hasPermission('hr.manage_attendance') && date === moment().format('YYYY-MM-DD') && notClockedInCount > 0 && (
+                        {hasPermission('hr.employees.edit') && date === toISODate() && notClockedInCount > 0 && (
                             <button
                                 onClick={handleBulkClockIn}
                                 disabled={bulkClocking}
@@ -192,7 +222,7 @@ export default function HRAttendance() {
             )}
 
             {/* Clock-in alert strip — only for today */}
-            {!loading && date === moment().format('YYYY-MM-DD') && (() => {
+            {!loading && date === toISODate() && (() => {
                 const notIn = records.filter(item => !item.record?.morningIn);
                 if (notIn.length === 0) return null;
                 return (
@@ -246,17 +276,17 @@ export default function HRAttendance() {
 
                                         <td className="px-6 py-4 text-center font-mono text-sm">
                                             <div className="flex items-center justify-center gap-2">
-                                                {att.morningIn ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'morningIn', moment(att.morningIn).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.morningIn).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'morningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkIn')}</button>}
+                                                {att.morningIn ? <button onClick={() => hasPermission('hr.employees.edit') && openModal(emp._id, 'morningIn', toHHMM(att.morningIn))} className={clsx("font-bold transition-colors", hasPermission('hr.employees.edit') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{toHHMM(att.morningIn)}</button> : <button disabled={!hasPermission('hr.employees.edit')} onClick={() => openModal(emp._id, 'morningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkIn')}</button>}
                                                 <span className="text-gray-300">|</span>
-                                                {att.morningOut ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'morningOut', moment(att.morningOut).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.morningOut).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'morningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkOutAtt')}</button>}
+                                                {att.morningOut ? <button onClick={() => hasPermission('hr.employees.edit') && openModal(emp._id, 'morningOut', toHHMM(att.morningOut))} className={clsx("font-bold transition-colors", hasPermission('hr.employees.edit') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{toHHMM(att.morningOut)}</button> : <button disabled={!hasPermission('hr.employees.edit')} onClick={() => openModal(emp._id, 'morningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkOutAtt')}</button>}
                                             </div>
                                         </td>
 
                                         <td className="px-6 py-4 text-center font-mono text-sm">
                                             <div className="flex items-center justify-center gap-2">
-                                                {att.eveningIn ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'eveningIn', moment(att.eveningIn).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.eveningIn).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'eveningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkIn')}</button>}
+                                                {att.eveningIn ? <button onClick={() => hasPermission('hr.employees.edit') && openModal(emp._id, 'eveningIn', toHHMM(att.eveningIn))} className={clsx("font-bold transition-colors", hasPermission('hr.employees.edit') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{toHHMM(att.eveningIn)}</button> : <button disabled={!hasPermission('hr.employees.edit')} onClick={() => openModal(emp._id, 'eveningIn')} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkIn')}</button>}
                                                 <span className="text-gray-300">|</span>
-                                                {att.eveningOut ? <button onClick={() => hasPermission('hr.manage_attendance') && openModal(emp._id, 'eveningOut', moment(att.eveningOut).format('HH:mm'))} className={clsx("font-bold transition-colors", hasPermission('hr.manage_attendance') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{moment(att.eveningOut).format('HH:mm')}</button> : <button disabled={!hasPermission('hr.manage_attendance')} onClick={() => openModal(emp._id, 'eveningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkOutAtt')}</button>}
+                                                {att.eveningOut ? <button onClick={() => hasPermission('hr.employees.edit') && openModal(emp._id, 'eveningOut', toHHMM(att.eveningOut))} className={clsx("font-bold transition-colors", hasPermission('hr.employees.edit') ? "text-gray-900 hover:text-indigo-600 cursor-pointer" : "text-gray-900 cursor-default")}>{toHHMM(att.eveningOut)}</button> : <button disabled={!hasPermission('hr.employees.edit')} onClick={() => openModal(emp._id, 'eveningOut')} className="text-[10px] font-bold bg-gray-50 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('hr.btnMarkOutAtt')}</button>}
                                             </div>
                                         </td>
 

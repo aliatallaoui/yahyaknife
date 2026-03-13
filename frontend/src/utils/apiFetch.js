@@ -73,5 +73,13 @@ export async function apiFetch(url, options = {}) {
         window.dispatchEvent(new CustomEvent('subscription-expired', { detail: data }));
     }
 
+    // On 403 with PLAN_LIMIT_* code — dispatch upgrade prompt event
+    if (response.status === 403) {
+        const data = await response.clone().json().catch(() => ({}));
+        if (data.code && data.code.startsWith('PLAN_LIMIT_')) {
+            window.dispatchEvent(new CustomEvent('plan-limit-reached', { detail: data }));
+        }
+    }
+
     return response;
 }

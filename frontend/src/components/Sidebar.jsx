@@ -5,10 +5,11 @@ import {
     Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
     Star, Clock, ChevronDown, X, Layers, UserCircle, PhoneCall, Headset, AlertTriangle,
-    ScanBarcode, BadgeDollarSign, BarChart3, FileText
+    ScanBarcode, BadgeDollarSign, BarChart3, FileText, Megaphone
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
+import TenantSwitcher from './TenantSwitcher';
 
 function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite, isFavorite, itemIcon: ItemIcon }) {
     const location = useLocation();
@@ -269,6 +270,14 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             ]
         },
         {
+            title: t('sidebar.sales_channels_domain', 'Sales Channels'),
+            icon: Megaphone,
+            permissions: ['saleschannels.view'],
+            items: [
+                { label: t('sidebar.sales_channels', 'Landing Pages'), path: '/sales-channels', icon: Megaphone, permission: 'saleschannels.view' }
+            ]
+        },
+        {
             title: t('sidebar.callcenter_domain', 'Call Center'),
             icon: Headset,
             permissions: ['callcenter.process_orders', 'callcenter.view_reports', 'callcenter.manage_assignments'],
@@ -413,7 +422,8 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     )}
                 </div>
 
-
+                {/* Workspace Switcher */}
+                <TenantSwitcher isCollapsed={isCollapsed} />
 
                 {/* Scrollable Nav Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar pb-6 pt-2">
@@ -498,6 +508,15 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
 
                 {/* Footer / System Controls */}
                 <div className="mt-auto px-2 pb-4 pt-2 border-t border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-900 flex flex-col shrink-0">
+                    {user?.platformRole === 'platform_admin' && (
+                        <SidebarItem
+                            icon={Star}
+                            label={t('sidebar.platform_admin', 'Platform Admin')}
+                            path="/platform-admin"
+                            isCollapsed={isCollapsed}
+                            onClick={handleLinkClick}
+                        />
+                    )}
                     <SidebarItem
                         icon={Gear}
                         label={t('sidebar.settings_nav', 'Settings')}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../utils/axiosInstance';
+import { apiFetch } from '../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, Truck, Key, MapPin, DollarSign, Activity, Settings2, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Truck, Key, MapPin, DollarSign, Activity, Settings2, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
 
@@ -23,8 +24,10 @@ export default function CourierDetails() {
 
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
     const [saveToast, setSaveToast] = useState(null); // { type: 'success'|'error', msg }
+    const { dialog, confirm } = useConfirmDialog();
 
     const [courier, setCourier] = useState({
         name: '',
@@ -43,14 +46,20 @@ export default function CourierDetails() {
 
     const fetchCourier = async () => {
         try {
-            const res = await api.get('/api/couriers');
-            const found = res.data.find(c => c._id === id);
+            const res = await apiFetch('/api/couriers');
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || t('couriers.loadFailed', 'Failed to load courier data.'));
+            }
+            const json = await res.json();
+            const data = json.data ?? json;
+            const found = data.find(c => c._id === id);
             if (found) {
                 setCourier(found);
             }
             setLoading(false);
         } catch (error) {
-            setSaveToast({ type: 'error', msg: error.response?.data?.message || t('couriers.loadFailed', 'Failed to load courier data.') });
+            setSaveToast({ type: 'error', msg: error.message || t('couriers.loadFailed', 'Failed to load courier data.') });
             setLoading(false);
         }
     };
@@ -59,14 +68,24 @@ export default function CourierDetails() {
         setSaving(true);
         try {
             if (isNew) {
-                const res = await api.post('/api/couriers', courier);
-                navigate(`/couriers/${res.data._id}`);
+                const res = await apiFetch('/api/couriers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(courier) });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || t('couriers.saveFailed', 'Error saving courier.'));
+                }
+                const json = await res.json();
+                const data = json.data ?? json;
+                navigate(`/couriers/${data._id}`);
             } else {
-                await api.put(`/api/couriers/${id}`, courier);
+                const res = await apiFetch(`/api/couriers/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(courier) });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || t('couriers.saveFailed', 'Error saving courier.'));
+                }
                 showSuccess();
             }
         } catch (error) {
-            setSaveToast({ type: 'error', msg: error.response?.data?.message || t('couriers.saveFailed', 'Error saving courier.') });
+            setSaveToast({ type: 'error', msg: error.message || t('couriers.saveFailed', 'Error saving courier.') });
         } finally {
             setSaving(false);
         }
@@ -75,6 +94,29 @@ export default function CourierDetails() {
     const showSuccess = () => {
         setSaveToast({ type: 'success', msg: t('common.saved_successfully', 'Saved successfully!') });
         setTimeout(() => setSaveToast(null), 3000);
+    };
+
+    const handleDelete = () => {
+        confirm({
+            title: t('couriers.deleteTitle', 'Delete Courier'),
+            body: t('couriers.deleteBody', 'This courier will be permanently removed. Active shipments must be reassigned first. This action cannot be undone.'),
+            danger: true,
+            confirmLabel: t('common.delete', 'Delete'),
+            onConfirm: async () => {
+                setDeleting(true);
+                try {
+                    const res = await apiFetch(`/api/couriers/${id}`, { method: 'DELETE' });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || err.message || t('couriers.deleteFailed', 'Failed to delete courier.'));
+                    }
+                    navigate('/couriers');
+                } catch (error) {
+                    setSaveToast({ type: 'error', msg: error.message });
+                    setDeleting(false);
+                }
+            }
+        });
     };
 
     const tabs = [
@@ -114,6 +156,16 @@ export default function CourierDetails() {
                             >
                                 <Save className={clsx("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
                                 {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save Changes')}
+                            </button>
+                        )}
+                        {!isNew && hasPermission('couriers.delete') && (
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting}
+                                className="px-4 py-2 bg-white text-red-600 font-bold rounded-lg shadow-sm border border-red-200 hover:bg-red-50 disabled:opacity-50 flex items-center transition-colors"
+                            >
+                                <Trash2 className={clsx("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
+                                {deleting ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
                             </button>
                         )}
                     </div>
@@ -219,6 +271,8 @@ export default function CourierDetails() {
                     <button onClick={() => setSaveToast(null)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity shrink-0"><X className="w-4 h-4" /></button>
                 </div>
             )}
+
+            {dialog}
         </div>
     );
 }

@@ -40,7 +40,6 @@ export default function CopilotWidget() {
         setIsTyping(true);
 
         try {
-            const token = auth?.token || localStorage.getItem('token');
             const res = await apiFetch('/api/ai/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

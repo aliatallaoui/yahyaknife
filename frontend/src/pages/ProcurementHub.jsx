@@ -3,11 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../utils/apiFetch';
 import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
-import moment from 'moment';
+import { fmtMediumDate, isSameMonth, isAfter } from '../utils/dateUtils';
+import toast from 'react-hot-toast';
 import NewPOModal from '../components/NewPOModal';
 import NewSupplierModal from '../components/NewSupplierModal';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 import { AuthContext } from '../context/AuthContext';
 import { useHotkey } from '../hooks/useHotkey';
+import TableSkeleton from '../components/TableSkeleton';
 
 export default function ProcurementHub() {
     const { t } = useTranslation();
@@ -23,6 +26,44 @@ export default function ProcurementHub() {
     const searchRef = useRef(null);
     useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
     useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
+    const { dialog: confirmDialogEl, confirm } = useConfirmDialog();
+    const [receivingPoId, setReceivingPoId] = useState(null);
+
+    const handleReceiveAll = (order) => {
+        if (!order || !order.items?.length) return;
+        confirm({
+            title: t('procurement.receiveTitle', 'Receive Full Delivery?'),
+            body: t('procurement.receiveBody', 'This will mark all items as fully received and update stock. PO: {{po}}', { po: order.poNumber }),
+            onConfirm: async () => {
+                setReceivingPoId(order._id);
+                try {
+                    const itemsReceived = order.items.map(item => ({
+                        itemId: item._id,
+                        quantityReceivedThisBatch: item.quantity - (item.receivedQuantity || 0)
+                    })).filter(i => i.quantityReceivedThisBatch > 0);
+
+                    if (itemsReceived.length === 0) {
+                        toast(t('procurement.alreadyReceived', 'All items already received'));
+                        return;
+                    }
+
+                    const res = await apiFetch(`/api/procurement/orders/${order._id}/receive`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemsReceived })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    toast.success(t('procurement.receiveSuccess', 'Delivery received — stock updated'));
+                    fetchData();
+                } catch (err) {
+                    toast.error(err.message || t('procurement.receiveError', 'Failed to receive delivery'));
+                } finally {
+                    setReceivingPoId(null);
+                }
+            }
+        });
+    };
 
     const fetchData = async () => {
         try {
@@ -32,8 +73,9 @@ export default function ProcurementHub() {
                 apiFetch(`/api/procurement/suppliers`)
             ]);
             const ordersData = await ordersRes.json();
-            const suppliersData = await suppliersRes.json();
             if (!ordersRes.ok) throw { response: { data: ordersData } };
+            const suppliersData = await suppliersRes.json();
+            if (!suppliersRes.ok) throw { response: { data: suppliersData } };
             setOrders(ordersData?.data ?? ordersData);
             setSuppliers(suppliersData?.data ?? suppliersData);
         } catch (error) {
@@ -102,7 +144,7 @@ export default function ProcurementHub() {
                                 <Plus className="w-5 h-5" /> {t('procurement.newPo', 'New Purchase Order')}
                             </button>
                         )}
-                        {(hasPermission('procurement.create_po') || hasPermission('inventory.create_product')) && (
+                        {(hasPermission('procurement.create_po') || hasPermission('inventory.adjust')) && (
                             <button
                                 onClick={() => setIsSupplierModalOpen(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none"
@@ -141,7 +183,7 @@ export default function ProcurementHub() {
                     <div>
                         <p className="text-sm font-bold text-gray-500">{t('procurement.completedMonth')}</p>
                         <p className="text-2xl font-black text-gray-900">
-                            {orders.filter(o => o.status === 'Received' && moment(o.actualDeliveryDate).isSame(moment(), 'month')).length}
+                            {orders.filter(o => o.status === 'Received' && isSameMonth(o.actualDeliveryDate, new Date())).length}
                         </p>
                     </div>
                 </div>
@@ -163,7 +205,7 @@ export default function ProcurementHub() {
                     <div>
                         <p className="text-sm font-bold text-gray-500">{t('procurement.delayedShipments')}</p>
                         <p className="text-2xl font-black text-gray-900">
-                            {orders.filter(o => ['Sent', 'Partial'].includes(o.status) && moment().isAfter(moment(o.expectedDeliveryDate))).length}
+                            {orders.filter(o => ['Sent', 'Partial'].includes(o.status) && isAfter(new Date(), o.expectedDeliveryDate)).length}
                         </p>
                     </div>
                 </div>
@@ -193,10 +235,7 @@ export default function ProcurementHub() {
                 </div>
 
                 {loading ? (
-                    <div className="p-12 flex flex-col items-center gap-3 text-gray-400">
-                        <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
-                        <span className="text-sm font-medium">{t('procurement.loadingData', 'Loading...')}</span>
-                    </div>
+                    <TableSkeleton rows={6} cols={activeTab === 'suppliers' ? 7 : 6} showHeader={false} />
                 ) : (
                     <div className="p-0">
                         {activeTab === 'orders' && (
@@ -225,8 +264,8 @@ export default function ProcurementHub() {
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-1">
                                                         <Clock className="w-3 h-3 text-gray-400" />
-                                                        <span className={moment().isAfter(moment(order.expectedDeliveryDate)) && ['Sent', 'Partial'].includes(order.status) ? 'text-red-600 font-bold' : 'text-gray-600'}>
-                                                            {moment(order.expectedDeliveryDate).format('MMM Do, YYYY')}
+                                                        <span className={isAfter(new Date(), order.expectedDeliveryDate) && ['Sent', 'Partial'].includes(order.status) ? 'text-red-600 font-bold' : 'text-gray-600'}>
+                                                            {fmtMediumDate(order.expectedDeliveryDate)}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -237,9 +276,13 @@ export default function ProcurementHub() {
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    {hasPermission('procurement.receive_goods') && (
-                                                        <button className="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-                                                            {t('procurement.manageDelivery')}
+                                                    {hasPermission('procurement.receive_goods') && ['Sent', 'Partial'].includes(order.status) && (
+                                                        <button
+                                                            onClick={() => handleReceiveAll(order)}
+                                                            disabled={receivingPoId === order._id}
+                                                            className="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                                                        >
+                                                            {receivingPoId === order._id ? '...' : t('procurement.manageDelivery')}
                                                         </button>
                                                     )}
                                                 </td>
@@ -297,7 +340,7 @@ export default function ProcurementHub() {
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    {(hasPermission('procurement.create_po') || hasPermission('inventory.update_product')) && (
+                                                    {(hasPermission('procurement.create_po') || hasPermission('inventory.adjust')) && (
                                                         <button className="text-gray-600 hover:text-gray-900 font-bold text-sm">{t('procurement.editProfile')}</button>
                                                     )}
                                                 </td>
@@ -328,6 +371,7 @@ export default function ProcurementHub() {
                     setIsSupplierModalOpen(false);
                 }}
             />
+            {confirmDialogEl}
         </div>
     );
 }

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, MessageSquare, Send, Clock, CheckCircle2, AlertCircle, X, ShieldAlert, Plus } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
-import moment from 'moment';
+import { fromNowShort, fmtShortDateTime } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 import { useContext } from 'react';
@@ -32,6 +33,7 @@ export default function SupportDesk() {
         setLoading(true);
         try {
             const res = await apiFetch(`/api/support`);
+            if (!res.ok) throw new Error('fetch failed');
             const json = await res.json();
             const data = Array.isArray(json) ? json : (json.data ?? []);
             setTickets(data);
@@ -46,6 +48,7 @@ export default function SupportDesk() {
         try {
             // Fetch populated ticket
             const res = await apiFetch(`/api/support/${ticket._id}`);
+            if (!res.ok) throw new Error('fetch failed');
             const json = await res.json();
             setSelectedTicket(json.data ?? json);
         } catch (error) {
@@ -73,12 +76,17 @@ export default function SupportDesk() {
                 setTickets(tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t));
                 setReplyText('');
                 setReplyError(null);
+                toast.success(t('support.replySent', 'Reply sent successfully'));
             } else {
                 const data = await res.json().catch(() => ({}));
-                setReplyError(data.message || t('support.replyError', 'Failed to send reply.'));
+                const errMsg = data.message || t('support.replyError', 'Failed to send reply.');
+                setReplyError(errMsg);
+                toast.error(errMsg);
             }
         } catch (error) {
-            setReplyError(t('support.replyError', 'Failed to send reply.'));
+            const errMsg = t('support.replyError', 'Failed to send reply.');
+            setReplyError(errMsg);
+            toast.error(errMsg);
         }
     };
 
@@ -96,12 +104,17 @@ export default function SupportDesk() {
                 setSelectedTicket(updatedTicket);
                 setTickets(tickets.map(t => t._id === updatedTicket._id ? updatedTicket : t));
                 setReplyError(null);
+                toast.success(t('support.statusUpdated', `Ticket marked as ${status}`));
             } else {
                 const data = await res.json().catch(() => ({}));
-                setReplyError(data.message || t('support.statusError', 'Failed to update ticket status.'));
+                const errMsg = data.message || t('support.statusError', 'Failed to update ticket status.');
+                setReplyError(errMsg);
+                toast.error(errMsg);
             }
         } catch (error) {
-            setReplyError(t('support.statusError', 'Failed to update ticket status.'));
+            const errMsg = t('support.statusError', 'Failed to update ticket status.');
+            setReplyError(errMsg);
+            toast.error(errMsg);
         }
     };
 
@@ -147,7 +160,7 @@ export default function SupportDesk() {
                 subtitle={t('crm.subtitle', 'Live customer communication and issue resolution center.')}
                 variant="customers"
                 actions={
-                    hasPermission('support.create_ticket') && (
+                    hasPermission('support.edit') && (
                         <button className="flex items-center gap-2 px-6 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 leading-none">
                             <Plus className="w-5 h-5" /> {t('crm.newTicket', 'Manual Ticket')}
                         </button>
@@ -250,7 +263,7 @@ export default function SupportDesk() {
                                             <span className="font-bold text-gray-900 truncate pe-2">{ticket.customerId?.name || 'Unknown'}</span>
                                         </div>
                                         <span className="text-xs font-medium text-gray-400 whitespace-nowrap">
-                                            {moment(ticket.createdAt).fromNow(true)}
+                                            {fromNowShort(ticket.createdAt)}
                                         </span>
                                     </div>
                                     <p className="text-sm font-semibold text-gray-700 truncate pe-8 mb-2">
@@ -303,13 +316,13 @@ export default function SupportDesk() {
                                         <button
                                             key={status}
                                             onClick={() => handleUpdateStatus(status)}
-                                            disabled={!hasPermission('support.update_status')}
+                                            disabled={!hasPermission('support.edit')}
                                             className={clsx(
                                                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
                                                 selectedTicket.status === status
                                                     ? "bg-white text-gray-900 shadow-sm border border-gray-200"
                                                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-100",
-                                                !hasPermission('support.update_status') && "opacity-50 cursor-not-allowed"
+                                                !hasPermission('support.edit') && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
                                             {status}
@@ -347,7 +360,7 @@ export default function SupportDesk() {
                                                 </div>
                                                 <div className={clsx("flex flex-col gap-1", isAgent ? "items-end" : "items-start")}>
                                                     <span className="text-xs font-bold text-gray-500 px-1">
-                                                        {isAgent ? t('crm.agentSender', 'Support Agent') : selectedTicket.customerId?.name} • {moment(msg.timestamp).format('MMM DD, HH:mm')}
+                                                        {isAgent ? t('crm.agentSender', 'Support Agent') : selectedTicket.customerId?.name} • {fmtShortDateTime(msg.timestamp)}
                                                     </span>
                                                     <div className={clsx(
                                                         "p-4 rounded-2xl text-sm leading-relaxed shadow-sm w-full",
@@ -383,10 +396,10 @@ export default function SupportDesk() {
                                     />
                                     <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex justify-between items-center mt-auto flex-wrap gap-2">
                                         <div className="flex gap-2">
-                                            <button disabled={!hasPermission('support.send_reply')} className="text-xs font-bold text-gray-500 hover:text-gray-900 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm transition-colors disabled:opacity-50">
+                                            <button disabled={!hasPermission('support.edit')} className="text-xs font-bold text-gray-500 hover:text-gray-900 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm transition-colors disabled:opacity-50">
                                                 {t('crm.btnInsertTemplate', 'Insert Template')}
                                             </button>
-                                            {selectedTicket.orderId && hasPermission('support.process_rma') && (
+                                            {selectedTicket.orderId && hasPermission('support.edit') && (
                                                 <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
                                                     <ShieldAlert className="w-3.5 h-3.5" /> {t('crm.btnRmaOptions', 'RMA Options')}
                                                 </button>
@@ -394,7 +407,7 @@ export default function SupportDesk() {
                                         </div>
                                         <button
                                             onClick={handleSendReply}
-                                            disabled={!replyText.trim() || !hasPermission('support.send_reply')}
+                                            disabled={!replyText.trim() || !hasPermission('support.edit')}
                                             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold shadow-md transition-all active:scale-95 whitespace-nowrap"
                                         >
                                             {t('crm.btnSendReply', 'Send Reply')} <Send className="w-4 h-4 rtl:-scale-x-100" />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calculator, CheckCircle, ShieldAlert, Download, Clock, AlertCircle, X, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
-import moment from 'moment';
+import { toMMYYYY, fmtMonthYear, subtract } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
@@ -13,8 +13,8 @@ import TableSkeleton from '../components/TableSkeleton';
 function buildPeriodOptions() {
     const opts = [];
     for (let i = 0; i < 6; i++) {
-        const m = moment().subtract(i, 'months');
-        opts.push({ value: m.format('MM-YYYY'), label: m.format('MMMM YYYY') });
+        const m = subtract(new Date(), i, 'months');
+        opts.push({ value: toMMYYYY(m), label: fmtMonthYear(m) });
     }
     return opts;
 }
@@ -23,7 +23,7 @@ const PERIOD_OPTIONS = buildPeriodOptions();
 export default function HRPayroll() {
     const { t } = useTranslation();
     const { hasPermission, token } = React.useContext(AuthContext);
-    const defaultPeriod = moment().format('MM-YYYY');
+    const defaultPeriod = toMMYYYY();
     const [period, setPeriod] = useState(defaultPeriod);
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +45,7 @@ export default function HRPayroll() {
         setLoading(true);
         try {
             const res = await apiFetch(`/api/hr/payroll?period=${selectedPeriod}`);
+            if (!res.ok) throw new Error('fetch failed');
             const json = await res.json();
             const data = json.data ?? (Array.isArray(json) ? json : []);
             setRecords(data);
@@ -171,7 +172,7 @@ export default function HRPayroll() {
                                 <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                         </select>
-                        {hasPermission('hr.approve_payroll') && pendingCount > 0 && (
+                        {hasPermission('hr.payroll.approve') && pendingCount > 0 && (
                             <button
                                 onClick={handleBulkApprove}
                                 disabled={bulkApproving}
@@ -181,7 +182,7 @@ export default function HRPayroll() {
                                 {bulkApproving ? t('hr.approving', 'Approving...') : t('hr.btnApproveAll', `Approve All (${pendingCount})`)}
                             </button>
                         )}
-                        {hasPermission('hr.manage_payroll') && (
+                        {hasPermission('hr.payroll.run') && (
                             <button
                                 onClick={handleGenerateRun}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 active:scale-95 leading-none"
@@ -365,12 +366,12 @@ export default function HRPayroll() {
                                         <button onClick={() => window.print()} className="p-1.5 bg-gray-100 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition" title={t('hr.downloadPayslip')}>
                                             <Download className="w-4 h-4" />
                                         </button>
-                                        {record.status === 'Pending Approval' && hasPermission('hr.approve_payroll') && (
+                                        {record.status === 'Pending Approval' && hasPermission('hr.payroll.approve') && (
                                             <button onClick={() => handleApprove(record._id)} className="p-1.5 bg-gray-100 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition font-bold text-xs px-3" title={t('hr.approvePayroll', 'Approve')}>
                                                 {t('hr.btnApprove', 'Approve')}
                                             </button>
                                         )}
-                                        {(record.status === 'Approved' || record.status === 'Partially Paid') && hasPermission('hr.approve_payroll') && (
+                                        {(record.status === 'Approved' || record.status === 'Partially Paid') && hasPermission('hr.payroll.approve') && (
                                             <button onClick={() => setPaymentModal({ id: record._id, maxPayable: record.finalPayableSalary - (record.amountPaid || 0), empName: record.employeeId?.name })} className="p-1.5 bg-gray-100 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition font-bold text-xs px-3" title={t('hr.processPayment')}>
                                                 {t('hr.btnPay')}
                                             </button>

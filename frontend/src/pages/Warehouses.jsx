@@ -5,7 +5,7 @@ import PageHeader from '../components/PageHeader';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
-import moment from 'moment';
+import { fmtShortDateTime } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
 
 export default function Warehouses() {
@@ -48,6 +48,7 @@ export default function Warehouses() {
                 apiFetch(`/api/inventory/ledger`),
                 apiFetch(`/api/inventory/suppliers`)
             ]);
+            if (!wRes.ok || !lRes.ok || !sRes.ok) throw new Error('fetch failed');
             setWarehouses(await wRes.json());
             setLedger(await lRes.json());
             setSuppliers(await sRes.json());
@@ -103,12 +104,12 @@ export default function Warehouses() {
                         <button onClick={() => setActiveTab('warehouses')} className={clsx("px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'warehouses' ? 'bg-[#5D5DFF] text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                             {t('warehouses.tabWarehouses', 'Warehouses')}
                         </button>
-                        {hasPermission('warehouse.view_ledger') && (
+                        {hasPermission('inventory.view') && (
                             <button onClick={() => setActiveTab('ledger')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'ledger' ? 'bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                                 <ArrowRightLeft className="w-4 h-4 shrink-0" /> {t('warehouses.tabLedger', 'Ledger')}
                             </button>
                         )}
-                        {hasPermission('inventory.view_supplier_data') && (
+                        {hasPermission('inventory.view') && (
                             <button onClick={() => setActiveTab('suppliers')} className={clsx("flex items-center gap-3 px-4 py-2 text-sm font-bold rounded-lg transition-all", activeTab === 'suppliers' ? 'bg-[#10B981] text-white shadow-lg shadow-emerald-500/20' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')}>
                                 <ShieldCheck className="w-4 h-4 shrink-0" /> {t('warehouses.tabSuppliers', 'Suppliers')}
                             </button>
@@ -147,7 +148,7 @@ export default function Warehouses() {
                     {activeTab === 'warehouses' && (
                         <div className="flex flex-col gap-6">
                             <div className="flex justify-end">
-                                {hasPermission('warehouse.create') && (
+                                {hasPermission('inventory.adjust') && (
                                     <button onClick={() => setIsWarehouseModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all">
                                         <Plus className="w-4 h-4" /> {t('warehouses.addWarehouseBtn', 'Add Warehouse')}
                                     </button>
@@ -211,7 +212,7 @@ export default function Warehouses() {
                                     <tbody>
                                         {filteredLedger.map(entry => (
                                             <tr key={entry._id}>
-                                                <td className="p-4 text-gray-500 font-medium">{moment(entry.createdAt).format('DD MMM, HH:mm')}</td>
+                                                <td className="p-4 text-gray-500 font-medium">{fmtShortDateTime(entry.createdAt)}</td>
                                                 <td className="p-4 font-mono text-xs font-bold text-indigo-600">{entry.referenceId}</td>
                                                 <td className="p-4">
                                                     <span className={clsx("px-2 py-1 text-xs font-bold rounded-md",

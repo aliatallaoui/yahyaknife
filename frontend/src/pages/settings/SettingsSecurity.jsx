@@ -1,13 +1,47 @@
 import React, { useState } from 'react';
 import { Shield, Smartphone, Key, MonitorSmartphone, X, Laptop } from 'lucide-react';
 import clsx from 'clsx';
-import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '../../utils/apiFetch';
+import toast from 'react-hot-toast';
 
 export default function SettingsSecurity() {
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsSecurity' });
     const isAr = i18n.language === 'ar';
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const handleChangePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            toast.error(t('pwdMismatch', 'Passwords do not match'));
+            return;
+        }
+        if (newPassword.length < 12) {
+            toast.error(t('pwdTooShort', 'Password must be at least 12 characters'));
+            return;
+        }
+        setSaving(true);
+        try {
+            const res = await apiFetch('/api/users/change-password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed');
+            toast.success(t('pwdChanged', 'Password changed successfully'));
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err) {
+            toast.error(err.message || t('pwdError', 'Failed to change password'));
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <div className="p-8 animate-in fade-in duration-300">
@@ -23,17 +57,17 @@ export default function SettingsSecurity() {
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="sec-current" className="block text-xs font-bold text-gray-700 mb-1">{t('currentPwd')}</label>
-                                <input id="sec-current" type="password" autoComplete="current-password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <input id="sec-current" type="password" autoComplete="current-password" placeholder="••••••••" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                             </div>
                             <div>
                                 <label htmlFor="sec-new" className="block text-xs font-bold text-gray-700 mb-1">{t('newPwd')}</label>
-                                <input id="sec-new" type="password" autoComplete="new-password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <input id="sec-new" type="password" autoComplete="new-password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                             </div>
                             <div>
                                 <label htmlFor="sec-confirm" className="block text-xs font-bold text-gray-700 mb-1">{t('confirmPwd')}</label>
-                                <input id="sec-confirm" type="password" autoComplete="new-password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <input id="sec-confirm" type="password" autoComplete="new-password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                             </div>
-                            <button className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg text-sm shadow-md hover:bg-indigo-700 transition">{t('updatePwd')}</button>
+                            <button disabled={saving || !currentPassword || !newPassword || !confirmPassword} onClick={handleChangePassword} className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg text-sm shadow-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">{saving ? '...' : t('updatePwd')}</button>
                         </div>
 
                         <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 h-fit">
