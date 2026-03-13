@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const ProductVariant = require('../models/ProductVariant');
@@ -14,7 +15,7 @@ exports.getStockoutPredictions = async (req, res) => {
 
         // Single aggregation instead of N+1 Order.find per variant
         const [variants, salesAgg] = await Promise.all([
-            ProductVariant.find({ status: 'Active' }),
+            ProductVariant.find({ status: 'Active' }).lean(),
             Order.aggregate([
                 {
                     $match: {
@@ -54,7 +55,7 @@ exports.getStockoutPredictions = async (req, res) => {
 
         res.json(predictions.filter(p => ['Critical', 'Moderate', 'Stockout'].includes(p.riskLevel)));
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -101,7 +102,7 @@ exports.evaluateOrderRisk = async (req, res) => {
 
         res.json({ orderId: order._id, riskScore, recommendation, flags, customerTrustScore: customer.trustScore });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -112,7 +113,7 @@ exports.optimizeCourierSelection = async (req, res) => {
         const query = { tenant: req.user.tenant, status: 'Active' };
         if (region) query.coverageZones = { $in: [region] };
 
-        const couriers = await Courier.find(query);
+        const couriers = await Courier.find(query).lean();
 
         const rankedCouriers = couriers.sort((a, b) => {
             if (b.reliabilityScore !== a.reliabilityScore) return b.reliabilityScore - a.reliabilityScore;
@@ -129,7 +130,7 @@ exports.optimizeCourierSelection = async (req, res) => {
             zones: c.coverageZones
         })));
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -145,15 +146,15 @@ exports.getGlobalIntelligence = async (req, res) => {
 
         res.json({
             alerts: [
-                { type: 'Stock', message: `${criticalStock} variants are at or below reorder level.`, severity: criticalStock > 5 ? 'High' : 'Medium' },
-                { type: 'Fraud', message: `${suspiciousCustomers} customers blacklisted based on refusal behavior.`, severity: 'High' }
+                { type: 'Stock', code: 'alert_critical_stock', count: criticalStock, severity: criticalStock > 5 ? 'High' : 'Medium' },
+                { type: 'Fraud', code: 'alert_suspicious_customers', count: suspiciousCustomers, severity: 'High' }
             ],
             recommendations: [
-                'Run stock movement analysis for top 5 selling SKUs.',
-                'Enforce Phone Confirmation for orders originating from High-Risk zones.'
+                'rec_stock_analysis',
+                'rec_enforce_phone'
             ]
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };

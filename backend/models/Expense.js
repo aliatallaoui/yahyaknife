@@ -14,4 +14,7 @@ const expenseSchema = new mongoose.Schema({
     linkedPayrollId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payroll' }
 }, { timestamps: true });
 
+// --- Performance Indexes ---
+expenseSchema.index({ tenant: 1, date: -1 });                        // Finance page sorted listing
+
 module.exports = mongoose.model('Expense', expenseSchema);

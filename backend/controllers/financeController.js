@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const Expense = require('../models/Expense');
 const Revenue = require('../models/Revenue');
 const Order = require('../models/Order');
@@ -120,24 +121,156 @@ exports.getFinancialOverview = async (req, res) => {
             totalPendingSettlements,
         }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Finance controller error');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.getExpenses = async (req, res) => {
     try {
-        const expenses = await Expense.find({ tenant: req.user.tenant }).sort({ date: -1 });
-        res.json(ok(expenses));
+        const filter = { tenant: req.user.tenant };
+        const [expenses, total] = await Promise.all([
+            Expense.find(filter).sort({ date: -1 }).skip(req.skip).limit(req.limit).lean(),
+            Expense.countDocuments(filter)
+        ]);
+        res.json(ok({ data: expenses, pagination: req.paginationMeta(total) }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Finance controller error');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.getRevenues = async (req, res) => {
     try {
-        const revenues = await Revenue.find({ tenant: req.user.tenant }).sort({ date: -1 });
-        res.json(ok(revenues));
+        const filter = { tenant: req.user.tenant };
+        const [revenues, total] = await Promise.all([
+            Revenue.find(filter).sort({ date: -1 }).skip(req.skip).limit(req.limit).lean(),
+            Revenue.countDocuments(filter)
+        ]);
+        res.json(ok({ data: revenues, pagination: req.paginationMeta(total) }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Finance controller error');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+// --- COURIER CASH SETTLEMENT (LEDGER) ---
+
+const CourierSettlement = require('../models/CourierSettlement');
+const mongoose = require('mongoose');
+
+exports.getCourierBalances = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const couriers = await Courier.find({ tenant: tenantId })
+            .select('name phone integrationType pendingRemittance cashCollected cashSettled')
+            .sort({ pendingRemittance: -1 })
+            .lean();
+
+        res.json(ok(couriers));
+    } catch (error) {
+        logger.error({ err: error }, 'Finance controller error fetching courier balances');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+exports.getCourierDeliveries = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const { courierId } = req.params;
+
+        // Fetch orders assigned to this courier that are Delivered
+        const deliveries = await Order.find({
+            tenant: tenantId,
+            courier: courierId,
+            status: 'Delivered',
+            paymentStatus: { $in: ['Delivered_Not_Collected', 'COD_Expected'] }
+        })
+        .select('orderId date customer shipping financials.codAmount status paymentStatus')
+        .populate('customer', 'name phone')
+        .sort({ 'deliveryStatus.deliveredAt': 1 })
+        .lean();
+
+        res.json(ok(deliveries));
+    } catch (error) {
+        logger.error({ err: error }, 'Finance controller error fetching deliveries');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+exports.settleCourierCash = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const tenantId = req.user.tenant;
+        const { courierId, orderIds, amountPaid, notes } = req.body;
+        const userId = req.user._id;
+
+        if (!orderIds || !orderIds.length || !amountPaid) {
+            throw new Error('Missing orderIds or amountPaid');
+        }
+
+        const courier = await Courier.findOne({ _id: courierId, tenant: tenantId }).session(session);
+        if (!courier) throw new Error('Courier not found');
+
+        const orders = await Order.find({
+            _id: { $in: orderIds },
+            tenant: tenantId,
+            courier: courierId,
+            status: 'Delivered',
+            paymentStatus: { $in: ['Delivered_Not_Collected', 'COD_Expected'] }
+        }).session(session);
+
+        if (orders.length !== orderIds.length) {
+            throw new Error('Some orders are invalid or already settled.');
+        }
+
+        let totalExpectedCash = 0;
+        orders.forEach(o => {
+            totalExpectedCash += (o.financials?.codAmount || 0);
+        });
+
+        const shortfall = totalExpectedCash - amountPaid;
+
+        const settlement = new CourierSettlement({
+            tenant: tenantId,
+            courier: courierId,
+            settledBy: userId,
+            amountSettled: amountPaid,
+            ordersSettled: orders.map(o => o._id),
+            remainingAmount: shortfall > 0 ? shortfall : 0,
+            previousPendingRemittance: courier.pendingRemittance,
+            notes
+        });
+
+        await settlement.save({ session });
+
+        await Order.updateMany(
+            { _id: { $in: orders.map(o => o._id) } },
+            { 
+                $set: { 
+                    status: 'Paid', 
+                    paymentStatus: 'Paid_and_Settled',
+                    'deliveryStatus.codPaidAt': new Date()
+                } 
+            },
+            { session }
+        );
+
+        courier.cashSettled += amountPaid;
+        courier.pendingRemittance = courier.cashCollected - courier.cashSettled;
+        await courier.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.json(ok({ message: 'Settlement processed successfully', settlement }));
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        logger.error({ err: error }, 'Courier settlement error');
+        res.status(400).json({ message: error.message || 'Settlement failed' });
     }
 };

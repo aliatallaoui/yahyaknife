@@ -6,6 +6,7 @@ import {
     Box, Lightbulb, CheckCircle, RefreshCcw, X
 } from 'lucide-react';
 import clsx from 'clsx';
+import { apiFetch } from '../utils/apiFetch';
 
 export default function InsightFeed() {
     const { t } = useTranslation();
@@ -14,20 +15,16 @@ export default function InsightFeed() {
     const [loading, setLoading] = useState(true);
     const [isVisible, setIsVisible] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || '';
-
     const fetchInsights = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${API_URL}/api/intelligence/global-summary`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/intelligence/global-summary`);
             if (res.ok) {
                 const data = await res.json();
                 setInsights(data);
             }
         } catch (error) {
-            console.error("Failed to fetch intelligence insights", error);
+            // silently swallowed — non-fatal
         } finally {
             setLoading(false);
         }
@@ -106,7 +103,7 @@ export default function InsightFeed() {
                                     )}
                                 >
                                     {getIcon(alert.type)}
-                                    <span>{alert.message}</span>
+                                    <span>{t(`intelligence.${alert.code}`, { count: alert.count, defaultValue: alert.message })}</span>
                                 </div>
                             ))
                         )}
@@ -116,11 +113,13 @@ export default function InsightFeed() {
                     {!loading && insights.recommendations.length > 0 && (
                         <div className="flex items-start gap-2 text-indigo-100 text-sm bg-black/20 p-3 rounded-xl border border-white/5">
                             <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                            <div className="flex flex-col gap-1">
-                                <span className="font-bold text-white uppercase text-[10px] tracking-wider opacity-70">Suggested Actions</span>
+                            <div className="flex flex-col gap-1 w-full">
+                                <span className="font-bold text-white uppercase text-[10px] tracking-wider opacity-70">
+                                    {t('intelligence.rec_title', 'Suggested Actions')}
+                                </span>
                                 <ul className="list-disc list-inside space-y-1">
                                     {insights.recommendations.map((rec, idx) => (
-                                        <li key={idx} className="font-medium">{rec}</li>
+                                        <li key={idx} className="font-medium text-[13px]">{t(`intelligence.${rec}`, rec)}</li>
                                     ))}
                                 </ul>
                             </div>

@@ -2,9 +2,11 @@ import { useState, useContext, useEffect } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 export default function CategoryModal({ isOpen, onClose, category }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const { createCategory, updateCategory } = useContext(InventoryContext);
 
     const [formData, setFormData] = useState({
@@ -52,13 +54,13 @@ export default function CategoryModal({ isOpen, onClose, category }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-auto overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-auto overflow-hidden" {...panelProps}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-800">
                         {category ? t('modals.catTitleEdit', 'Edit Category') : t('modals.catTitleAdd', 'Add New Category')}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -72,8 +74,9 @@ export default function CategoryModal({ isOpen, onClose, category }) {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.catName', 'Category Name *')}</label>
+                            <label htmlFor="cat-name" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.catName', 'Category Name *')}</label>
                             <input
+                                id="cat-name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -85,8 +88,9 @@ export default function CategoryModal({ isOpen, onClose, category }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.catDesc', 'Description')}</label>
+                            <label htmlFor="cat-desc" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.catDesc', 'Description')}</label>
                             <textarea
+                                id="cat-desc"
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}

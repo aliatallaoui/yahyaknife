@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
+const logger = require('../shared/logger');
 const SupportTicket = require('../models/SupportTicket');
 const { ok, created, paginated } = require('../shared/utils/ApiResponse');
 
 exports.createTicket = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { customerId, orderId, subject, type, priority, initialMessage } = req.body;
 
         const ticketData = {
+            tenant: tenantId,
             customerId,
             orderId,
             subject,
@@ -29,14 +32,16 @@ exports.createTicket = async (req, res) => {
 
         res.status(201).json(created(ticket));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Failed to create support ticket');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.getTickets = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { status, type, priority, customerId } = req.query;
-        let query = {};
+        let query = { tenant: tenantId };
 
         const VALID_STATUSES = ['Open', 'In Progress', 'Waiting on Customer', 'Resolved', 'Closed'];
         const VALID_TYPES    = ['General Inquiry', 'Shipping Issue', 'Product Defect', 'RMA Request'];
@@ -56,35 +61,41 @@ exports.getTickets = async (req, res) => {
                 .populate('orderId', 'orderId totalAmount status')
                 .populate('assignedTo', 'name')
                 .sort({ createdAt: -1 })
-                .skip(req.skip).limit(req.limit),
+                .skip(req.skip).limit(req.limit)
+                .lean(),
             SupportTicket.countDocuments(query)
         ]);
 
         res.json(paginated(tickets, { total, hasNextPage: req.skip + tickets.length < total }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Failed to fetch support tickets');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.getTicketById = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
-        const ticket = await SupportTicket.findById(req.params.id)
+        const ticket = await SupportTicket.findOne({ _id: req.params.id, tenant: tenantId })
             .populate('customerId', 'name email phone')
             .populate('orderId', 'orderId totalAmount status items')
             .populate('assignedTo', 'name')
-            .populate('messages.senderId', 'name');
+            .populate('messages.senderId', 'name')
+            .lean();
 
         if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
         res.json(ok(ticket));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Failed to fetch support ticket');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.addMessage = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
         const { message, sender, senderId } = req.body;
@@ -92,7 +103,7 @@ exports.addMessage = async (req, res) => {
         if (!['Agent', 'Customer'].includes(sender))
             return res.status(400).json({ error: 'sender must be Agent or Customer' });
 
-        const ticket = await SupportTicket.findById(req.params.id);
+        const ticket = await SupportTicket.findOne({ _id: req.params.id, tenant: tenantId });
         if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
 
         ticket.messages.push({
@@ -112,20 +123,23 @@ exports.addMessage = async (req, res) => {
         await ticket.save();
 
         // return the populated ticket so UI updates instantly
-        const populatedTicket = await SupportTicket.findById(ticket._id)
+        const populatedTicket = await SupportTicket.findOne({ _id: ticket._id, tenant: tenantId })
             .populate('customerId', 'name email phone')
             .populate('orderId', 'orderId totalAmount status')
             .populate('assignedTo', 'name')
-            .populate('messages.senderId', 'name');
+            .populate('messages.senderId', 'name')
+            .lean();
 
         res.json(ok(populatedTicket));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Failed to add message to support ticket');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.updateTicketStatus = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
         const { status, resolutionNotes } = req.body;
@@ -135,15 +149,21 @@ exports.updateTicketStatus = async (req, res) => {
         if (status === 'Resolved') updateData.resolvedAt = new Date();
         if (status === 'Closed') updateData.closedAt = new Date();
 
-        const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, updateData, { new: true })
+        const ticket = await SupportTicket.findOneAndUpdate(
+            { _id: req.params.id, tenant: tenantId },
+            updateData,
+            { new: true }
+        )
             .populate('customerId', 'name email phone')
             .populate('orderId', 'orderId totalAmount status items')
             .populate('assignedTo', 'name')
-            .populate('messages.senderId', 'name');
+            .populate('messages.senderId', 'name')
+            .lean();
 
         if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
         res.json(ok(ticket));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Failed to update support ticket status');
+        res.status(500).json({ error: 'Server Error' });
     }
 };

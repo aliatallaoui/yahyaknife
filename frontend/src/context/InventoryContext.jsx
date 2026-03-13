@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 
 export const InventoryContext = createContext();
 
@@ -23,24 +24,12 @@ export const InventoryProvider = ({ children }) => {
         setFetchError(null);
         try {
             const [prodRes, metricsRes, suppRes, catRes, poRes, ledgerRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/metrics`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/pos`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
+                apiFetch(`/api/inventory/products`),
+                apiFetch(`/api/inventory/metrics`),
+                apiFetch(`/api/inventory/suppliers`),
+                apiFetch(`/api/inventory/categories`),
+                apiFetch(`/api/inventory/pos`),
+                apiFetch(`/api/inventory/ledger`)
             ]);
 
             if (prodRes.ok) { const prodJson = await prodRes.json(); setProducts(prodJson.data ?? (Array.isArray(prodJson) ? prodJson : [])); }
@@ -61,13 +50,18 @@ export const InventoryProvider = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
+    // Lightweight refresh — only metrics (not all 6 endpoints)
+    const refreshMetrics = async () => {
+        try {
+            const res = await apiFetch(`/api/inventory/metrics`);
+            if (res.ok) setMetrics(await res.json());
+        } catch { /* non-fatal */ }
+    };
+
     const createProduct = async (productData) => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
+        const response = await apiFetch(`/api/inventory/products`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(productData)
         });
 
@@ -78,19 +72,14 @@ export const InventoryProvider = ({ children }) => {
 
         const newProduct = await response.json();
         setProducts(prev => [...prev, newProduct]);
-
-        // Recalculate metrics locally or re-fetch loosely
-        fetchInventoryData();
+        refreshMetrics();
         return newProduct;
     };
 
     const updateProduct = async (id, updates) => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products/${id}`, {
+        const response = await apiFetch(`/api/inventory/products/${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
         });
 
@@ -101,17 +90,12 @@ export const InventoryProvider = ({ children }) => {
 
         const updatedProduct = await response.json();
         setProducts(prev => prev.map(p => p._id === id ? updatedProduct : p));
-        fetchInventoryData(); // Refresh metrics
+        refreshMetrics();
         return updatedProduct;
     };
 
     const deleteProduct = async (id) => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await apiFetch(`/api/inventory/products/${id}`, { method: 'DELETE' });
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -119,14 +103,14 @@ export const InventoryProvider = ({ children }) => {
         }
 
         setProducts(prev => prev.filter(p => p._id !== id));
-        fetchInventoryData(); // Refresh metrics
+        refreshMetrics();
     };
 
     // --- SUPPLIER CRUD ---
     const createSupplier = async (data) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers`, {
+        const res = await apiFetch(`/api/inventory/suppliers`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(t('inventory.errorCreateSupplier', 'Failed to create supplier'));
@@ -136,9 +120,9 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updateSupplier = async (id, updates) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers/${id}`, {
+        const res = await apiFetch(`/api/inventory/suppliers/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
         });
         if (!res.ok) throw new Error(t('inventory.errorUpdateSupplier', 'Failed to update supplier'));
@@ -148,19 +132,16 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const deleteSupplier = async (id) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await apiFetch(`/api/inventory/suppliers/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error(t('inventory.errorDeleteSupplier', 'Failed to delete supplier'));
         setSuppliers(prev => prev.filter(s => s._id !== id));
     };
 
     // --- CATEGORY CRUD ---
     const createCategory = async (data) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories`, {
+        const res = await apiFetch(`/api/inventory/categories`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(t('inventory.errorCreateCategory', 'Failed to create category'));
@@ -170,9 +151,9 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updateCategory = async (id, updates) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories/${id}`, {
+        const res = await apiFetch(`/api/inventory/categories/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
         });
         if (!res.ok) throw new Error(t('inventory.errorUpdateCategory', 'Failed to update category'));
@@ -182,19 +163,16 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const deleteCategory = async (id) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/categories/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await apiFetch(`/api/inventory/categories/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error(t('inventory.errorDeleteCategory', 'Failed to delete category'));
         setCategories(prev => prev.filter(c => c._id !== id));
     };
 
     // --- POS CRUD ---
     const createPurchaseOrder = async (data) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/pos`, {
+        const res = await apiFetch(`/api/inventory/pos`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error(t('inventory.errorCreatePO', 'Failed to create purchase order'));
@@ -204,24 +182,33 @@ export const InventoryProvider = ({ children }) => {
     };
 
     const updatePOStatus = async (id, status) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/pos/${id}/status`, {
+        const res = await apiFetch(`/api/inventory/pos/${id}/status`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })
         });
         if (!res.ok) throw new Error(t('inventory.errorUpdatePO', 'Failed to update PO status'));
         const updated = await res.json();
+        setPurchaseOrders(prev => prev.map(po => po._id === id ? updated : po));
 
-        // Refresh entire inventory state to see stock movement
-        fetchInventoryData();
+        // PO receiving affects stock levels — refresh products, metrics, and ledger
+        try {
+            const [prodRes, metricsRes, ledgerRes] = await Promise.all([
+                apiFetch(`/api/inventory/products`),
+                apiFetch(`/api/inventory/metrics`),
+                apiFetch(`/api/inventory/ledger`),
+            ]);
+            if (prodRes.ok) { const j = await prodRes.json(); setProducts(j.data ?? (Array.isArray(j) ? j : [])); }
+            if (metricsRes.ok) setMetrics(await metricsRes.json());
+            if (ledgerRes.ok) { const j = await ledgerRes.json(); setGlobalLedger(j.data ?? (Array.isArray(j) ? j : [])); }
+        } catch { /* non-fatal background refresh */ }
+
         return updated;
     };
 
     // --- LEDGER ---
     const fetchVariantLedger = async (variantId) => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger/${variantId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await apiFetch(`/api/inventory/ledger/${variantId}`);
         if (!res.ok) throw new Error(t('inventory.errorFetchLedger', 'Failed to fetch ledger'));
         return await res.json();
     };

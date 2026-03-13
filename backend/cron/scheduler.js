@@ -1,35 +1,28 @@
 const cron = require('node-cron');
-const ProductVariant = require('../models/ProductVariant');
 const Customer = require('../models/Customer');
-const Tenant = require('../models/Tenant');
 const { initCronJobs } = require('./trackerSync');
 const { generateKPISnapshots } = require('../jobs/kpiGenerator');
 const { runDailyRollup, runWeeklyReport } = require('../jobs/dailyRollup');
+const { runReorderCheck } = require('../jobs/reorderCheck');
+const { runCallCenterFollowUp } = require('../jobs/callCenterFollowUp');
+const logger = require('../shared/logger');
 
 // Background Worker Scheduler
 const initJobs = () => {
-    // 1. Daily Low Stock & Dead Stock Alert Scanning (Runs every day at Midnight)
+    // 1. Daily Reorder Point Check (Runs every day at Midnight)
     cron.schedule('0 0 * * *', async () => {
-        console.log("[CRON] Running Daily Inventory Health Check...");
+        logger.info("[CRON] Running Daily Reorder Point Check...");
         try {
-            const variants = await ProductVariant.find({ status: 'Active' });
-            let lowCount = 0;
-
-            for (const v of variants) {
-                if (v.totalStock <= v.reorderLevel) {
-                    lowCount++;
-                    // Dispatch Admin Alert / Notification here
-                }
-            }
-            console.log(`[CRON] Inventory Scan Complete. Detected ${lowCount} low stock variants.`);
+            const result = await runReorderCheck();
+            logger.info(`[CRON] Reorder Check Complete. Created ${result.created} alerts, skipped ${result.skipped} existing.`);
         } catch (err) {
-            console.error("[CRON] Error (Inventory Check):", err);
+            logger.error({ err }, '[CRON] Error (Reorder Check)');
         }
     });
 
     // 2. Daily Fraud Sweep & Courier Auto-Assignment logic (Runs at 1 AM)
     cron.schedule('0 1 * * *', async () => {
-        console.log("[CRON] Running COD Fraud Sweep & Courier Sync...");
+        logger.info("[CRON] Running COD Fraud Sweep & Courier Sync...");
         try {
             // A. Fraud Sweep: Flag customers with refusal rate 30–50%, Blacklist > 50%
             const [flagged, blacklisted] = await Promise.all([
@@ -43,40 +36,62 @@ const initJobs = () => {
                 )
             ]);
 
-            console.log(`[CRON] Fraud Sweep complete. Flagged: ${flagged.modifiedCount}, Blacklisted: ${blacklisted.modifiedCount} accounts.`);
+            logger.info(`[CRON] Fraud Sweep complete. Flagged: ${flagged.modifiedCount}, Blacklisted: ${blacklisted.modifiedCount} accounts.`);
 
             // B. Mock Courier Assignment (e.g., auto assign based on region optimization)
-            console.log(`[CRON] Recalculating Courier Regional performance weights for auto-dispatch.`);
+            logger.info(`[CRON] Recalculating Courier Regional performance weights for auto-dispatch.`);
         } catch (err) {
-            console.error("[CRON] Error (Fraud/Courier):", err);
+            logger.error({ err }, '[CRON] Error (Fraud/Courier)');
         }
     });
 
     // 3. Nightly Daily Rollup (Runs at 00:30 — previous day is fully closed by then)
     cron.schedule('30 0 * * *', async () => {
-        console.log("[CRON] Running nightly DailyRollup...");
-        await runDailyRollup(); // defaults to yesterday
+        logger.info('[CRON] Running nightly DailyRollup');
+        try {
+            await runDailyRollup(); // defaults to yesterday
+        } catch (err) {
+            logger.error({ err }, '[CRON] Error (DailyRollup)');
+        }
     });
 
     // 4. Weekly Report (Runs Sunday at 23:59 — aggregates Mon–Sun daily rollups)
     cron.schedule('59 23 * * 0', async () => {
-        console.log("[CRON] Running weekly WeeklyReport...");
-        await runWeeklyReport();
+        logger.info('[CRON] Running weekly WeeklyReport');
+        try {
+            await runWeeklyReport();
+        } catch (err) {
+            logger.error({ err }, '[CRON] Error (WeeklyReport)');
+        }
     });
 
-    // 5. Ecotrack API Status Syncer
+    // 5. Call Center Follow-Up (Runs every 2 hours — requeues No Answer, escalates stale orders)
+    cron.schedule('0 */2 * * *', async () => {
+        logger.info('[CRON] Running Call Center Follow-Up...');
+        try {
+            const result = await runCallCenterFollowUp();
+            logger.info({ ...result }, '[CRON] Call Center Follow-Up complete');
+        } catch (err) {
+            logger.error({ err }, '[CRON] Error (Call Center Follow-Up)');
+        }
+    });
+
+    // 6. Ecotrack API Status Syncer
     initCronJobs();
 
-    // 6. High-Performance Dashboard Materialized View Generator (Runs every 5 minutes)
+    // 7. High-Performance Dashboard Materialized View Generator (Runs every 5 minutes)
     cron.schedule('*/5 * * * *', async () => {
-        // Also run it off-cycle to pre-warm the DB. In production we might detach this if workers scale horizontally.
-        await generateKPISnapshots();
+        try {
+            await generateKPISnapshots();
+        } catch (err) {
+            logger.error({ err }, '[CRON] Error (KPI Snapshots)');
+        }
     });
 
     // Run the KPI generator immediately on boot to pre-warm the dashboard
-    generateKPISnapshots();
+    generateKPISnapshots().catch(err => logger.error({ err }, '[CRON] Error (KPI boot pre-warm)'));
 
-    console.log("✅ Background Worker Scheduler Initialized.");
+    logger.info("✅ Background Worker Scheduler Initialized.");
 };
 
 module.exports = { initJobs };

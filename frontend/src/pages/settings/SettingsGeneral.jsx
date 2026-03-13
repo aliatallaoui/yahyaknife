@@ -1,11 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Globe, Clock, Palette, Monitor, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Globe, Clock, Palette, Monitor, Sun, Moon, CheckCircle2, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../../context/AuthContext';
+import { ThemeContext } from '../../context/ThemeContext';
+import { apiFetch } from '../../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 
 export default function SettingsGeneral() {
-    const { user, token, updateContextPreferences } = useContext(AuthContext);
+    const { user, updateContextPreferences } = useContext(AuthContext);
+    const { theme: currentTheme, setTheme: applyTheme } = useContext(ThemeContext);
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsGeneral' });
     const isAr = i18n.language === 'ar';
 
@@ -32,16 +35,23 @@ export default function SettingsGeneral() {
         }
     }, [user]);
 
+    // Apply theme immediately when user selects it (live preview)
+    const handleThemeChange = (newTheme) => {
+        setTheme(newTheme);
+        document.documentElement.classList.add('theme-transitioning');
+        applyTheme(newTheme);
+        setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 400);
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         setSaveSuccess(false);
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/preferences`, {
+            const res = await apiFetch(`/api/users/preferences`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     language,
@@ -55,6 +65,10 @@ export default function SettingsGeneral() {
             if (res.ok) {
                 const data = await res.json();
                 updateContextPreferences(data.preferences);
+                // Apply language change
+                if (language !== i18n.language) {
+                    i18n.changeLanguage(language);
+                }
                 setSaveSuccess(true);
                 setTimeout(() => setSaveSuccess(false), 3000);
             } else {
@@ -63,7 +77,6 @@ export default function SettingsGeneral() {
                 setTimeout(() => setSaveError(null), 4000);
             }
         } catch (error) {
-            console.error("Error saving preferences:", error);
             setSaveError(t('saveError', 'Failed to save preferences.'));
             setTimeout(() => setSaveError(null), 4000);
         } finally {
@@ -83,8 +96,9 @@ export default function SettingsGeneral() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('language')}</label>
+                            <label htmlFor="gen-lang" className="block text-xs font-bold text-gray-700 mb-1">{t('language')}</label>
                             <select
+                                id="gen-lang"
                                 value={language}
                                 onChange={(e) => setLanguage(e.target.value)}
                                 className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
@@ -96,8 +110,9 @@ export default function SettingsGeneral() {
                             <p className="text-[10px] text-gray-400 mt-1">{t('langDesc')}</p>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('timezone')}</label>
+                            <label htmlFor="gen-tz" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('timezone')}</label>
                             <select
+                                id="gen-tz"
                                 value={timezone}
                                 onChange={(e) => setTimezone(e.target.value)}
                                 className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
@@ -112,8 +127,9 @@ export default function SettingsGeneral() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('dateFormat')}</label>
+                            <label htmlFor="gen-date" className="block text-xs font-bold text-gray-700 mb-1">{t('dateFormat')}</label>
                             <select
+                                id="gen-date"
                                 value={dateFormat}
                                 onChange={(e) => setDateFormat(e.target.value)}
                                 className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
@@ -123,8 +139,9 @@ export default function SettingsGeneral() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('currency')}</label>
+                            <label htmlFor="gen-currency" className="block text-xs font-bold text-gray-700 mb-1">{t('currency')}</label>
                             <select
+                                id="gen-currency"
                                 value={currency}
                                 onChange={(e) => setCurrency(e.target.value)}
                                 className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
@@ -142,10 +159,10 @@ export default function SettingsGeneral() {
 
                     <div>
                         <label className="block text-xs font-bold text-gray-700 mb-3">{t('themePref')}</label>
-                        <div className="flex gap-4">
-                            <ThemeOption icon={Monitor} label={t('themeSystem')} value="system" current={theme} onClick={() => setTheme('system')} />
-                            <ThemeOption icon={Globe} label={t('themeLight')} value="light" current={theme} onClick={() => setTheme('light')} />
-                            <ThemeOption icon={Globe} label={t('themeDark')} value="dark" current={theme} onClick={() => setTheme('dark')} />
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                            <ThemeOption icon={Monitor} label={t('themeSystem')} desc={t('themeSystemDesc', 'Match OS')} value="system" current={theme} onClick={() => handleThemeChange('system')} />
+                            <ThemeOption icon={Sun} label={t('themeLight')} desc={t('themeLightDesc', 'Always light')} value="light" current={theme} onClick={() => handleThemeChange('light')} />
+                            <ThemeOption icon={Moon} label={t('themeDark')} desc={t('themeDarkDesc', 'Always dark')} value="dark" current={theme} onClick={() => handleThemeChange('dark')} />
                         </div>
                     </div>
                 </div>
@@ -174,18 +191,24 @@ export default function SettingsGeneral() {
     );
 }
 
-function ThemeOption({ icon: Icon, label, value, current, onClick }) {
+function ThemeOption({ icon: Icon, label, desc, value, current, onClick }) {
     const isActive = value === current;
     return (
         <div
             onClick={onClick}
             className={clsx(
-                "flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-colors",
-                isActive ? "border-indigo-600 bg-indigo-50" : "border-gray-100 bg-white hover:border-gray-300"
+                "flex-1 flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                isActive ? "border-indigo-600 bg-indigo-50 shadow-sm scale-[1.02]" : "border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm"
             )}
         >
-            <Icon className={clsx("w-6 h-6", isActive ? "text-indigo-600" : "text-gray-400")} />
+            <div className={clsx(
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                isActive ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-400"
+            )}>
+                <Icon className="w-5 h-5" />
+            </div>
             <span className={clsx("text-xs font-bold", isActive ? "text-indigo-800" : "text-gray-600")}>{label}</span>
+            {desc && <span className={clsx("text-[10px]", isActive ? "text-indigo-500" : "text-gray-400")}>{desc}</span>}
         </div>
     );
 }

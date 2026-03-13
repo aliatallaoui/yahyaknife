@@ -1,7 +1,16 @@
+const dotenv = require('dotenv');
+dotenv.config(); // Load env FIRST so Sentry DSN is available
+
+const { initSentry, Sentry } = require('./shared/sentry');
+initSentry(); // Must run before importing Express
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const pinoHttp = require('pino-http');
 const dashboardRoutes = require('./routes/dashboard');
 const financeRoutes = require('./routes/finance');
 const salesRoutes = require('./routes/sales');
@@ -25,27 +34,136 @@ const callCenterRoutes = require('./routes/callCenterRoutes');
 const path = require('path');
 const { initJobs } = require('./cron/scheduler');
 const errorHandler = require('./shared/errors/errorHandler');
+const logger = require('./shared/logger');
+const requestId = require('./shared/middleware/requestId');
 
-dotenv.config();
+// ─── Startup Env Validation ──────────────────────────────────────────────────
+
+const REQUIRED_ENV = ['MONGO_URI', 'JWT_SECRET'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length > 0) {
+    logger.fatal({ missing }, 'Missing required environment variables');
+    process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Determine which Mongo URI to use based on the environment
 const MONGO_URI = process.env.MONGO_URI || process.env.PROD_MONGO_URI || process.env.DEV_MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
 
-// Security — remove server fingerprint header
+// ─── Security ────────────────────────────────────────────────────────────────
+
+// Trust first proxy (Render reverse proxy) so rate-limiter keys on real client IP
+app.set('trust proxy', 1);
+
+// Remove server fingerprint header
 app.disable('x-powered-by');
 
-// Middleware
+// Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow static /exports to be fetched cross-origin
+}));
+
+// Gzip/Brotli response compression
+app.use(compression());
+
+// ─── CORS ────────────────────────────────────────────────────────────────────
+
+if (IS_PRODUCTION && !process.env.CORS_ORIGIN) {
+    logger.fatal('CORS_ORIGIN env var is required in production. Exiting.');
+    process.exit(1);
+}
+
 const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : true; // reflect request origin in dev (never use '*' with credentials: true)
+    : ['http://localhost:3000', 'http://localhost:5173']; // dev-only whitelist
+
 app.use(cors({ origin: corsOrigin, credentials: true }));
+
+// ─── Request Correlation ID ──────────────────────────────────────────────────
+
+app.use(requestId);
+
+// ─── Request Logging ─────────────────────────────────────────────────────────
+
+app.use(pinoHttp({
+    logger,
+    // pino-http reads req.id automatically as the correlation ID
+    genReqId: (req) => req.id,
+    autoLogging: {
+        ignore: (req) => req.url === '/health', // don't spam logs with health checks
+    },
+    customProps(req) {
+        return {
+            requestId: req.id,
+            tenant: req.user?.tenant,
+            userId: req.user?._id,
+        };
+    },
+    serializers: {
+        req(req) {
+            return {
+                method: req.method,
+                url: req.url,
+                remoteAddress: req.remoteAddress,
+            };
+        },
+        res(res) {
+            return { statusCode: res.statusCode };
+        },
+    },
+}));
+
+// ─── Request Timeout ─────────────────────────────────────────────────────────
+
+app.use((_req, res, next) => {
+    res.setTimeout(30_000, () => {
+        if (!res.headersSent) {
+            res.status(408).json({ error: 'Request timeout' });
+        }
+    });
+    next();
+});
+
+// ─── Body Parsing ────────────────────────────────────────────────────────────
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
-// Routes
+// ─── Global Rate Limiter ─────────────────────────────────────────────────────
+
+const globalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 200,                 // 200 requests per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' },
+});
+app.use('/api/', globalLimiter);
+
+// ─── Health Check ────────────────────────────────────────────────────────────
+
+app.get('/health', (_req, res) => {
+    const dbReady = mongoose.connection.readyState === 1; // 1 = connected
+    const { ecotrackBreaker } = require('./utils/ecotrackRequest');
+    const circuitStatus = ecotrackBreaker.status();
+
+    if (dbReady) {
+        res.status(200).json({
+            status: 'ok',
+            db: 'connected',
+            uptime: process.uptime(),
+            circuits: { ecotrack: circuitStatus }
+        });
+    } else {
+        res.status(503).json({ status: 'degraded', db: 'disconnected', circuits: { ecotrack: circuitStatus } });
+    }
+});
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/sales', salesRoutes);
@@ -71,14 +189,72 @@ app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
 // Global error handler — must be last
 app.use(errorHandler);
 
-// Connect to MongoDB
-mongoose.connect(MONGO_URI)
+// ─── Database & Server Start ─────────────────────────────────────────────────
+
+let server;
+
+// Connection pool + timeout tuning
+mongoose.connect(MONGO_URI, {
+    maxPoolSize: 20,            // max concurrent connections (default 5 too low for prod)
+    minPoolSize: 2,             // keep warm connections ready
+    serverSelectionTimeoutMS: 5000,  // fail fast if cluster unreachable
+    socketTimeoutMS: 45000,          // kill stale sockets after 45s
+    heartbeatFrequencyMS: 10000,     // detect topology changes faster
+})
     .then(() => {
-        console.log('Connected to MongoDB');
+        logger.info('Connected to MongoDB');
         initJobs(); // Start background workers
     })
-    .catch(err => console.error('MongoDB connection error:', err.message));
+    .catch(err => {
+        logger.fatal({ err }, 'MongoDB connection error');
+        process.exit(1); // Fail fast if DB unreachable at startup
+    });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Mongoose connection event handlers
+mongoose.connection.on('error', (err) => {
+    logger.error({ err }, 'MongoDB runtime error');
+});
+mongoose.connection.on('disconnected', () => {
+    logger.warn('MongoDB disconnected — Mongoose will auto-reconnect');
+});
+mongoose.connection.on('reconnected', () => {
+    logger.info('MongoDB reconnected');
+});
+
+server = app.listen(PORT, () => {
+    logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Server started');
+});
+
+// ─── Graceful Shutdown ───────────────────────────────────────────────────────
+
+function gracefulShutdown(signal) {
+    logger.info({ signal }, 'Shutting down gracefully');
+    if (server) {
+        server.close(() => {
+            logger.info('HTTP server closed');
+            mongoose.connection.close(false).then(() => {
+                logger.info('MongoDB connection closed');
+                process.exit(0);
+            });
+        });
+    }
+    // Force exit after 10s if graceful shutdown stalls
+    setTimeout(() => {
+        logger.error('Forced shutdown after timeout');
+        process.exit(1);
+    }, 10_000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// ─── Process Crash Handlers ──────────────────────────────────────────────────
+
+process.on('unhandledRejection', (reason) => {
+    logger.error({ err: reason }, 'Unhandled promise rejection');
+});
+
+process.on('uncaughtException', (err) => {
+    logger.fatal({ err }, 'Uncaught exception');
+    gracefulShutdown('uncaughtException');
 });

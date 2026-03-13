@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const Shipment = require('../models/Shipment');
 const Order = require('../models/Order');
@@ -14,8 +15,8 @@ exports.createShipment = async (req, res) => {
         res.status(201).json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
-        console.error('createShipment error:', error);
-        res.status(502).json({ message: 'Courier Integration Error: ' + (error.response?.data?.message || error.message) });
+        logger.error({ err: error }, 'createShipment error');
+        res.status(502).json({ message: 'Courier Integration Error. Please check courier API credentials and try again.' });
     }
 };
 
@@ -25,8 +26,8 @@ exports.quickDispatch = async (req, res) => {
         res.status(201).json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
-        console.error('quickDispatch error:', error);
-        res.status(502).json({ message: 'Courier Integration Error: ' + (error.response?.data?.message || error.message) });
+        logger.error({ err: error }, 'quickDispatch error');
+        res.status(502).json({ message: 'Courier Integration Error. Please check courier API credentials and try again.' });
     }
 };
 
@@ -83,8 +84,8 @@ exports.getAllShipments = async (req, res) => {
 
         res.json(combined);
     } catch (error) {
-        console.error('getAllShipments error:', error);
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error fetching all shipments');
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -95,7 +96,8 @@ exports.getShipmentById = async (req, res) => {
         if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
         res.json(shipment);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error fetching shipment by ID');
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -106,7 +108,7 @@ exports.exportShipments = async (req, res) => {
         const tenantId = req.user?.tenant;
         if (!tenantId) return res.status(401).json({ message: 'Not authorized' });
 
-        const shipments = await Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 });
+        const shipments = await Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).lean();
         const fields = ['externalTrackingId', 'internalOrderId', 'customerName', 'phone1', 'wilayaName', 'commune', 'shipmentStatus', 'paymentStatus', 'codAmount', 'createdAt'];
 
         let csv = fields.join(',') + '\n';
@@ -119,7 +121,113 @@ exports.exportShipments = async (req, res) => {
         res.attachment('shipments_export.csv');
         return res.send(csv);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error exporting shipments');
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.generateManifest = async (req, res) => {
+    try {
+        const tenantId = req.user?.tenant;
+        if (!tenantId) return res.status(401).send('Not authorized');
+
+        const { ids } = req.query;
+        if (!ids) return res.status(400).send('No shipment IDs provided');
+
+        const idArray = ids.split(',');
+        
+        // Fetch original Orders which ALWAYS contain the product and customer details
+        // even if they haven't been dispatched to a courier yet.
+        const orders = await Order.find({ _id: { $in: idArray }, tenant: tenantId }).populate('customer').lean();
+        
+        if (orders.length === 0) return res.status(404).send('Aucune commande trouvée.');
+
+        const printDate = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+        
+        // Generate a clean HTML table for printing
+        let rowsHtml = orders.map((o, index) => {
+            const tracking = o.trackingInfo?.trackingNumber || 'N/A';
+            const customerName = o.customer?.name || o.shipping?.recipientName || 'Inconnu';
+            const phone = o.customer?.phone || o.shipping?.phone1 || '';
+            const codAmt = o.financials?.codAmount || o.finalTotal || o.totalAmount || 0;
+            const productText = o.products ? o.products.map(p => `${p.name || 'Produit'} (x${p.quantity || 1})`).join('<br>') : 'N/A';
+
+            return `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${tracking}</strong><br><small>${o.orderId}</small></td>
+                <td>${customerName}<br><small>${phone}</small></td>
+                <td>${o.wilaya || ''} - ${o.commune || ''}<br><small>${o.shipping?.address || ''}</small></td>
+                <td>${productText}</td>
+                <td><strong>${codAmt} DZD</strong></td>
+                <td></td>
+            </tr>
+            `;
+        }).join('');
+
+        const html = `
+        <!DOCTYPE html>
+        <html lang="fr" dir="ltr">
+        <head>
+            <meta charset="UTF-8">
+            <title>Bordereau d'Envoi</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; color: #333; }
+                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+                h1 { margin: 0; color: #1e40af; font-size: 24px; }
+                .meta { text-align: right; color: #6b7280; font-size: 14px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+                th, td { border: 1px solid #e5e7eb; padding: 10px 8px; text-align: left; }
+                th { background-color: #f3f4f6; font-weight: 600; color: #374151; }
+                tr:nth-child(even) { background-color: #f9fafb; }
+                .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+                .signature-box { border: 1px dashed #9ca3af; width: 250px; height: 100px; padding: 10px; color: #9ca3af; }
+                @media print {
+                    @page { size: A4 landscape; margin: 1cm; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body onload="window.print()">
+            <div class="header">
+                <div>
+                    <h1>Bordereau d'Envoi (Manifest)</h1>
+                    <p style="margin: 5px 0 0 0; color: #4b5563;">Total Colis: <strong>${shipments.length}</strong></p>
+                </div>
+                <div class="meta">
+                    <p style="margin: 0;">Date d'impression: ${printDate}</p>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="15%">Tracking / Réf</th>
+                        <th width="15%">Destinataire</th>
+                        <th width="25%">Adresse (Wilaya/Commune)</th>
+                        <th width="20%">Produit(s)</th>
+                        <th width="10%">Montant COD</th>
+                        <th width="10%">Signature Client</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <div class="signature-box">Signature Expéditeur (Vendeur)</div>
+                <div class="signature-box">Signature Transporteur (Livreur)</div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        res.send(html);
+    } catch (error) {
+        logger.error({ err: error }, 'generateManifest critical error');
+        res.status(500).send('Erreur lors de la génération du bordereau. Veuillez réessayer.');
     }
 };
 
@@ -155,7 +263,8 @@ exports.deleteShipment = async (req, res) => {
         res.json({ message: 'Shipment successfully deleted', ...result });
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error deleting shipment');
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -169,7 +278,7 @@ exports.validateShipment = async (req, res) => {
         res.json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
-        console.error('validateShipment error:', error);
+        logger.error({ err: error }, 'validateShipment error');
         res.status(502).json({ message: 'Failed to validate shipment on courier gateway.' });
     }
 };
@@ -183,7 +292,8 @@ exports.getShipmentLabel = async (req, res) => {
         res.json({ url });
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error fetching shipment label');
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -196,6 +306,7 @@ exports.requestReturn = async (req, res) => {
         res.json(shipment);
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error requesting shipment return');
+        res.status(500).json({ message: 'Server error' });
     }
 };

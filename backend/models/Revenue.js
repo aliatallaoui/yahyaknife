@@ -12,4 +12,7 @@ const revenueSchema = new mongoose.Schema({
     description: { type: String, required: true }
 }, { timestamps: true });
 
+// --- Performance Indexes ---
+revenueSchema.index({ tenant: 1, date: -1 });                        // Finance page sorted listing
+
 module.exports = mongoose.model('Revenue', revenueSchema);

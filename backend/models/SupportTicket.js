@@ -13,6 +13,7 @@ const messageSchema = new mongoose.Schema({
 });
 
 const supportTicketSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
     ticketNumber: { type: String, required: true, unique: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' }, // Optional link to a specific order
@@ -41,6 +42,10 @@ const supportTicketSchema = new mongoose.Schema({
     resolvedAt: { type: Date },
     closedAt: { type: Date }
 }, { timestamps: true });
+
+// --- Performance Indexes ---
+supportTicketSchema.index({ tenant: 1, status: 1, priority: -1 });    // Ticket queue
+supportTicketSchema.index({ tenant: 1, customerId: 1 });              // Customer ticket history
 
 // Pre-validate hook to generate ticket number before validation rules apply
 supportTicketSchema.pre('validate', async function () {

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../../hooks/useModalDismiss';
 
 const CHANNELS = ['Organic Search', 'Direct Traffic', 'Social Media', 'Referral', 'Paid Ads', 'Other'];
 const STATUSES = ['Active', 'Inactive', 'Churned'];
 
 export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const isEdit = !!initialData;
 
     const [name, setName] = useState('');
@@ -44,13 +46,13 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col" {...panelProps}>
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900">
                         {isEdit ? t('modals.custTitleEdit', 'Edit Customer') : t('modals.custTitleAdd', 'Add New Customer')}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -58,20 +60,25 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                 <div className="p-6">
                     <form id="customerForm" onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custName', 'Name')}</label>
+                            <label htmlFor="cust-name" className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custName', 'Name')}</label>
                             <input
+                                id="cust-name"
                                 required
                                 type="text"
+                                autoComplete="name"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custEmail', 'Email')}</label>
+                            <label htmlFor="cust-email" className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custEmail', 'Email')}</label>
                             <input
+                                id="cust-email"
                                 required
                                 type="email"
+                                autoComplete="email"
+                                dir="ltr"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
@@ -79,10 +86,13 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custPhone', 'Phone Number (*COD Required)')}</label>
+                            <label htmlFor="cust-phone" className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custPhone', 'Phone Number (*COD Required)')}</label>
                             <input
+                                id="cust-phone"
                                 required
                                 type="tel"
+                                autoComplete="tel"
+                                dir="ltr"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={phone}
                                 onChange={e => setPhone(e.target.value)}
@@ -90,8 +100,9 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custAddress', 'Delivery Address')}</label>
+                            <label htmlFor="cust-address" className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custAddress', 'Delivery Address')}</label>
                             <input
+                                id="cust-address"
                                 type="text"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors"
                                 value={address}
@@ -100,8 +111,9 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custAcqChannel', 'Acquisition Channel')}</label>
+                            <label htmlFor="cust-channel" className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custAcqChannel', 'Acquisition Channel')}</label>
                             <select
+                                id="cust-channel"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none"
                                 value={acquisitionChannel}
                                 onChange={e => setAcquisitionChannel(e.target.value)}
@@ -110,8 +122,9 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custStatus', 'Status')}</label>
+                            <label htmlFor="cust-status" className="block text-sm font-semibold text-gray-700 mb-1">{t('modals.custStatus', 'Status')}</label>
                             <select
+                                id="cust-status"
                                 className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-4 py-2 text-sm focus:border-blue-500 transition-colors appearance-none"
                                 value={status}
                                 onChange={e => setStatus(e.target.value)}

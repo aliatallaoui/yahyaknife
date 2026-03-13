@@ -6,6 +6,7 @@ import { useHotkey } from '../hooks/useHotkey';
 import EmployeeModal from '../components/hr/EmployeeModal';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import PageHeader from '../components/PageHeader';
+import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -41,12 +42,11 @@ export default function HRSnapshot() {
         setFetchError(null);
         try {
             const todayStr = moment().format('YYYY-MM-DD');
-            const h = { headers: { Authorization: `Bearer ${token}` } };
             const [metricsRes, empRes, leaveRes, attRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/metrics`, h),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, h),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves`, h),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${todayStr}`, h)
+                apiFetch(`/api/hr/metrics`),
+                apiFetch(`/api/hr/employees`),
+                apiFetch(`/api/hr/leaves`),
+                apiFetch(`/api/hr/attendance?date=${todayStr}`)
             ]);
 
             const empRaw = await empRes.json();
@@ -126,9 +126,9 @@ export default function HRSnapshot() {
 
     const handleLeaveStatusUpdate = async (id, newStatus) => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves/${id}/status`, {
+            const res = await apiFetch(`/api/hr/leaves/${id}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
             });
             if (res.ok) {
@@ -137,7 +137,7 @@ export default function HRSnapshot() {
 
                 // Refresh employees to reflect deducted balance
                 if (newStatus === 'Approved') {
-                    const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, { headers: { Authorization: `Bearer ${token}` } });
+                    const empRes = await apiFetch(`/api/hr/employees`);
                     const empJson = await empRes.json();
                     setEmployees(empJson.data ?? (Array.isArray(empJson) ? empJson : []));
                 }
@@ -147,7 +147,6 @@ export default function HRSnapshot() {
                 setTimeout(() => setLeaveError(null), 4000);
             }
         } catch (error) {
-            console.error('Failed to update leave status', error);
             setLeaveError(t('hr.leaveUpdateError', 'Failed to update leave status.'));
             setTimeout(() => setLeaveError(null), 4000);
         }
@@ -182,11 +181,11 @@ export default function HRSnapshot() {
             )}
 
             {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.totalHeadcount')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{metrics?.totalEmployees || 0}</h3>
+                        <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{metrics?.totalEmployees || 0}</h3>
                     </div>
                     <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
                         <Users className="w-8 h-8 text-blue-600" />
@@ -283,20 +282,20 @@ export default function HRSnapshot() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start border-collapse min-w-[1000px]">
+                    <table className="cf-table min-w-[1000px]">
                         <thead>
-                            <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                                <th className="p-4 font-semibold">{t('hr.colEmployee')}</th>
-                                <th className="p-4 font-semibold">{t('hr.colRoleDept')}</th>
-                                <th className="p-4 font-semibold">{t('hr.colMonthlySalary')}</th>
-                                <th className="p-4 font-semibold text-center">{t('hr.colTodayAttendance')}</th>
-                                <th className="p-4 font-semibold text-center">{t('hr.colAccountStatus')}</th>
-                                <th className="p-4 font-semibold text-end">{t('hr.colActions')}</th>
+                            <tr>
+                                <th>{t('hr.colEmployee')}</th>
+                                <th>{t('hr.colRoleDept')}</th>
+                                <th>{t('hr.colMonthlySalary')}</th>
+                                <th className="text-center">{t('hr.colTodayAttendance')}</th>
+                                <th className="text-center">{t('hr.colAccountStatus')}</th>
+                                <th className="text-end">{t('hr.colActions')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-sm">
+                        <tbody>
                             {filteredEmployees.map((emp) => (
-                                <tr key={emp._id} onClick={() => navigate(`/hr/employees/${emp._id}`)} className="hover:bg-blue-50/30 transition-colors cursor-pointer group">
+                                <tr key={emp._id} onClick={() => navigate(`/hr/employees/${emp._id}`)} className="cursor-pointer group">
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
@@ -504,7 +503,7 @@ export default function HRSnapshot() {
                     onClose={() => setIsModalOpen(false)}
                     onSave={async () => {
                         setIsModalOpen(false);
-                        const empRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, { headers: { Authorization: `Bearer ${token}` } });
+                        const empRes = await apiFetch(`/api/hr/employees`);
                         const empRefJson = await empRes.json();
                         setEmployees(empRefJson.data ?? (Array.isArray(empRefJson) ? empRefJson : []));
                     }}

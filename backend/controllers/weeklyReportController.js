@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const WeeklyReport = require('../models/WeeklyReport');
 const { ok } = require('../shared/utils/ApiResponse');
 
@@ -26,6 +27,7 @@ exports.getWeeklyReports = async (req, res) => {
 
         res.json(ok({ from, to, count: reports.length, reports }));
     } catch (err) {
+        logger.error({ err }, 'Error fetching weekly reports');
         res.status(500).json({ error: err.message });
     }
 };

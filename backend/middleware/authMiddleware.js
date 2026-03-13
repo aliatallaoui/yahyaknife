@@ -1,5 +1,16 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Tenant = require('../models/Tenant');
+const cacheService = require('../services/cacheService');
+const logger = require('../shared/logger');
+const { LEGACY_PERMISSION_MAP } = require('../config/permissions');
+
+const AUTH_CACHE_TTL = 600; // 10 minutes
+const TENANT_SUB_CACHE_TTL = 120; // 2 minutes (subscription status can change)
+
+// Paths that are protected (need auth) but exempt from subscription check
+// so the frontend can always fetch user/subscription info
+const SUBSCRIPTION_EXEMPT_PATHS = ['/api/auth/me', '/api/auth/refresh'];
 
 const protect = async (req, res, next) => {
     let token;
@@ -8,46 +19,106 @@ const protect = async (req, res, next) => {
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
     ) {
-        try {
-            // Get token from header
-            token = req.headers.authorization.split(' ')[1];
+        token = req.headers.authorization.split(' ')[1];
+    } else if (req.query && req.query.token) {
+        token = req.query.token;
+    }
 
-            // Verify token
+    if (token) {
+        try {
+            // Verify token (CPU-only, no DB hit)
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Get user from the token but exclude the password, populate role
-            req.user = await User.findById(decoded.id).select('-password').populate('role');
+            // Cache user + populated role to avoid DB hit on every request
+            const cacheKey = `auth:user:${decoded.id}`;
+            const user = await cacheService.getOrSet(cacheKey, async () => {
+                const u = await User.findById(decoded.id).select('-password').populate('role');
+                return u ? u.toObject() : null;
+            }, AUTH_CACHE_TTL);
 
-            if (!req.user || !req.user.isActive) {
+            if (!user || !user.isActive) {
                 return res.status(401).json({ message: 'Not authorized, user inactive or not found' });
             }
 
+            req.user = user;
+
             // Compute effective permissions
-            let effectivePermissions = new Set(req.user.role ? req.user.role.permissions : []);
+            let effectivePermissions = new Set(user.role ? user.role.permissions : []);
 
             // Apply granular user overrides
-            if (req.user.permissionOverrides && req.user.permissionOverrides.length > 0) {
-                req.user.permissionOverrides.forEach(override => {
+            if (user.permissionOverrides && user.permissionOverrides.length > 0) {
+                user.permissionOverrides.forEach(override => {
+                    const perm = override.permission;
                     if (override.effect === 'allow') {
-                        effectivePermissions.add(override.permission);
+                        effectivePermissions.add(perm);
                     } else if (override.effect === 'deny') {
-                        effectivePermissions.delete(override.permission);
+                        effectivePermissions.delete(perm);
                     }
                 });
             }
 
+            // Normalise legacy permission strings → new PERMS constants
+            const snapshot = [...effectivePermissions];
+            for (const perm of snapshot) {
+                const mapped = LEGACY_PERMISSION_MAP[perm];
+                if (mapped) effectivePermissions.add(mapped);
+            }
+
             req.user.computedPermissions = Array.from(effectivePermissions);
 
-            next();
+            // ─── Subscription / Trial Gate ───────────────────────────────
+            // Skip for exempt paths (e.g. /me so frontend can always read subscription status)
+            const isExempt = SUBSCRIPTION_EXEMPT_PATHS.some(p => req.originalUrl.startsWith(p));
+            if (!isExempt && user.tenant) {
+                const subCacheKey = `tenant:sub:${user.tenant}`;
+                const tenant = await cacheService.getOrSet(subCacheKey, async () => {
+                    return Tenant.findById(user.tenant).select('subscription isActive').lean();
+                }, TENANT_SUB_CACHE_TTL);
+
+                if (!tenant || !tenant.isActive) {
+                    return res.status(403).json({ message: 'Tenant is inactive.' });
+                }
+
+                const sub = tenant.subscription;
+                if (sub) {
+                    const now = new Date();
+
+                    if (sub.status === 'active') {
+                        if (sub.currentPeriodEnd && now > new Date(sub.currentPeriodEnd)) {
+                            await Tenant.findByIdAndUpdate(user.tenant, { 'subscription.status': 'expired' });
+                            cacheService.del(subCacheKey);
+                            return res.status(402).json({
+                                code: 'SUBSCRIPTION_EXPIRED',
+                                message: 'Your subscription has expired. Please renew your plan.',
+                            });
+                        }
+                    } else if (sub.status === 'trialing') {
+                        if (sub.trialEndsAt && now > new Date(sub.trialEndsAt)) {
+                            await Tenant.findByIdAndUpdate(user.tenant, { 'subscription.status': 'expired' });
+                            cacheService.del(subCacheKey);
+                            return res.status(402).json({
+                                code: 'TRIAL_EXPIRED',
+                                message: 'Your 14-day free trial has ended. Please choose a plan to continue.',
+                            });
+                        }
+                    } else if (['past_due', 'canceled', 'expired'].includes(sub.status)) {
+                        return res.status(402).json({
+                            code: 'SUBSCRIPTION_INACTIVE',
+                            message: 'Your subscription is not active. Please renew your plan.',
+                        });
+                    }
+                }
+                // Legacy tenants without subscription field — allow through
+            }
+
+            return next();
         } catch (error) {
-            console.error(error);
+            logger.error({ err: error }, 'Auth token verification failed');
             return res.status(401).json({ message: 'Not authorized, token failed' });
         }
     }
 
-    if (!token) {
-        return res.status(401).json({ message: 'Not authorized, no token' });
-    }
+    return res.status(401).json({ message: 'Not authorized, no token' });
 };
 
 const authorizeRoles = (...roles) => {

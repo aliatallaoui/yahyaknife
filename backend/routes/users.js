@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getUsers, updateUserAccess, deleteUser, updateMyPreferences } = require('../controllers/userController');
+const { getUsers, createUser, updateUserAccess, deleteUser, updateMyPreferences } = require('../controllers/userController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
+const { PERMS } = require('../shared/constants/permissions');
 
 // User preferences route (any authenticated user)
 router.put('/preferences', protect, updateMyPreferences);
@@ -10,10 +11,11 @@ router.put('/preferences', protect, updateMyPreferences);
 router.use(protect);
 
 router.route('/')
-    .get(requirePermission('users.read'), getUsers);
+    .get(requirePermission(PERMS.SYSTEM_USERS), getUsers)
+    .post(requirePermission(PERMS.SYSTEM_USERS), createUser);
 
 router.route('/:id')
-    .put(requirePermission('users.manage_permissions'), updateUserAccess)
-    .delete(requirePermission('users.deactivate'), deleteUser);
+    .put(requirePermission(PERMS.SYSTEM_USERS), updateUserAccess)
+    .delete(requirePermission(PERMS.SYSTEM_USERS), deleteUser);
 
 module.exports = router;

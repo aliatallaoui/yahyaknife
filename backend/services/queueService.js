@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -34,7 +35,7 @@ const queueService = {
 
         // Fire and forget the background worker
         this._processExport(jobId, tenantId, query, filePath, fileName).catch(err => {
-            console.error(`Export Job [${jobId}] Failed:`, err);
+            logger.error({ err, jobId }, 'Export job failed');
             exportJobs.set(jobId, { ...exportJobs.get(jobId), status: 'failed', error: err.message });
         });
 
@@ -130,7 +131,7 @@ const queueService = {
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
                 exportJobs.delete(jobId);
-                console.log(`Cleaned up expired export file: ${fileName}`);
+                logger.info({ fileName }, 'Cleaned up expired export file');
             }
         }, 24 * 60 * 60 * 1000);
     }

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+require('./Role'); // Ensure Role is registered before User populates it
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -18,7 +19,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please add a password'],
-        minlength: 6,
+        minlength: [12, 'Password must be at least 12 characters'],
         select: false
     },
     role: {
@@ -40,6 +41,22 @@ const userSchema = new mongoose.Schema({
         dateFormat: { type: String, default: 'DD/MM/YYYY' },
         currency: { type: String, default: 'DZD' },
         theme: { type: String, default: 'system' }
+    },
+    refreshToken: {
+        type: String,
+        select: false
+    },
+    refreshTokenExpiresAt: {
+        type: Date,
+        select: false
+    },
+    resetPasswordToken: {
+        type: String,
+        select: false
+    },
+    resetPasswordExpire: {
+        type: Date,
+        select: false
     },
     tenant: {
         type: mongoose.Schema.Types.ObjectId,

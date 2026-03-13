@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 import { useContext } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
 
@@ -30,9 +31,7 @@ export default function SupportDesk() {
     const fetchTickets = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/support`);
             const json = await res.json();
             const data = Array.isArray(json) ? json : (json.data ?? []);
             setTickets(data);
@@ -46,9 +45,7 @@ export default function SupportDesk() {
     const handleSelectTicket = async (ticket) => {
         try {
             // Fetch populated ticket
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${ticket._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/support/${ticket._id}`);
             const json = await res.json();
             setSelectedTicket(json.data ?? json);
         } catch (error) {
@@ -60,9 +57,9 @@ export default function SupportDesk() {
         if (!replyText.trim() || !selectedTicket) return;
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${selectedTicket._id}/messages`, {
+            const res = await apiFetch(`/api/support/${selectedTicket._id}/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: replyText,
                     sender: 'Agent'
@@ -81,7 +78,6 @@ export default function SupportDesk() {
                 setReplyError(data.message || t('support.replyError', 'Failed to send reply.'));
             }
         } catch (error) {
-            console.error("Failed to send reply", error);
             setReplyError(t('support.replyError', 'Failed to send reply.'));
         }
     };
@@ -89,9 +85,9 @@ export default function SupportDesk() {
     const handleUpdateStatus = async (status) => {
         if (!selectedTicket) return;
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/support/${selectedTicket._id}/status`, {
+            const res = await apiFetch(`/api/support/${selectedTicket._id}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
             });
             if (res.ok) {
@@ -105,7 +101,6 @@ export default function SupportDesk() {
                 setReplyError(data.message || t('support.statusError', 'Failed to update ticket status.'));
             }
         } catch (error) {
-            console.error("Failed to update status", error);
             setReplyError(t('support.statusError', 'Failed to update ticket status.'));
         }
     };
@@ -146,7 +141,7 @@ export default function SupportDesk() {
     };
 
     return (
-        <div className="flex flex-col gap-4 h-[calc(100vh-6.5rem)]">
+        <div className="flex flex-col gap-4 h-[calc(100vh-6rem)] sm:h-[calc(100vh-6.5rem)]">
             <PageHeader
                 title={t('crm.helpdeskInbox', 'Support Desk')}
                 subtitle={t('crm.subtitle', 'Live customer communication and issue resolution center.')}
@@ -169,9 +164,20 @@ export default function SupportDesk() {
                 </div>
             )}
 
+            {loading ? (
+                <div className="flex-1 flex items-center justify-center bg-white rounded-3xl border border-gray-100 shadow-sm">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="w-8 h-8 border-[3px] border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
+                        <span className="text-sm text-gray-400 font-medium">{t('common.loading', 'Loading...')}</span>
+                    </div>
+                </div>
+            ) : (
             <div className="flex flex-col md:flex-row flex-1 bg-white overflow-hidden font-sans border border-gray-100 rounded-3xl shadow-sm">
                 {/* Sidebar List */}
-                <div className="w-full md:w-[400px] bg-white border-b md:border-b-0 md:border-e border-gray-100 flex flex-col h-1/2 md:h-full z-10 relative shrink-0">
+                <div className={clsx(
+                    "w-full md:w-[340px] lg:w-[400px] bg-white border-b md:border-b-0 md:border-e border-gray-100 flex flex-col z-10 relative shrink-0",
+                    selectedTicket ? "hidden md:flex md:h-full" : "h-full md:h-full"
+                )}>
                     <div className="p-5 border-b border-gray-100 bg-white/50 backdrop-blur-md sticky top-0">
                         <div className="relative mb-4">
                             <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -265,14 +271,20 @@ export default function SupportDesk() {
                 </div>
 
                 {/* Conversation View */}
-                <div className="flex-1 flex flex-col bg-white h-full relative">
+                <div className={clsx(
+                    "flex-1 flex flex-col bg-white h-full relative",
+                    !selectedTicket && "hidden md:flex"
+                )}>
                     {selectedTicket ? (
                         <>
                             {/* Header Details */}
-                            <div className="p-6 border-b border-gray-100 bg-white flex flex-col md:flex-row justify-between items-start shadow-sm z-10 shrink-0 gap-4">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">{selectedTicket.subject}</h2>
+                            <div className="p-4 sm:p-6 border-b border-gray-100 bg-white flex flex-col md:flex-row justify-between items-start shadow-sm z-10 shrink-0 gap-3 sm:gap-4">
+                                <div className="min-w-0 w-full">
+                                    <div className="flex items-start gap-2 mb-2">
+                                        <button onClick={() => setSelectedTicket(null)} className="md:hidden p-1 -ms-1 text-gray-400 hover:text-gray-600 shrink-0 mt-1">
+                                            <svg className="w-5 h-5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        </button>
+                                        <h2 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight truncate">{selectedTicket.subject}</h2>
                                         <span className={clsx("px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border whitespace-nowrap", getPriorityColor(selectedTicket.priority))}>
                                             {selectedTicket.priority} {t('crm.priorityLevel', 'Priority')}
                                         </span>
@@ -399,6 +411,7 @@ export default function SupportDesk() {
                     )}
                 </div>
             </div>
+            )}
         </div>
     );
 }

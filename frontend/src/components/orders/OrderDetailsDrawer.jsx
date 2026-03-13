@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useContext } from 'react';
+import { apiFetch } from '../../utils/apiFetch';
 import moment from 'moment';
-import { X, MapPin, Package, CreditCard, Truck, UserCircle, Save, Phone, Clock, FileText, CheckCircle2, Copy, Check } from 'lucide-react';
+import { X, MapPin, Package, CreditCard, Truck, UserCircle, Save, Phone, Clock, FileText, CheckCircle2, Copy, Check, Lock } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../../context/AuthContext';
+import { ORDER_STATUS_COLORS as STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../../constants/statusColors';
 
 // Click-to-copy phone with tel: fallback
 function PhoneRow({ phone }) {
@@ -29,28 +31,17 @@ function PhoneRow({ phone }) {
     );
 }
 
-const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
-
-const STATUS_COLORS = {
-    'New': 'bg-gray-100 text-gray-700 border-gray-200',
-    'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
-    'Preparing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    'Ready for Pickup': 'bg-violet-50 text-violet-700 border-violet-200',
-    'Dispatched': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    'Shipped': 'bg-amber-50 text-amber-700 border-amber-200',
-    'Out for Delivery': 'bg-orange-50 text-orange-700 border-orange-200',
-    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    'Paid': 'bg-green-50 text-green-700 border-green-200',
-    'Refused': 'bg-red-50 text-red-700 border-red-200',
-    'Returned': 'bg-rose-50 text-rose-700 border-rose-200',
-    'Cancelled': 'bg-gray-50 text-gray-400 border-gray-200 line-through',
-};
+// STATUS_COLORS and COD_STATUSES imported from statusColors.js
 
 export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
     const { t } = useTranslation();
+    const { hasPermission } = useContext(AuthContext);
     const [agents, setAgents] = useState([]);
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState(null);
+
+    const canEdit = hasPermission('orders.edit');
+    const canChangeStatus = hasPermission('orders.status.change');
 
     // Editable state
     const [status, setStatus] = useState(order?.status || '');
@@ -65,13 +56,21 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
         }
     }, [order]);
 
+    // Escape key to close drawer
+    useEffect(() => {
+        const handler = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [onClose]);
+
     useEffect(() => {
         const fetchDeps = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const usrRes = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
-                setAgents((usrRes.data || []).filter(u => ['Admin', 'Call Center Agent'].includes(u.role?.name || u.role)));
-            } catch (err) { console.error(err); }
+                const usrRes = await apiFetch('/api/users');
+                const usrData = await usrRes.json();
+                setAgents((usrData || []).filter(u => ['Admin', 'Call Center Agent'].includes(u.role?.name || u.role)));
+            } catch (err) { /* agent list fetch is best-effort */ }
         };
         fetchDeps();
     }, []);
@@ -82,16 +81,22 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
         setSaving(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${order._id}`, {
-                status,
-                assignedAgent: assignedAgent || null,
-                notes: internalNotes
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await apiFetch(`/api/sales/orders/${order._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status,
+                    assignedAgent: assignedAgent || null,
+                    notes: internalNotes
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Save failed');
 
-            if (onUpdate) onUpdate(res.data);
+            if (onUpdate) onUpdate(data);
             onClose();
         } catch (err) {
-            setSaveError(err.response?.data?.message || err.message);
+            setSaveError(err.message);
         } finally {
             setSaving(false);
         }
@@ -103,15 +108,15 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
             <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity" onClick={onClose} />
 
             {/* Drawer */}
-            <div className="fixed top-0 right-0 bottom-0 w-full max-w-lg bg-gray-50 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-200">
+            <div className="fixed top-0 end-0 bottom-0 w-full sm:max-w-lg bg-gray-50 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 border-s border-gray-200" role="dialog" aria-modal="true">
 
                 {/* Header */}
-                <div className="bg-white px-6 py-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+                <div className="bg-white px-4 sm:px-6 py-4 flex items-center justify-between border-b border-gray-100 shrink-0">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-3 mb-1">
                             <h2 className="text-xl font-black text-gray-900 tracking-tight">{order.orderId}</h2>
                             <span className={clsx("px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wide border", STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600 border-gray-200')}>
-                                {order.status}
+                                {getOrderStatusLabel(t, order.status)}
                             </span>
                         </div>
                         <span className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
@@ -119,7 +124,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                             {moment(order.createdAt).format('MMMM Do YYYY, h:mm a')}
                         </span>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -137,13 +142,13 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{t('ordersControl.drawer.updateLifecycle', { defaultValue: 'Update Lifecycle' })}</label>
-                                <select value={status} onChange={e => setStatus(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                                    {COD_STATUSES.map(s => <option key={s} value={s}>{t(`sales.status${s.replace(/\s+/g, '')}`) || s}</option>)}
+                                <select value={status} onChange={e => setStatus(e.target.value)} disabled={!canChangeStatus} className={clsx("bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors", !canChangeStatus && "opacity-60 cursor-not-allowed")}>
+                                    {COD_STATUSES.map(s => <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>)}
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{t('ordersControl.drawer.assignAgent', { defaultValue: 'Assign Call Center Agent' })}</label>
-                                <select value={assignedAgent} onChange={e => setAssignedAgent(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 transition-colors">
+                                <select value={assignedAgent} onChange={e => setAssignedAgent(e.target.value)} disabled={!canEdit} className={clsx("bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-500 transition-colors", !canEdit && "opacity-60 cursor-not-allowed")}>
                                     <option value="">{t('ordersControl.bulk.unassignAgent', { defaultValue: 'Unassigned' })}</option>
                                     {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
                                 </select>
@@ -156,7 +161,8 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                                 value={internalNotes}
                                 onChange={e => setInternalNotes(e.target.value)}
                                 rows={2}
-                                className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:border-blue-500 w-full resize-none transition-colors placeholder:text-gray-300"
+                                disabled={!canEdit}
+                                className={clsx("bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:border-blue-500 w-full resize-none transition-colors placeholder:text-gray-300", !canEdit && "opacity-60 cursor-not-allowed")}
                                 placeholder={t('ordersControl.drawer.notesPlaceholder', { defaultValue: 'Add instructions for courier or call center...' })}
                             />
                         </div>
@@ -198,7 +204,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                                 <div key={idx} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
                                     <div className="flex flex-col">
                                         <span className="font-bold text-gray-800 text-sm truncate max-w-[250px]">{prod.name}</span>
-                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.grid.qty', { defaultValue: 'Qty' })}: {prod.quantity} × {(prod.unitPrice || 0).toLocaleString()} DZD</span>
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('ordersControl.grid.qty', { defaultValue: 'Qty' })}: {prod.quantity} × {(prod.unitPrice || 0).toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                     </div>
                                     <span className="font-black text-gray-900 text-sm">{(prod.quantity * (prod.unitPrice || 0)).toLocaleString()}</span>
                                 </div>
@@ -219,15 +225,15 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
 
                         <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-gray-500">{t('ordersControl.drawer.subtotal', { defaultValue: 'Subtotal' })}</span>
-                            <span className="font-bold text-gray-800">{(order.totalAmount - (order.shipping?.cost || 0)).toLocaleString()} DZD</span>
+                            <span className="font-bold text-gray-800">{(order.totalAmount - (order.shipping?.cost || 0)).toLocaleString()} {t('common.dzd', 'DZD')}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-gray-500">{t('ordersControl.drawer.deliveryFee', { defaultValue: 'Delivery Fee' })}</span>
-                            <span className="font-bold text-gray-800">{(order.shipping?.cost || 0).toLocaleString()} DZD</span>
+                            <span className="font-bold text-gray-800">{(order.shipping?.cost || 0).toLocaleString()} {t('common.dzd', 'DZD')}</span>
                         </div>
                         <div className="pt-3 border-t border-dashed border-gray-200 flex items-center justify-between">
                             <span className="font-black text-gray-900 uppercase tracking-widest">{t('ordersControl.grid.totalValue', { defaultValue: 'Total Value' })}</span>
-                            <span className="font-black text-xl text-blue-600">{(order.totalAmount || 0).toLocaleString()} <span className="text-xs">DZD</span></span>
+                            <span className="font-black text-xl text-blue-600">{(order.totalAmount || 0).toLocaleString()} <span className="text-xs">{t('common.dzd', 'DZD')}</span></span>
                         </div>
 
                         {/* Selected Courier Reference */}
@@ -258,17 +264,23 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-100 transition-colors">
                         {t('ordersControl.bulk.cancel', { defaultValue: 'Discard' })}
                     </button>
-                    <button
-                        onClick={handleSavePrimary}
-                        disabled={saving}
-                        className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        {saving ? (
-                            <><div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div> {t('ordersControl.grid.updating', { defaultValue: 'Saving...' })}</>
-                        ) : (
-                            <><Save className="w-4 h-4" /> {t('ordersControl.drawer.saveOperations', { defaultValue: 'Save Operations' })}</>
-                        )}
-                    </button>
+                    {(canEdit || canChangeStatus) ? (
+                        <button
+                            onClick={handleSavePrimary}
+                            disabled={saving}
+                            className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <><div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div> {t('ordersControl.grid.updating', { defaultValue: 'Saving...' })}</>
+                            ) : (
+                                <><Save className="w-4 h-4" /> {t('ordersControl.drawer.saveOperations', { defaultValue: 'Save Operations' })}</>
+                            )}
+                        </button>
+                    ) : (
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                            <Lock className="w-3.5 h-3.5" /> {t('ordersControl.drawer.readOnly', { defaultValue: 'Read Only' })}
+                        </span>
+                    )}
                 </div>
 
             </div>

@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const Supplier = require('../models/Supplier');
 const PurchaseOrder = require('../models/PurchaseOrder');
 const ProductVariant = require('../models/ProductVariant');
@@ -10,18 +11,20 @@ const { ok, created, message, paginated } = require('../shared/utils/ApiResponse
 exports.getSuppliers = async (req, res) => {
     try {
         const [suppliers, total] = await Promise.all([
-            Supplier.find().sort('-createdAt').skip(req.skip).limit(req.limit),
+            Supplier.find().sort('-createdAt').skip(req.skip).limit(req.limit).lean(),
             Supplier.countDocuments()
         ]);
         res.json(paginated(suppliers, { total, hasNextPage: req.skip + suppliers.length < total }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Supplier list fetch error');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.createSupplier = async (req, res) => {
     try {
         const { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes } = req.body;
+        if (!name) return res.status(400).json({ error: 'Supplier name is required.' });
         const sup = new Supplier({ name, contactPerson, supplierCategory, materialsSupplied, address, status, notes });
         await sup.save();
         res.status(201).json(created(sup));
@@ -53,7 +56,8 @@ exports.deleteSupplier = async (req, res) => {
         if (!sup) return res.status(404).json({ error: 'Supplier not found' });
         res.json(message('Supplier archived'));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Supplier archive error');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -69,13 +73,15 @@ exports.getPurchaseOrders = async (req, res) => {
                     select: 'sku name displayName currentStock stock costPerUnit unitOfMeasure'
                 })
                 .sort('-createdAt')
-                .skip(req.skip).limit(req.limit),
+                .skip(req.skip).limit(req.limit)
+                .lean(),
             PurchaseOrder.countDocuments()
         ]);
 
         res.json(paginated(pos, { total, hasNextPage: req.skip + pos.length < total }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Purchase order list fetch error');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -86,6 +92,10 @@ exports.createPurchaseOrder = async (req, res) => {
         const poNumber = `PO-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
         const { supplier, items, expectedDeliveryDate, notes, orderDate } = req.body;
+        if (!supplier || !mongoose.Types.ObjectId.isValid(supplier))
+            return res.status(400).json({ error: 'Valid supplier ID is required.' });
+        if (!items || !Array.isArray(items) || items.length === 0)
+            return res.status(400).json({ error: 'At least one item is required.' });
         const po = new PurchaseOrder({
             supplier,
             items: (items || []).map(({ itemModel, itemRef, quantity, unitCost }) => ({
@@ -164,14 +174,12 @@ exports.receivePurchaseOrder = async (req, res) => {
                 // Create Global Inventory Ledger Entry
                 if (ledgerRefId) {
                     await StockMovementLedger.create([{
-                        referenceId: ledgerRefId,
-                        referenceModel: ledgerRefModel,
-                        type: 'IN',
+                        variantId: ledgerRefId,
+                        referenceId: po._id.toString(),
+                        referenceModel: 'PurchaseOrder',
+                        type: 'RECEIPT',
                         quantity: stockChange,
-                        reason: `Procurement - ${po.poNumber}`,
-                        costBasis: poItem.unitCost,
-                        sourceModel: 'PurchaseOrder',
-                        sourceId: po._id
+                        notes: `Procurement - ${po.poNumber} (unit cost: ${poItem.unitCost})`
                     }], { session });
                 }
 

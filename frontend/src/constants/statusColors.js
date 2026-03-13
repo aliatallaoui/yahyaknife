@@ -44,3 +44,26 @@ export const ATTENDANCE_STATUS_COLORS = {
 export function getAttendanceStatusColor(status) {
     return ATTENDANCE_STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-600';
 }
+
+/** All COD order statuses — single source of truth for dropdowns, filters, etc. */
+export const COD_STATUSES = [
+    'New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage',
+    'Wrong Number', 'Postponed', 'Cancelled by Customer', 'Confirmed',
+    'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped',
+    'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled',
+];
+
+/**
+ * Translates an order status string using i18n.
+ * Usage: getOrderStatusLabel(t, 'Confirmed') → 'مؤكد' (AR) or 'Confirmed' (EN)
+ */
+export function getOrderStatusLabel(t, status) {
+    return t(`orderStatuses.${status}`, status);
+}
+
+/**
+ * Translates an attendance status string using i18n.
+ */
+export function getAttendanceStatusLabel(t, status) {
+    return t(`attendanceStatuses.${status}`, status);
+}

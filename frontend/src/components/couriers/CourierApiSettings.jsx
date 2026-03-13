@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/axiosInstance';
 import { useTranslation } from 'react-i18next';
 import { Key, Globe, CheckCircle, XCircle, RefreshCw, Save } from 'lucide-react';
 import clsx from 'clsx';
@@ -26,15 +26,12 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                 }
             }
 
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/test-connection`, {
+            await api.post('/api/couriers/test-connection', {
                 apiProvider: courier.apiProvider || 'Ecotrack',
                 apiId: courier.apiId,
                 apiBaseUrl: courier.apiBaseUrl,
                 authType: courier.authType || 'Bearer Token',
                 apiToken: courier.apiToken
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             setCourier(prev => ({ ...prev, testConnectionStatus: 'Success' }));
@@ -63,16 +60,17 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
 
     return (
         <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-white border text-start border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="bg-white border text-start border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <Globe className="w-5 h-5 text-indigo-500" />
                     {t('couriers.api_config', 'API Configuration')}
                 </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiProvider', 'API Provider')}</label>
+                        <label htmlFor="api-provider" className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiProvider', 'API Provider')}</label>
                         <select
+                            id="api-provider"
                             value={courier.apiProvider || 'Ecotrack'}
                             onChange={e => setCourier({ ...courier, apiProvider: e.target.value })}
                             className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
@@ -86,8 +84,9 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                     {courier.apiProvider !== 'Yalidin' && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiBaseUrl', 'API Base URL')}</label>
+                                <label htmlFor="api-base-url" className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiBaseUrl', 'API Base URL')}</label>
                                 <input
+                                    id="api-base-url"
                                     type="url"
                                     value={courier.apiBaseUrl || ''}
                                     onChange={e => setCourier({ ...courier, apiBaseUrl: e.target.value })}
@@ -97,8 +96,9 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.authType', 'Authentication Type')}</label>
+                                <label htmlFor="api-auth-type" className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.authType', 'Authentication Type')}</label>
                                 <select
+                                    id="api-auth-type"
                                     value={courier.authType || 'Bearer Token'}
                                     onChange={e => setCourier({ ...courier, authType: e.target.value })}
                                     className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
@@ -113,8 +113,9 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
 
                     {courier.apiProvider === 'Yalidin' && (
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiId', 'Yalidin API ID')}</label>
+                            <label htmlFor="api-yalidin-id" className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.apiId', 'Yalidin API ID')}</label>
                             <input
+                                id="api-yalidin-id"
                                 type="text"
                                 value={courier.apiId || ''}
                                 onChange={e => setCourier({ ...courier, apiId: e.target.value })}
@@ -125,10 +126,11 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                     )}
 
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="api-token" className="block text-sm font-medium text-gray-700 mb-1">
                             {courier.apiProvider === 'Yalidin' ? t('couriers.apiTokenYalidin', 'Yalidin API Token') : t('couriers.apiToken', 'API Token / Key')}
                         </label>
                         <input
+                            id="api-token"
                             type="password"
                             value={courier.apiToken || ''}
                             onChange={e => setCourier({ ...courier, apiToken: e.target.value })}
@@ -137,8 +139,9 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.accountReference', 'Account Reference (Optional)')}</label>
+                        <label htmlFor="api-account-ref" className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.accountReference', 'Account Reference (Optional)')}</label>
                         <input
+                            id="api-account-ref"
                             type="text"
                             value={courier.accountReference || ''}
                             onChange={e => setCourier({ ...courier, accountReference: e.target.value })}

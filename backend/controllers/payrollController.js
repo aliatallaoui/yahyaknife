@@ -1,9 +1,11 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const Payroll = require('../models/Payroll');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const Expense = require('../models/Expense');
 const moment = require('moment');
+const audit = require('../shared/utils/auditLog');
 
 exports.generateMonthlyPayroll = async (req, res) => {
     try {
@@ -100,8 +102,10 @@ exports.generateMonthlyPayroll = async (req, res) => {
             if (savedDoc) payrollResults.push(savedDoc);
         }
 
+        audit({ tenant, actorUserId: req.user._id, action: 'GENERATE_PAYROLL', module: 'hr', metadata: { period, count: payrollResults.length } });
         res.json({ message: `Successfully generated payroll for ${period}`, count: payrollResults.length, data: payrollResults });
     } catch (err) {
+        logger.error({ err }, 'Error generating monthly payroll');
         res.status(500).json({ error: err.message });
     }
 };
@@ -125,6 +129,7 @@ exports.getPayrollRecords = async (req, res) => {
             .sort({ createdAt: -1 });
         res.json(records);
     } catch (err) {
+        logger.error({ err }, 'Error fetching payroll records');
         res.status(500).json({ error: err.message });
     }
 };
@@ -145,8 +150,10 @@ exports.approvePayroll = async (req, res) => {
         payroll.approvedAt = new Date();
         await payroll.save();
 
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'APPROVE_PAYROLL', module: 'hr', metadata: { payrollId: id, employeeId: payroll.employeeId, period: payroll.period, amount: payroll.finalPayableSalary } });
         res.json(payroll);
     } catch (err) {
+        logger.error({ err }, 'Error approving payroll');
         res.status(500).json({ error: err.message });
     }
 };
@@ -193,11 +200,13 @@ exports.recordPayment = async (req, res) => {
                 linkedPayrollId: payroll._id
             });
         } catch (syncErr) {
-            console.warn('Failed to sync payroll to Financial ledger:', syncErr.message);
+            logger.warn({ err: syncErr }, 'Failed to sync payroll to Financial ledger');
         }
 
+        audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'RECORD_PAYROLL_PAYMENT', module: 'hr', metadata: { payrollId: id, employeeId: payroll.employeeId, period: payroll.period, paymentAmount, newStatus } });
         res.json(payroll);
     } catch (err) {
+        logger.error({ err }, 'Error recording payroll payment');
         res.status(500).json({ error: err.message });
     }
 };

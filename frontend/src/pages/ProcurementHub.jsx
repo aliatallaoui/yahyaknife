@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download, Search } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
@@ -27,13 +27,15 @@ export default function ProcurementHub() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             const [ordersRes, suppliersRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`, authHeader),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/procurement/suppliers`, authHeader)
+                apiFetch(`/api/procurement/orders`),
+                apiFetch(`/api/procurement/suppliers`)
             ]);
-            setOrders(ordersRes.data?.data ?? ordersRes.data);
-            setSuppliers(suppliersRes.data?.data ?? suppliersRes.data);
+            const ordersData = await ordersRes.json();
+            const suppliersData = await suppliersRes.json();
+            if (!ordersRes.ok) throw { response: { data: ordersData } };
+            setOrders(ordersData?.data ?? ordersData);
+            setSuppliers(suppliersData?.data ?? suppliersData);
         } catch (error) {
             setFetchError(error.response?.data?.error || error.message || t('procurement.errorLoadData', 'Failed to load procurement data.'));
         } finally {
@@ -74,7 +76,7 @@ export default function ProcurementHub() {
     );
 
     return (
-        <div className="p-8 pb-32">
+        <div className="pb-32">
             <PageHeader
                 title={t('procurement.title', 'Procurement Hub')}
                 subtitle={t('procurement.subtitle', 'Strategic sourcing, purchase orders, and supplier relationship management.')}
@@ -121,7 +123,7 @@ export default function ProcurementHub() {
             )}
 
             {/* KPI Widgets */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-blue-50 rounded-xl">
                         <PackageSearch className="w-6 h-6 text-blue-600" />
@@ -199,22 +201,22 @@ export default function ProcurementHub() {
                     <div className="p-0">
                         {activeTab === 'orders' && (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-start text-sm min-w-[900px]">
-                                    <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                                <table className="cf-table min-w-[900px]">
+                                    <thead>
                                         <tr>
-                                            <th className="p-4">{t('procurement.colPoNumber')}</th>
-                                            <th className="p-4">{t('procurement.colSupplier')}</th>
-                                            <th className="p-4">{t('procurement.colExpectedTarget')}</th>
-                                            <th className="p-4">{t('procurement.colTotalAmount')}</th>
-                                            <th className="p-4">{t('procurement.colStatus')}</th>
-                                            <th className="p-4">{t('procurement.colActions')}</th>
+                                            <th>{t('procurement.colPoNumber')}</th>
+                                            <th>{t('procurement.colSupplier')}</th>
+                                            <th>{t('procurement.colExpectedTarget')}</th>
+                                            <th>{t('procurement.colTotalAmount')}</th>
+                                            <th>{t('procurement.colStatus')}</th>
+                                            <th>{t('procurement.colActions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredOrders.length === 0 ? (
                                             <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noPosFound')}</td></tr>
                                         ) : filteredOrders.map(order => (
-                                            <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                                            <tr key={order._id}>
                                                 <td className="p-4 font-bold text-gray-900">{order.poNumber}</td>
                                                 <td className="p-4">
                                                     <div className="font-medium text-gray-900">{order.supplier?.name}</div>
@@ -250,23 +252,23 @@ export default function ProcurementHub() {
 
                         {activeTab === 'suppliers' && (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-start text-sm min-w-[900px]">
-                                    <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                                <table className="cf-table min-w-[900px]">
+                                    <thead>
                                         <tr>
-                                            <th className="p-4">{t('procurement.colVendorName')}</th>
-                                            <th className="p-4">{t('procurement.category', 'Category')}</th>
-                                            <th className="p-4">{t('procurement.colContactPerson')}</th>
-                                            <th className="p-4">{t('procurement.colAvgLeadTime')}</th>
-                                            <th className="p-4">{t('procurement.colReliabilityScore')}</th>
-                                            <th className="p-4">{t('procurement.colStatus')}</th>
-                                            <th className="p-4">{t('procurement.colActions')}</th>
+                                            <th>{t('procurement.colVendorName')}</th>
+                                            <th>{t('procurement.category', 'Category')}</th>
+                                            <th>{t('procurement.colContactPerson')}</th>
+                                            <th>{t('procurement.colAvgLeadTime')}</th>
+                                            <th>{t('procurement.colReliabilityScore')}</th>
+                                            <th>{t('procurement.colStatus')}</th>
+                                            <th>{t('procurement.colActions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredSuppliers.length === 0 ? (
                                             <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noSuppliersFound')}</td></tr>
                                         ) : filteredSuppliers.map(sup => (
-                                            <tr key={sup._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                                            <tr key={sup._id}>
                                                 <td className="p-4 font-bold text-gray-900">
                                                     {sup.name}
                                                     <div className="text-xs text-gray-400 font-normal mt-0.5">{sup.address?.city}, {sup.address?.country}</div>

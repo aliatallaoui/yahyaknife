@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { Save, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
@@ -25,12 +25,11 @@ export default function CourierSettings() {
 
     const fetchSettings = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/courier-settings`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/courier-settings`);
+            const data = await res.json();
+            if (!res.ok) throw { response: { data } };
             // Ensure we merge defaults if backend returns partial data
-            setSettings(prev => ({ ...prev, ...res.data }));
+            setSettings(prev => ({ ...prev, ...data }));
             setLoading(false);
         } catch (error) {
             setMessage(error.response?.data?.message || t('courier.settingsLoadError', 'Failed to load courier settings.'));
@@ -43,19 +42,21 @@ export default function CourierSettings() {
         setSaving(true);
         setMessage('');
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/courier-settings`, {
-                apiUrl: settings.apiUrl.trim(),
-                apiToken: settings.apiToken.trim()
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
+            const res = await apiFetch(`/api/courier-settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    apiUrl: settings.apiUrl.trim(),
+                    apiToken: settings.apiToken.trim()
+                })
             });
-            setSettings(res.data);
+            const data = await res.json();
+            if (!res.ok) throw { response: { data } };
+            setSettings(data);
             setMessage(t('courier.settingsSaved'));
             // Refresh to ensure everything is in sync
             setTimeout(() => setMessage(''), 5000);
         } catch (error) {
-            console.error('Error saving courier settings:', error);
             setMessage(error.response?.data?.message || t('courier.settingsError'));
         } finally {
             setSaving(false);
@@ -188,7 +189,7 @@ export default function CourierSettings() {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                     <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 flex flex-col justify-between">
                         <div>
                             <div className="flex justify-between text-sm">

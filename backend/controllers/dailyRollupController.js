@@ -1,6 +1,8 @@
+const logger = require('../shared/logger');
 const DailyRollup = require('../models/DailyRollup');
 const { runDailyRollup } = require('../jobs/dailyRollup');
 const { ok } = require('../shared/utils/ApiResponse');
+const { fireAndRetry } = require('../shared/utils/retryAsync');
 
 /**
  * GET /api/analytics/daily?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -26,7 +28,8 @@ exports.getDailyRollups = async (req, res) => {
 
         res.json(ok({ from, to, count: rollups.length, rollups }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching daily rollups');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -45,12 +48,11 @@ exports.triggerDailyRollup = async (req, res) => {
             return res.status(400).json({ error: 'date must be in YYYY-MM-DD format' });
 
         // Run async — don't await in request cycle for large datasets
-        runDailyRollup(date).catch(err =>
-            console.error('[TRIGGER] DailyRollup manual trigger failed:', err)
-        );
+        fireAndRetry('dailyRollup:trigger', () => runDailyRollup(date));
 
         res.json(ok({ message: `DailyRollup triggered for ${date || 'yesterday'}` }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error triggering daily rollup');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };

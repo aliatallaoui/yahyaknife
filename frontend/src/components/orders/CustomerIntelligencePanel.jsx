@@ -66,7 +66,7 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
             {warning && (
                 <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg flex items-start gap-2 text-sm text-orange-800">
                     <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <p className="font-medium leading-tight">{warning}</p>
+                    <p className="font-medium leading-tight">{t(`customerIntel.${warning}`)}</p>
                 </div>
             )}
 
@@ -86,7 +86,7 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{t('customerIntel.ltv')}</span>
-                        <span className="text-lg font-bold text-gray-900">${customer.lifetimeValue?.toLocaleString()}</span>
+                        <span className="text-lg font-bold text-gray-900">{customer.lifetimeValue?.toLocaleString()} <span className="text-xs">{t('common.dzd', 'DZD')}</span></span>
                     </div>
                 </div>
             )}
@@ -102,7 +102,7 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
                                     <span className="text-gray-500 block">{moment(dup.date).fromNow()}</span>
                                 </div>
                                 <div className="text-right">
-                                    <span className="font-semibold text-blue-600 block">${dup.totalAmount}</span>
+                                    <span className="font-semibold text-blue-600 block text-right" dir="ltr">{Number(dup.totalAmount).toLocaleString()} <span className="text-[10px] text-blue-500">{t('common.dzd', 'DZD')}</span></span>
                                     <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-bold mt-1 inline-block">{dup.status}</span>
                                 </div>
                             </div>

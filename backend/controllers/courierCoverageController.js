@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const CourierCoverage = require('../models/CourierCoverage');
 const Courier = require('../models/Courier');
 const axios = require('axios');
@@ -11,10 +12,12 @@ exports.getCoverage = async (req, res) => {
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         const coverage = await CourierCoverage.find({ courierId: id })
-            .sort({ wilayaCode: 1, commune: 1 });
+            .sort({ wilayaCode: 1, commune: 1 })
+            .lean();
         res.json(coverage);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching courier coverage');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -56,7 +59,8 @@ exports.deleteCoverage = async (req, res) => {
 
         res.json({ message: 'Coverage area deleted successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error deleting courier coverage');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -93,7 +97,7 @@ exports.syncEcotrackCoverage = async (req, res) => {
             let currentPage = 1;
 
             while (hasMore) {
-                console.log(`[Yalidin Sync] Fetching page ${currentPage}: ${currentUrl}`);
+                logger.info({ page: currentPage, url: currentUrl }, '[Yalidin Sync] Fetching page');
                 const requestHeaders = {
                     'X-API-ID': courier.apiId,
                     'X-API-TOKEN': courier.apiToken,
@@ -204,7 +208,7 @@ exports.syncEcotrackCoverage = async (req, res) => {
                         }
                     }
                 } catch (err) {
-                    console.error(`Failed to fetch communes for wilaya ${wilayaId}:`, err.message);
+                    logger.error({ err, wilayaId }, 'Failed to fetch communes for wilaya');
                 }
             }
         }
@@ -219,8 +223,7 @@ exports.syncEcotrackCoverage = async (req, res) => {
 
         res.json({ message: `Successfully synced ${totalAddedOrUpdated} coverage combinations.`, count: totalAddedOrUpdated });
     } catch (error) {
-        console.error('Ecotrack Sync Error:', error.response?.data || error.message);
-        console.error('Failed URL:', error.config?.url);
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error, responseData: error.response?.data, failedUrl: error.config?.url }, 'Ecotrack Sync Error');
+        res.status(500).json({ error: 'Server Error' });
     }
 };

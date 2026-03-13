@@ -1,4 +1,6 @@
 const AppError = require('./AppError');
+const logger = require('../logger');
+const { Sentry } = require('../sentry');
 
 /**
  * Global Express error handler.
@@ -59,14 +61,16 @@ const errorHandler = (err, req, res, next) => { // eslint-disable-line no-unused
     }
 
     // ── Unknown / programming errors — never leak stack to client ─────────────
-    console.error('[UNHANDLED ERROR]', err);
+    logger.error({ err, url: req.originalUrl, method: req.method, tenant: req.user?.tenant, requestId: req.id }, 'Unhandled error');
+    Sentry.captureException(err, { extra: { url: req.originalUrl, method: req.method, tenant: req.user?.tenant, requestId: req.id } });
     return res.status(500).json({
         success: false,
         error: {
             code: 'INTERNAL_ERROR',
             message: process.env.NODE_ENV === 'production'
                 ? 'An unexpected error occurred'
-                : err.message
+                : err.message,
+            requestId: req.id
         }
     });
 };

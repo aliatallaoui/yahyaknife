@@ -1,13 +1,16 @@
 import { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
+import { apiFetch } from '../../utils/apiFetch';
 import { XCircle, Banknote, AlertTriangle } from 'lucide-react';
+import useModalDismiss from '../../hooks/useModalDismiss';
 import moment from 'moment';
 
 const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function EmployeeModal({ employee, onClose, onSave }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const { token } = useContext(AuthContext);
 
     const [formData, setFormData] = useState({
@@ -58,12 +61,11 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
 
         setSaveError(null);
         try {
-            const base = import.meta.env.VITE_API_URL || '';
-            const url = employee ? `${base}/api/hr/employees/${employee._id}` : `${base}/api/hr/employees`;
+            const url = employee ? `/api/hr/employees/${employee._id}` : `/api/hr/employees`;
             const method = employee ? 'PUT' : 'POST';
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
@@ -73,7 +75,6 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                 setSaveError(data.message || t('hr.saveEmployeeError', 'Failed to save employee. Please try again.'));
             }
         } catch (err) {
-            console.error(err);
             setSaveError(t('hr.saveEmployeeError', 'Failed to save employee. Please try again.'));
         } finally {
             setIsSaving(false);
@@ -81,13 +82,13 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex justify-center items-center overflow-y-auto">
-            <div className="bg-white rounded-2xl w-full max-w-2xl my-8 p-6 shadow-2xl relative">
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center overflow-y-auto" {...backdropProps}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl sm:my-8 p-4 sm:p-6 shadow-2xl relative max-h-[95vh] sm:max-h-none overflow-y-auto" {...panelProps}>
                 <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
                     <h2 className="text-xl font-bold text-gray-900">
                         {employee ? t('hr.editEmployeeTitle') : t('hr.addEmployeeTitle')}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                         <XCircle className="w-6 h-6" />
                     </button>
                 </div>
@@ -96,24 +97,24 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                     {/* Basic Info */}
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblFullName')}</label>
-                            <input required type="text" value={formData.name} onChange={e => set('name', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.namePlaceholder')} />
+                            <label htmlFor="emp-name" className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblFullName')}</label>
+                            <input id="emp-name" required type="text" autoComplete="name" value={formData.name} onChange={e => set('name', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.namePlaceholder')} />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblEmail')}</label>
-                            <input required type="email" value={formData.email} onChange={e => set('email', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.emailPlaceholder')} />
+                            <label htmlFor="emp-email" className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblEmail')}</label>
+                            <input id="emp-email" required type="email" autoComplete="email" dir="ltr" value={formData.email} onChange={e => set('email', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.emailPlaceholder')} />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStartDate', 'تاريخ البداية العمل')}</label>
-                            <input required type="date" value={formData.joinDate} onChange={e => set('joinDate', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
+                            <label htmlFor="emp-joinDate" className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStartDate', 'تاريخ البداية العمل')}</label>
+                            <input id="emp-joinDate" required type="date" value={formData.joinDate} onChange={e => set('joinDate', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
                         </div>
                     </div>
 
                     {/* Role & Status */}
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblDepartment')}</label>
-                            <select value={formData.department} onChange={e => set('department', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
+                            <label htmlFor="emp-department" className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblDepartment')}</label>
+                            <select id="emp-department" value={formData.department} onChange={e => set('department', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
                                 <option value="Manufacturing">{t('hr.deptManufacturing')}</option>
                                 <option value="Warehouse">{t('hr.deptWarehouse')}</option>
                                 <option value="Dispatch">{t('hr.deptDispatch')}</option>
@@ -127,12 +128,12 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblRole')}</label>
-                            <input required type="text" value={formData.role} onChange={e => set('role', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.rolePlaceholder')} />
+                            <label htmlFor="emp-role" className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblRole')}</label>
+                            <input id="emp-role" required type="text" value={formData.role} onChange={e => set('role', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" placeholder={t('hr.rolePlaceholder')} />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStatus')}</label>
-                            <select value={formData.status} onChange={e => set('status', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
+                            <label htmlFor="emp-status" className="block text-xs font-semibold text-gray-500 mb-1">{t('hr.lblStatus')}</label>
+                            <select id="emp-status" value={formData.status} onChange={e => set('status', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none">
                                 <option value="Active">{t('hr.statusActive')}</option>
                                 <option value="On Leave">{t('hr.statusOnLeave')}</option>
                                 <option value="Terminated">{t('hr.statusTerminated')}</option>
@@ -147,12 +148,12 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                         </h3>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="block text-xs font-semibold text-blue-800 mb-1">{t('hr.lblMonthlySalary')}</label>
-                                <input required type="number" value={formData.salary} onChange={e => set('salary', e.target.value)} className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
+                                <label htmlFor="emp-salary" className="block text-xs font-semibold text-blue-800 mb-1">{t('hr.lblMonthlySalary')}</label>
+                                <input id="emp-salary" required type="number" value={formData.salary} onChange={e => set('salary', e.target.value)} className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-blue-800 mb-1">{t('hr.lblRequiredMinutes')}</label>
-                                <input required type="number" value={formData.dailyRequiredMinutes} onChange={e => set('dailyRequiredMinutes', e.target.value)} className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
+                                <label htmlFor="emp-dailyMinutes" className="block text-xs font-semibold text-blue-800 mb-1">{t('hr.lblRequiredMinutes')}</label>
+                                <input id="emp-dailyMinutes" required type="number" value={formData.dailyRequiredMinutes} onChange={e => set('dailyRequiredMinutes', e.target.value)} className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none" />
                             </div>
                         </div>
                         <div className="grid grid-cols-4 gap-4 mb-4">
@@ -163,14 +164,14 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                                 { label: t('hr.lblEveningOut'), key: 'eveningEnd' },
                             ].map(({ label, key }) => (
                                 <div key={key}>
-                                    <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{label}</label>
-                                    <input type="time" value={formData[key]} onChange={e => set(key, e.target.value)} className="w-full bg-white border border-gray-200 rounded-md px-2 py-1 text-sm outline-none" />
+                                    <label htmlFor={`emp-${key}`} className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{label}</label>
+                                    <input id={`emp-${key}`} type="time" value={formData[key]} onChange={e => set(key, e.target.value)} className="w-full bg-white border border-gray-200 rounded-md px-2 py-1 text-sm outline-none" />
                                 </div>
                             ))}
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblActiveWorkDays')}</label>
-                            <input type="text" value={formData.workDays} onChange={e => set('workDays', e.target.value)} className="w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none" placeholder="0,1,2,3,4" />
+                            <label htmlFor="emp-workDays" className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('hr.lblActiveWorkDays')}</label>
+                            <input id="emp-workDays" type="text" value={formData.workDays} onChange={e => set('workDays', e.target.value)} className="w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none" placeholder="0,1,2,3,4" />
                             <p className="text-[10px] text-gray-400 mt-1">{t('hr.activeWorkDaysDesc')}</p>
                         </div>
                     </div>

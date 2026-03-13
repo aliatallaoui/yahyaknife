@@ -15,6 +15,7 @@
  */
 
 const { EventEmitter } = require('events');
+const logger = require('../logger');
 
 class DomainEventBus extends EventEmitter {
     /**
@@ -24,7 +25,7 @@ class DomainEventBus extends EventEmitter {
     emit(event, payload) {
         // Log all domain events in non-production environments for traceability
         if (process.env.NODE_ENV !== 'production') {
-            console.log(`[EVENT] ${event}`, payload);
+            logger.debug({ event, payload }, '[EVENT] Domain event emitted');
         }
         return super.emit(event, payload);
     }
@@ -37,7 +38,7 @@ class DomainEventBus extends EventEmitter {
             try {
                 await listener(payload);
             } catch (err) {
-                console.error(`[EVENT ERROR] Handler for '${event}' failed:`, err.message);
+                logger.error({ err, event }, `[EVENT ERROR] Handler for '${event}' failed`);
             }
         };
         return super.on(event, wrapped);

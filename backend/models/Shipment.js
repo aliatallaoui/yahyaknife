@@ -101,4 +101,10 @@ const shipmentSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+// --- Performance Indexes ---
+shipmentSchema.index({ tenant: 1, shipmentStatus: 1 });              // Dispatch page filters
+shipmentSchema.index({ tenant: 1, internalOrder: 1 });               // Order → shipment lookup
+shipmentSchema.index({ externalTrackingId: 1 }, { sparse: true });   // trackerSync lookup
+shipmentSchema.index({ tenant: 1, createdAt: -1 });                  // Chronological listing
+
 module.exports = mongoose.model('Shipment', shipmentSchema);

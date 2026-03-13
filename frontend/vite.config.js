@@ -8,6 +8,16 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-i18n': ['react-i18next', 'i18next'],
+        }
+      }
+    }
+  },
   server: {
     proxy: {
       '/api': {

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Truck, CheckCircle2, AlertCircle, Loader2, Package } from 'lucide-react';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 const STATUS = {
     PENDING: 'pending',
@@ -11,6 +13,8 @@ const STATUS = {
 };
 
 export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete }) {
+    const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const [dispatchItems, setDispatchItems] = useState([]);
     const [isRunning, setIsRunning] = useState(false);
     const [isDone, setIsDone] = useState(false);
@@ -45,22 +49,26 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
 
             // Mark as dispatching
             setDispatchItems(prev => prev.map((d, idx) =>
-                idx === i ? { ...d, status: STATUS.DISPATCHING, message: 'Sending to courier...' } : d
+                idx === i ? { ...d, status: STATUS.DISPATCHING, message: t('dispatch.sendingToCourier', 'Sending to courier...') } : d
             ));
 
             try {
-                const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/quick-dispatch/${item.id}`, {}, {
-                    headers: { Authorization: `Bearer ${token}` }
+                const res = await apiFetch(`/api/shipments/quick-dispatch/${item.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
                 });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Dispatch failed');
                 setDispatchItems(prev => prev.map((d, idx) =>
                     idx === i ? {
                         ...d,
                         status: STATUS.SUCCESS,
-                        message: res.data.tracking ? `Tracking: ${res.data.tracking}` : 'Dispatched successfully'
+                        message: data.tracking ? `${t('dispatch.tracking', 'Tracking')}: ${data.tracking}` : t('dispatch.dispatchedSuccessfully', 'Dispatched successfully')
                     } : d
                 ));
             } catch (err) {
-                const msg = err.response?.data?.message || err.message || 'Unknown error';
+                const msg = err.message || 'Unknown error';
                 setDispatchItems(prev => prev.map((d, idx) =>
                     idx === i ? { ...d, status: STATUS.ERROR, message: msg } : d
                 ));
@@ -93,8 +101,8 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
     const pendingCount = dispatchItems.filter(d => d.status === STATUS.PENDING).length;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]" {...panelProps}>
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-5 border-b border-gray-100">
@@ -103,11 +111,11 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                             <Truck className="w-5 h-5 text-green-600" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900">Batch Dispatch</h2>
-                            <p className="text-xs text-gray-500">{dispatchItems.length} orders to dispatch</p>
+                            <h2 className="text-lg font-bold text-gray-900">{t('dispatch.batchDispatch', 'Batch Dispatch')}</h2>
+                            <p className="text-xs text-gray-500">{dispatchItems.length} {t('dispatch.ordersToDispatch', 'orders to dispatch')}</p>
                         </div>
                     </div>
-                    <button onClick={handleClose} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={handleClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -117,15 +125,15 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                     <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-4">
                         <div className="flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                            <span className="text-xs font-bold text-green-700">{successCount} Success</span>
+                            <span className="text-xs font-bold text-green-700">{successCount} {t('common.success', 'Success')}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                            <span className="text-xs font-bold text-red-700">{errorCount} Failed</span>
+                            <span className="text-xs font-bold text-red-700">{errorCount} {t('common.failed', 'Failed')}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <Package className="w-3.5 h-3.5 text-gray-400" />
-                            <span className="text-xs font-bold text-gray-500">{pendingCount} Pending</span>
+                            <span className="text-xs font-bold text-gray-500">{pendingCount} {t('common.pending', 'Pending')}</span>
                         </div>
                         {/* Progress bar */}
                         <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -196,7 +204,7 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                             {/* Amount */}
                             <div className="text-right shrink-0">
                                 <p className="text-sm font-bold text-gray-700 tabular-nums">{item.totalAmount?.toLocaleString()}</p>
-                                <p className="text-[9px] text-gray-400 font-bold">DZD</p>
+                                <p className="text-[9px] text-gray-400 font-bold">{t('common.dzd', 'DZD')}</p>
                             </div>
                         </div>
                     ))}
@@ -207,14 +215,14 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                     {isDone ? (
                         <>
                             <p className="text-sm text-gray-600">
-                                <span className="font-bold text-green-600">{successCount}</span> dispatched,{' '}
-                                <span className="font-bold text-red-600">{errorCount}</span> failed
+                                <span className="font-bold text-green-600">{successCount}</span> {t('dispatch.dispatched', 'dispatched')},{' '}
+                                <span className="font-bold text-red-600">{errorCount}</span> {t('common.failed', 'failed')}
                             </p>
                             <button
                                 onClick={handleClose}
                                 className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
                             >
-                                Done
+                                {t('common.done', 'Done')}
                             </button>
                         </>
                     ) : (
@@ -224,7 +232,7 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                                 disabled={isRunning}
                                 className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
                             >
-                                Cancel
+                                {t('common.cancel', 'Cancel')}
                             </button>
                             <button
                                 onClick={startDispatch}
@@ -234,12 +242,12 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                                 {isRunning ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Dispatching...
+                                        {t('dispatch.dispatching', 'Dispatching...')}
                                     </>
                                 ) : (
                                     <>
                                         <Truck className="w-4 h-4" />
-                                        Dispatch All ({dispatchItems.length})
+                                        {t('dispatch.dispatchAll', 'Dispatch All')} ({dispatchItems.length})
                                     </>
                                 )}
                             </button>

@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import {
     Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
-    Star, Clock, ChevronDown, X, Layers, UserCircle, PhoneCall, Headset, AlertTriangle
+    Star, Clock, ChevronDown, X, Layers, UserCircle, PhoneCall, Headset, AlertTriangle,
+    ScanBarcode, BadgeDollarSign, BarChart3, FileText
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -24,16 +25,16 @@ function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite
                     "flex-1 flex items-center h-[44px] transition-all duration-300 rounded-2xl relative",
                     isCollapsed ? "justify-center w-12 h-12" : "px-3",
                     isActive
-                        ? "bg-[#F0F7FF] text-blue-600 shadow-sm border border-blue-100/50"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-[#F0F7FF] dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm border border-blue-100/50 dark:border-blue-800/50"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                 )}
             >
                 <div className={clsx(
                     "shrink-0 flex items-center justify-center rounded-xl transition-all duration-300",
                     isCollapsed ? "w-10 h-10" : "w-9 h-9",
                     isActive
-                        ? "bg-blue-100/80 text-blue-600 shadow-inner"
-                        : "bg-gray-100/50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-600"
+                        ? "bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 shadow-inner"
+                        : "bg-gray-100/50 dark:bg-gray-700/50 text-gray-400 dark:text-gray-500 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 group-hover:text-gray-600 dark:group-hover:text-gray-300"
                 )}>
                     {RenderIcon && <RenderIcon className={clsx(
                         isCollapsed ? "w-5 h-5" : "w-[18px] h-[18px]",
@@ -44,7 +45,7 @@ function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite
                 {!isCollapsed && (
                     <span className={clsx(
                         "ms-3 truncate text-[14px] tracking-tight transition-all",
-                        isActive ? "font-bold text-blue-700" : "font-medium text-gray-600"
+                        isActive ? "font-bold text-blue-700 dark:text-blue-400" : "font-medium text-gray-600 dark:text-gray-300"
                     )}>{label}</span>
                 )}
             </NavLink>
@@ -60,7 +61,7 @@ function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite
                         "absolute end-6 p-1.5 rounded-md transition-all z-10",
                         isFavorite
                             ? "text-yellow-500 opacity-100"
-                            : "text-gray-300 opacity-0 group-hover:opacity-100 hover:text-yellow-400 hover:bg-gray-100"
+                            : "text-gray-300 dark:text-gray-500 opacity-0 group-hover:opacity-100 hover:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                     )}
                 >
                     <Star className={clsx("w-3.5 h-3.5", isFavorite && "fill-current")} />
@@ -100,15 +101,15 @@ function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onCl
                 className={clsx(
                     "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all duration-200 group relative mb-2",
                     isDomainActive
-                        ? "bg-[#EEF4FF] text-blue-600 border border-blue-100 shadow-sm"
-                        : "text-gray-500 hover:bg-[#F6F8FC] hover:text-gray-900"
+                        ? "bg-[#EEF4FF] dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 shadow-sm"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-[#F6F8FC] dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                 )}
             >
                 {/* Visual indicator for active domain in collapsed mode */}
                 {isDomainActive && (
                     <div className="absolute start-[-4px] top-1.5 bottom-1.5 w-[4px] bg-blue-600 rounded-e-md shadow-sm" />
                 )}
-                <Icon className={clsx("w-5 h-5 shrink-0", isDomainActive ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600")} />
+                <Icon className={clsx("w-5 h-5 shrink-0", isDomainActive ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300")} />
             </NavLink>
         );
     }
@@ -120,24 +121,24 @@ function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onCl
                 onClick={onToggle}
                 className={clsx(
                     "w-full flex items-center justify-between h-[44px] px-3 group transition-all rounded-2xl mb-1",
-                    isActive ? "text-blue-600 bg-blue-50/30" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    isActive ? "text-blue-600 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-900/20" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}
             >
                 <div className="flex items-center gap-2">
                     <div className={clsx(
                         "w-9 h-9 shrink-0 flex items-center justify-center rounded-xl transition-all duration-300",
                         isActive
-                            ? "bg-blue-100/80 text-blue-600 shadow-inner"
-                            : "bg-gray-100/50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-600"
+                            ? "bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 shadow-inner"
+                            : "bg-gray-100/50 dark:bg-gray-700/50 text-gray-400 dark:text-gray-500 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 group-hover:text-gray-600 dark:group-hover:text-gray-300"
                     )}>
                         <Icon className={clsx("w-[18px] h-[18px] transition-colors", isActive && "stroke-[2.5px]")} />
                     </div>
-                    <span className={clsx("ms-1 text-[13px] tracking-tight transition-colors", isActive ? "text-blue-700 font-bold" : "text-gray-700 font-medium")}>{title}</span>
+                    <span className={clsx("ms-1 text-[13px] tracking-tight transition-colors", isActive ? "text-blue-700 dark:text-blue-400 font-bold" : "text-gray-700 dark:text-gray-300 font-medium")}>{title}</span>
                 </div>
                 {items.length > 1 && (
                     <ChevronDown className={clsx(
                         "w-3.5 h-3.5 transition-all duration-200",
-                        isActive ? "text-blue-400" : "text-gray-400",
+                        isActive ? "text-blue-400 dark:text-blue-500" : "text-gray-400 dark:text-gray-500",
                         isOpen ? "rotate-180" : ""
                     )} />
                 )}
@@ -168,8 +169,8 @@ function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onCl
                                     className={clsx(
                                         "flex-1 flex items-center h-[38px] pe-4 ps-12 transition-all duration-200 group relative rounded-xl mx-2",
                                         isItemActive
-                                            ? "bg-blue-50/50 text-blue-800 font-semibold"
-                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer"
+                                            ? "bg-blue-50/50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold"
+                                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                                     )}
                                 >
                                     {isItemActive && (
@@ -179,7 +180,7 @@ function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onCl
                                     {ItemIcon && (
                                         <ItemIcon className={clsx(
                                             "w-4 h-4 me-3 shrink-0 transition-colors",
-                                            isItemActive ? "text-blue-600" : "text-gray-400 group-hover/item:text-gray-600"
+                                            isItemActive ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500 group-hover/item:text-gray-600 dark:group-hover/item:text-gray-300"
                                         )} />
                                     )}
 
@@ -201,7 +202,7 @@ function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onCl
                                             "absolute end-4 p-1 rounded-md transition-all z-10",
                                             isFavorite
                                                 ? "text-yellow-500 opacity-100"
-                                                : "text-gray-300 opacity-0 group-hover/item:opacity-100 hover:text-yellow-400 hover:bg-gray-100"
+                                                : "text-gray-300 dark:text-gray-500 opacity-0 group-hover/item:opacity-100 hover:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                         )}
                                     >
                                         <Star className={clsx("w-3 h-3", isFavorite && "fill-current")} />
@@ -253,65 +254,66 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             icon: LayoutDashboard,
             permissions: ['overview.read'],
             items: [
-                { label: t('sidebar.dashboard', 'Overview'), path: '/', icon: LayoutDashboard, permission: 'overview.read' }
+                { label: t('sidebar.dashboard', 'Overview'), path: '/dashboard', icon: LayoutDashboard, permission: 'overview.read' }
             ]
         },
         {
             title: t('sidebar.sales_logistics_domain', 'Sales & Logistics'),
             icon: ShoppingBag,
-            permissions: ['sales.read', 'orders.view', 'dispatch.read'],
+            permissions: ['orders.view', 'shipments.view', 'couriers.view'],
             items: [
-                { label: t('sidebar.orders_hub', 'Orders Control Center'), path: '/orders-hub', icon: Layers, permission: 'orders.view' },
-                { label: t('sidebar.sales', 'Sales CRM'), path: '/sales', icon: ShoppingCart, permission: 'sales.read' },
-                { label: t('sidebar.logistics_dispatch', 'Delivery Tracking'), path: '/couriers/dispatch', icon: Truck, permission: 'dispatch.read' },
-                { label: t('sidebar.logistics_analytics', 'Shipping & Couriers'), path: '/couriers', icon: Truck, permission: 'dispatch.read' }
+                { label: t('sidebar.orders_hub', 'Orders Hub'), path: '/orders-hub', icon: Layers, permission: 'orders.view' },
+                { label: t('sidebar.logistics_dispatch', 'Dispatch Center'), path: '/couriers/dispatch', icon: Truck, permission: 'shipments.view' },
+                { label: t('sidebar.logistics_couriers', 'Couriers'), path: '/couriers', icon: Truck, permission: 'couriers.view' },
+                { label: t('sidebar.courier_finance', 'Courier Finance'), path: '/couriers/finance', icon: BadgeDollarSign, permission: 'finance.settle.courier' }
             ]
         },
         {
-            title: t('sidebar.callcenter_domain', 'Call Center Hub'),
+            title: t('sidebar.callcenter_domain', 'Call Center'),
             icon: Headset,
-            permissions: ['callcenter.process_orders', 'callcenter.view_reports', 'overview.read'],
+            permissions: ['callcenter.process_orders', 'callcenter.view_reports', 'callcenter.manage_assignments'],
             items: [
-                { label: t('sidebar.callcenter_agent', 'Agent Workspace'), path: '/call-center', icon: PhoneCall, permission: 'overview.read' },
-                { label: t('sidebar.callcenter_manager', 'Manager Analytics'), path: '/call-center/manager', icon: LayoutDashboard, permission: 'overview.read' }
-            ]
-        },
-        {
-            title: t('sidebar.hr_domain', 'Human Resources'),
-            icon: UserCircle,
-            permissions: ['hr.read', 'hr.manage_attendance', 'hr.manage_payroll', 'hr.view_reports'],
-            items: [
-                { label: t('sidebar.hr_directory', 'Employees'), path: '/hr', icon: Users, permission: 'hr.read' },
-                { label: t('sidebar.hr_attendance', 'Attendance'), path: '/hr/attendance', icon: Clock, permission: 'hr.manage_attendance' },
-                { label: t('sidebar.hr_payroll', 'Payroll'), path: '/hr/payroll', icon: Wallet, permission: 'hr.manage_payroll' },
-                { label: t('sidebar.hr_reports', 'HR Reports'), path: '/hr/reports', icon: Search, permission: 'hr.view_reports' }
-            ]
-        },
-        {
-            title: t('sidebar.finance_domain', 'Finance'),
-            icon: Wallet,
-            permissions: ['financial.read'],
-            items: [
-                { label: t('sidebar.financial', 'Financial Tracker'), path: '/financial', icon: Wallet, permission: 'financial.read' }
+                { label: t('sidebar.callcenter_agent', 'Agent Workspace'), path: '/call-center', icon: PhoneCall, permission: 'callcenter.process_orders' },
+                { label: t('sidebar.callcenter_manager', 'Manager Panel'), path: '/call-center/manager', icon: BarChart3, permission: 'callcenter.view_reports' }
             ]
         },
         {
             title: t('sidebar.inventory_domain', 'Inventory'),
             icon: Box,
-            permissions: ['inventory.read', 'warehouse.read', 'procurement.read'],
+            permissions: ['inventory.view', 'inventory.adjust', 'procurement.read'],
             items: [
-                { label: t('sidebar.inventory', 'Inventory Tracking'), path: '/inventory', icon: Box, permission: 'inventory.read' },
-                { label: t('sidebar.warehousing', 'Warehouse Control'), path: '/warehouses', icon: Factory, permission: 'warehouse.read' },
-                { label: t('sidebar.procurement', 'Purchase Center'), path: '/procurement', icon: ShoppingCart, permission: 'procurement.read' }
+                { label: t('sidebar.inventory', 'Products & Stock'), path: '/inventory', icon: Box, permission: 'inventory.view' },
+                { label: t('sidebar.rto_scanner', 'RTO Scanner'), path: '/inventory/rto-scanner', icon: ScanBarcode, permission: 'inventory.adjust' },
+                { label: t('sidebar.warehousing', 'Warehouses'), path: '/warehouses', icon: Factory, permission: 'inventory.view' },
+                { label: t('sidebar.procurement', 'Procurement'), path: '/procurement', icon: ShoppingCart, permission: 'procurement.read' }
+            ]
+        },
+        {
+            title: t('sidebar.finance_domain', 'Finance'),
+            icon: Wallet,
+            permissions: ['finance.view'],
+            items: [
+                { label: t('sidebar.financial', 'Financial Tracker'), path: '/financial', icon: Wallet, permission: 'finance.view' }
             ]
         },
         {
             title: t('sidebar.customers_domain', 'Customers'),
             icon: Users,
-            permissions: ['customer.read'],
+            permissions: ['customers.view', 'support.view'],
             items: [
-                { label: t('sidebar.crm_acquisition', 'Customer Insights'), path: '/customers', icon: Users, permission: 'customer.read' },
-                { label: t('sidebar.crm_support', 'Returns & Complaints'), path: '/support', icon: HelpCircle, permission: 'customer.read' }
+                { label: t('sidebar.crm_acquisition', 'Customer Insights'), path: '/customers', icon: Users, permission: 'customers.view' },
+                { label: t('sidebar.crm_support', 'Support Desk'), path: '/support', icon: HelpCircle, permission: 'support.view' }
+            ]
+        },
+        {
+            title: t('sidebar.hr_domain', 'Human Resources'),
+            icon: UserCircle,
+            permissions: ['hr.employees.view', 'hr.payroll.view'],
+            items: [
+                { label: t('sidebar.hr_directory', 'Employees'), path: '/hr', icon: Users, permission: 'hr.employees.view' },
+                { label: t('sidebar.hr_attendance', 'Attendance'), path: '/hr/attendance', icon: Clock, permission: 'hr.employees.view' },
+                { label: t('sidebar.hr_payroll', 'Payroll'), path: '/hr/payroll', icon: Wallet, permission: 'hr.payroll.view' },
+                { label: t('sidebar.hr_reports', 'Reports'), path: '/hr/reports', icon: FileText, permission: 'hr.employees.view' }
             ]
         }
     ], [t]);
@@ -340,7 +342,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 ]);
             }
         } catch (e) {
-            console.error(e);
+            // localStorage parse failure; use defaults
         }
     }, [t]);
 
@@ -355,6 +357,14 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             setOpenDomain(activeDomain.title);
         }
     }, [location.pathname, accessibleDomains, searchTerm]);
+
+    // Escape key to close mobile menu
+    useEffect(() => {
+        if (!mobileOpen) return;
+        const handler = (e) => { if (e.key === 'Escape') setMobileOpen?.(false); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [mobileOpen, setMobileOpen]);
 
     const handleLinkClick = () => {
         if (setMobileOpen) setMobileOpen(false);
@@ -374,7 +384,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
 
             {/* Sidebar Container */}
             <div className={clsx(
-                "flex flex-col bg-gradient-to-b from-white via-white to-slate-50/50 h-screen border-e border-gray-100/80 flex-shrink-0 fixed start-0 top-0 z-50 transition-all duration-500 ease-in-out shadow-[0_0_40px_rgba(0,0,0,0.02)]",
+                "flex flex-col bg-gradient-to-b from-white via-white to-slate-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950/50 h-screen border-e border-gray-100/80 dark:border-gray-700/80 flex-shrink-0 fixed start-0 top-0 z-50 transition-all duration-500 ease-in-out shadow-[0_0_40px_rgba(0,0,0,0.02)] dark:shadow-[0_0_40px_rgba(0,0,0,0.2)]",
                 mobileOpen
                     ? "translate-x-0 w-[280px]"
                     : isCollapsed
@@ -384,20 +394,20 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
 
                 {/* Header / Brand */}
                 <div className={clsx(
-                    "flex items-center h-[72px] flex-shrink-0 border-b border-gray-200/60 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
+                    "flex items-center h-[72px] flex-shrink-0 border-b border-gray-200/60 dark:border-gray-700/60 bg-white dark:bg-gray-900 shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
                     isCollapsed ? "justify-center px-0" : "px-5"
                 )}>
-                    <Link to="/" onClick={handleLinkClick} className={clsx("flex items-center gap-3", isCollapsed ? "" : "w-full")}>
+                    <Link to="/dashboard" onClick={handleLinkClick} className={clsx("flex items-center gap-3", isCollapsed ? "" : "w-full")}>
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0">
                             <Layers className="w-4 h-4" />
                         </div>
                         {!isCollapsed && (
-                            <span className="font-bold text-gray-900 tracking-tight text-[15px] truncate">{t('app_name', 'TechCorp OS')}</span>
+                            <span className="font-bold text-gray-900 dark:text-white tracking-tight text-[15px] truncate">{t('app_name', 'TechCorp OS')}</span>
                         )}
                     </Link>
                     {/* Mobile Close Button */}
                     {mobileOpen && (
-                        <button onClick={() => setMobileOpen?.(false)} className="md:hidden p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg shrink-0">
+                        <button onClick={() => setMobileOpen?.(false)} className="md:hidden p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg shrink-0">
                             <X className="w-5 h-5" />
                         </button>
                     )}
@@ -411,21 +421,33 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     {/* Favorites Section */}
                     {!isCollapsed && !searchTerm && favorites.length > 0 && (
                         <div className="mb-6">
-                            <p className="px-4 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                            <p className="px-4 mb-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center justify-between">
                                 {t('sidebar.favorites_header', 'Favorites')}
                                 <Star className="w-3 h-3 text-yellow-500/40" />
                             </p>
                             <div className="flex flex-col">
                                 {favorites.map((fav, i) => (
-                                    <NavLink
-                                        key={i}
-                                        to={fav.path}
-                                        onClick={handleLinkClick}
-                                        className="flex items-center h-[34px] px-4 hover:bg-[#F6F8FC] text-gray-600 hover:text-gray-900 group transition-colors"
-                                    >
-                                        <div className="w-1 h-1 rounded-full bg-gray-300 group-hover:bg-yellow-400 me-4 transition-colors" />
-                                        <span className="text-[13px] tracking-tight truncate">{fav.label}</span>
-                                    </NavLink>
+                                    <div key={i} className="group/fav relative flex items-center">
+                                        <NavLink
+                                            to={fav.path}
+                                            onClick={handleLinkClick}
+                                            className="flex-1 flex items-center h-[34px] px-4 hover:bg-[#F6F8FC] dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white group transition-colors"
+                                        >
+                                            <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 group-hover:bg-yellow-400 me-4 transition-colors" />
+                                            <span className="text-[13px] tracking-tight truncate">{fav.label}</span>
+                                        </NavLink>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggleFavorite(fav.path, fav.label);
+                                            }}
+                                            title={t('sidebar.removeFavorite', 'Remove from favorites')}
+                                            className="absolute end-3 p-1 rounded-md text-gray-300 dark:text-gray-500 opacity-0 group-hover/fav:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all z-10"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -435,7 +457,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     {/* Core Domains */}
                     <div className="flex flex-col gap-1">
                         {!isCollapsed && !searchTerm && (
-                            <p className="px-4 mb-2 mt-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t('sidebar.modules_header', 'Modules')}</p>
+                            <p className="px-4 mb-2 mt-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('sidebar.modules_header', 'Modules')}</p>
                         )}
                         {accessibleDomains.map((domain, i) => {
                             // If it's a single item domain, render it as a primary link (SidebarItem)
@@ -475,7 +497,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 </div>
 
                 {/* Footer / System Controls */}
-                <div className="mt-auto px-2 pb-4 pt-2 border-t border-gray-200/80 bg-white flex flex-col shrink-0">
+                <div className="mt-auto px-2 pb-4 pt-2 border-t border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-900 flex flex-col shrink-0">
                     <SidebarItem
                         icon={Gear}
                         label={t('sidebar.settings_nav', 'Settings')}
@@ -485,7 +507,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     />
 
                     {/* Visual Spacer */}
-                    <div className="my-1 border-t border-gray-100/50" />
+                    <div className="my-1 border-t border-gray-100/50 dark:border-gray-700/50" />
 
                     {/* Collapse Toggle (Desktop only) */}
                     {setOpen && (
@@ -493,8 +515,8 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                             onClick={() => setOpen(!open)}
                             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                             className={clsx(
-                                "hidden md:flex items-center text-gray-400 hover:text-gray-900 group transition-all",
-                                isCollapsed ? "justify-center w-10 h-10 mx-auto rounded-lg hover:bg-gray-100" : "h-[34px] px-3 mx-2 rounded-lg hover:bg-gray-100"
+                                "hidden md:flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white group transition-all",
+                                isCollapsed ? "justify-center w-10 h-10 mx-auto rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" : "h-[34px] px-3 mx-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                             )}
                         >
                             {isCollapsed ? (
@@ -513,18 +535,18 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             {/* Logout confirm dialog */}
             {showLogoutConfirm && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                             </div>
-                            <h3 className="font-bold text-gray-900">{t('sidebar.confirmLogout', 'Sign out?')}</h3>
+                            <h3 className="font-bold text-gray-900 dark:text-white">{t('sidebar.confirmLogout', 'Sign out?')}</h3>
                         </div>
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setShowLogoutConfirm(false)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            <button onClick={() => setShowLogoutConfirm(false)} className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
                                 {t('common.cancel', 'Cancel')}
                             </button>
-                            <button onClick={() => { setShowLogoutConfirm(false); logout(); }} className="px-4 py-2 text-sm font-bold text-white bg-gray-900 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1.5">
+                            <button onClick={() => { setShowLogoutConfirm(false); logout(); }} className="px-4 py-2 text-sm font-bold text-white bg-gray-900 dark:bg-gray-600 hover:bg-gray-700 dark:hover:bg-gray-500 rounded-lg transition-colors flex items-center gap-1.5">
                                 <LogOut className="w-3.5 h-3.5" /> {t('sidebar.signOut', 'Sign Out')}
                             </button>
                         </div>

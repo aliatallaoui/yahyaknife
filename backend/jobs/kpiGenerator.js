@@ -1,9 +1,10 @@
+const logger = require('../shared/logger');
 const Order = require('../models/Order');
 const KPISnapshot = require('../models/KPISnapshot');
 const Tenant = require('../models/Tenant');
 
 const generateKPISnapshots = async () => {
-    console.log("[JOB] Starting Operations KPI Snapshot Generation...");
+    logger.info('[JOB] Starting Operations KPI Snapshot Generation');
     try {
         // Find all active tenants (or simply all tenants for now)
         // Note: For extreme scale, this would be chunked/paginated
@@ -61,12 +62,12 @@ const generateKPISnapshots = async () => {
                 );
 
             } catch (tenantErr) {
-                console.error(`[JOB] Error generating KPI for tenant ${tenant._id}:`, tenantErr);
+                logger.error({ err: tenantErr, tenantId: tenant._id }, '[JOB] Error generating KPI for tenant');
             }
         }
-        console.log(`[JOB] Finished Operations KPI Snapshot Generation for ${tenants.length} tenants.`);
+        logger.info({ tenantCount: tenants.length }, '[JOB] Finished Operations KPI Snapshot Generation');
     } catch (err) {
-        console.error("[JOB] Global error in KPI Generation:", err);
+        logger.error({ err }, '[JOB] Global error in KPI Generation');
     }
 };
 

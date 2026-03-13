@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
@@ -24,8 +25,8 @@ exports.triggerEcotrackSync = async (req, res) => {
 
         res.json({ message: 'ECOTRACK sync sequence manually fired and completed.', lastSync: lastEcotrackSyncTime });
     } catch (error) {
-        console.error('Manual ECOTRACK Sync Error:', error);
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Manual ECOTRACK Sync Error');
+        res.status(500).json({ error: 'Failed to run ECOTRACK sync' });
     }
 };
 
@@ -72,7 +73,8 @@ exports.getOrders = async (req, res) => {
             nextCursor: orders.length > 0 ? orders[orders.length - 1]._id : null
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching orders');
+        res.status(500).json({ error: 'Failed to fetch orders' });
     }
 };
 
@@ -81,8 +83,15 @@ exports.getAdvancedOrders = async (req, res) => {
         const { limit = 50 } = req.query;
         let queryLimit = Math.min(parseInt(limit) || 50, 200);
 
-        const ALLOWED_SORT_FIELDS = new Set(['_id', 'totalAmount', 'createdAt', 'status', 'priority', 'date']);
+        const ALLOWED_SORT_FIELDS = new Set(['_id', 'totalAmount', 'createdAt', 'status', 'priority', 'date', 'updatedAt']);
         let { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
+        
+        // Force sort by updatedAt descending for post-dispatch if default date is requested
+        if (stage === 'post-dispatch' && (sortField === 'date' || !req.query.sortField)) {
+            sortField = 'updatedAt';
+            sortOrder = 'desc';
+        }
+
         if (!ALLOWED_SORT_FIELDS.has(sortField)) sortField = 'date';
 
         const query = { tenant: req.user.tenant };
@@ -90,7 +99,15 @@ exports.getAdvancedOrders = async (req, res) => {
         if (cursor) {
             const op = sortOrder === 'desc' ? '$lt' : '$gt';
             const cursorField = sortField === 'date' ? '_id' : sortField;
-            if (cursorField === '_id') {
+            
+            if (sortField === 'updatedAt' && cursor.includes('_')) {
+                const [dateStr, idStr] = cursor.split('_');
+                const cursorDate = new Date(dateStr);
+                query.$or = [
+                    { updatedAt: { [op]: cursorDate } },
+                    { updatedAt: cursorDate, _id: { [op]: new mongoose.Types.ObjectId(idStr) } }
+                ];
+            } else if (cursorField === '_id') {
                 if (!mongoose.Types.ObjectId.isValid(cursor))
                     return res.status(400).json({ error: 'Invalid cursor.' });
                 query._id = { [op]: new mongoose.Types.ObjectId(cursor) };
@@ -156,10 +173,11 @@ exports.getAdvancedOrders = async (req, res) => {
             query.$or = orConditions;
         }
 
-        const sortObj = { [sortField === 'date' ? '_id' : sortField]: sortOrder === 'desc' ? -1 : 1 }; // map date to _id for indexed sorting
+        const sortDir = sortOrder === 'desc' ? -1 : 1;
+        const sortObj = sortField === 'updatedAt' 
+            ? { updatedAt: sortDir, _id: sortDir } 
+            : { [sortField === 'date' ? '_id' : sortField]: sortDir };
 
-        // For heavy cursor pagination, we can skip total counts if we rely entirely on infinite scroll.
-        // For backwards compatibility, we calculate it if it's the first page (no cursor).
         const totalOrdersQuery = cursor ? null : Order.countDocuments(query);
         
         // Fetch 1 extra to determine if there's a next page
@@ -185,11 +203,14 @@ exports.getAdvancedOrders = async (req, res) => {
             hasNextPage = true;
             results.pop(); // Remove the extra item
             const lastItem = results[results.length - 1];
-            nextCursor = sortField === 'date' ? lastItem._id : lastItem[sortField];
+            if (sortField === 'updatedAt') {
+                nextCursor = `${lastItem.updatedAt.toISOString()}_${lastItem._id.toString()}`;
+            } else {
+                nextCursor = sortField === 'date' ? lastItem._id : lastItem[sortField];
+            }
         }
 
-        // Promote due-postponed orders to top (only on first page load, not during infinite scroll)
-        // Orders with postponedUntil <= now that are still in Postponed status rise to the top
+        // Promote due-postponed orders to top
         if (!cursor && (stage === 'pre-dispatch' || !stage)) {
             const now = new Date();
             const duePostponed = [];
@@ -227,7 +248,8 @@ exports.getAdvancedOrders = async (req, res) => {
             stageCounts: stageCounts || undefined
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching advanced orders');
+        res.status(500).json({ error: 'Failed to fetch orders' });
     }
 };
 
@@ -284,7 +306,8 @@ exports.updateBulkOrders = async (req, res) => {
 
         res.json({ message: `${result.modifiedCount} orders updated successfully` });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error in bulk order update');
+        res.status(500).json({ error: 'Failed to update orders' });
     }
 };
 
@@ -311,7 +334,8 @@ exports.getOrdersKPIs = async (req, res) => {
             returnRate: 0
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching KPIs');
+        res.status(500).json({ error: 'Failed to fetch KPIs' });
     }
 };
 
@@ -370,7 +394,8 @@ exports.getSalesPerformance = async (req, res) => {
 
         res.json(cachedPerformance);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching sales performance');
+        res.status(500).json({ error: 'Failed to fetch sales performance' });
     }
 };
 
@@ -384,7 +409,7 @@ exports.createOrder = async (req, res) => {
         res.status(201).json(order);
     } catch (error) {
         const status = error.isOperational ? (error.statusCode || 400) : 500;
-        if (!error.isOperational) console.error('Error creating order:', error);
+        if (!error.isOperational) logger.error({ err: error }, 'Error creating order');
         res.status(status).json({ message: error.message });
     }
 };
@@ -410,7 +435,7 @@ exports.updateOrder = async (req, res) => {
         res.json(updatedOrder);
     } catch (error) {
         const status = error.isOperational ? (error.statusCode || 400) : 500;
-        if (!error.isOperational) console.error('Error updating order:', error);
+        if (!error.isOperational) logger.error({ err: error }, 'Error updating order');
         res.status(status).json({ message: error.message });
     }
 };
@@ -431,8 +456,8 @@ exports.deleteOrder = async (req, res) => {
 
         res.json({ message: 'Order moved to trash', orderId: order.orderId });
     } catch (error) {
-        console.error('Error deleting order:', error);
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error deleting order');
+        res.status(500).json({ message: 'Failed to delete order' });
     }
 };
 
@@ -451,8 +476,8 @@ exports.bulkDeleteOrders = async (req, res) => {
 
         res.json({ message: `${result.modifiedCount} order(s) moved to trash`, trashedCount: result.modifiedCount });
     } catch (error) {
-        console.error("Error moving orders to trash:", error);
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error moving orders to trash');
+        res.status(500).json({ message: 'Failed to move orders to trash' });
     }
 };
 
@@ -470,8 +495,8 @@ exports.restoreOrders = async (req, res) => {
 
         res.json({ message: `${result.modifiedCount} order(s) restored`, restoredCount: result.modifiedCount });
     } catch (error) {
-        console.error("Error restoring orders:", error);
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error restoring orders');
+        res.status(500).json({ message: 'Failed to restore orders' });
     }
 };
 
@@ -486,8 +511,8 @@ exports.purgeOrders = async (req, res) => {
         const result = await Order.deleteMany({ _id: { $in: orderIds }, tenant: req.user.tenant, deletedAt: { $ne: null } });
         res.json({ message: `${result.deletedCount} order(s) permanently deleted`, deletedCount: result.deletedCount });
     } catch (error) {
-        console.error("Error purging orders:", error);
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error purging orders');
+        res.status(500).json({ message: 'Failed to purge orders' });
     }
 };
 

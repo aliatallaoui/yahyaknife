@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const cron = require('node-cron');
 const Shipment = require('../models/Shipment');
 const { ecotrackRequest } = require('../utils/ecotrackRequest');
@@ -70,7 +71,7 @@ const mapCourierStatusToInternal = (courierStatus, currentShipment) => {
  */
 const syncActiveShipments = async () => {
     try {
-        console.log('[CRON] Starting ECOTRACK Shipment Sync...');
+        logger.info('[CRON] Starting ECOTRACK Shipment Sync');
 
         // Find shipments that are alive and moving
         const activeShipments = await Shipment.find({
@@ -78,85 +79,95 @@ const syncActiveShipments = async () => {
                 $in: ['Validated', 'In Transit', 'Out for Delivery', 'Failed Attempt', 'Return Initiated']
             },
             externalTrackingId: { $exists: true, $ne: null }
-        });
+        }).select('externalTrackingId internalOrderId internalOrder tenant shipmentStatus paymentStatus courierStatus deliveredDate codCollectedAt codPaidAt returnReceivedAt activityHistory');
 
         if (activeShipments.length === 0) {
-            console.log('[CRON] No active shipments to sync.');
+            logger.info('[CRON] No active shipments to sync');
             return;
         }
 
         let updatedCount = 0;
 
-        for (const shipment of activeShipments) {
-            try {
-                // Adjust route based on specific Ecotrack API endpoint for tracking
-                const trackingResponse = await ecotrackRequest('GET', `/api/v1/tracking/${shipment.externalTrackingId}`);
+        // Process in chunks to prevent rate-limiting but speed up sequential blocking
+        const CHUNK_SIZE = 10;
+        for (let i = 0; i < activeShipments.length; i += CHUNK_SIZE) {
+            const chunk = activeShipments.slice(i, i + CHUNK_SIZE);
 
-                // Assuming trackingResponse contains a 'status' or 'current_status' text
-                const currentCourierStatus = trackingResponse.status || trackingResponse.current_status;
+            await Promise.allSettled(chunk.map(async (shipment) => {
+                try {
+                    // Adjust route based on specific Ecotrack API endpoint for tracking
+                    const trackingResponse = await ecotrackRequest('GET', `/api/v1/tracking/${shipment.externalTrackingId}`);
 
-                if (currentCourierStatus) {
-                    const { newShipmentStatus, newPaymentStatus, activityLog } = mapCourierStatusToInternal(currentCourierStatus, shipment);
+                    // Assuming trackingResponse contains a 'status' or 'current_status' text
+                    const currentCourierStatus = trackingResponse.status || trackingResponse.current_status;
 
-                    if (activityLog) {
-                        shipment.courierStatus = currentCourierStatus;
-                        shipment.shipmentStatus = newShipmentStatus;
-                        shipment.paymentStatus = newPaymentStatus;
+                    if (currentCourierStatus) {
+                        const { newShipmentStatus, newPaymentStatus, activityLog } = mapCourierStatusToInternal(currentCourierStatus, shipment);
 
-                        // Lifecycle Timestamps
-                        if (newShipmentStatus === 'Delivered' && !shipment.deliveredDate) shipment.deliveredDate = new Date();
-                        if (newPaymentStatus === 'Collected_Not_Paid' && !shipment.codCollectedAt) shipment.codCollectedAt = new Date();
-                        if (newPaymentStatus === 'Paid_and_Settled' && !shipment.codPaidAt) shipment.codPaidAt = new Date();
-                        if (newShipmentStatus === 'Returned' && !shipment.returnReceivedAt) shipment.returnReceivedAt = new Date();
+                        if (activityLog) {
+                            // Mirror status to Internal Order BEFORE saving shipment to prevent desync
+                            if (newShipmentStatus === 'Delivered' || newShipmentStatus === 'Returned' || newPaymentStatus === 'Paid_and_Settled') {
+                                const isCustom = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-');
 
-                        shipment.activityHistory.push(activityLog);
-                        await shipment.save();
-                        updatedCount++;
-
-                        // Mirror status back to Internal Order if appropriate
-                        if (newShipmentStatus === 'Delivered' || newShipmentStatus === 'Returned' || newPaymentStatus === 'Paid_and_Settled') {
-                            const isCustom = shipment.internalOrderId && shipment.internalOrderId.startsWith('CUST-');
-
-                            if (!isCustom && shipment.internalOrder && shipment.tenant) {
-                                // Route through OrderService to trigger inventory delta + audit trail + metrics
-                                let targetStatus = null;
-                                const extraData = {};
-                                if (newPaymentStatus === 'Paid_and_Settled') {
-                                    targetStatus = 'Paid';
-                                    extraData.paymentStatus = 'Paid';
-                                } else if (newShipmentStatus === 'Delivered') {
-                                    targetStatus = 'Delivered';
-                                } else if (newShipmentStatus === 'Returned') {
-                                    targetStatus = 'Returned';
-                                }
-                                if (targetStatus) {
-                                    await OrderService.updateOrder({
-                                        orderId: shipment.internalOrder.toString(),
-                                        tenantId: shipment.tenant,
-                                        updateData: { status: targetStatus, ...extraData },
-                                        bypassStateMachine: true
-                                    }).catch(err => console.error(`[CRON] Failed to sync order status for ${shipment.internalOrderId}:`, err.message));
+                                if (!isCustom && shipment.internalOrder && shipment.tenant) {
+                                    let targetStatus = null;
+                                    const extraData = {};
+                                    if (newPaymentStatus === 'Paid_and_Settled') {
+                                        targetStatus = 'Paid';
+                                        extraData.paymentStatus = 'Paid';
+                                    } else if (newShipmentStatus === 'Delivered') {
+                                        targetStatus = 'Delivered';
+                                    } else if (newShipmentStatus === 'Returned') {
+                                        targetStatus = 'Returned';
+                                    }
+                                    if (targetStatus) {
+                                        await OrderService.updateOrder({
+                                            orderId: shipment.internalOrder.toString(),
+                                            tenantId: shipment.tenant,
+                                            updateData: { status: targetStatus, ...extraData },
+                                            bypassStateMachine: true
+                                        });
+                                        // If OrderService throws, shipment.save() below is skipped — no desync
+                                    }
                                 }
                             }
+
+                            shipment.courierStatus = currentCourierStatus;
+                            shipment.shipmentStatus = newShipmentStatus;
+                            shipment.paymentStatus = newPaymentStatus;
+
+                            // Lifecycle Timestamps
+                            if (newShipmentStatus === 'Delivered' && !shipment.deliveredDate) shipment.deliveredDate = new Date();
+                            if (newPaymentStatus === 'Collected_Not_Paid' && !shipment.codCollectedAt) shipment.codCollectedAt = new Date();
+                            if (newPaymentStatus === 'Paid_and_Settled' && !shipment.codPaidAt) shipment.codPaidAt = new Date();
+                            if (newShipmentStatus === 'Returned' && !shipment.returnReceivedAt) shipment.returnReceivedAt = new Date();
+
+                            shipment.activityHistory.push(activityLog);
+                            await shipment.save();
+                            updatedCount++;
                         }
                     }
+                } catch (err) {
+                    logger.error({ err, trackingId: shipment.externalTrackingId }, '[CRON] Failed to sync shipment');
                 }
-            } catch (err) {
-                console.error(`[CRON] Failed to sync shipment ${shipment.externalTrackingId}:`, err.message);
-                // Continue to next shipment even if one fails
+            }));
+            
+            // Brief pause between chunks to respect hypothetical courier rate limits
+            if (i + CHUNK_SIZE < activeShipments.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
         }
 
-        console.log(`[CRON] ECOTRACK Sync Complete. Updated ${updatedCount} shipments.`);
+        logger.info({ updatedCount }, '[CRON] ECOTRACK Sync Complete');
     } catch (globalError) {
-        console.error('[CRON] Critical Error during Tracking Sync:', globalError.message);
+        logger.error({ err: globalError }, '[CRON] Critical Error during Tracking Sync');
     }
 };
 
 // Initialize the cron routines
 const initCronJobs = () => {
     // Cron scheduling disabled per user request, manual syncing only via Control Center
-    console.log(`[CRON] Dispatch Tracking Sync scheduling disabled. Awaiting manual triggers.`);
+    logger.info('[CRON] Dispatch Tracking Sync scheduling disabled. Awaiting manual triggers');
 };
 
 module.exports = {

@@ -1,15 +1,18 @@
+const logger = require('../shared/logger');
 const Courier = require('../models/Courier');
 const Order = require('../models/Order');
 const OrderStatusHistory = require('../models/OrderStatusHistory');
 const CourierSettlement = require('../models/CourierSettlement');
+const audit = require('../shared/utils/auditLog');
 
 // Get all couriers with calculated KPIs
 exports.getCouriers = async (req, res) => {
     try {
-        const couriers = await Courier.find({ tenant: req.user.tenant }).sort({ name: 1 });
+        const couriers = await Courier.find({ tenant: req.user.tenant }).select('-apiToken -apiId').sort({ name: 1 }).lean();
         res.json(couriers);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching couriers');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -21,13 +24,16 @@ exports.createCourier = async (req, res) => {
             authType, apiId, apiToken, accountReference, notes, vehicleType,
             coverageZones, deliverySLAs
         } = req.body;
+        if (!name) return res.status(400).json({ error: 'Courier name is required.' });
         const newCourier = await Courier.create({
             name, phone, logo, status, integrationType, apiProvider, apiBaseUrl,
             authType, apiId, apiToken, accountReference, notes, vehicleType,
             coverageZones, deliverySLAs,
             tenant: req.user.tenant
         });
-        res.status(201).json(newCourier);
+        const response = newCourier.toObject();
+        delete response.apiToken;
+        res.status(201).json(response);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -50,7 +56,9 @@ exports.updateCourier = async (req, res) => {
             { new: true, runValidators: true }
         );
         if (!updated) return res.status(404).json({ message: 'Courier not found' });
-        res.json(updated);
+        const response = updated.toObject();
+        delete response.apiToken;
+        res.json(response);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -137,13 +145,16 @@ exports.settleCourierCash = async (req, res) => {
             notes: notes || ''
         });
 
+        audit({ tenant: tenantId, actorUserId: req.user._id, action: 'SETTLE_COURIER_CASH', module: 'finance', metadata: { courierId: id, amountSettled: amountToSettle, ordersSettled: settledOrderIds.length, settlementId: settlement._id } });
+
         res.json({
             message: 'Cash settled successfully and pushed to Financial Ledger via Order Payment Status.',
             settlement,
             ordersSettled: settledOrderIds.length
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error settling courier cash');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -164,7 +175,8 @@ exports.getSettlementHistory = async (req, res) => {
 
         res.json({ courierId: id, totalSettled, settlements });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching settlement history');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -181,15 +193,46 @@ exports.assignOrdersToCourier = async (req, res) => {
             return res.status(400).json({ message: 'Provide an array of orderIds to dispatch.' });
         }
 
-        // Update orders: set courier flag, change status to 'Ready for Pickup' if 'Confirmed' or 'Preparing'
-        const result = await Order.updateMany(
-            { _id: { $in: orderIds }, tenant: req.user.tenant, status: { $in: ['New', 'Confirmed', 'Preparing'] } },
-            { $set: { courier: id, status: 'Ready for Pickup' } }
-        );
+        // Filter to only eligible orders (pre-dispatch statuses)
+        const tenantId = req.user.tenant;
+        const eligibleOrders = await Order.find({
+            _id: { $in: orderIds },
+            tenant: tenantId,
+            status: { $in: ['New', 'Confirmed', 'Preparing'] },
+            deletedAt: null
+        }).select('_id');
 
-        res.json({ message: 'Orders batched and dispatched successfully.', matched: result.matchedCount, modified: result.modifiedCount });
+        let modified = 0;
+        const errors = [];
+
+        // Lazy-require to break circular dependency (courierController ↔ order.service)
+        const OrderService = require('../domains/orders/order.service');
+
+        // Route each through OrderService for audit trail + inventory handling
+        for (const order of eligibleOrders) {
+            try {
+                await OrderService.updateOrder({
+                    orderId: order._id,
+                    tenantId,
+                    userId: req.user._id,
+                    updateData: { courier: id, status: 'Ready for Pickup' },
+                    bypassStateMachine: true
+                });
+                modified++;
+            } catch (err) {
+                errors.push({ orderId: order._id, error: err.message });
+            }
+        }
+
+        res.json({
+            message: 'Orders batched and dispatched successfully.',
+            matched: eligibleOrders.length,
+            modified,
+            ...(errors.length > 0 && { errors })
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error assigning orders to courier');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -247,7 +290,7 @@ exports.recalculateCourierKPIs = async (courierId) => {
         await courier.save();
 
     } catch (error) {
-        console.error("Error recalculating courier KPIs:", error);
+        logger.error({ err: error }, 'Error recalculating courier KPIs');
     }
 };
 
@@ -269,7 +312,7 @@ exports.syncCourierCash = async (courierId, amountDelta) => {
 
         await courier.save();
     } catch (error) {
-        console.error("Error syncing courier cash:", error);
+        logger.error({ err: error }, 'Error syncing courier cash');
     }
 };
 
@@ -341,7 +384,7 @@ exports.testCourierConnection = async (req, res) => {
             }
         }
     } catch (error) {
-        console.error('Test Connection Error:', error.response?.data || error.message);
+        logger.error({ err: error, responseData: error.response?.data }, 'Test Connection Error');
         
         let errorMsg = error.message;
         if (error.response?.data) {

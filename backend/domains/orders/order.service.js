@@ -12,17 +12,25 @@ const ProductVariant = require('../../models/ProductVariant');
 const OrderItem = require('../../models/OrderItem');
 const OrderStatusHistory = require('../../models/OrderStatusHistory');
 const OrderNote = require('../../models/OrderNote');
+const CourierPricing = require('../../models/CourierPricing');
 const { assertTransition } = require('./order.statemachine');
 const AppError = require('../../shared/errors/AppError');
+const logger = require('../../shared/logger');
 const { logStockMovement } = require('../../controllers/stockController');
 const { updateCustomerMetrics } = require('../../controllers/customerController');
 const { syncCourierCash, recalculateCourierKPIs } = require('../../controllers/courierController');
+const cacheService = require('../../services/cacheService');
+const { fireAndRetry } = require('../../shared/utils/retryAsync');
+const { autoAssignOrder } = require('../../controllers/callCenterController');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Resolve or create a customer by phone, within a session (pre-transaction) */
 async function resolveCustomer(tenantId, customerId, customerPhone, customerName) {
-    if (customerId) return customerId;
+    if (customerId) {
+        const c = await Customer.findById(customerId);
+        if (c) return c;
+    }
     if (!customerPhone) throw AppError.validationFailed({ customerPhone: 'Phone number is required' });
 
     let customer = await Customer.findOne({ phone: customerPhone, tenant: tenantId });
@@ -37,7 +45,7 @@ async function resolveCustomer(tenantId, customerId, customerPhone, customerName
         customer.name = customerName;
         await customer.save();
     }
-    return customer._id;
+    return customer;
 }
 
 /** Fetch variant costs in one query → { variantId: cost } */
@@ -51,10 +59,32 @@ async function fetchVariantCosts(products) {
     return map;
 }
 
+/** Calculate Courier Fee based on pricing rules */
+async function calculateCourierFee(courierId, wilayaCode, commune) {
+    if (!courierId) return null;
+    
+    const pricingRules = await CourierPricing.find({ courierId }).sort({ priority: -1 }).lean();
+    if (!pricingRules.length) return null;
+
+    let matchedRule = null;
+    for (const rule of pricingRules) {
+        if (rule.ruleType === 'Wilaya+Commune' && rule.wilayaCode === wilayaCode && rule.commune === commune) {
+            matchedRule = rule; break; // Exact match
+        }
+        if (rule.ruleType === 'Wilaya' && rule.wilayaCode === wilayaCode && !matchedRule) {
+            matchedRule = rule; // Fallback to Wilaya
+        }
+        if (rule.ruleType === 'Flat' && !matchedRule) {
+            matchedRule = rule; // Ultimate fallback
+        }
+    }
+    return matchedRule ? matchedRule.price : null;
+}
+
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 exports.createOrder = async ({ tenantId, userId, body }) => {
-    const {
+    let {
         orderId, customerId, customerName, customerPhone,
         channel, products, status, paymentStatus,
         fulfillmentStatus, fulfillmentPipeline, notes,
@@ -65,8 +95,24 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         throw AppError.validationFailed({ orderId: 'orderId, channel, and products are required' });
     }
 
-    // 1. Resolve customer (outside transaction — idempotent)
-    const resolvedCustomerId = await resolveCustomer(tenantId, customerId, customerPhone, customerName);
+    // 1. Resolve customer
+    const resolvedCustomer = await resolveCustomer(tenantId, customerId, customerPhone, customerName);
+    const resolvedCustomerId = resolvedCustomer._id;
+
+    // 1.5 Auto-Flagging for High Risk Customers
+    let autoRiskNote = null;
+    tags = tags || [];
+    priority = priority || 'Normal';
+    
+    const isRisky = resolvedCustomer.blacklisted || 
+                    (resolvedCustomer.refusalRate && resolvedCustomer.refusalRate > 30) || 
+                    (resolvedCustomer.trustScore !== undefined && resolvedCustomer.trustScore < 50);
+
+    if (isRisky) {
+        if (!tags.includes('High Risk')) tags.push('High Risk');
+        if (priority === 'Normal') priority = 'High Priority';
+        autoRiskNote = `[SYSTEM WARNING] Customer automatically flagged as HIGH RISK. Trust Score: ${resolvedCustomer.trustScore || 100}, Refusal Rate: ${resolvedCustomer.refusalRate || 0}%. Please verify carefully.`;
+    }
 
     // 2. Fetch costs
     const costMap = await fetchVariantCosts(products);
@@ -86,9 +132,19 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     });
 
     const codAmount = financials?.codAmount || 0;
-    const courierFee = financials?.courierFee || 0;
     const discount = financials?.discount || 0;
+    const gatewayFees = financials?.gatewayFees || 0;
+    const marketplaceFees = financials?.marketplaceFees || 0;
+
+    // Server-side Courier Fee Override
+    let courierFee = financials?.courierFee || 0;
+    if (courier && shipping?.wilayaCode) {
+        const backendFee = await calculateCourierFee(courier, shipping.wilayaCode, shipping.commune);
+        if (backendFee !== null) courierFee = backendFee;
+    }
+
     const finalTotal = subtotalAmt + courierFee - discount;
+    const netProfit = finalTotal - totalCOGS - courierFee - gatewayFees - marketplaceFees;
     const mainStatus = status || 'New';
 
     // 4. Sequential write (Transactions disabled for local standalone MongoDB compatibility)
@@ -105,14 +161,14 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             totalAmount: finalTotal,
             finalTotal,
             amountToCollect: codAmount || finalTotal,
-            financials: { ...financials, cogs: totalCOGS, codAmount: codAmount || finalTotal, courierFee },
+            financials: { ...financials, cogs: totalCOGS, codAmount: codAmount || finalTotal, courierFee, netProfit },
             status: mainStatus,
             paymentStatus: paymentStatus || 'Unpaid',
             fulfillmentStatus: fulfillmentStatus || 'Unfulfilled',
             fulfillmentPipeline: fulfillmentPipeline || 'Pending',
             verificationStatus: verificationStatus || 'Pending',
-            priority: priority || 'Normal',
-            tags: tags || [],
+            priority: priority,
+            tags: tags,
             courier: courier || null,
             shipping: shipping || {},
             wilaya: shipping?.wilayaCode ? `${shipping.wilayaCode} - ${shipping.wilayaName}` : 'Unknown',
@@ -154,34 +210,56 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
                 createdBy: userId || null
             });
         }
+
+        if (autoRiskNote) {
+            await OrderNote.create({
+                orderId: savedOrder._id,
+                type: 'System Note',
+                content: autoRiskNote,
+                createdBy: userId || null
+            });
+        }
     } catch (error) {
         if (savedOrder && savedOrder._id) {
-            // Attempt manual rollback for the primary document
-            await Order.findByIdAndDelete(savedOrder._id).catch(e => console.error("Rollback failed:", e));
+            // Attempt manual rollback for all related documents
+            await Promise.allSettled([
+                Order.findByIdAndDelete(savedOrder._id),
+                OrderItem.deleteMany({ orderId: savedOrder._id }),
+                OrderStatusHistory.deleteMany({ orderId: savedOrder._id }),
+                OrderNote.deleteMany({ orderId: savedOrder._id }),
+            ]).catch(e => logger.error({ err: e }, 'Rollback failed'));
         }
         throw error;
     }
 
-    // 5. Post-commit side effects (fire-and-forget)
+    // 5. Post-commit side effects — stock mutations are synchronous to prevent drift
     const isFulfilled = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(savedOrder.status);
     const isActive = !['Refused', 'Returned', 'Cancelled', 'Cancelled by Customer'].includes(savedOrder.status);
 
     if (isFulfilled) {
-        Customer.findByIdAndUpdate(resolvedCustomerId, { $inc: { lifetimeValue: savedOrder.totalAmount } }).catch(console.error);
+        await Customer.findByIdAndUpdate(resolvedCustomerId, { $inc: { lifetimeValue: savedOrder.totalAmount } });
     }
 
     for (const item of savedOrder.products) {
         if (!item.variantId) continue;
         if (isFulfilled) {
-            ProductVariant.findByIdAndUpdate(item.variantId, { $inc: { totalStock: -item.quantity, totalSold: item.quantity } }).catch(console.error);
-            logStockMovement(item.variantId, -item.quantity, 'Sale', `Fulfilled Order ${savedOrder.orderId}`, savedOrder._id).catch(console.error);
+            await ProductVariant.findByIdAndUpdate(item.variantId, { $inc: { totalStock: -item.quantity, totalSold: item.quantity } });
+            await logStockMovement(item.variantId, -item.quantity, 'Sale', `Fulfilled Order ${savedOrder.orderId}`, savedOrder._id);
         } else if (isActive) {
-            ProductVariant.findByIdAndUpdate(item.variantId, { $inc: { reservedStock: item.quantity, totalSold: item.quantity } }).catch(console.error);
-            logStockMovement(item.variantId, -item.quantity, 'Sale', `Reserved for Order ${savedOrder.orderId}`, savedOrder._id).catch(console.error);
+            await ProductVariant.findByIdAndUpdate(item.variantId, { $inc: { reservedStock: item.quantity, totalSold: item.quantity } });
+            await logStockMovement(item.variantId, -item.quantity, 'Sale', `Reserved for Order ${savedOrder.orderId}`, savedOrder._id);
         }
     }
 
-    updateCustomerMetrics(resolvedCustomerId).catch(console.error);
+    fireAndRetry('updateCustomerMetrics:create', () => updateCustomerMetrics(resolvedCustomerId));
+
+    // Invalidate dashboard cache for this tenant
+    cacheService.flushByPrefix(`dash:${tenantId}:`);
+
+    // Auto-assign new orders to least-loaded agent (fire-and-forget)
+    if (mainStatus === 'New' && !savedOrder.assignedAgent) {
+        fireAndRetry('autoAssignOrder', () => autoAssignOrder(savedOrder._id, tenantId));
+    }
 
     return savedOrder;
 };
@@ -196,6 +274,49 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         let totalAmount = 0;
         updateData.products.forEach(item => { totalAmount += item.quantity * item.unitPrice; });
         updateData.totalAmount = totalAmount;
+    }
+
+    // Server-Side Courier Pricing Override Update
+    const activeCourierId = updateData.courier || existingOrder.courier;
+    const activeWilayaCode = updateData.shipping?.wilayaCode || existingOrder.shipping?.wilayaCode;
+    const activeCommune = updateData.shipping?.commune || existingOrder.shipping?.commune;
+
+    let backendFee = null;
+    if (activeCourierId && activeWilayaCode) {
+        backendFee = await calculateCourierFee(activeCourierId, activeWilayaCode, activeCommune);
+    }
+
+    // Recompute netProfit server-side if financials or totalAmount changed
+    if (updateData.financials || updateData.totalAmount !== undefined || backendFee !== null) {
+        const mergedFinancials = { ...existingOrder.financials?.toObject?.() || existingOrder.financials || {}, ...updateData.financials };
+        
+        if (backendFee !== null) {
+            mergedFinancials.courierFee = backendFee;
+            if (!updateData.financials) updateData.financials = {};
+            updateData.financials.courierFee = backendFee;
+        }
+
+        let total = updateData.totalAmount !== undefined ? updateData.totalAmount : existingOrder.totalAmount;
+        
+        // If the fee changed externally (by backend override), update the totalAmount
+        if (backendFee !== null && backendFee !== (existingOrder.financials?.courierFee || 0)) {
+            let subtotalAmt = 0;
+            const prods = updateData.products || existingOrder.products;
+            prods.forEach(item => { subtotalAmt += item.quantity * item.unitPrice; });
+            const discount = mergedFinancials.discount || 0;
+            total = subtotalAmt + backendFee - discount;
+            updateData.totalAmount = total;
+            updateData.finalTotal = total;
+            if (!updateData.financials) updateData.financials = {};
+            updateData.financials.codAmount = total;
+        }
+
+        const cogs = mergedFinancials.cogs || 0;
+        const cFee = mergedFinancials.courierFee || 0;
+        const gFees = mergedFinancials.gatewayFees || 0;
+        const mFees = mergedFinancials.marketplaceFees || 0;
+        if (!updateData.financials) updateData.financials = {};
+        updateData.financials.netProfit = total - cogs - cFee - gFees - mFees;
     }
 
     const oldMainStatus = existingOrder.status;
@@ -302,7 +423,6 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
     // Courier cash liability sync
     const isOldCOD = ['Delivered', 'Paid'].includes(oldMainStatus);
     const isNewCOD = ['Delivered', 'Paid'].includes(newMainStatus);
-    const activeCourierId = updateData.courier || existingOrder.courier;
     if (activeCourierId) {
         let delta = 0;
         if (isOldCOD) delta -= existingOrder.totalAmount;
@@ -321,24 +441,29 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
     // Strip immutable / protected fields before persisting
     const { _id, tenant, createdAt, updatedAt, deletedAt, orderId: _oid, ...safeUpdate } = updateData;
     const updatedOrder = await Order.findOneAndUpdate({ _id: orderId, tenant: tenantId }, safeUpdate, { new: true, runValidators: true })
-        .populate('customer', 'name email')
+        .populate('customer', 'name phone email fraudProbability refusalRate totalOrders deliveredOrders totalRefusals trustScore')
+        .populate('courier', 'name')
+        .populate('assignedAgent', 'name')
         .populate({ path: 'products.variantId', populate: { path: 'productId' } });
 
     // Persist status change to audit trail
     if (updateData.status && newMainStatus !== oldMainStatus) {
-        OrderStatusHistory.create({
+        fireAndRetry('OrderStatusHistory:create', () => OrderStatusHistory.create({
             tenant: existingOrder.tenant,
             orderId: existingOrder._id,
             status: newMainStatus,
             previousStatus: oldMainStatus,
             changedBy: userId || null,
             note: updateData.statusNote || ''
-        }).catch(console.error);
+        }));
     }
 
-    // Post-update side effects
-    if (updatedOrder.customer) updateCustomerMetrics(updatedOrder.customer._id).catch(console.error);
-    if (activeCourierId) recalculateCourierKPIs(activeCourierId).catch(console.error);
+    // Post-update side effects (fire-and-forget with retry)
+    if (updatedOrder.customer) fireAndRetry('updateCustomerMetrics:update', () => updateCustomerMetrics(updatedOrder.customer._id));
+    if (activeCourierId) fireAndRetry('recalculateCourierKPIs', () => recalculateCourierKPIs(activeCourierId));
+
+    // Invalidate dashboard cache for this tenant
+    cacheService.flushByPrefix(`dash:${tenantId}:`);
 
     return updatedOrder;
 };

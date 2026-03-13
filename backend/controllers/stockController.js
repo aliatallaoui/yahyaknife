@@ -1,43 +1,44 @@
-const InventoryLedger = require('../models/InventoryLedger');
-const ProductVariant = require('../models/ProductVariant');
+const logger = require('../shared/logger');
+const StockMovementLedger = require('../models/StockMovementLedger');
 
 /**
- * Utility function to log a stock movement centrally.
- * Can be called by other controllers (Sales, Production, PO).
- * 
- * @param {ObjectId} variantId 
- * @param {Number} quantity (positive or negative)
- * @param {String} type ('Purchase', 'Sale', 'Return', 'Damage', 'Adjustment', 'Production')
- * @param {String} reason 
- * @param {String} referenceId (optional Order ID, PO ID, etc.)
+ * Unified stock movement logger — writes to StockMovementLedger (single source of truth).
+ * Called by OrderService, ProcurementController, InventoryController.
+ *
+ * @param {ObjectId} variantId
+ * @param {Number} quantity (positive for additions, negative for deductions)
+ * @param {String} type ('Sale', 'Purchase', 'Return', 'Damage', 'Adjustment', 'Reserved')
+ * @param {String} reason
+ * @param {ObjectId|String} referenceId (Order ID, PO ID, etc.)
+ * @param {String} referenceModel ('Order', 'PurchaseOrder', 'Manual', 'Transfer')
  */
 exports.logStockMovement = async (variantId, quantity, type, reason, referenceId = null, referenceModel = 'Order') => {
     try {
-        // Map legacy types to new structured enum
+        // Map caller-friendly types to StockMovementLedger enum
         const typeMapping = {
-            'Sale': quantity < 0 ? 'Shipped' : 'Returned',
-            'Purchase': 'Received',
-            'Production': 'Received',
-            'Damage': 'Adjusted',
-            'Adjustment': 'Adjusted',
-            'Return': 'Returned',
-            'Returns': 'Returned',
-            'Shipped': 'Shipped',
-            'Reserved': 'Reserved'
+            'Sale':        quantity < 0 ? 'DEDUCTION' : 'RESTORATION',
+            'Purchase':    'RECEIPT',
+            'Production':  'RECEIPT',
+            'Damage':      'ADJUSTMENT',
+            'Adjustment':  'ADJUSTMENT',
+            'Return':      'RESTORATION',
+            'Returns':     'RESTORATION',
+            'Shipped':     'DEDUCTION',
+            'Reserved':    'RESERVATION'
         };
 
-        const ledgerType = typeMapping[type] || 'Adjusted';
+        const ledgerType = typeMapping[type] || 'ADJUSTMENT';
 
-        await InventoryLedger.create({
+        await StockMovementLedger.create({
             variantId,
-            changeAmount: quantity,
+            quantity,
             type: ledgerType,
-            referenceId,
-            referenceModel,
+            referenceId: referenceId ? referenceId.toString() : `SYS-${Date.now()}`,
+            referenceModel: ['Order', 'PurchaseOrder', 'Manual', 'Transfer'].includes(referenceModel) ? referenceModel : 'Order',
             notes: reason
         });
     } catch (error) {
-        console.error("Failed to log stock movement in ledger:", error);
+        logger.error({ err: error }, 'Failed to log stock movement in ledger');
     }
 };
 
@@ -48,13 +49,14 @@ exports.getProductLedger = async (req, res) => {
     try {
         const { variantId } = req.params;
 
-        const movements = await InventoryLedger.find({ variantId })
+        const movements = await StockMovementLedger.find({ variantId })
             .sort({ createdAt: -1 })
-            .limit(100); // Limit to last 100 for performance
+            .limit(100);
 
         res.json(movements);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching product ledger');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -63,7 +65,7 @@ exports.getProductLedger = async (req, res) => {
 // @access  Private
 exports.getGlobalLedger = async (req, res) => {
     try {
-        const movements = await InventoryLedger.find()
+        const movements = await StockMovementLedger.find()
             .populate({
                 path: 'variantId',
                 populate: { path: 'productId', select: 'name' }
@@ -73,6 +75,7 @@ exports.getGlobalLedger = async (req, res) => {
 
         res.json(movements);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching global stock ledger');
+        res.status(500).json({ error: 'Server Error' });
     }
 };

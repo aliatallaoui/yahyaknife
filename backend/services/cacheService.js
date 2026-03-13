@@ -1,15 +1,17 @@
+const logger = require('../shared/logger');
 const NodeCache = require('node-cache');
 
 // Standard TTL: 5 minutes (300 seconds) for KPI dashboards
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
 
+// Stampede protection: in-flight promises keyed by cache key
+const inFlight = new Map();
+
 const cacheService = {
     /**
-     * Get or Set a cached value.
-     * @param {string} key - Cache key (e.g. `tenant:${tenantId}:dashboardKPIs`)
-     * @param {Function} fetchFunction - Async function that returns the data if cache misses.
-     * @param {number} [ttl=300] - Override default TTL in seconds.
-     * @returns {Promise<any>} The cached or newly fetched data.
+     * Get or Set a cached value with stampede protection.
+     * If multiple callers request the same key concurrently on a cache miss,
+     * only one fetch runs — the rest wait on the same promise.
      */
     async getOrSet(key, fetchFunction, ttl = 300) {
         const cachedData = cache.get(key);
@@ -17,20 +19,44 @@ const cacheService = {
             return cachedData;
         }
 
-        try {
-            const freshData = await fetchFunction();
-            // Cache the fresh data
-            cache.set(key, freshData, ttl);
-            return freshData;
-        } catch (error) {
-            console.error(`Cache Service Error for key [${key}]:`, error.message);
-            throw error;
+        // Stampede guard: reuse in-flight fetch if one already started
+        if (inFlight.has(key)) {
+            return inFlight.get(key);
         }
+
+        const promise = (async () => {
+            try {
+                const freshData = await fetchFunction();
+                cache.set(key, freshData, ttl);
+                return freshData;
+            } catch (error) {
+                logger.error({ err: error, cacheKey: key }, 'Cache Service Error');
+                throw error;
+            } finally {
+                inFlight.delete(key);
+            }
+        })();
+
+        inFlight.set(key, promise);
+        return promise;
     },
 
     /**
-     * Delete a specific cache key. Call this when data mutates (e.g. an order is updated).
-     * @param {string} key 
+     * Direct get — returns undefined on miss.
+     */
+    get(key) {
+        return cache.get(key);
+    },
+
+    /**
+     * Direct set.
+     */
+    set(key, value, ttl = 300) {
+        cache.set(key, value, ttl);
+    },
+
+    /**
+     * Delete a specific cache key. Call this when data mutates.
      */
     del(key) {
         cache.del(key);
@@ -38,7 +64,6 @@ const cacheService = {
 
     /**
      * Flush all keys matching a specific prefix (e.g., flush all tenant KPIs).
-     * @param {string} prefix 
      */
     flushByPrefix(prefix) {
         const keys = cache.keys();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Truck, TrendingUp, PackageX, DollarSign, Clock, Map, Settings, Plus, LayoutGrid, CheckCircle, XCircle, Search, AlertTriangle } from 'lucide-react';
@@ -38,15 +38,18 @@ export default function Couriers() {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
             const [kpiRes, regionRes, couriersRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers/analytics/kpis?dateRange=30`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers/analytics/regions?dateRange=30`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, { headers: { Authorization: `Bearer ${token}` } })
+                apiFetch(`/api/couriers/analytics/kpis?dateRange=30`),
+                apiFetch(`/api/couriers/analytics/regions?dateRange=30`),
+                apiFetch(`/api/couriers`)
             ]);
-            setStats(kpiRes.data);
-            setRegionalData(regionRes.data);
-            setCouriers(couriersRes.data);
+            const kpiData = await kpiRes.json();
+            const regionData = await regionRes.json();
+            const couriersData = await couriersRes.json();
+            if (!kpiRes.ok) throw { response: { data: kpiData } };
+            setStats(kpiData);
+            setRegionalData(regionData);
+            setCouriers(couriersData);
         } catch (error) {
             setFetchError(error.response?.data?.error || error.message || t('couriers.errorLoadData', 'Failed to load courier data.'));
         } finally {
@@ -110,64 +113,64 @@ export default function Couriers() {
             {viewMode === 'analytics' ? (
                 <>
                     {/* Top KPI Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.successRate', 'Delivery Success Rate')}</p>
-                                <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.successRate}%</h3>
-                                <p className="mt-1 text-xs text-gray-400 font-medium truncate">
+                                <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.successRate', 'Delivery Success Rate')}</p>
+                                <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.successRate}%</h3>
+                                <p className="mt-1 text-xs text-gray-400 font-medium truncate hidden sm:block">
                                     {stats.kpis.delivered} {t('couriers.delivered_out_of', 'Delivered out of')} {stats.kpis.totalShipments} {t('couriers.total_lowercase', 'Total')}
                                 </p>
                             </div>
-                            <div className="h-16 w-16 bg-green-50 rounded-2xl flex items-center justify-center border border-green-100 shrink-0">
-                                <TrendingUp className="w-8 h-8 text-green-600" />
+                            <div className="h-10 w-10 sm:h-16 sm:w-16 bg-green-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-green-100 shrink-0">
+                                <TrendingUp className="w-5 h-5 sm:w-8 sm:h-8 text-green-600" />
                             </div>
                         </div>
 
-                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.returnRate', 'Return Rate')}</p>
-                                <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.returnRate}%</h3>
-                                <p className="mt-1 text-xs text-red-500 font-medium truncate">
+                                <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.returnRate', 'Return Rate')}</p>
+                                <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.returnRate}%</h3>
+                                <p className="mt-1 text-xs text-red-500 font-medium truncate hidden sm:block">
                                     {t('couriers.packages_failed', 'Packages Failed / Returned')}
                                 </p>
                             </div>
-                            <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100 shrink-0">
-                                <PackageX className="w-8 h-8 text-red-600" />
+                            <div className="h-10 w-10 sm:h-16 sm:w-16 bg-red-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-red-100 shrink-0">
+                                <PackageX className="w-5 h-5 sm:w-8 sm:h-8 text-red-600" />
                             </div>
                         </div>
 
-                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.avgTime', 'Avg Delivery Speed')}</p>
-                                <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.avgDeliveryTimeDays} <span className="text-sm font-medium text-gray-400">{t('couriers.days', 'Days')}</span></h3>
-                                <p className="mt-1 text-xs text-gray-400 font-medium truncate">
+                                <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.avgTime', 'Avg Delivery Speed')}</p>
+                                <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{stats.kpis.avgDeliveryTimeDays} <span className="text-xs sm:text-sm font-medium text-gray-400">{t('couriers.days', 'Days')}</span></h3>
+                                <p className="mt-1 text-xs text-gray-400 font-medium truncate hidden sm:block">
                                     {t('couriers.from_verification', 'From Verification to Client Handshake')}
                                 </p>
                             </div>
-                            <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
-                                <Clock className="w-8 h-8 text-blue-600" />
+                            <div className="h-10 w-10 sm:h-16 sm:w-16 bg-blue-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                                <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-blue-600" />
                             </div>
                         </div>
 
-                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.pendingCash', 'Pending Courier Clearance')}</p>
-                                <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">
-                                    {stats.financials.pendingCourierClearance.toLocaleString()} <span className="text-sm font-medium text-gray-400">{t('common.dzd', 'DZD')}</span>
+                                <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('couriers.pendingCash', 'Pending Courier Clearance')}</p>
+                                <h3 className="text-lg sm:text-3xl font-black text-gray-900 tracking-tighter truncate">
+                                    {stats.financials.pendingCourierClearance.toLocaleString()} <span className="text-xs sm:text-sm font-medium text-gray-400">{t('common.dzd', 'DZD')}</span>
                                 </h3>
-                                <div className="mt-2 text-[10px] sm:text-xs bg-green-50 text-green-700 font-bold px-2 py-1 rounded w-fit truncate">
+                                <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs bg-green-50 text-green-700 font-bold px-2 py-0.5 sm:py-1 rounded w-fit truncate">
                                     {t('couriers.settled', 'Settled:')} {stats.financials.settledToBank.toLocaleString()}
                                 </div>
                             </div>
-                            <div className="h-16 w-16 bg-yellow-50 rounded-2xl flex items-center justify-center border border-yellow-100 shrink-0">
-                                <DollarSign className="w-8 h-8 text-yellow-600" />
+                            <div className="h-10 w-10 sm:h-16 sm:w-16 bg-yellow-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-yellow-100 shrink-0">
+                                <DollarSign className="w-5 h-5 sm:w-8 sm:h-8 text-yellow-600" />
                             </div>
                         </div>
                     </div>
 
                     {/* Regional & Pipeline Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 lg:col-span-2 p-5">
                             <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
                                 <Map className="w-5 h-5 mr-2 text-indigo-500" />
@@ -241,7 +244,7 @@ export default function Couriers() {
                                     placeholder={t('couriers.searchPlaceholder', 'Search couriers... (Press /)')}
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all w-52 shadow-sm font-bold"
+                                    className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all w-40 sm:w-52 shadow-sm font-bold"
                                 />
                             </div>
                             <div className="flex gap-1.5">
@@ -265,17 +268,17 @@ export default function Couriers() {
                         </div>
                     )}
                     <div className="overflow-x-auto">
-                        <table className="w-full text-start rtl:text-right whitespace-nowrap">
-                            <thead className="bg-gray-50/80 text-gray-500 text-[11px] uppercase tracking-wider">
+                        <table className="cf-table">
+                            <thead>
                                 <tr>
-                                    <th className="px-6 py-4 font-bold">{t('couriers.name', 'Courier')}</th>
-                                    <th className="px-6 py-4 font-bold">{t('couriers.integration', 'Mode')}</th>
-                                    <th className="px-6 py-4 font-bold">{t('couriers.deliveries', 'Deliveries')}</th>
-                                    <th className="px-6 py-4 font-bold">{t('couriers.successRate', 'Success Rate')}</th>
-                                    <th className="px-6 py-4 font-bold">{t('couriers.status', 'Status')}</th>
+                                    <th>{t('couriers.name', 'Courier')}</th>
+                                    <th>{t('couriers.integration', 'Mode')}</th>
+                                    <th>{t('couriers.deliveries', 'Deliveries')}</th>
+                                    <th>{t('couriers.successRate', 'Success Rate')}</th>
+                                    <th>{t('couriers.status', 'Status')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody>
                                 {couriers.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
@@ -293,7 +296,7 @@ export default function Couriers() {
                                         <tr 
                                             key={c._id} 
                                             onClick={() => navigate(`/couriers/${c._id}`)}
-                                            className="hover:bg-indigo-50/40 transition-colors cursor-pointer group"
+                                            className="cursor-pointer group"
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">

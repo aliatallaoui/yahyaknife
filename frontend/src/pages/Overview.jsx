@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 import EcommerceAnalytics from './EcommerceAnalytics';
 import { ShoppingCart, Banknote, UserX, Package, ChevronRight, RefreshCw } from 'lucide-react';
 
@@ -9,7 +10,7 @@ import { ShoppingCart, Banknote, UserX, Package, ChevronRight, RefreshCw } from 
 function BriefingChip({ icon: Icon, label, count, to, color, loading }) {
     const navigate = useNavigate();
     if (loading) {
-        return <div className="h-8 w-40 bg-gray-100 rounded-full animate-pulse" />;
+        return <div className="h-8 w-40 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse" />;
     }
     if (count === 0 || count == null) return null;
     return (
@@ -34,9 +35,7 @@ export default function Overview() {
         if (!token) return;
         setBriefingLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/dashboard/metrics`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/dashboard/metrics`);
             if (res.ok) {
                 const json = await res.json();
                 setBriefing(json.data ?? json);
@@ -65,8 +64,8 @@ export default function Overview() {
 
             {/* Morning Briefing Strip — only rendered when there are actionable items */}
             {hasAnyAlert && (
-                <div className="flex flex-wrap items-center gap-2 bg-white border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wide me-1">
+                <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 py-3 shadow-sm">
+                    <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide me-1">
                         {briefingLoading ? t('dashboard.briefingLoading', 'Loading...') : t('dashboard.actionRequired', 'Action Required')}
                     </span>
 
@@ -74,8 +73,8 @@ export default function Overview() {
                         icon={ShoppingCart}
                         label={t('dashboard.briefingOrdersAwaiting', 'orders awaiting confirmation')}
                         count={awaitingConfirmation}
-                        to="/sales?status=New"
-                        color="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                        to="/orders-hub?status=New"
+                        color="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50"
                         loading={briefingLoading}
                     />
                     <BriefingChip
@@ -83,7 +82,7 @@ export default function Overview() {
                         label={t('dashboard.briefingCouriersPending', 'courier settlements pending')}
                         count={pendingSettlements}
                         to="/finance"
-                        color="bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                        color="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/50"
                         loading={briefingLoading}
                     />
                     <BriefingChip
@@ -91,7 +90,7 @@ export default function Overview() {
                         label={t('dashboard.briefingAbsentToday', 'employees absent today')}
                         count={absentToday}
                         to="/hr/attendance"
-                        color="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                        color="bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/50"
                         loading={briefingLoading}
                     />
                     <BriefingChip
@@ -99,14 +98,14 @@ export default function Overview() {
                         label={t('dashboard.briefingLowStock', 'low-stock variants')}
                         count={lowStockVariants}
                         to="/inventory"
-                        color="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                        color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
                         loading={briefingLoading}
                     />
 
                     {!briefingLoading && (
                         <button
                             onClick={fetchBriefing}
-                            className="ms-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="ms-auto p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             title={t('overview.refreshBriefing', 'Refresh briefing')}
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
@@ -115,7 +114,7 @@ export default function Overview() {
                 </div>
             )}
 
-            <EcommerceAnalytics />
+            <EcommerceAnalytics hideTitle={true} />
         </div>
     );
 }

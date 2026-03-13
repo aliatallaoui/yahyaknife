@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { X, Plus, Trash2, Loader2, PackageSearch } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
@@ -27,10 +29,9 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
 
     const fetchVariants = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/inventory/products`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            const allVariants = (res.data || []).flatMap(p =>
+            const res = await apiFetch('/api/inventory/products');
+            const data = await res.json();
+            const allVariants = (data || []).flatMap(p =>
                 (p.variants || []).map(v => ({
                     _id: v._id,
                     name: `${p.name} — ${v.sku}`,
@@ -75,32 +76,38 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
 
         setSubmitting(true);
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`, {
-                supplier,
-                items,
-                expectedDeliveryDate: expectedDeliveryDate || undefined,
-                notes
-            }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            const res = await apiFetch('/api/procurement/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    supplier,
+                    items,
+                    expectedDeliveryDate: expectedDeliveryDate || undefined,
+                    notes
+                })
             });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to create purchase order');
+            }
             onSuccess();
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || err.message);
+            setError(err.message);
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" {...backdropProps}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" {...panelProps}>
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
                         <PackageSearch className="w-5 h-5 text-indigo-600" />
                         {t('procurement.createNewPo', 'Create Purchase Order')}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-200 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -115,8 +122,9 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                     <form id="new-po-form" onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.selectSupplier', 'Supplier')}</label>
+                                <label htmlFor="npo-supplier" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.selectSupplier', 'Supplier')}</label>
                                 <select
+                                    id="npo-supplier"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={supplier}
                                     onChange={e => setSupplier(e.target.value)}
@@ -129,8 +137,9 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.expectedDate', 'Expected Delivery Date')}</label>
+                                <label htmlFor="npo-date" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.expectedDate', 'Expected Delivery Date')}</label>
                                 <input
+                                    id="npo-date"
                                     type="date"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={expectedDeliveryDate}
@@ -172,7 +181,7 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                             required
                                         />
                                         <div className="flex-1 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">DZD</span>
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t('common.dzd', 'DZD')}</span>
                                             <input
                                                 type="number"
                                                 min="0"

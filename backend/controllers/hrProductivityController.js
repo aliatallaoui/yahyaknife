@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const WorkerProductivity = require('../models/WorkerProductivity');
 const WorkerReward = require('../models/WorkerReward');
@@ -31,10 +32,11 @@ exports.getProductivity = async (req, res) => {
 
         const productivity = await WorkerProductivity.find({ employeeId: { $in: employeeIds } })
             .populate('employeeId', 'name')
-            .sort({ date: -1 });
+            .sort({ date: -1 })
+            .lean();
         res.json(productivity);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -71,10 +73,11 @@ exports.getRewards = async (req, res) => {
 
         const rewards = await WorkerReward.find({ employeeId: { $in: employeeIds } })
             .populate('employeeId', 'name role')
-            .sort({ dateAwarded: -1 });
+            .sort({ dateAwarded: -1 })
+            .lean();
         res.json(rewards);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 

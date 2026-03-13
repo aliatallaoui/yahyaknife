@@ -1,6 +1,6 @@
 import { useState, useContext, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
-import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box, X } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, Search, Shield, ArrowRight, Plus, Pencil, Trash2, Box } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import { InventoryContext } from '../context/InventoryContext';
@@ -11,6 +11,8 @@ import CategoryModal from '../components/CategoryModal';
 import StockLedgerModal from '../components/StockLedgerModal';
 import PurchaseOrdersModal from '../components/PurchaseOrdersModal';
 import { useTranslation } from 'react-i18next';
+import { useConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
 
 export default function Inventory() {
     const { t } = useTranslation();
@@ -47,7 +49,7 @@ export default function Inventory() {
             );
             await updateProduct(variant.baseProductId, { ...parentProduct, variants: updatedVariants });
         } catch (err) {
-            setErrorMsg(`Failed to save variant: ${err.message}`);
+            notify.error(`Failed to save variant: ${err.message}`);
         } finally {
             setEditingVariant(null);
         }
@@ -66,8 +68,8 @@ export default function Inventory() {
     const [selectedLedgerProduct, setSelectedLedgerProduct] = useState(null);
 
     const [isPOModalOpen, setIsPOModalOpen] = useState(false);
-    const [confirmDialog, setConfirmDialog] = useState(null);
-    const [errorMsg, setErrorMsg] = useState(null);
+    const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
+    const notify = useToast();
 
     const handleCreateClick = () => {
         setEditingProduct(null);
@@ -80,12 +82,12 @@ export default function Inventory() {
     };
 
     const handleDeleteClick = (id) => {
-        setConfirmDialog({
+        showConfirm({
             title: t('inventory.confirmArchiveProduct', 'Archive this product?'),
             body: t('inventory.confirmArchiveProductBody', 'This will remove it from active stock.'),
             onConfirm: async () => {
                 try { await deleteProduct(id); }
-                catch (error) { setErrorMsg(t('inventory.archiveFailed', 'Failed to archive product.')); console.error(error); }
+                catch (error) { notify.error(t('inventory.archiveFailed', 'Failed to archive product.')); }
             },
         });
     };
@@ -93,7 +95,7 @@ export default function Inventory() {
     const handleCreateSupplier = () => { setEditingSupplier(null); setIsSupplierModalOpen(true); };
     const handleEditSupplier = (supplier) => { setEditingSupplier(supplier); setIsSupplierModalOpen(true); };
     const handleDeleteSupplier = (id) => {
-        setConfirmDialog({
+        showConfirm({
             title: t('inventory.confirmArchiveSupplier', 'Archive this supplier?'),
             body: '',
             onConfirm: () => deleteSupplier(id),
@@ -103,7 +105,7 @@ export default function Inventory() {
     const handleCreateCategory = () => { setEditingCategory(null); setIsCategoryModalOpen(true); };
     const handleEditCategory = (category) => { setEditingCategory(category); setIsCategoryModalOpen(true); };
     const handleDeleteCategory = (id) => {
-        setConfirmDialog({
+        showConfirm({
             title: t('inventory.confirmArchiveCategory', 'Archive this category?'),
             body: '',
             onConfirm: () => deleteCategory(id),
@@ -116,15 +118,14 @@ export default function Inventory() {
             else await createProduct(payload);
             setIsModalOpen(false);
         } catch (error) {
-            setErrorMsg(`Failed to save product: ${error.message}`);
-            console.error(error);
+            notify.error(`Failed to save product: ${error.message}`);
         }
     };
 
     if (loading && products.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin"></div>
+                <div className="w-8 h-8 rounded-full border-4 border-gray-200 dark:border-gray-600 border-t-blue-600 animate-spin"></div>
             </div>
         );
     }
@@ -171,7 +172,7 @@ export default function Inventory() {
                                 placeholder={t('inventory.searchPlaceholder', 'Search SKU or Name... (Press /)')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="ps-9 pe-4 py-2 bg-white border border-amber-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                                className="ps-9 pe-4 py-2 bg-white dark:bg-gray-700 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
                             />
                         </div>
                         {activeTab === 'categories' ? (
@@ -188,7 +189,7 @@ export default function Inventory() {
                             )
                         )}
                         {hasPermission('inventory.update_product') && (
-                            <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
+                            <button onClick={() => setIsPOModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none">
                                 <Package className="w-4 h-4" /> {t('inventory.receivePoBtn', 'Receive PO')}
                             </button>
                         )}
@@ -197,15 +198,15 @@ export default function Inventory() {
             />
 
             {fetchError && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-300">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
-                    <button onClick={refreshInventory} className="text-red-400 hover:text-red-600 text-xs font-bold">{t('common.retry', 'Retry')}</button>
+                    <button onClick={refreshInventory} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-xs font-bold">{t('common.retry', 'Retry')}</button>
                 </div>
             )}
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 <InventoryCard
                     title={t('inventory.totalProducts', 'Total Products')}
                     value={metrics?.totalProducts || 0}
@@ -234,47 +235,51 @@ export default function Inventory() {
             <div className="flex flex-col gap-6">
 
                 {/* Product Catalog Table — full width */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
-                    <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 sm:p-6 border-b border-gray-100 pb-4 gap-4">
-                        <div className="flex flex-wrap gap-1 bg-gray-50/80 p-1.5 rounded-xl border border-gray-100 shadow-inner w-full xl:w-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
+                    <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 pb-4 gap-4">
+                        <div className="flex flex-wrap gap-1 bg-gray-50/80 dark:bg-gray-900/80 p-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-inner w-full xl:w-auto">
                             <button
                                 onClick={() => setActiveTab('finished')}
-                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'finished' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
+                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'finished' ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-600/50" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-700/50")}
                             >
                                 {t('inventory.tabFinished', 'Finished Goods')}
                             </button>
                             <button
                                 onClick={() => setActiveTab('categories')}
-                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'categories' ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50")}
+                                className={clsx("flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 text-center whitespace-nowrap", activeTab === 'categories' ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-600/50" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-gray-700/50")}
                             >
                                 {t('inventory.tabCategories', 'Categories')}
                             </button>
                         </div>
                     </div>
                     <div className="flex-1 overflow-x-auto">
-                        <table className="w-full text-start border-collapse min-w-[700px]">
+                        <table className="cf-table min-w-[700px]">
                             <thead>
-                                <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
-                                    <th className="p-4 font-semibold">{t('inventory.colItem', 'Item')}</th>
-                                    <th className="p-4 font-semibold">{t('inventory.colSku', 'SKU')}</th>
-                                    <th className="p-4 font-semibold">{t('inventory.colCategory', 'Category')}</th>
-                                    <th className="p-4 font-semibold text-end">{activeTab === 'finished' ? t('inventory.colPriceCost', 'Price/Cost') : t('inventory.colUnitCost', 'Unit Cost')}</th>
+                                <tr>
+                                    <th>{t('inventory.colItem', 'Item')}</th>
+                                    <th>{t('inventory.colSku', 'SKU')}</th>
+                                    <th>{t('inventory.colCategory', 'Category')}</th>
+                                    <th className="text-end">{activeTab === 'finished' ? t('inventory.colPriceCost', 'Price/Cost') : t('inventory.colUnitCost', 'Unit Cost')}</th>
                                     {activeTab === 'finished' && (
                                         <>
-                                            <th className="p-4 font-semibold text-end">{t('inventory.colTotal', 'Total')}</th>
-                                            <th className="p-4 font-semibold text-end text-orange-600">{t('inventory.colReserved', 'Reserved')}</th>
-                                            <th className="p-4 font-semibold text-end text-green-600">{t('inventory.colAvailable', 'Available')}</th>
-                                            <th className="p-4 font-semibold text-end text-purple-600">{t('inventory.colSold', 'Sold')}</th>
+                                            <th className="text-end">{t('inventory.colTotal', 'Total')}</th>
+                                            <th className="text-end text-orange-600">{t('inventory.colReserved', 'Reserved')}</th>
+                                            <th className="text-end text-green-600">{t('inventory.colAvailable', 'Available')}</th>
+                                            <th className="text-end text-purple-600">{t('inventory.colSold', 'Sold')}</th>
                                         </>
                                     )}
-                                    <th className="p-4 font-semibold text-center">{t('inventory.colStatus', 'Status')}</th>
-                                    <th className="p-4 font-semibold text-end">{t('inventory.colActions', 'Actions')}</th>
+                                    <th className="text-center">{t('inventory.colStatus', 'Status')}</th>
+                                    <th className="text-end">{t('inventory.colActions', 'Actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 text-sm">
+                            <tbody>
                                 {activeTab === 'finished' && (
                                     filteredVariants.length === 0 ? (
-                                        <tr><td colSpan="9" className="p-8 text-center text-gray-500">{t('inventory.noProducts', 'No active products found matching criteria.')}</td></tr>
+                                        <tr><td colSpan="9" className="px-6 py-16 text-center">
+                                            <Box className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                                            <p className="text-base font-semibold text-gray-900 dark:text-white">{t('inventory.noProducts', 'No active products found matching criteria.')}</p>
+                                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('inventory.noProductsHint', 'Try adjusting your search or add a new product.')}</p>
+                                        </td></tr>
                                     ) : (
                                         paginatedVariants.map((variant) => {
                                             const isLowStock = variant.availableStock <= variant.reorderLevel;
@@ -286,18 +291,18 @@ export default function Inventory() {
                                             }
 
                                             return (
-                                                <tr key={variant._id} className="hover:bg-gray-50/50 transition-colors group">
+                                                <tr key={variant._id} className="group">
                                                     <td className="p-4">
                                                         <div className="flex flex-col">
-                                                            <span className="font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors group-hover:translate-x-1 duration-200" onClick={() => { setSelectedLedgerProduct(variant); setIsLedgerOpen(true); }}>
+                                                            <span className="font-bold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-hover:translate-x-1 duration-200" onClick={() => { setSelectedLedgerProduct(variant); setIsLedgerOpen(true); }}>
                                                                 {variant.productName}
                                                             </span>
                                                             <span className="text-xs text-indigo-600 font-semibold mt-0.5">{attrString || t('inventory.attrBase', 'Base')}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="p-4 text-gray-500 font-mono text-xs tracking-wider font-semibold">{variant.sku}</td>
+                                                    <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs tracking-wider font-semibold">{variant.sku}</td>
                                                     <td className="p-4">
-                                                        <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold uppercase tracking-wider rounded-md border border-gray-200/60 shadow-sm whitespace-nowrap">
+                                                        <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold uppercase tracking-wider rounded-md border border-gray-200/60 dark:border-gray-600 shadow-sm whitespace-nowrap">
                                                             {typeof variant.category === 'object' ? variant.category?.name : variant.category}
                                                         </span>
                                                     </td>
@@ -310,10 +315,10 @@ export default function Inventory() {
                                                                     onChange={e => setEditingVariant(prev => ({ ...prev, value: e.target.value }))}
                                                                     onBlur={() => handleVariantInlineSave(variant)}
                                                                     onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
-                                                                    className="w-24 border border-blue-400 rounded-lg px-2 py-1 text-sm font-bold text-end outline-none shadow-sm ml-auto block" />
+                                                                    className="w-24 border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm font-bold text-end outline-none shadow-sm ml-auto block bg-white dark:bg-gray-700 dark:text-white" />
                                                             ) : (
-                                                                <div onClick={() => startVariantEdit(variant, 'price')} className={"group/p cursor-pointer"} title={"Click to edit price"}>
-                                                                    <div className={"font-bold text-gray-900 transition-colors group-hover/p:text-blue-600"}>${variant.price?.toLocaleString()}</div>
+                                                                <div onClick={() => startVariantEdit(variant, 'price')} className={"group/p cursor-pointer"} title={t('inventory.tooltipEditPrice', 'Click to edit price')}>
+                                                                    <div className={"font-bold text-gray-900 dark:text-white transition-colors group-hover/p:text-blue-600 dark:group-hover/p:text-blue-400"}>${variant.price?.toLocaleString()}</div>
                                                                     {/* Cost — inline edit */}
                                                                     {hasPermission('inventory.view_cost') && (
                                                                         editingVariant?.id === variant._id && editingVariant?.field === 'cost' ? (
@@ -323,40 +328,40 @@ export default function Inventory() {
                                                                                 onBlur={() => handleVariantInlineSave(variant)}
                                                                                 onKeyDown={e => { if (e.key === 'Enter') handleVariantInlineSave(variant); if (e.key === 'Escape') setEditingVariant(null); }}
                                                                                 onClick={e => e.stopPropagation()}
-                                                                                className="w-20 border border-blue-400 rounded-lg px-1 py-0.5 text-xs font-bold text-end outline-none shadow-sm mt-0.5 ml-auto block" />
+                                                                                className="w-20 border border-blue-400 dark:border-blue-500 rounded-lg px-1 py-0.5 text-xs font-bold text-end outline-none shadow-sm mt-0.5 ml-auto block bg-white dark:bg-gray-700 dark:text-white" />
                                                                         ) : (
-                                                                            <div onClick={e => { e.stopPropagation(); startVariantEdit(variant, 'cost'); }} className={"text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5 cursor-pointer hover:text-blue-500"} title={"Click to edit cost"}>{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
+                                                                            <div onClick={e => { e.stopPropagation(); startVariantEdit(variant, 'cost'); }} className={"text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 cursor-pointer hover:text-blue-500 dark:hover:text-blue-400"} title={t('inventory.tooltipEditCost', 'Click to edit cost')}>{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
                                                                         )
                                                                     )}
                                                                 </div>
                                                             )
                                                         ) : (
                                                             <div>
-                                                                <div className="font-bold text-gray-900">${variant.price?.toLocaleString()}</div>
+                                                                <div className="font-bold text-gray-900 dark:text-white">${variant.price?.toLocaleString()}</div>
                                                                 {hasPermission('inventory.view_cost') && (
-                                                                    <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5">{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
+                                                                    <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{t('inventory.costText', 'Cost')}: ${variant.cost?.toLocaleString()}</div>
                                                                 )}
                                                             </div>
                                                         )}
                                                     </td>
                                                     <td className="p-4 text-end">
-                                                        <span className="inline-flex items-center justify-center font-bold text-gray-700 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded shadow-sm tabular-nums">
+                                                        <span className="inline-flex items-center justify-center font-bold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 px-2 py-0.5 rounded shadow-sm tabular-nums">
                                                             {variant.totalStock?.toLocaleString()}
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-end font-bold tabular-nums text-orange-600">
                                                         {variant.reservedStock?.toLocaleString()}
                                                     </td>
-                                                    <td className={clsx("p-4 text-end font-black tabular-nums border-s border-gray-50", isLowStock ? "text-red-600 bg-red-50/10" : "text-green-600")}>
+                                                    <td className={clsx("p-4 text-end font-black tabular-nums border-s border-gray-50 dark:border-gray-700", isLowStock ? "text-red-600 dark:text-red-400 bg-red-50/10 dark:bg-red-900/10" : "text-green-600 dark:text-green-400")}>
                                                         {variant.availableStock?.toLocaleString()}
                                                     </td>
-                                                    <td className="p-4 text-end font-black tabular-nums border-s border-gray-50 text-purple-700 bg-purple-50/30">
+                                                    <td className="p-4 text-end font-black tabular-nums border-s border-gray-50 dark:border-gray-700 text-purple-700 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-900/20">
                                                         {variant.totalSold != null ? variant.totalSold.toLocaleString() : '0'}
                                                     </td>
                                                     <td className="p-4 text-center">
                                                         <span className={clsx(
                                                             "px-2.5 py-1 rounded-md text-[11px] font-bold inline-flex items-center gap-1.5 uppercase tracking-wider relative overflow-hidden",
-                                                            isLowStock ? "bg-red-50 text-red-700 border border-red-200 shadow-sm" : "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm"
+                                                            isLowStock ? "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 shadow-sm" : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm"
                                                         )}>
                                                             {isLowStock && <span className="absolute top-0 end-0 w-1 h-1 bg-red-500 rounded-full animate-ping me-1 mt-1"></span>}
                                                             {isLowStock && <span className="absolute top-0 end-0 w-1 h-1 bg-red-600 rounded-full me-1 mt-1"></span>}
@@ -367,12 +372,12 @@ export default function Inventory() {
                                                     <td className="p-4 text-end">
                                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             {hasPermission('inventory.update_product') && (
-                                                                <button onClick={() => handleEditClick({ _id: variant.baseProductId })} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit Base Product">
+                                                                <button onClick={() => handleEditClick({ _id: variant.baseProductId })} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors" title={t('inventory.tooltipEditProduct', 'Edit Base Product')}>
                                                                     <Pencil className="w-4 h-4" />
                                                                 </button>
                                                             )}
                                                             {hasPermission('inventory.export') && (
-                                                                <button onClick={() => handleDeleteClick(variant.baseProductId)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Archive Entire Product">
+                                                                <button onClick={() => handleDeleteClick(variant.baseProductId)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title={t('inventory.tooltipArchiveProduct', 'Archive Entire Product')}>
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
                                                             )}
@@ -386,21 +391,21 @@ export default function Inventory() {
 
                                 {activeTab === 'categories' && (
                                     filteredCategories.length === 0 ? (
-                                        <tr><td colSpan="5" className="p-8 text-center text-gray-500">{t('inventory.noCategories', 'No active categories found.')}</td></tr>
+                                        <tr><td colSpan="5" className="p-8 text-center text-gray-500 dark:text-gray-400">{t('inventory.noCategories', 'No active categories found.')}</td></tr>
                                     ) : (
                                         filteredCategories.map((cat) => (
-                                            <tr key={cat._id} className="hover:bg-gray-50/50 transition-colors">
-                                                <td className="p-4 font-medium text-gray-900">{cat.name}</td>
-                                                <td colSpan="3" className="p-4 text-gray-500">{cat.description || t('inventory.noDescription', 'No description provided.')}</td>
+                                            <tr key={cat._id}>
+                                                <td className="p-4 font-medium text-gray-900 dark:text-white">{cat.name}</td>
+                                                <td colSpan="3" className="p-4 text-gray-500 dark:text-gray-400">{cat.description || t('inventory.noDescription', 'No description provided.')}</td>
                                                 <td className="p-4 text-end">
                                                     <div className="flex items-center justify-end gap-2">
                                                         {hasPermission('inventory.update_product') && (
-                                                            <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Category">
+                                                            <button onClick={() => handleEditCategory(cat)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title={t('inventory.tooltipEditCategory', 'Edit Category')}>
                                                                 <Pencil className="w-4 h-4" />
                                                             </button>
                                                         )}
                                                         {hasPermission('inventory.export') && (
-                                                            <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Archive Category">
+                                                            <button onClick={() => handleDeleteCategory(cat._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title={t('inventory.tooltipArchiveCategory', 'Archive Category')}>
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         )}
@@ -427,43 +432,43 @@ export default function Inventory() {
                             }
                         }
                         return (
-                            <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-gray-50/30 flex-wrap gap-3">
+                            <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-900/30 flex-wrap gap-3">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-400">
-                                        Page <strong className="text-gray-700">{currentPage}</strong> of <strong className="text-gray-700">{totalVariantPages}</strong>
-                                        <span className="text-gray-300 mx-2">·</span>
-                                        <span className="text-gray-500">{filteredVariants.length} variants</span>
+                                    <span className="text-sm text-gray-400 dark:text-gray-500">
+                                        {t('common.page', 'Page')} <strong className="text-gray-700 dark:text-gray-200">{currentPage}</strong> {t('common.of', 'of')} <strong className="text-gray-700 dark:text-gray-200">{totalVariantPages}</strong>
+                                        <span className="text-gray-300 dark:text-gray-600 mx-2">·</span>
+                                        <span className="text-gray-500 dark:text-gray-400">{filteredVariants.length} {t('inventory.variants', 'variants')}</span>
                                     </span>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-xs text-gray-400">Show</span>
+                                        <span className="text-xs text-gray-400 dark:text-gray-500">{t('common.show', 'Show')}</span>
                                         <select
                                             value={perPage}
                                             onChange={e => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                                            className="bg-white border border-gray-200 rounded-lg py-1 px-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-400 cursor-pointer"
+                                            className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg py-1 px-2 text-sm font-semibold text-gray-700 dark:text-white outline-none focus:border-indigo-400 cursor-pointer"
                                         >
                                             {[10, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
                                         </select>
-                                        <span className="text-xs text-gray-400">per page</span>
+                                        <span className="text-xs text-gray-400 dark:text-gray-500">{t('common.perPage', 'per page')}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-                                        className="px-3 py-1.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                        ‹ Prev
+                                        className="px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                        ‹ {t('common.prev', 'Prev')}
                                     </button>
                                     {range.map((p, i) =>
                                         p === '...' ? (
-                                            <span key={`e-${i}`} className="px-2 py-1.5 text-sm text-gray-400">…</span>
+                                            <span key={`e-${i}`} className="px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">…</span>
                                         ) : (
                                             <button key={p} onClick={() => setCurrentPage(p)}
                                                 className={clsx('min-w-[36px] px-2 py-1.5 text-sm font-bold rounded-lg border transition-all',
-                                                    p === currentPage ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                    p === currentPage ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                                                 )}>{p}</button>
                                         )
                                     )}
                                     <button onClick={() => setCurrentPage(p => Math.min(totalVariantPages, p + 1))} disabled={currentPage === totalVariantPages}
-                                        className="px-3 py-1.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                        Next ›
+                                        className="px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                        {t('common.next', 'Next')} ›
                                     </button>
                                 </div>
                             </div>
@@ -472,22 +477,22 @@ export default function Inventory() {
                 </div>
 
                 {/* Suppliers Panel — sits below the full-width table */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                    <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-gray-900">{t('inventory.activeSuppliers', 'Active Suppliers')}</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                    <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('inventory.activeSuppliers', 'Active Suppliers')}</h3>
                         {hasPermission('inventory.create_product') && (
-                            <button onClick={handleCreateSupplier} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Add Supplier">
+                            <button onClick={handleCreateSupplier} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" title={t('inventory.tooltipAddSupplier', 'Add Supplier')}>
                                 <Plus className="w-5 h-5" />
                             </button>
                         )}
                     </div>
                     <div className="flex-1 p-6 flex flex-col gap-4 max-h-[600px] overflow-y-auto">
                         {suppliers.length === 0 ? (
-                            <div className="text-sm text-gray-500 text-center py-8">{t('inventory.noSuppliers', 'No active suppliers.')}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">{t('inventory.noSuppliers', 'No active suppliers.')}</div>
                         ) : suppliers.map(supplier => (
-                            <div key={supplier._id} className="p-4 border border-gray-100 rounded-xl hover:border-gray-200 transition-colors bg-gray-50/30 group">
+                            <div key={supplier._id} className="p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:border-gray-200 dark:hover:border-gray-600 transition-colors bg-gray-50/30 dark:bg-gray-900/30 group">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-bold text-gray-900">{supplier.name}</h4>
+                                    <h4 className="font-bold text-gray-900 dark:text-white">{supplier.name}</h4>
                                     <div className="flex items-center gap-2">
                                         <div className="hidden group-hover:flex items-center gap-1">
                                             {hasPermission('inventory.update_product') && (
@@ -497,22 +502,22 @@ export default function Inventory() {
                                                 <button onClick={() => handleDeleteSupplier(supplier._id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                                             )}
                                         </div>
-                                        <span className={clsx("w-2 h-2 rounded-full", supplier.active ? "bg-green-400" : "bg-gray-300")}></span>
+                                        <span className={clsx("w-2 h-2 rounded-full", supplier.active ? "bg-green-400" : "bg-gray-300 dark:bg-gray-600")}></span>
                                     </div>
                                 </div>
-                                <div className="text-sm text-gray-500 mb-4 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                                <div className="text-sm text-gray-500 dark:text-gray-400 mb-4 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
                                     <div className="flex justify-between mb-1">
-                                        <span className="font-medium text-gray-400">{t('inventory.reliabilityText', 'Reliability')}</span>
+                                        <span className="font-medium text-gray-400 dark:text-gray-500">{t('inventory.reliabilityText', 'Reliability')}</span>
                                         <span className={clsx("font-bold", supplier.reliabilityScore >= 90 ? "text-green-600" : supplier.reliabilityScore >= 70 ? "text-yellow-600" : "text-red-600")}>
                                             {supplier.reliabilityScore || 0}%
                                         </span>
                                     </div>
                                     <div className="flex justify-between mb-2">
-                                        <span className="font-medium text-gray-400">{t('inventory.leadTimeText', 'Avg Lead Time')}</span>
-                                        <span className="font-bold text-gray-900">{supplier.averageLeadTimeDays || 0} {t('inventory.daysText', 'days')}</span>
+                                        <span className="font-medium text-gray-400 dark:text-gray-500">{t('inventory.leadTimeText', 'Avg Lead Time')}</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">{supplier.averageLeadTimeDays || 0} {t('inventory.daysText', 'days')}</span>
                                     </div>
-                                    <div className="pt-2 border-t border-gray-50">
-                                        <p className="flex justify-between text-xs"><span className="text-gray-400">{t('inventory.contactText', 'Contact')}:</span> <span className="text-gray-900 truncate ms-2">{supplier.contactPerson || 'N/A'}</span></p>
+                                    <div className="pt-2 border-t border-gray-50 dark:border-gray-700">
+                                        <p className="flex justify-between text-xs"><span className="text-gray-400 dark:text-gray-500">{t('inventory.contactText', 'Contact')}:</span> <span className="text-gray-900 dark:text-white truncate ms-2">{supplier.contactPerson?.name || t('common.notAvailable', 'N/A')}</span></p>
                                     </div>
                                 </div>
                                 <button className="text-xs text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700 transition-colors">
@@ -566,44 +571,7 @@ export default function Inventory() {
                 />
             )}
 
-            {/* Inline error toast */}
-            {errorMsg && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-red-600 text-white rounded-xl shadow-xl text-sm font-semibold max-w-sm">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span className="flex-1">{errorMsg}</span>
-                    <button onClick={() => setErrorMsg(null)} className="p-1 hover:bg-red-700 rounded transition-colors">
-                        <X className="w-3.5 h-3.5" />
-                    </button>
-                </div>
-            )}
-
-            {/* Confirm dialog */}
-            {confirmDialog && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-5 h-5 text-amber-600" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-gray-900">{confirmDialog.title}</h3>
-                                {confirmDialog.body && <p className="text-sm text-gray-500 mt-1">{confirmDialog.body}</p>}
-                            </div>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                                {t('common.cancel', 'Cancel')}
-                            </button>
-                            <button
-                                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
-                                className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                            >
-                                {t('common.confirm', 'Confirm')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {confirmDialogEl}
         </div>
     );
 }
@@ -612,8 +580,8 @@ function InventoryCard({ title, value, icon, color, bg, highlight }) {
     const IconComponent = icon;
     return (
         <div className={clsx(
-            "p-6 rounded-3xl border shadow-sm flex items-center gap-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1 relative overflow-hidden group hover:border-gray-300",
-            highlight ? "bg-gradient-to-br from-red-50 to-white border-red-100" : "bg-white border-gray-100"
+            "p-6 rounded-3xl border shadow-sm flex items-center gap-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1 relative overflow-hidden group hover:border-gray-300 dark:hover:border-gray-500",
+            highlight ? "bg-gradient-to-br from-red-50 to-white dark:from-red-900/30 dark:to-gray-800 border-red-100 dark:border-red-800" : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
         )}>
             {/* Soft decorative blob on hover */}
             <div className={clsx(
@@ -625,8 +593,8 @@ function InventoryCard({ title, value, icon, color, bg, highlight }) {
                 <IconComponent className="w-7 h-7 drop-shadow-sm" />
             </div>
             <div className="relative z-10">
-                <p className={clsx("text-sm font-bold tracking-wide mb-1 uppercase text-[11px]", highlight ? "text-red-700/80" : "text-gray-500")}>{title}</p>
-                <h3 className={clsx("text-3xl font-black tabular-nums tracking-tight drop-shadow-sm", highlight ? "text-red-900" : "text-gray-900")}>{value}</h3>
+                <p className={clsx("text-sm font-bold tracking-wide mb-1 uppercase text-[11px]", highlight ? "text-red-700/80 dark:text-red-400/80" : "text-gray-500 dark:text-gray-400")}>{title}</p>
+                <h3 className={clsx("text-3xl font-black tabular-nums tracking-tight drop-shadow-sm", highlight ? "text-red-900 dark:text-red-300" : "text-gray-900 dark:text-white")}>{value}</h3>
             </div>
         </div>
     );

@@ -5,7 +5,6 @@ const roleSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true,
         trim: true
     },
     description: {
@@ -19,6 +18,11 @@ const roleSchema = new mongoose.Schema({
     permissions: [{
         type: String
     }],
+    tenant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tenant',
+        default: null  // null for system roles (shared across all tenants)
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -27,6 +31,9 @@ const roleSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Compound unique: role name must be unique within a tenant (or within system roles)
+roleSchema.index({ name: 1, tenant: 1 }, { unique: true });
 
 const Role = mongoose.model('Role', roleSchema);
 

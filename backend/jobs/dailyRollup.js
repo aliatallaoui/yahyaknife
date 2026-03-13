@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const moment = require('moment');
 const Order = require('../models/Order');
 const Attendance = require('../models/Attendance');
@@ -18,7 +19,7 @@ const Tenant = require('../models/Tenant');
  */
 const runDailyRollup = async (targetDate) => {
     const dateStr = targetDate || moment().subtract(1, 'day').format('YYYY-MM-DD');
-    console.log(`[JOB] Starting DailyRollup for date: ${dateStr}`);
+    logger.info({ date: dateStr }, '[JOB] Starting DailyRollup');
 
     try {
         const tenants = await Tenant.find({ isActive: true }).select('_id').lean();
@@ -133,13 +134,13 @@ const runDailyRollup = async (targetDate) => {
                 );
 
             } catch (tenantErr) {
-                console.error(`[JOB] DailyRollup error for tenant ${tenant._id} on ${dateStr}:`, tenantErr);
+                logger.error({ err: tenantErr, tenantId: tenant._id, date: dateStr }, '[JOB] DailyRollup error for tenant');
             }
         }
 
-        console.log(`[JOB] DailyRollup complete for ${dateStr}. ${tenants.length} tenants processed.`);
+        logger.info({ date: dateStr, tenantCount: tenants.length }, '[JOB] DailyRollup complete');
     } catch (err) {
-        console.error('[JOB] DailyRollup global error:', err);
+        logger.error({ err }, '[JOB] DailyRollup global error');
     }
 };
 
@@ -153,7 +154,7 @@ const runDailyRollup = async (targetDate) => {
 const runWeeklyReport = async () => {
     const weekEnd   = moment().format('YYYY-MM-DD');                    // today (Sunday)
     const weekStart = moment().startOf('isoWeek').format('YYYY-MM-DD'); // this Monday
-    console.log(`[JOB] Starting WeeklyReport for ${weekStart} → ${weekEnd}`);
+    logger.info({ weekStart, weekEnd }, '[JOB] Starting WeeklyReport');
 
     try {
         const tenants = await Tenant.find({ isActive: true }).select('_id').lean();
@@ -224,13 +225,13 @@ const runWeeklyReport = async () => {
                 );
 
             } catch (tenantErr) {
-                console.error(`[JOB] WeeklyReport error for tenant ${tenant._id}:`, tenantErr);
+                logger.error({ err: tenantErr, tenantId: tenant._id }, '[JOB] WeeklyReport error for tenant');
             }
         }
 
-        console.log(`[JOB] WeeklyReport complete for week ${weekStart}. ${tenants.length} tenants processed.`);
+        logger.info({ weekStart, tenantCount: tenants.length }, '[JOB] WeeklyReport complete');
     } catch (err) {
-        console.error('[JOB] WeeklyReport global error:', err);
+        logger.error({ err }, '[JOB] WeeklyReport global error');
     }
 };
 

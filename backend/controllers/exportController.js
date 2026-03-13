@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const queueService = require('../services/queueService');
 const Customer = require('../models/Customer');
 
@@ -60,8 +61,8 @@ exports.enqueueOrderExport = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Failed to enqueue export:", error);
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error enqueuing order export');
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -76,6 +77,7 @@ exports.getExportJobStatus = async (req, res) => {
 
         res.json(jobStatus);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Error fetching export job status');
+        res.status(500).json({ message: 'Server error' });
     }
 };

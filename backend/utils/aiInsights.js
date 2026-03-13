@@ -1,9 +1,10 @@
 const OpenAI = require('openai');
+const logger = require('../shared/logger');
 
 const generateExecutiveInsights = async (dashboardData) => {
     try {
         if (!process.env.OPENAI_API_KEY) {
-            console.warn("OPENAI_API_KEY is missing. Skipping AI insights generation.");
+            logger.warn("OPENAI_API_KEY is missing. Skipping AI insights generation.");
             return "AI Insights are currently disabled. Please configure your OpenAI API key.";
         }
 
@@ -32,7 +33,7 @@ const generateExecutiveInsights = async (dashboardData) => {
 
         return response.choices[0].message.content.trim();
     } catch (error) {
-        console.error("AI Insights Error:", error.message);
+        logger.error({ err: error }, 'AI Insights Error');
         return "Insight generation failed. Please try again later.";
     }
 };

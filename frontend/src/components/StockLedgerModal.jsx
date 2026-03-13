@@ -3,9 +3,11 @@ import { X, Search, FileText, AlertTriangle } from 'lucide-react';
 import moment from 'moment';
 import { InventoryContext } from '../context/InventoryContext';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 const StockLedgerModal = ({ isOpen, onClose, product }) => {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const { fetchVariantLedger } = useContext(InventoryContext);
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,7 +23,6 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                     setLoading(false);
                 })
                 .catch(err => {
-                    console.error("Failed to fetch ledger", err);
                     setFetchError(t('modals.errorLoadMovements', 'Failed to load stock movements.'));
                     setLoading(false);
                 });
@@ -32,10 +33,10 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
     if (!isOpen || !product) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl flex flex-col max-h-[95vh] sm:max-h-[90vh]" {...panelProps}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                             <FileText className="w-5 h-5 text-indigo-600" />
@@ -43,7 +44,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">{t('modals.ledgerSubtitle', 'Movement history for')} {product.productName ?? product.name} ({product.sku})</p>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -65,8 +66,8 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                             <p className="text-gray-500">{t('modals.noMovements', 'No stock movements found for this product.')}</p>
                         </div>
                     ) : (
-                        <div className="overflow-hidden border border-gray-200 rounded-xl">
-                            <table className="min-w-full divide-y divide-gray-200">
+                        <div className="cf-table-wrap">
+                            <table className="cf-table min-w-full">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colDate', 'Date')}</th>

@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, AlertCircle, Truck, Save, RefreshCw, CheckCircle } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, AlertTriangle, Truck, Save, RefreshCw, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import moment from 'moment';
 import * as leblad from '@dzcode-io/leblad';
-import axios from 'axios';
+import api from '../utils/axiosInstance';
 import { useOrderFormStore } from '../stores/useOrderFormStore';
+import useModalDismiss from '../hooks/useModalDismiss';
 import CustomerIntelligencePanel from './orders/CustomerIntelligencePanel';
-
-// Assuming global api config or proxy is set up
-const api = axios.create({ baseURL: '/api' });
-api.interceptors.request.use(config => {
-    config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
-    return config;
-});
+import { getOrderStatusLabel } from '../constants/statusColors';
 
 const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'WhatsApp', 'Facebook', 'TikTok', 'Instagram', 'Manual', 'Other'];
-const STATUSES = ['New', 'Calling', 'No Answer', 'Postponed', 'Wrong Number', 'Confirmed'];
+const STATUSES = ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Confirmed'];
 const PRIORITIES = ['Normal', 'High', 'Urgent', 'VIP'];
 
 const getSafeCommunesForWilaya = (wilayaCode) => {
@@ -34,6 +29,7 @@ const getSafeCommunesForWilaya = (wilayaCode) => {
 
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], couriers = [] }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const isEdit = !!initialData && !initialData._prefill;
 
     const store = useOrderFormStore();
@@ -94,7 +90,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             const timer = setTimeout(async () => {
                 setIsLookingUpPhone(true);
                 try {
-                    const { data } = await api.get(`/customers/lookup?phone=${encodeURIComponent(phone)}`);
+                    const { data } = await api.get(`/api/customers/lookup?phone=${encodeURIComponent(phone)}`);
                     setIntelligenceData(data);
 
                     // Autofill if new and found
@@ -103,7 +99,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         store.updateField('customerId', data.customer._id);
                     }
                 } catch (err) {
-                    console.error('Phone lookup failed', err);
+                    // Phone lookup is best-effort; silently ignore failures
                 } finally {
                     setIsLookingUpPhone(false);
                 }
@@ -133,7 +129,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                     });
                     if (store.courierId) query.append('courierId', store.courierId);
 
-                    const { data } = await api.get(`/couriers/engine/coverage?${query.toString()}`);
+                    const { data } = await api.get(`/api/couriers/engine/coverage?${query.toString()}`);
 
                     if (data && data.length > 0) {
                         // Filter standard communes to only those covered by returned rules
@@ -150,7 +146,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         allCommunes = [];
                     }
                 } catch (err) {
-                    console.error("Failed to fetch coverage", err);
+                    // Coverage fetch is best-effort; fall back to full commune list
                 }
             }
 
@@ -177,7 +173,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             setIsCalculatingPrice(true);
             try {
                 // First get recommendation
-                const recRes = await api.get('/couriers/engine/recommend', {
+                const recRes = await api.get('/api/couriers/engine/recommend', {
                     params: {
                         wilayaCode: store.shippingWilayaCode,
                         commune: store.shippingCommune,
@@ -193,7 +189,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
                 // If courier is assigned, calculate exact price
                 if (store.courierId && !store.manualPricing) {
-                    const priceRes = await api.post('/couriers/engine/calculate-price', {
+                    const priceRes = await api.post('/api/couriers/engine/calculate-price', {
                         courierId: store.courierId,
                         wilayaCode: store.shippingWilayaCode,
                         commune: store.shippingCommune,
@@ -209,7 +205,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                      store.updateField('courierFee', recRes.data.recommended.price);
                 }
             } catch (err) {
-                console.error("Pricing calc failed", err);
+                // Pricing calculation is best-effort; user can set price manually
             } finally {
                 setIsCalculatingPrice(false);
             }
@@ -221,6 +217,9 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         return () => clearTimeout(timer);
     }, [store.shippingWilayaCode, store.shippingCommune, store.courierId, store.shippingDeliveryType, store.manualPricing, isOpen]);
 
+
+    const [warningConfirmOpen, setWarningConfirmOpen] = useState(false);
+    const [pendingSubmitEvent, setPendingSubmitEvent] = useState(null);
 
     const handleSubmit = async (e, saveAndContinue = false) => {
         e.preventDefault();
@@ -238,10 +237,16 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             return;
         }
 
-        if (intelligenceData?.warning && !confirm(t('orderModal.warningConfirm', { warning: intelligenceData.warning }))) {
+        if (intelligenceData?.warning && !warningConfirmOpen) {
+            setPendingSubmitEvent({ saveAndContinue, validProducts });
+            setWarningConfirmOpen(true);
             return;
         }
 
+        executeSubmit(saveAndContinue, validProducts);
+    };
+
+    const executeSubmit = async (saveAndContinue, validProducts) => {
         const payload = {
             orderId: store.orderId,
             customerId: store.customerId,
@@ -289,8 +294,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-gray-900/60 backdrop-blur-sm">
-            <div className="bg-white md:rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[100dvh] md:h-auto md:max-h-[96vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-gray-900/60 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white md:rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[100dvh] md:h-auto md:max-h-[96vh] overflow-hidden" {...panelProps}>
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
@@ -305,7 +310,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                             <p className="text-sm text-gray-500 font-medium tracking-wide">{t('orderModal.subtitle')}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -336,17 +341,17 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.primaryPhone')} *</label>
-                                            <input required autoFocus type="tel" placeholder="05/06/07..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerPhone} onChange={e => store.updateField('customerPhone', e.target.value)} />
+                                            <label htmlFor="order-phone" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.primaryPhone')} *</label>
+                                            <input id="order-phone" required autoFocus type="tel" autoComplete="tel" dir="ltr" placeholder="05/06/07..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerPhone} onChange={e => store.updateField('customerPhone', e.target.value)} />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.fullName')} *</label>
-                                            <input required type="text" placeholder="John Doe" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
+                                            <label htmlFor="order-name" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.fullName')} *</label>
+                                            <input id="order-name" required type="text" autoComplete="name" placeholder="John Doe" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
-                                            <select required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
+                                            <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
+                                            <select id="order-wilaya" required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
                                                 <option value="" disabled>{t('orderModal.selectWilaya')}</option>
                                                 {leblad.getWilayaList().map(w => (
                                                     <option key={w.mattricule} value={w.mattricule}>{String(w.mattricule).padStart(2, '0')} - {w.name}</option>
@@ -355,11 +360,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between uppercase tracking-wide">
+                                            <label htmlFor="order-commune" className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between uppercase tracking-wide">
                                                 <span>{t('orderModal.commune')} *</span>
                                                 {store.shippingWilayaCode && <span className="text-[10px] text-blue-600 font-medium normal-case bg-blue-50 px-1.5 rounded">{t('orderModal.communeOptions', { count: availableCommunes.length })}</span>}
                                             </label>
-                                            <select required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
+                                            <select id="order-commune" required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
                                                 <option value="" disabled>{store.shippingWilayaCode ? t('orderModal.selectCommune') : t('orderModal.selectWilayaFirst')}</option>
                                                 {availableCommunes.map(c => (
                                                     <option key={c.code} value={c.name}>{c.name}</option>
@@ -368,8 +373,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         </div>
 
                                         <div className="md:col-span-2">
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.detailedAddress')}</label>
-                                            <input type="text" placeholder={t('orderModal.addressPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.shippingAddress} onChange={e => store.updateField('shippingAddress', e.target.value)} />
+                                            <label htmlFor="order-address" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.detailedAddress')}</label>
+                                            <input id="order-address" type="text" placeholder={t('orderModal.addressPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.shippingAddress} onChange={e => store.updateField('shippingAddress', e.target.value)} />
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 md:col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
@@ -381,8 +386,8 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.courierPriority')}</label>
-                                                <select className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
+                                                <label htmlFor="order-courier" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.courierPriority')}</label>
+                                                <select id="order-courier" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
                                                     <option value="">{t('orderModal.systemRecommended')}</option>
                                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                                 </select>
@@ -403,12 +408,12 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                 {/* Section C: Meta */}
                                 <div className="bg-white border rounded-xl p-5 shadow-sm grid grid-cols-2 gap-4">
                                      <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.orderId')}</label>
-                                        <input required type="text" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-600" value={store.orderId} onChange={e => store.updateField('orderId', e.target.value)} />
+                                        <label htmlFor="order-orderId" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.orderId')}</label>
+                                        <input id="order-orderId" required type="text" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-600" value={store.orderId} onChange={e => store.updateField('orderId', e.target.value)} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.channel')}</label>
-                                        <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
+                                        <label htmlFor="order-channel" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.channel')}</label>
+                                        <select id="order-channel" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
                                             {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
@@ -474,11 +479,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 relative">
-                                                        <span className="absolute left-2 top-1.5 text-gray-400 text-xs font-bold">$</span>
-                                                        <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 focus:bg-white py-1 pl-5 pr-2 rounded text-sm font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
+                                                        <span className="absolute left-2 top-1.5 text-gray-400 text-xs font-bold">{t('common.dzd', 'DZD')}</span>
+                                                        <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 focus:bg-white py-1 pl-10 pr-2 rounded text-sm font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
                                                     </div>
-                                                    <div className="w-20 text-right pr-2">
-                                                        <span className="text-sm font-bold text-gray-900">${(product.quantity * product.unitPrice).toFixed(2)}</span>
+                                                    <div className="w-24 text-right pr-2">
+                                                        <span className="text-sm font-bold text-gray-900 truncate">{(product.quantity * product.unitPrice).toFixed(2)} {t('common.dzd', 'DZD')}</span>
                                                     </div>
                                                 </div>
                                                 <button type="button" onClick={() => store.removeProduct(index)} disabled={store.products.length === 1} className="absolute -right-2 -top-2 p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-500 rounded-full disabled:opacity-0 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
@@ -496,7 +501,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                     <div className="space-y-2 mb-4 relative z-10">
                                         <div className="flex justify-between text-sm items-center">
                                             <span className="text-gray-300 font-medium">{t('orderModal.subtotal')}</span>
-                                            <span className="font-bold tracking-wide">${store.calculateSubtotal().toFixed(2)}</span>
+                                            <span className="font-bold tracking-wide">{store.calculateSubtotal().toFixed(2)} {t('common.dzd', 'DZD')}</span>
                                         </div>
                                         <div className="flex justify-between text-sm items-center">
                                             <div className="flex items-center gap-2">
@@ -508,7 +513,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                 {store.manualPricing ? (
                                                     <input type="number" className="w-16 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold" value={store.courierFee} onChange={e => store.updateField('courierFee', e.target.value)} />
                                                 ) : (
-                                                    <span className="font-bold text-blue-300 tracking-wide">${Number(store.courierFee).toFixed(2)}</span>
+                                                    <span className="font-bold text-blue-300 tracking-wide">{Number(store.courierFee).toFixed(2)} {t('common.dzd', 'DZD')}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -521,7 +526,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                     <div className="border-t border-gray-700 pt-3 mt-1 flex justify-between items-end relative z-10">
                                         <div>
                                             <span className="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-0.5">{t('orderModal.finalCollection')}</span>
-                                            <span className="text-2xl font-black text-white leading-none">${store.calculateFinalTotal().toFixed(2)}</span>
+                                            <span className="text-2xl font-black text-white leading-none">{store.calculateFinalTotal().toFixed(2)} <span className="text-sm">{t('common.dzd', 'DZD')}</span></span>
                                         </div>
                                         <div className="text-right">
                                             <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold block mb-1">{t('orderModal.overrideCod')}</label>
@@ -535,13 +540,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                          {/* Bottom Row (Notes & Initial Status) */}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-gray-100">
                              <div className="md:col-span-8">
-                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.notesLabel')}</label>
-                                <textarea rows="2" placeholder={t('orderModal.notesPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white resize-none transition-colors" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
+                                <label htmlFor="order-notes" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.notesLabel')}</label>
+                                <textarea id="order-notes" rows="2" placeholder={t('orderModal.notesPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white resize-none transition-colors" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
                             </div>
                             <div className="md:col-span-4 flex flex-col justify-end">
-                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.saveAsStatus')}</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white transition-all font-bold text-blue-900 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
-                                    {STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
+                                <label htmlFor="order-status" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.saveAsStatus')}</label>
+                                <select id="order-status" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white transition-all font-bold text-blue-900 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
+                                    {STATUSES.map(st => <option key={st} value={st}>{getOrderStatusLabel(t, st)}</option>)}
                                 </select>
                             </div>
                         </div>
@@ -569,6 +574,43 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 </div>
 
             </div>
+
+             {/* Custom Warning Dialog */}
+            {warningConfirmOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4 bg-amber-100">
+                            <AlertTriangle className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('orderModal.warningTitle', 'تحديث حالة')}</h3>
+                        <p className="text-sm text-gray-600 mb-6 font-medium leading-relaxed">
+                            {intelligenceData?.warning && t(`intelligence.${intelligenceData.warning}`)}
+                            <br/><br/>
+                            {t('orderModal.warningConfirm', 'هل تريد المتابعة في حفظ هذا الطلب؟')}
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => { setWarningConfirmOpen(false); setPendingSubmitEvent(null); }}
+                                className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                            >
+                                {t('orderModal.cancel', 'إلغاء')}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setWarningConfirmOpen(false);
+                                    if (pendingSubmitEvent) {
+                                        executeSubmit(pendingSubmitEvent.saveAndContinue, pendingSubmitEvent.validProducts);
+                                        setPendingSubmitEvent(null);
+                                    }
+                                }}
+                                className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-sm shadow-amber-600/20"
+                            >
+                                {t('orderModal.confirm', 'متابعة الحفظ')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Bot, X, Send, User, Sparkles, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { AuthContext } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
@@ -41,24 +41,24 @@ export default function CopilotWidget() {
 
         try {
             const token = auth?.token || localStorage.getItem('token');
-            const res = await axios.post(
-                `${import.meta.env.VITE_API_URL || ''}/api/ai/chat`,
-                { messages: updatedMessages },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            const res = await apiFetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: updatedMessages })
+            });
+            const data = await res.json();
 
-            if (res.data?.reply) {
-                setMessages(prev => [...prev, { role: 'ai', text: res.data.reply }]);
+            if (!res.ok) {
+                throw new Error(data.reply || data.error || "Request failed");
+            }
+
+            if (data?.reply) {
+                setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
             } else {
                 throw new Error("Invalid response format");
             }
         } catch (error) {
-            console.error("AI Chat Error:", error);
-            const errorMsg = error.response?.data?.reply || error.response?.data?.error || "Sorry, I am having trouble connecting to my central node. Please try again later.";
+            const errorMsg = error.message || "Sorry, I am having trouble connecting to my central node. Please try again later.";
             setMessages(prev => [...prev, { role: 'ai', text: errorMsg, isError: true }]);
         } finally {
             setIsTyping(false);

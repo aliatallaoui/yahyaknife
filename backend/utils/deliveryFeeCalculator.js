@@ -13,25 +13,30 @@ const CourierPricing = require('../models/CourierPricing');
  * @returns {Number} the calculated delivery fee
  */
 async function calculateDeliveryFee({ courierId, wilayaCode, commune, deliveryType, productIds = [], totalWeight = 0 }) {
-    if (!courierId) return 0; // Or throw error
+    if (!courierId) return { fee: 0, matched: false, rule: null };
 
     // Fetch all pricing rules for this courier, sorted by priority (descending)
     const rules = await CourierPricing.find({ courierId }).sort({ priority: -1 });
 
     if (!rules || rules.length === 0) {
-        return 0; // No pricing rules exist, fallback to 0 or we could add a default Courier-level fallback price later.
+        return { fee: 0, matched: false, rule: null };
     }
 
     // Evaluate rules from highest priority to lowest
     for (const rule of rules) {
         if (isMatch(rule, { wilayaCode, commune, deliveryType, productIds, totalWeight })) {
-            return rule.price;
+            return { fee: rule.price, matched: true, rule: rule.ruleType };
         }
     }
 
-    // Fallback if no rules match
-    // We could return a systemic default or 0
-    return 0;
+    // No specific rules matched — try to fall back to lowest-priority Flat rule
+    const flatFallback = rules.filter(r => r.ruleType === 'Flat').pop();
+    if (flatFallback) {
+        return { fee: flatFallback.price, matched: true, rule: 'Flat (fallback)' };
+    }
+
+    // No rules matched at all — signal to caller so they can warn the user
+    return { fee: 0, matched: false, rule: null };
 }
 
 /**

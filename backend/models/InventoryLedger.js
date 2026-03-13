@@ -30,6 +30,9 @@ const inventoryLedgerSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+// --- Performance Indexes ---
+inventoryLedgerSchema.index({ variantId: 1, type: 1, createdAt: -1 }); // Analytics aggregation
+
 // Prevent accidental updates to the ledger - it should be immutable
 inventoryLedgerSchema.pre('findOneAndUpdate', function (next) {
     this.options.runValidators = true;

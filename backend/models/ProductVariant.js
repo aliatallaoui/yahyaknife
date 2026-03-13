@@ -58,6 +58,10 @@ const productVariantSchema = new mongoose.Schema({
         stock: { type: Number, default: 0 },
         binLocation: { type: String } // e.g., 'A1-B2'
     }],
+    callScript: {
+        type: String,
+        default: ''
+    },
     skuGeneratorRules: {
         prefix: String,
         sequentialId: Number
@@ -79,6 +83,10 @@ const productVariantSchema = new mongoose.Schema({
         historicalDemand30Days: { type: Number, default: 0 } // Sold last 30 days
     }
 }, { timestamps: true });
+
+// --- Performance Indexes ---
+productVariantSchema.index({ productId: 1, status: 1 });             // Product detail page
+productVariantSchema.index({ status: 1, totalStock: 1 });            // Low-stock alert scan
 
 productVariantSchema.virtual('availableStock').get(function () {
     return this.totalStock - this.reservedStock;

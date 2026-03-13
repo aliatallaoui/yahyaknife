@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/axiosInstance';
 import { useTranslation } from 'react-i18next';
 import { Activity, Save, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -61,24 +61,20 @@ export default function CourierStatusMapping({ courier, setCourier }) {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('token');
             // Clean up any empty keys
             const cleanMapping = {};
             Object.keys(mapping).forEach(k => {
                 if (k.trim()) cleanMapping[k.trim()] = mapping[k];
             });
 
-            const res = await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courier._id}`, {
+            const res = await api.put(`/api/couriers/${courier._id}`, {
                 ...courier,
                 statusMapping: cleanMapping
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             setCourier(res.data);
             setSuccessMsg(t('couriers.mapping_saved', 'Mapping configuration saved successfully.'));
         } catch (error) {
-            console.error('Error saving mapping:', error);
             setErrorMsg(error.response?.data?.message || t('couriers.saveMappingFailed', 'Error saving mapping'));
         } finally {
             setSaving(false);
@@ -101,7 +97,7 @@ export default function CourierStatusMapping({ courier, setCourier }) {
                     <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600">✕</button>
                 </div>
             )}
-            <div className="bg-white border text-start border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="bg-white border text-start border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-indigo-500" />
                     {t('couriers.status_mapping', 'Lifecycle Event Mapping')}

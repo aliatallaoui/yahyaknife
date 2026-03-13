@@ -10,6 +10,9 @@
  */
 
 const PERMS = {
+    // ── Overview ────────────────────────────────────────────────────────────
+    OVERVIEW_READ:          'overview.read',
+
     // ── Orders ──────────────────────────────────────────────────────────────
     ORDERS_VIEW:            'orders.view',
     ORDERS_CREATE:          'orders.create',

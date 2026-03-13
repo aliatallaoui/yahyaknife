@@ -2,9 +2,12 @@ import React, { useState, useContext, useEffect } from 'react';
 import { X, Plus, Trash2, Search, Store } from 'lucide-react';
 import { InventoryContext } from '../context/InventoryContext';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
+import { apiFetch } from '../utils/apiFetch';
 
 const PurchaseOrdersModal = ({ isOpen, onClose }) => {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const { suppliers, products } = useContext(InventoryContext);
     const [supplierId, setSupplierId] = useState('');
     const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
@@ -103,11 +106,10 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                 }))
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/procurement/orders`, {
+            const response = await apiFetch(`/api/procurement/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}` // Standardized token retrieval
                 },
                 body: JSON.stringify(payload)
             });
@@ -130,9 +132,9 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-4xl flex flex-col max-h-[95vh] sm:max-h-[90vh]" {...panelProps}>
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                             <Store className="w-5 h-5 text-indigo-600" />
@@ -140,7 +142,7 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">{t('modals.poSubtitle', 'Order new stock from suppliers')}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -156,8 +158,9 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                         {/* Header Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-gray-50 rounded-xl border border-gray-200">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poSupplier', 'Supplier *')}</label>
+                                <label htmlFor="po-supplier" className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poSupplier', 'Supplier *')}</label>
                                 <select
+                                    id="po-supplier"
                                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-colors"
                                     value={supplierId}
                                     onChange={(e) => setSupplierId(e.target.value)}
@@ -171,8 +174,9 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poExpectedDelivery', 'Expected Delivery')}</label>
+                                <label htmlFor="po-delivery" className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poExpectedDelivery', 'Expected Delivery')}</label>
                                 <input
+                                    id="po-delivery"
                                     type="date"
                                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-colors"
                                     value={expectedDeliveryDate}
@@ -181,8 +185,9 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poNotes', 'Notes')}</label>
+                                <label htmlFor="po-notes" className="block text-sm font-medium text-gray-700 mb-1.5">{t('modals.poNotes', 'Notes')}</label>
                                 <textarea
+                                    id="po-notes"
                                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-colors"
                                     rows="2"
                                     placeholder={t('modals.poNotesPlaceholder', 'Internal notes or instructions for the supplier...')}
@@ -249,8 +254,8 @@ const PurchaseOrdersModal = ({ isOpen, onClose }) => {
 
                         {/* Items List */}
                         {items.length > 0 && (
-                            <div className="border border-gray-200 rounded-xl overflow-hidden">
-                                <table className="min-w-full divide-y divide-gray-200">
+                            <div className="cf-table-wrap">
+                                <table className="cf-table min-w-full">
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 uppercase">{t('modals.poTableType', 'Item Type')}</th>

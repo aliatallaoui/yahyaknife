@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const CourierPricing = require('../models/CourierPricing');
 const Courier = require('../models/Courier');
 
@@ -14,7 +15,7 @@ exports.getPricingRules = async (req, res) => {
             .sort({ priority: -1 });
         res.json(rules);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -77,6 +78,6 @@ exports.deletePricingRule = async (req, res) => {
 
         res.json({ message: 'Pricing rule deleted successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };

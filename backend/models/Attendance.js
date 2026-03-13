@@ -30,5 +30,6 @@ const attendanceSchema = new mongoose.Schema({
 
 // Ensure one record per employee per day per tenant
 attendanceSchema.index({ tenant: 1, employeeId: 1, date: 1 }, { unique: true });
+attendanceSchema.index({ tenant: 1, date: 1 }); // Payroll aggregation date-range queries
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

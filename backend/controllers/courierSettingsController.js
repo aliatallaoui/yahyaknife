@@ -1,5 +1,6 @@
 const CourierSetting = require('../models/CourierSetting');
 const axios = require('axios');
+const logger = require('../shared/logger');
 
 exports.getSettings = async (req, res) => {
     try {
@@ -17,7 +18,8 @@ exports.getSettings = async (req, res) => {
         safe.apiToken = settings.apiToken ? '****' + settings.apiToken.slice(-4) : '';
         res.json(safe);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Courier settings fetch error');
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -47,7 +49,7 @@ exports.updateSettings = async (req, res) => {
                     ? `${settings.apiUrl}getWilayas`
                     : `${settings.apiUrl}/getWilayas`;
 
-                console.log(`[CourierSettings] Pinging EcoTrack: ${pingUrl}`);
+                logger.info('[CourierSettings] Pinging EcoTrack for validation');
 
                 const response = await axios.get(pingUrl, {
                     headers: { 'Authorization': `Bearer ${settings.apiToken}` },
@@ -59,7 +61,7 @@ exports.updateSettings = async (req, res) => {
                 }
             } catch (apiError) {
                 const status = apiError.response ? apiError.response.status : 'NO_RESPONSE';
-                console.error(`[CourierSettings] ECOTRACK Verification Error (Status ${status}):`, apiError.response ? apiError.response.data : apiError.message);
+                logger.warn({ status }, '[CourierSettings] ECOTRACK verification returned non-200');
 
                 if (status === 401) {
                     connectionStatus = 'Invalid Token';
@@ -67,7 +69,7 @@ exports.updateSettings = async (req, res) => {
                     connectionStatus = 'Not Allowed';
                 } else if ([404, 422, 500].includes(status)) {
                     // The server is alive and responding, so the connection is valid even if this specific ping endpoint fails
-                    console.log(`[CourierSettings] Treating ${status} as Valid connection (Server reachable).`);
+                    logger.info({ status }, '[CourierSettings] Treating as valid connection (server reachable)');
                     connectionStatus = 'Valid';
                 } else {
                     connectionStatus = 'Unreachable';
@@ -83,6 +85,6 @@ exports.updateSettings = async (req, res) => {
         safeResponse.apiToken = settings.apiToken ? '****' + settings.apiToken.slice(-4) : '';
         res.json(safeResponse);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Failed to update courier settings' });
     }
 };

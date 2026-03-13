@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '../utils/apiFetch';
 import PageHeader from '../components/PageHeader';
 
 const COLORS = ['#4361EE', '#3B82F6', '#60A5FA', '#93C5FD', '#111827', '#6B7280'];
@@ -34,14 +35,11 @@ export default function CustomerInsight() {
         const fetchCustomerData = async () => {
             if (!token) return;
             try {
-                const metricsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/metrics`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const metricsRes = await apiFetch(`/api/customers/metrics`);
 
                 const data = await metricsRes.json();
                 setMetrics(Array.isArray(data) ? data : (data.error ? null : data));
             } catch (error) {
-                console.error("Error fetching customer metrics:", error);
                 setMetricsError(t('crm.failedLoadMetrics', 'Failed to load customer metrics.'));
             } finally {
                 setLoading(false);
@@ -133,7 +131,7 @@ export default function CustomerInsight() {
             />
 
             {/* Macro KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <MacroCard
                     title={t('crm.macroTotalAudience', 'Total Audience')}
                     value={metrics?.totalCustomers || 0}
@@ -235,20 +233,20 @@ export default function CustomerInsight() {
                 </div>
 
                 <div className="flex-1 overflow-auto">
-                    <table className="w-full text-start border-collapse min-w-[1000px]">
+                    <table className="cf-table min-w-[1000px]">
                         <thead>
-                            <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider sticky top-0 z-10">
-                                <th className="p-4 font-semibold rounded-tl-xl ps-6">{t('crm.colCustomer', 'Customer')}</th>
-                                <th className="p-4 font-semibold">{t('crm.colSegment', 'Segment')}</th>
-                                <th className="p-4 font-semibold">{t('crm.colOrders', 'Orders')}</th>
-                                <th className="p-4 font-semibold">{t('crm.colLTV', 'Lifetime Value')}</th>
-                                <th className="p-4 font-semibold">{t('crm.colRisk', 'COD Risk')}</th>
-                                <th className="p-4 font-semibold text-center pe-6">{t('crm.colProfile', 'Profile')}</th>
+                            <tr className="sticky top-0 z-10">
+                                <th>{t('crm.colCustomer', 'Customer')}</th>
+                                <th>{t('crm.colSegment', 'Segment')}</th>
+                                <th>{t('crm.colOrders', 'Orders')}</th>
+                                <th>{t('crm.colLTV', 'Lifetime Value')}</th>
+                                <th>{t('crm.colRisk', 'COD Risk')}</th>
+                                <th className="text-center">{t('crm.colProfile', 'Profile')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 text-sm">
+                        <tbody>
                             {filteredCustomers.map(customer => (
-                                <tr key={customer._id} className="hover:bg-gray-50/50 transition-colors group">
+                                <tr key={customer._id} className="group">
                                     <td className="p-4 ps-6">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center font-bold text-indigo-700 shadow-sm border border-indigo-50">

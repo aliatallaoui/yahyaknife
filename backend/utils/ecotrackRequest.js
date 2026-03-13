@@ -1,5 +1,14 @@
 const axios = require('axios');
+const logger = require('../shared/logger');
 const CourierSetting = require('../models/CourierSetting');
+const CircuitBreaker = require('../shared/CircuitBreaker');
+
+// Single circuit breaker instance for the Ecotrack external API
+const ecotrackBreaker = new CircuitBreaker({
+    name: 'ecotrack',
+    failureThreshold: 5,   // 5 consecutive failures → OPEN
+    resetTimeoutMs: 30_000, // probe again after 30 seconds
+});
 
 /**
  * Validates current rate limits before allowing an API call.
@@ -43,7 +52,7 @@ const checkRateLimits = async (settings) => {
 };
 
 /**
- * Wrapper for Axios to handle ECOTRACK authentication and rate limits.
+ * Wrapper for Axios to handle ECOTRACK authentication, rate limits, and circuit breaking.
  * @param {string} method - 'GET', 'POST', 'PUT', 'DELETE'
  * @param {string} endpoint - e.g., '/api/v1/create/order'
  * @param {object} data - Payload body
@@ -73,19 +82,24 @@ const ecotrackRequest = async (method, endpoint, data = null) => {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
+        timeout: 10_000, // 10s per-request timeout
         data: data
     };
 
-    try {
-        const response = await axios(config);
-        return response.data;
-    } catch (error) {
-        console.error(`ECOTRACK API Error [${method} ${endpoint}]:`, error.response ? error.response.data : error.message);
-        throw error;
-    }
+    // Route through circuit breaker
+    return ecotrackBreaker.fire(async () => {
+        try {
+            const response = await axios(config);
+            return response.data;
+        } catch (error) {
+            logger.error({ method, endpoint, responseData: error.response?.data }, 'ECOTRACK API Error');
+            throw error;
+        }
+    });
 };
 
 module.exports = {
     ecotrackRequest,
-    checkRateLimits
+    checkRateLimits,
+    ecotrackBreaker, // exposed for health-check endpoint
 };

@@ -65,5 +65,6 @@ customerSchema.index(
     { weights: { phone: 10, name: 5, email: 1 }, name: "customer_text_idx" }
 );
 customerSchema.index({ tenant: 1, riskLevel: 1, _id: -1 });
+customerSchema.index({ tenant: 1, status: 1, _id: -1 }); // Segment analysis & active customer lists
 
 module.exports = mongoose.model('Customer', customerSchema);

@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
-import axios from 'axios';
+import api from '../utils/axiosInstance';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useConfirmDialog } from '../components/ConfirmDialog';
+import TableSkeleton from '../components/TableSkeleton';
+import { useToast } from '../components/Toast';
 import RequireAction from '../components/Guards/RequireAction';
-import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package, X } from 'lucide-react';
+import { Truck, Search, Plus, Archive, FileText, CheckCircle, Clock, AlertTriangle, XCircle, ArrowRight, CheckSquare, Trash2, Printer, MapPin, Package } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import clsx from 'clsx';
 import moment from 'moment';
@@ -39,9 +42,9 @@ export default function DispatchCenter() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(null); // shipment id pending delete
-    const [errorMsg, setErrorMsg] = useState(null);
-    const showError = (msg) => { setErrorMsg(msg); setTimeout(() => setErrorMsg(null), 5000); };
+    const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
+    const notify = useToast();
+    const showError = (msg) => notify.error(msg);
     const searchRef = useRef(null);
     useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
     useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
@@ -52,10 +55,7 @@ export default function DispatchCenter() {
 
     const fetchShipments = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/shipments`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/api/shipments');
             setShipments(res.data);
             setLoading(false);
         } catch (error) {
@@ -66,38 +66,48 @@ export default function DispatchCenter() {
 
     const handleValidate = async (id) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}/validate`, { ask_collection: 1 }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post(`/api/shipments/${id}/validate`, { ask_collection: 1 });
             fetchShipments();
         } catch (error) {
             showError(error.response?.data?.message || t('dispatch.errorValidate', 'Failed to validate shipment.'));
         }
     };
 
-    const handleDelete = (id) => setConfirmDelete(id);
-
-    const confirmDeleteShipment = async () => {
-        const id = confirmDelete;
-        setConfirmDelete(null);
-        try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            fetchShipments();
-        } catch (error) {
-            showError(error.response?.data?.message || t('dispatch.errorDelete', 'Failed to delete shipment.'));
+    const [bulkValidating, setBulkValidating] = useState(false);
+    const pendingValidation = shipments.filter(s => ['Created in Courier', 'Draft'].includes(s.shipmentStatus));
+    const handleBulkValidate = async () => {
+        if (pendingValidation.length === 0) return;
+        setBulkValidating(true);
+        let failed = 0;
+        for (const s of pendingValidation) {
+            try {
+                await api.post(`/api/shipments/${s._id}/validate`, { ask_collection: 1 });
+            } catch { failed++; }
         }
+        setBulkValidating(false);
+        if (failed > 0) showError(t('dispatch.bulkValidatePartialFail', `${failed} shipment(s) failed to validate.`));
+        fetchShipments();
+    };
+
+    const handleDelete = (id) => {
+        showConfirm({
+            title: t('dispatch.deleteConfirmTitle', 'Delete this shipment?'),
+            body: t('dispatch.deleteConfirmBody', 'This will cancel the dispatch request. The linked order will revert to Confirmed status.'),
+            danger: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/api/shipments/${id}`);
+                    fetchShipments();
+                } catch (error) {
+                    showError(error.response?.data?.message || t('dispatch.errorDelete', 'Failed to delete shipment.'));
+                }
+            },
+        });
     };
 
     const handlePrintLabel = async (id) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/shipments/${id}/label`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/api/shipments/${id}/label`);
             if (res.data.url) {
                 window.open(res.data.url, '_blank');
             }
@@ -108,11 +118,7 @@ export default function DispatchCenter() {
 
     const handleExport = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/shipments/export/csv`, {
-                headers: { Authorization: `Bearer ${token}` },
-                responseType: 'blob'
-            });
+            const res = await api.get('/api/shipments/export/csv', { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -192,7 +198,7 @@ export default function DispatchCenter() {
             />
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.total', 'Total Shipments')}</p>
@@ -244,7 +250,7 @@ export default function DispatchCenter() {
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                 </div>
-                <div className="w-full md:w-auto flex gap-2 overflow-x-auto pb-2 md:pb-0 custom-scrollbar">
+                <div className="w-full md:w-auto flex gap-2 overflow-x-auto pb-2 md:pb-0 custom-scrollbar items-center">
                     {FILTER_STATUSES.map(status => (
                         <button
                             key={status}
@@ -257,13 +263,22 @@ export default function DispatchCenter() {
                             {getShipmentStatusLabel(status, t)}
                         </button>
                     ))}
+                    {pendingValidation.length > 0 && (
+                        <button
+                            onClick={handleBulkValidate}
+                            disabled={bulkValidating}
+                            className="whitespace-nowrap flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60"
+                        >
+                            {bulkValidating ? t('dispatch.validating', 'Validating...') : t('dispatch.btnValidateAll', `Validate All (${pendingValidation.length})`)}
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* Data Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="cf-table-wrap">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="cf-table min-w-full">
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.tracking', 'Tracking / Ref')}</th>
@@ -276,11 +291,8 @@ export default function DispatchCenter() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
-                                <tr><td colSpan="6" className="px-6 py-12 text-center">
-                                    <div className="flex flex-col items-center gap-3 text-gray-400">
-                                        <div className="w-7 h-7 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" />
-                                        <span className="text-sm font-medium">{t('dispatch.loadingShipments', 'Loading shipments...')}</span>
-                                    </div>
+                                <tr><td colSpan="6" className="p-0">
+                                    <TableSkeleton rows={6} cols={6} showHeader={false} />
                                 </td></tr>
                             ) : filteredShipments.length === 0 ? (
                                 <tr>
@@ -315,7 +327,7 @@ export default function DispatchCenter() {
                                             <div className="text-[10px] text-gray-400 mt-1">{moment(shipment.createdAt).format('MMM D, HH:mm')}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-bold text-gray-900">{(shipment.codAmount || 0).toLocaleString()} DZD</div>
+                                            <div className="text-sm font-bold text-gray-900">{(shipment.codAmount || 0).toLocaleString()} {t('common.dzd', 'DZD')}</div>
                                             <div className="text-[10px] text-gray-500 border border-gray-200 bg-gray-50 rounded px-1.5 py-0.5 inline-block mt-1">
                                                 {shipment.paymentStatus?.replace(/_/g, ' ') || '—'}
                                             </div>
@@ -362,31 +374,8 @@ export default function DispatchCenter() {
                 onSuccess={fetchShipments}
             />
 
-            {/* Delete confirm dialog */}
-            {confirmDelete && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
-                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                            <Trash2 className="w-5 h-5 text-red-600" />
-                        </div>
-                        <h3 className="text-base font-black text-gray-900 mb-2">{t('dispatch.deleteConfirmTitle', 'Delete this shipment?')}</h3>
-                        <p className="text-sm text-gray-500 leading-relaxed mb-6">{t('dispatch.deleteConfirmBody', 'This will cancel the dispatch request. The linked order will revert to Confirmed status.')}</p>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">{t('dispatch.cancel', 'Cancel')}</button>
-                            <button onClick={confirmDeleteShipment} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">{t('dispatch.deleteBtn', 'Delete')}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {confirmDialogEl}
 
-            {/* Error toast */}
-            {errorMsg && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-200 max-w-sm">
-                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span className="leading-snug">{errorMsg}</span>
-                    <button onClick={() => setErrorMsg(null)} className="ml-2 text-gray-400 hover:text-white transition-colors shrink-0"><X className="w-4 h-4" /></button>
-                </div>
-            )}
         </div>
     );
 }

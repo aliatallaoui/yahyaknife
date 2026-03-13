@@ -32,35 +32,35 @@ export default function SettingsProfile() {
             <form className="space-y-6 max-w-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">{t('lblFullName')}</label>
-                        <input type="text" defaultValue={user?.name} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <label htmlFor="prof-name" className="block text-xs font-bold text-gray-700 mb-1">{t('lblFullName')}</label>
+                        <input id="prof-name" type="text" autoComplete="name" defaultValue={user?.name} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">{t('lblDisplayName')}</label>
-                        <input type="text" placeholder={t('phDisplayName')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <label htmlFor="prof-display" className="block text-xs font-bold text-gray-700 mb-1">{t('lblDisplayName')}</label>
+                        <input id="prof-display" type="text" placeholder={t('phDisplayName')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {t('lblEmail')}</label>
-                        <input type="email" disabled defaultValue={user?.email} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed" />
+                        <label htmlFor="prof-email" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {t('lblEmail')}</label>
+                        <input id="prof-email" type="email" autoComplete="email" dir="ltr" disabled defaultValue={user?.email} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed" />
                         <p className="text-[10px] text-gray-400 mt-1">{t('emailDesc')}</p>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {t('lblPhone')}</label>
-                        <input type="tel" placeholder={t('phPhone')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <label htmlFor="prof-phone" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {t('lblPhone')}</label>
+                        <input id="prof-phone" type="tel" autoComplete="tel" dir="ltr" placeholder={t('phPhone')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Building className="w-3.5 h-3.5" /> {t('lblDepartment')}</label>
-                        <input type="text" disabled defaultValue={user?.department || t('deptOps')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed" />
+                        <label htmlFor="prof-dept" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Building className="w-3.5 h-3.5" /> {t('lblDepartment')}</label>
+                        <input id="prof-dept" type="text" disabled defaultValue={user?.department || t('deptOps')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed" />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {t('lblJobTitle')}</label>
-                        <input type="text" placeholder={t('phJobTitle')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                        <label htmlFor="prof-job" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {t('lblJobTitle')}</label>
+                        <input id="prof-job" type="text" placeholder={t('phJobTitle')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                     </div>
                 </div>
 

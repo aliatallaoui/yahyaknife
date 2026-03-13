@@ -55,15 +55,15 @@ export default function SettingsAlerts() {
 
                     <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className={clsx("w-full bg-white min-w-[500px]", isAr ? "text-right" : "text-left")}>
-                                <thead className="bg-gray-50/80 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            <table className={clsx("cf-table min-w-[500px]", isAr ? "text-right" : "text-left")}>
+                                <thead>
                                     <tr>
-                                        <th className="px-5 py-3">{t('thColEvent')}</th>
-                                        <th className="px-5 py-3 text-center"><DashboardIcon label={t('thColDashboard')} /></th>
-                                        <th className="px-5 py-3 text-center"><EmailIcon label={t('thColEmail')} /></th>
+                                        <th>{t('thColEvent')}</th>
+                                        <th className="text-center"><DashboardIcon label={t('thColDashboard')} /></th>
+                                        <th className="text-center"><EmailIcon label={t('thColEmail')} /></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody>
                                     <ToggleRow title={t('salesRows')} desc={t('salesDesc')} defaultInApp={true} defaultEmail={false} />
                                     <ToggleRow title={t('invRows')} desc={t('invDesc')} defaultInApp={true} defaultEmail={true} />
                                     <ToggleRow title={t('prodRows')} desc={t('prodDesc')} defaultInApp={true} defaultEmail={false} />
@@ -92,7 +92,7 @@ function ToggleRow({ title, desc, defaultInApp, defaultEmail }) {
     const [email, setEmail] = useState(defaultEmail);
 
     return (
-        <tr className="hover:bg-gray-50/50 transition-colors">
+        <tr>
             <td className="px-5 py-4">
                 <p className="text-sm font-bold text-gray-900">{title}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>

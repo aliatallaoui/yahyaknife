@@ -28,10 +28,24 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    confirmedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    lockedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    lockedAt: {
+        type: Date,
+        default: null
+    },
     channel: {
         type: String,
         required: true,
-        enum: ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Direct', 'Manual', 'WhatsApp', 'Facebook', 'TikTok', 'Shopify', 'WooCommerce', 'Instagram', 'Marketplace', 'Other']
+        enum: ['Shopify', 'WooCommerce', 'Website', 'WhatsApp', 'Facebook', 'TikTok', 'Instagram', 'Manual', 'Direct', 'Marketplace', 'Other']
     },
     // Main COD Lifecycle Status
     status: {
@@ -112,8 +126,13 @@ const orderSchema = new mongoose.Schema({
 // Tenant Execution Indexes
 orderSchema.index({ tenant: 1, _id: -1 }); // Fast Cursor Pagination
 orderSchema.index({ tenant: 1, status: 1, _id: -1 }); // Fast View Pagination
+orderSchema.index({ tenant: 1, lockedAt: 1 }); // Quick scan for stale locks
 orderSchema.index({ tenant: 1, 'shipping.phone1': 1 }); // Call Center Lookup
 orderSchema.index({ tenant: 1, courier: 1, 'deliveryStatus.deliveredAt': -1 }); // Courier KPI lookups
+
+orderSchema.index({ tenant: 1, createdAt: -1 }); // Date-range analytics & daily rollup
+orderSchema.index({ tenant: 1, customer: 1 }); // Customer order history
+orderSchema.index({ deletedAt: 1, tenant: 1, status: 1 }); // Soft-delete filtering (most queries add deletedAt: null)
 
 // Text Search Index (Replaces slow Regex collection scans)
 // Weighted so Order ID matches rank higher than random tracking numbers

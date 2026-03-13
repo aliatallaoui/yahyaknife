@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const Order = require('../models/Order');
 const moment = require('moment');
 const cacheService = require('../services/cacheService');
@@ -115,7 +116,7 @@ exports.getCourierKPIs = async (req, res) => {
 
         res.json(cachedKPIs);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -166,6 +167,6 @@ exports.getRegionalPerformance = async (req, res) => {
 
         res.json(cachedRegions);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };

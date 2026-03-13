@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/axiosInstance';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Plus, Trash2, Home, Building2, HelpCircle, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
+import { useConfirmDialog } from '../ConfirmDialog';
 
 export default function CourierCoverageMap({ courierId }) {
     const { t, i18n } = useTranslation();
@@ -16,8 +17,7 @@ export default function CourierCoverageMap({ courierId }) {
     const itemsPerPage = 50;
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
-    const [confirmDelete, setConfirmDelete] = useState(null); // coverageId
-    const [confirmSync, setConfirmSync] = useState(false);
+    const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
 
     const [formData, setFormData] = useState({
         wilayaCode: '',
@@ -36,13 +36,9 @@ export default function CourierCoverageMap({ courierId }) {
 
     const fetchCoverage = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/api/couriers/${courierId}/coverage`);
             setCoverage(res.data);
         } catch (error) {
-            console.error('Error fetching coverage:', error);
             setErrorMsg(error.response?.data?.message || t('couriers.loadCoverageFailed', 'Failed to load coverage regions.'));
         } finally {
             setLoading(false);
@@ -52,10 +48,7 @@ export default function CourierCoverageMap({ courierId }) {
     const handleAdd = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post(`/api/couriers/${courierId}/coverage`, formData);
             // Reset form partly
             setFormData({
                 ...formData,
@@ -63,46 +56,42 @@ export default function CourierCoverageMap({ courierId }) {
             });
             fetchCoverage();
         } catch (error) {
-            console.error('Error adding coverage:', error);
             setErrorMsg(error.response?.data?.message || t('couriers.addCoverageFailed', 'Error adding coverage region'));
         }
     };
 
-    const handleDelete = (coverageId) => setConfirmDelete(coverageId);
-
-    const confirmDeleteCoverage = async () => {
-        const coverageId = confirmDelete;
-        setConfirmDelete(null);
-        try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage/${coverageId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            fetchCoverage();
-        } catch (error) {
-            console.error('Error deleting coverage:', error);
-            setErrorMsg(t('couriers.deleteCoverageFailed', 'Failed to delete coverage region.'));
-        }
+    const handleDelete = (coverageId) => {
+        showConfirm({
+            title: t('couriers.deleteCoverageConfirm', 'Delete this coverage region?'),
+            danger: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/api/couriers/${courierId}/coverage/${coverageId}`);
+                    fetchCoverage();
+                } catch (error) {
+                    setErrorMsg(t('couriers.deleteCoverageFailed', 'Failed to delete coverage region.'));
+                }
+            },
+        });
     };
 
-    const handleSync = () => setConfirmSync(true);
-
-    const confirmSyncCoverage = async () => {
-        setConfirmSync(false);
-        setSyncing(true);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/coverage/sync`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setSuccessMsg(res.data.message || 'Sync successful');
-            fetchCoverage();
-        } catch (error) {
-            console.error('Error syncing coverage:', error);
-            setErrorMsg(error.response?.data?.message || error.response?.data?.error || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
-        } finally {
-            setSyncing(false);
-        }
+    const handleSync = () => {
+        showConfirm({
+            title: t('couriers.btnSyncCoverage', 'Sync API Coverage'),
+            body: t('couriers.confirmSync', 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds.'),
+            onConfirm: async () => {
+                setSyncing(true);
+                try {
+                    const res = await api.post(`/api/couriers/${courierId}/coverage/sync`, {});
+                    setSuccessMsg(res.data.message || 'Sync successful');
+                    fetchCoverage();
+                } catch (error) {
+                    setErrorMsg(error.response?.data?.message || error.response?.data?.error || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
+                } finally {
+                    setSyncing(false);
+                }
+            },
+        });
     };
 
     // Filter and Pagination Logic
@@ -139,41 +128,7 @@ export default function CourierCoverageMap({ courierId }) {
                     <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600">✕</button>
                 </div>
             )}
-            {/* Delete coverage confirm */}
-            {confirmDelete && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-5 h-5 text-red-600" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">{t('couriers.deleteCoverageConfirm', 'Delete this coverage region?')}</h3>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
-                            <button onClick={confirmDeleteCoverage} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">{t('common.delete', 'Delete')}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Sync confirm */}
-            {confirmSync && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                                <RefreshCw className="w-5 h-5 text-indigo-600" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">{t('couriers.btnSyncCoverage', 'Sync API Coverage')}</h3>
-                        </div>
-                        <p className="text-sm text-gray-500 mb-5 ms-[52px]">{t('couriers.confirmSync', 'This will fetch all supported wilayas and communes from the Courier API and overwrite/add to your current coverage map. It may take a few seconds.')}</p>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmSync(false)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
-                            <button onClick={confirmSyncCoverage} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors">{t('common.continue', 'Continue')}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {confirmDialogEl}
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex gap-3 text-start">
                 <HelpCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
@@ -203,8 +158,9 @@ export default function CourierCoverageMap({ courierId }) {
                 
                 <form onSubmit={handleAdd} className="flex flex-col md:flex-row items-end gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div className="w-full md:w-32">
-                        <label className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.wilayaCode', 'Wilaya Code')}</label>
+                        <label htmlFor="cov-wilaya" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.wilayaCode', 'Wilaya Code')}</label>
                         <input
+                            id="cov-wilaya"
                             type="text"
                             required
                             value={formData.wilayaCode}
@@ -214,8 +170,9 @@ export default function CourierCoverageMap({ courierId }) {
                         />
                     </div>
                     <div className="flex-1 w-full">
-                        <label className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.commune', 'Commune')}</label>
+                        <label htmlFor="cov-commune" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.commune', 'Commune')}</label>
                         <input
+                            id="cov-commune"
                             type="text"
                             required
                             value={formData.commune}
@@ -226,8 +183,9 @@ export default function CourierCoverageMap({ courierId }) {
                     </div>
                     
                     <div className="flex gap-4 mb-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label htmlFor="cov-home" className="flex items-center gap-2 cursor-pointer">
                             <input
+                                id="cov-home"
                                 type="checkbox"
                                 checked={formData.homeSupported}
                                 onChange={e => setFormData({ ...formData, homeSupported: e.target.checked })}
@@ -235,9 +193,10 @@ export default function CourierCoverageMap({ courierId }) {
                             />
                             <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Home className="w-4 h-4 text-gray-400" /> {t('couriers.homeDelivery', 'Home')}</span>
                         </label>
-                        
-                        <label className="flex items-center gap-2 cursor-pointer">
+
+                        <label htmlFor="cov-office" className="flex items-center gap-2 cursor-pointer">
                             <input
+                                id="cov-office"
                                 type="checkbox"
                                 checked={formData.officeSupported}
                                 onChange={e => setFormData({ ...formData, officeSupported: e.target.checked })}
@@ -276,7 +235,7 @@ export default function CourierCoverageMap({ courierId }) {
                     </div>
                 )}
 
-                <div className={clsx("border border-gray-200 rounded-lg overflow-hidden", coverage.length === 0 ? "mt-8" : "mt-2")}>
+                <div className={clsx("border border-gray-200 rounded-lg overflow-x-auto", coverage.length === 0 ? "mt-8" : "mt-2")}>
                     <table className="w-full text-start rtl:text-right whitespace-nowrap text-sm">
                         <thead className="bg-gray-50/80 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
                             <tr>

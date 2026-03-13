@@ -12,6 +12,8 @@ const Shipment = require('../../models/Shipment');
 const Order = require('../../models/Order');
 const ecotrackAdapter = require('../../integrations/couriers/EcotrackAdapter');
 const AppError = require('../../shared/errors/AppError');
+const logger = require('../../shared/logger');
+const { fireAndRetry } = require('../../shared/utils/retryAsync');
 const OrderService = require('../orders/order.service');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,19 +52,37 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
     });
 
     const payload = ecotrackAdapter.toPayload(newShipment);
-    const { trackingId } = await ecotrackAdapter.createShipment(payload);
+    let trackingId = null;
+    let courierError = null;
 
-    newShipment.externalTrackingId = trackingId;
-    newShipment.courierStatus = 'Created';
+    try {
+        const result = await ecotrackAdapter.createShipment(payload);
+        trackingId = result.trackingId;
+    } catch (err) {
+        logger.error({ err }, 'Failed to dispatch to external courier API');
+        courierError = err.message || 'Unknown API Error';
+    }
+
+    if (trackingId) {
+        newShipment.externalTrackingId = trackingId;
+        newShipment.courierStatus = 'Created';
+        newShipment.shipmentStatus = 'Created in Courier';
+    } else {
+        newShipment.shipmentStatus = 'Dispatch Failed';
+        newShipment.activityHistory.push({ status: 'Dispatch Failed', remarks: `Courier Integration Error: ${courierError}` });
+    }
 
     const savedShipment = await newShipment.save();
 
     // Sync order status through service to trigger inventory + audit trail
     if (tenantId) {
+        const updateStatus = trackingId ? 'Dispatched' : 'Dispatch Failed';
+        const trackingInfo = trackingId ? { carrier: 'ECOTRACK', trackingNumber: trackingId } : { carrier: 'ECOTRACK', error: courierError };
+        
         await OrderService.updateOrder({
             orderId: orderId.toString(),
             tenantId,
-            updateData: { status: 'Dispatched', trackingInfo: { carrier: 'ECOTRACK', trackingNumber: savedShipment.externalTrackingId } },
+            updateData: { status: updateStatus, trackingInfo },
             bypassStateMachine: true
         });
     }
@@ -107,18 +127,37 @@ exports.quickDispatch = async (orderId, tenantId) => {
     });
 
     const payload = ecotrackAdapter.toPayload(newShipment);
-    const { trackingId } = await ecotrackAdapter.createShipment(payload);
+    
+    let trackingId = null;
+    let courierError = null;
 
-    newShipment.externalTrackingId = trackingId;
-    newShipment.courierStatus = 'Created';
+    try {
+        const result = await ecotrackAdapter.createShipment(payload);
+        trackingId = result.trackingId;
+    } catch (err) {
+        logger.error({ err }, 'Failed to quick-dispatch to external courier API');
+        courierError = err.message || 'Unknown API Error';
+    }
+
+    if (trackingId) {
+        newShipment.externalTrackingId = trackingId;
+        newShipment.courierStatus = 'Created';
+        newShipment.shipmentStatus = 'Created in Courier';
+    } else {
+        newShipment.shipmentStatus = 'Dispatch Failed';
+        newShipment.activityHistory.push({ status: 'Dispatch Failed', remarks: `Courier Integration Error: ${courierError}` });
+    }
 
     const savedShipment = await newShipment.save();
 
     // Sync order status through service to trigger inventory + audit trail
+    const updateStatus = trackingId ? 'Dispatched' : 'Dispatch Failed';
+    const trackingInfo = trackingId ? { carrier: 'ECOTRACK', trackingNumber: trackingId } : { carrier: 'ECOTRACK', error: courierError };
+
     await OrderService.updateOrder({
         orderId: orderId.toString(),
         tenantId,
-        updateData: { status: 'Dispatched', trackingInfo: { carrier: 'ECOTRACK', trackingNumber: trackingId } },
+        updateData: { status: updateStatus, trackingInfo },
         bypassStateMachine: true
     });
 
@@ -165,7 +204,7 @@ exports.deleteShipment = async (shipmentId, tenantId) => {
             await ecotrackAdapter.cancelShipment(shipment.externalTrackingId);
             courierCancelled = true;
         } catch (err) {
-            console.warn('Failed to cancel from ECOTRACK (deleting locally anyway):', err.message);
+            logger.warn({ err }, 'Failed to cancel from ECOTRACK (deleting locally anyway)');
         }
     }
 
@@ -198,7 +237,7 @@ exports.requestReturn = async (shipmentId, tenantId, userId = null) => {
         try {
             await ecotrackAdapter.requestReturn(shipment.externalTrackingId);
         } catch (err) {
-            console.warn('Failed to request return via Ecotrack:', err.message);
+            logger.warn({ err }, 'Failed to request return via Ecotrack');
             // Proceed to flag internally even if courier API fails
         }
     }
@@ -211,12 +250,12 @@ exports.requestReturn = async (shipmentId, tenantId, userId = null) => {
 
     // Sync internal order status to Returned (not Cancelled — item is coming back)
     if (shipment.internalOrder && shipment.tenant) {
-        await OrderService.updateOrder({
+        fireAndRetry('shipment:syncReturnStatus', () => OrderService.updateOrder({
             orderId: shipment.internalOrder.toString(),
             tenantId: shipment.tenant,
             updateData: { status: 'Returned' },
             bypassStateMachine: true
-        }).catch(console.error);
+        }));
     }
 
     return updated;

@@ -1,4 +1,5 @@
 const { GoogleGenAI } = require('@google/genai');
+const logger = require('../shared/logger');
 
 // Initialize the SDK. It will automatically use the GEMINI_API_KEY environment variable.
 // Make sure to add GEMINI_API_KEY to your backend/.env file!
@@ -8,7 +9,7 @@ try {
         ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     }
 } catch (error) {
-    console.warn("GoogleGenAI initialized without API key. Please add GEMINI_API_KEY to .env");
+    logger.warn("GoogleGenAI initialized without API key. Please add GEMINI_API_KEY to .env");
 }
 
 const SYSTEM_PROMPT = `
@@ -175,6 +176,7 @@ async function executeTool(call, tenantId) {
             if (!name || !department || !role) return { error: "Missing required fields: name, department, or role" };
 
             const newEmp = await Employee.create({
+                tenant: tenantId,
                 name,
                 department,
                 role,
@@ -242,6 +244,7 @@ const handleChat = async (req, res) => {
         }
 
         if (!process.env.GEMINI_API_KEY) {
+            logger.error('GEMINI_API_KEY is missing from environment variables');
             return res.status(500).json({
                 error: "GEMINI_API_KEY is missing from environment variables.",
                 reply: "I cannot connect to my AI brain right now. Please tell the administrator to configure the GEMINI_API_KEY."
@@ -310,7 +313,7 @@ const handleChat = async (req, res) => {
         res.json({ reply: replyText });
 
     } catch (error) {
-        console.error("AI Controller Error:", error);
+        logger.error({ err: error }, 'AI Controller Error');
         res.status(500).json({
             error: "Failed to process AI request.",
             reply: "I encountered an error while processing your request. Please try again."

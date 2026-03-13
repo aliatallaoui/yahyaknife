@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 
 export const SalesContext = createContext();
 
@@ -23,8 +24,8 @@ export const SalesProvider = ({ children }) => {
         setFetchError(null);
         try {
             const [ordersRes, perfRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } })
+                apiFetch(`/api/sales/orders?page=${page}&limit=${limit}`),
+                apiFetch(`/api/sales/performance`)
             ]);
 
             if (ordersRes.ok && perfRes.ok) {
@@ -47,8 +48,11 @@ export const SalesProvider = ({ children }) => {
     const fetchPerformanceOnly = async () => {
         if (!token) return;
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/performance`, { headers: { Authorization: `Bearer ${token}` } });
-            if (res.ok) setPerformance(await res.json());
+            const res = await apiFetch(`/api/sales/performance`);
+            if (res.ok) {
+                setPerformance(await res.json());
+                setFetchError(null);
+            }
         } catch (error) {
             setFetchError(t('sales.errorRefreshPerf', 'Failed to refresh performance metrics.'));
         }
@@ -63,62 +67,40 @@ export const SalesProvider = ({ children }) => {
     }, [token]);
 
     const createOrder = async (orderData) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(orderData)
-            });
-            if (res.ok) {
-                fetchSalesData(1);
-                return true;
-            }
-            throw new Error(await res.text());
-        } catch (error) {
-            console.error(error);
-            throw error;
+        const res = await apiFetch(`/api/sales/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        if (res.ok) {
+            fetchSalesData(1);
+            return true;
         }
+        throw new Error(await res.text());
     };
 
     const updateOrder = async (id, orderData) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(orderData)
-            });
-            if (res.ok) {
-                fetchSalesData(currentPage);
-                return true;
-            }
-            throw new Error(await res.text());
-        } catch (error) {
-            console.error(error);
-            throw error;
+        const res = await apiFetch(`/api/sales/orders/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        if (res.ok) {
+            fetchSalesData(currentPage);
+            return true;
         }
+        throw new Error(await res.text());
     };
 
     const deleteOrder = async (id) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/sales/orders/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                fetchSalesData(currentPage);
-                return true;
-            }
-            throw new Error(await res.text());
-        } catch (error) {
-            console.error(error);
-            throw error;
+        const res = await apiFetch(`/api/sales/orders/${id}`, {
+            method: 'DELETE',
+        });
+        if (res.ok) {
+            fetchSalesData(currentPage);
+            return true;
         }
+        throw new Error(await res.text());
     };
 
     return (

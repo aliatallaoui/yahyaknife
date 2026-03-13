@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const path = require('path');
 const Role = require('../models/Role');
 const { PERMISSIONS, ALL_PERMISSIONS_FLAT } = require('../config/permissions');
 
-dotenv.config({ path: '../.env' }); // Adjust if needed depending on running dir
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const MONGO_URI = process.env.MONGO_URI || process.env.PROD_MONGO_URI || process.env.DEV_MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
 
@@ -18,7 +19,7 @@ const defaultRoles = [
         name: 'Owner / Founder',
         description: 'Full business access across all modules.',
         isSystemRole: true,
-        permissions: ALL_PERMISSIONS_FLAT.filter(p => !['security.force_logout'].includes(p))
+        permissions: ALL_PERMISSIONS_FLAT
     },
     {
         name: 'Operations Manager',
@@ -30,18 +31,14 @@ const defaultRoles = [
             ...PERMISSIONS.shipments,
             ...PERMISSIONS.customers,
             ...PERMISSIONS.couriers,
-            ...PERMISSIONS.sales_legacy,
             ...PERMISSIONS.inventory,
-            ...PERMISSIONS.warehouse,
-            ...PERMISSIONS.dispatch,
             ...PERMISSIONS.procurement,
-            ...PERMISSIONS.customer_legacy,
             ...PERMISSIONS.analytics,
             ...PERMISSIONS.intelligence,
             ...PERMISSIONS.support,
             ...PERMISSIONS.callcenter,
-            'financial.read', 'finance.view', // Read summaries only
-            'hr.read', 'hr.employees.view' // Read basic HR but no payroll editing
+            'finance.view',
+            'hr.employees.view'
         ]
     },
     {
@@ -52,14 +49,11 @@ const defaultRoles = [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.orders,
             ...PERMISSIONS.customers,
-            ...PERMISSIONS.sales_legacy,
-            ...PERMISSIONS.customer_legacy,
             ...PERMISSIONS.callcenter,
+            ...PERMISSIONS.support,
             'analytics.view',
             'shipments.view',
-            'inventory.read', 'inventory.view', // Can view stock but not edit or see cost
-            'support.view', 'support.edit',     // Can manage escalated customer support
-            'support.create_ticket', 'support.send_reply', 'support.update_status'
+            'inventory.view'
         ]
     },
     {
@@ -69,7 +63,6 @@ const defaultRoles = [
         permissions: [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.inventory,
-            ...PERMISSIONS.warehouse,
             'procurement.read'
         ]
     },
@@ -80,7 +73,7 @@ const defaultRoles = [
         permissions: [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.procurement,
-            'inventory.read', 'inventory.view_supplier_data'
+            'inventory.view'
         ]
     },
     {
@@ -98,15 +91,14 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             ...PERMISSIONS.overview,
-            ...PERMISSIONS.financial,
             ...PERMISSIONS.finance,
             ...PERMISSIONS.analytics,
             ...PERMISSIONS.intelligence,
-            'hr.read', 'hr.view_salary', 'hr.approve_payroll', 'hr.payroll.view', 'hr.payroll.approve',
-            'dispatch.read', 'dispatch.view_courier_financials',
-            'inventory.read', 'inventory.view_cost',
+            'hr.employees.view', 'hr.payroll.view', 'hr.payroll.approve',
+            'shipments.view',
+            'inventory.view',
             'procurement.read',
-            'sales.read', 'orders.view',
+            'orders.view',
             'couriers.view'
         ]
     },
@@ -117,9 +109,8 @@ const defaultRoles = [
         permissions: [
             ...PERMISSIONS.overview,
             ...PERMISSIONS.shipments,
-            'dispatch.read', 'dispatch.create_shipment', 'dispatch.update_shipment',
-            'dispatch.validate_shipment', 'dispatch.generate_label', 'dispatch.request_return',
-            'sales.read', 'orders.view', 'couriers.view' // To see what needs shipping
+            'orders.view',
+            'couriers.view'
         ]
     },
     {
@@ -128,11 +119,10 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             'overview.read',
-            'orders.view', 'sales.read', 'sales.view_customer_details',
-            'customers.view', 'customer.read',
-            'shipments.view', 'dispatch.read', // to update clients on tracking
-            'support.view', 'support.edit',    // access support desk
-            'support.create_ticket', 'support.send_reply', 'support.update_status'
+            'orders.view',
+            'customers.view',
+            'shipments.view',
+            ...PERMISSIONS.support
         ]
     },
     {
@@ -141,9 +131,12 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             'overview.read',
-            'orders.view',
-            'customers.view', 'customer.read',
-            'callcenter.process_orders',
+            'orders.view', 'orders.create', 'orders.edit', 'orders.delete',
+            'orders.restore', 'orders.bulk', 'orders.export',
+            'orders.status.change',
+            // NOTE: orders.purge excluded — agents cannot permanently delete orders
+            'customers.view',
+            'callcenter.process_orders'
         ]
     },
     {
@@ -152,12 +145,15 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             'overview.read',
-            'orders.view', 'orders.edit',
-            'customers.view', 'customer.read',
+            'orders.view', 'orders.create', 'orders.edit', 'orders.delete',
+            'orders.restore', 'orders.bulk', 'orders.export',
+            'orders.status.change',
+            // NOTE: orders.purge excluded
+            'customers.view',
             'callcenter.process_orders',
             'callcenter.view_reports',
             'callcenter.manage_assignments',
-            'analytics.view',
+            'analytics.view'
         ]
     },
     {
@@ -166,12 +162,17 @@ const defaultRoles = [
         isSystemRole: true,
         permissions: [
             'overview.read',
-            'orders.view', 'shipments.view', 'finance.view', 'customers.view',
-            'couriers.view', 'hr.employees.view', 'hr.payroll.view',
-            'financial.read', 'sales.read', 'inventory.read',
-            'warehouse.read', 'dispatch.read', 'procurement.read',
-            'hr.read', 'customer.read',
-            'analytics.view', 'support.view'
+            'orders.view',
+            'shipments.view',
+            'finance.view',
+            'customers.view',
+            'couriers.view',
+            'inventory.view',
+            'hr.employees.view',
+            'hr.payroll.view',
+            'procurement.read',
+            'analytics.view',
+            'support.view'
         ]
     }
 ];
@@ -182,14 +183,16 @@ const seedRoles = async () => {
         console.log('Connected to MongoDB. Seeding roles...');
 
         for (const roleDef of defaultRoles) {
-            // Upsert based on role name
+            // Deduplicate permissions
+            const uniquePerms = [...new Set(roleDef.permissions)];
+
             const role = await Role.findOneAndUpdate(
                 { name: roleDef.name },
                 {
                     $set: {
                         description: roleDef.description,
                         isSystemRole: roleDef.isSystemRole,
-                        permissions: roleDef.permissions
+                        permissions: uniquePerms
                     }
                 },
                 { new: true, upsert: true }

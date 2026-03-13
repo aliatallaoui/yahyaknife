@@ -4,14 +4,15 @@ import { useHotkey } from '../hooks/useHotkey';
 import { getAttendanceStatusColor } from '../constants/statusColors';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
-import axios from 'axios';
+import api from '../utils/axiosInstance';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import TableSkeleton from '../components/TableSkeleton';
 
 export default function HRAttendance() {
     const { t } = useTranslation();
-    const { hasPermission, token } = React.useContext(AuthContext);
+    const { hasPermission } = React.useContext(AuthContext);
     const [date, setDate] = useState(moment().format('YYYY-MM-DD'));
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,10 +22,9 @@ export default function HRAttendance() {
         setLoading(true);
         setFetchError(null);
         try {
-            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
             const [empRes, attRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees`, authHeader),
-                axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance?date=${date}`, authHeader)
+                api.get('/api/hr/employees'),
+                api.get(`/api/hr/attendance?date=${date}`)
             ]);
             const employees = empRes.data?.data ?? empRes.data;
             const attendances = attRes.data?.data ?? attRes.data;
@@ -67,6 +67,14 @@ export default function HRAttendance() {
     const [timeInput, setTimeInput] = useState('');
     const [modalError, setModalError] = useState(null);
 
+    // Escape key to close time editor modal
+    useEffect(() => {
+        if (!modalConfig) return;
+        const handler = (e) => { if (e.key === 'Escape') setModalConfig(null); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [modalConfig]);
+
     const openModal = (employeeId, type, existingTime = '') => {
         setModalConfig({ employeeId, type, existingTime });
         setTimeInput(existingTime || moment().format('HH:mm'));
@@ -87,9 +95,9 @@ export default function HRAttendance() {
         }
 
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
+            await api.post('/api/hr/attendance/record', {
                 employeeId, type, timestamp, date
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            });
             fetchAttendance();
             setModalConfig(null);
         } catch (error) {
@@ -102,14 +110,35 @@ export default function HRAttendance() {
         const { employeeId, type } = modalConfig;
 
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/hr/attendance/record`, {
+            await api.post('/api/hr/attendance/record', {
                 employeeId, type, timestamp: null, date
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            });
             fetchAttendance();
             setModalConfig(null);
         } catch (error) {
             setModalError(error.response?.data?.error || t('hr.alertNetworkErrorClear', 'Failed to clear attendance.'));
         }
+    };
+
+    const [bulkClocking, setBulkClocking] = useState(false);
+    const notClockedInCount = records.filter(item => !item.record?.morningIn).length;
+    const handleBulkClockIn = async () => {
+        const notClockedIn = records.filter(item => !item.record?.morningIn);
+        if (notClockedIn.length === 0) return;
+        setBulkClocking(true);
+        setFetchError(null);
+        let failed = 0;
+        const now = moment().toISOString();
+        for (const item of notClockedIn) {
+            try {
+                await api.post('/api/hr/attendance/record', {
+                    employeeId: item.employeeId._id, type: 'morningIn', timestamp: now, date
+                });
+            } catch { failed++; }
+        }
+        setBulkClocking(false);
+        if (failed > 0) setFetchError(`${failed} record(s) failed to clock in.`);
+        fetchAttendance();
     };
 
     return (
@@ -136,6 +165,16 @@ export default function HRAttendance() {
                             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                                 className="bg-transparent text-gray-900 text-sm outline-none cursor-pointer font-black" />
                         </div>
+                        {hasPermission('hr.manage_attendance') && date === moment().format('YYYY-MM-DD') && notClockedInCount > 0 && (
+                            <button
+                                onClick={handleBulkClockIn}
+                                disabled={bulkClocking}
+                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all leading-none disabled:opacity-60"
+                            >
+                                <CheckSquare className="w-4 h-4" />
+                                {bulkClocking ? t('hr.clockingIn', 'Clocking in...') : t('hr.btnMarkAllPresent', `Mark All Present (${notClockedInCount})`)}
+                            </button>
+                        )}
                         <button onClick={fetchAttendance} disabled={loading} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/30 active:scale-95 transition-all leading-none">
                             <RefreshCcw className={clsx("w-4 h-4", loading && "animate-spin")} />
                             {loading ? t('hr.syncing', 'Syncing...') : t('hr.btnLiveSync', 'Live Sync')}
@@ -172,26 +211,34 @@ export default function HRAttendance() {
             {/* Attendance Grid */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start min-w-[800px]">
-                        <thead className="bg-gray-50">
+                    <table className="cf-table min-w-[800px]">
+                        <thead>
                             <tr>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">{t('hr.colEmployee')}</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">{t('hr.colMorningInOut')}</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">{t('hr.colEveningInOut')}</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">{t('hr.colLateMissing')}</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">{t('hr.colWorkedOvertime')}</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">{t('hr.colComputedStatus')}</th>
+                                <th>{t('hr.colEmployee')}</th>
+                                <th className="text-center">{t('hr.colMorningInOut')}</th>
+                                <th className="text-center">{t('hr.colEveningInOut')}</th>
+                                <th className="text-center">{t('hr.colLateMissing')}</th>
+                                <th className="text-center">{t('hr.colWorkedOvertime')}</th>
+                                <th className="text-center">{t('hr.colComputedStatus')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
+                            {loading && (
+                                <tr><td colSpan="6" className="p-0">
+                                    <TableSkeleton rows={6} cols={6} showHeader={false} />
+                                </td></tr>
+                            )}
                             {!loading && filteredRecords.length === 0 && (
-                                <tr><td colSpan="6" className="p-8 text-center text-sm text-gray-400">{t('hr.noEmployeesFound', 'No employees match your search.')}</td></tr>
+                                <tr><td colSpan="6" className="px-6 py-12 text-center">
+                                    <Search className="w-8 h-8 mx-auto text-gray-200 mb-2" />
+                                    <p className="text-sm text-gray-400 font-medium">{t('hr.noEmployeesFound', 'No employees match your search.')}</p>
+                                </td></tr>
                             )}
                             {filteredRecords.map(item => {
                                 const emp = item.employeeId;
                                 const att = item.record || {};
                                 return (
-                                    <tr key={emp._id} className="hover:bg-indigo-50/30 transition-colors">
+                                    <tr key={emp._id}>
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-gray-900">{emp.name}</div>
                                             <div className="text-xs text-gray-500">{emp.department} • {emp.role}</div>

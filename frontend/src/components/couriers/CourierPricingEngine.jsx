@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/axiosInstance';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Edit3, ShieldAlert, ArrowDownUp, AlertTriangle, Save } from 'lucide-react';
 import clsx from 'clsx';
+import { useConfirmDialog } from '../ConfirmDialog';
 
 export default function CourierPricingEngine({ courierId }) {
     const { t, i18n } = useTranslation();
@@ -12,7 +13,7 @@ export default function CourierPricingEngine({ courierId }) {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
-    const [confirmDelete, setConfirmDelete] = useState(null); // ruleId
+    const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
     
     // Form state
     const [formData, setFormData] = useState({
@@ -37,13 +38,9 @@ export default function CourierPricingEngine({ courierId }) {
 
     const fetchRules = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/pricing`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/api/couriers/${courierId}/pricing`);
             setRules(res.data);
         } catch (error) {
-            console.error('Error fetching pricing rules:', error);
             setErrorMsg(error.response?.data?.message || t('couriers.loadPricingFailed', 'Failed to load pricing rules.'));
         } finally {
             setLoading(false);
@@ -53,44 +50,36 @@ export default function CourierPricingEngine({ courierId }) {
     const handleSaveRule = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
             const payload = { ...formData };
             if (payload.deliveryType === '') delete payload.deliveryType;
             if (payload.minWeight === '') delete payload.minWeight;
             if (payload.maxWeight === '') delete payload.maxWeight;
 
             if (formData._id) {
-                await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/pricing/${formData._id}`, payload, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.put(`/api/couriers/${courierId}/pricing/${formData._id}`, payload);
             } else {
-                await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/pricing`, payload, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.post(`/api/couriers/${courierId}/pricing`, payload);
             }
             fetchRules();
             handleCancelEdit();
         } catch (error) {
-            console.error('Error saving pricing rule:', error);
             setErrorMsg(error.response?.data?.message || t('couriers.saveRuleFailed', 'Error saving rule'));
         }
     };
 
-    const handleDelete = (ruleId) => setConfirmDelete(ruleId);
-
-    const confirmDeleteRule = async () => {
-        const ruleId = confirmDelete;
-        setConfirmDelete(null);
-        try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${courierId}/pricing/${ruleId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            fetchRules();
-        } catch (error) {
-            console.error('Error deleting pricing rule:', error);
-            setErrorMsg(t('couriers.deleteRuleFailed', 'Failed to delete pricing rule.'));
-        }
+    const handleDelete = (ruleId) => {
+        showConfirm({
+            title: t('common.confirm_delete', 'Delete this pricing rule?'),
+            danger: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/api/couriers/${courierId}/pricing/${ruleId}`);
+                    fetchRules();
+                } catch (error) {
+                    setErrorMsg(t('couriers.deleteRuleFailed', 'Failed to delete pricing rule.'));
+                }
+            },
+        });
     };
 
     const handleEdit = (rule) => {
@@ -135,23 +124,7 @@ export default function CourierPricingEngine({ courierId }) {
                     <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
                 </div>
             )}
-            {/* Delete rule confirm */}
-            {confirmDelete && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-5 h-5 text-red-600" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">{t('common.confirm_delete', 'Delete this pricing rule?')}</h3>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">{t('common.cancel', 'Cancel')}</button>
-                            <button onClick={confirmDeleteRule} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">{t('common.delete', 'Delete')}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {confirmDialogEl}
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 text-start">
                 <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>
@@ -174,8 +147,9 @@ export default function CourierPricingEngine({ courierId }) {
                     </h3>
                     <form onSubmit={handleSaveRule} className="space-y-4 text-start">
                         <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.rule_type', 'Rule Target Type')}</label>
+                            <label htmlFor="rule-type" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.rule_type', 'Rule Target Type')}</label>
                             <select
+                                id="rule-type"
                                 required
                                 value={formData.ruleType}
                                 onChange={e => setFormData({ ...formData, ruleType: e.target.value })}
@@ -190,8 +164,9 @@ export default function CourierPricingEngine({ courierId }) {
 
                         {(formData.ruleType === 'Wilaya' || formData.ruleType === 'Wilaya+Commune') && (
                             <div>
-                                <label className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.wilayaCode', 'Wilaya Code / ID')}</label>
+                                <label htmlFor="rule-wilaya" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.wilayaCode', 'Wilaya Code / ID')}</label>
                                 <input
+                                    id="rule-wilaya"
                                     type="text"
                                     required
                                     value={formData.wilayaCode}
@@ -204,8 +179,9 @@ export default function CourierPricingEngine({ courierId }) {
 
                         {formData.ruleType === 'Wilaya+Commune' && (
                             <div>
-                                <label className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.commune', 'Commune Name')}</label>
+                                <label htmlFor="rule-commune" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.commune', 'Commune Name')}</label>
                                 <input
+                                    id="rule-commune"
                                     type="text"
                                     required
                                     value={formData.commune}
@@ -219,8 +195,9 @@ export default function CourierPricingEngine({ courierId }) {
                         {formData.ruleType === 'Weight' && (
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 mb-1">Min Weight (kg)</label>
+                                    <label htmlFor="rule-min-weight" className="block text-xs font-bold text-gray-600 mb-1">Min Weight (kg)</label>
                                     <input
+                                        id="rule-min-weight"
                                         type="number"
                                         step="0.1"
                                         value={formData.minWeight}
@@ -229,8 +206,9 @@ export default function CourierPricingEngine({ courierId }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 mb-1">Max Weight (kg)</label>
+                                    <label htmlFor="rule-max-weight" className="block text-xs font-bold text-gray-600 mb-1">Max Weight (kg)</label>
                                     <input
+                                        id="rule-max-weight"
                                         type="number"
                                         step="0.1"
                                         value={formData.maxWeight}
@@ -242,8 +220,9 @@ export default function CourierPricingEngine({ courierId }) {
                         )}
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.delivery_modifier', 'Delivery Type Modifier')}</label>
+                            <label htmlFor="rule-delivery-type" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.delivery_modifier', 'Delivery Type Modifier')}</label>
                             <select
+                                id="rule-delivery-type"
                                 value={formData.deliveryType}
                                 onChange={e => setFormData({ ...formData, deliveryType: e.target.value })}
                                 className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
@@ -256,8 +235,9 @@ export default function CourierPricingEngine({ courierId }) {
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
                             <div>
-                                <label className="block text-xs font-black text-gray-900 mb-1">{t('couriers.price', 'Final Cost (DZD)')}</label>
+                                <label htmlFor="rule-price" className="block text-xs font-black text-gray-900 mb-1">{t('couriers.price', 'Final Cost (DZD)')}</label>
                                 <input
+                                    id="rule-price"
                                     type="number"
                                     required
                                     min="0"
@@ -267,11 +247,12 @@ export default function CourierPricingEngine({ courierId }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-gray-900 mb-1 flex items-center justify-between">
+                                <label htmlFor="rule-priority" className="block text-xs font-black text-gray-900 mb-1 flex items-center justify-between">
                                     Priority Index
                                     <ArrowDownUp className="w-3 h-3 text-gray-400" />
                                 </label>
                                 <input
+                                    id="rule-priority"
                                     type="number"
                                     required
                                     value={formData.priority}
@@ -339,7 +320,7 @@ export default function CourierPricingEngine({ courierId }) {
                                             </td>
                                             <td className="px-4 py-3 text-end">
                                                 <span className="font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">
-                                                    {rule.price} DZD
+                                                    {rule.price} {t('common.dzd', 'DZD')}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">

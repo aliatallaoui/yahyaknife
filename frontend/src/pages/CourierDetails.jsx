@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosInstance';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, Truck, Key, MapPin, DollarSign, Activity, Settings2, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
@@ -43,9 +43,7 @@ export default function CourierDetails() {
 
     const fetchCourier = async () => {
         try {
-            const token = localStorage.getItem('token');
-            // Reusing getCouriers but we might need a specific getById later. For now let's just fetch all and find it.
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await api.get('/api/couriers');
             const found = res.data.find(c => c._id === id);
             if (found) {
                 setCourier(found);
@@ -60,16 +58,14 @@ export default function CourierDetails() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('token');
             if (isNew) {
-                const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, courier, { headers: { Authorization: `Bearer ${token}` } });
+                const res = await api.post('/api/couriers', courier);
                 navigate(`/couriers/${res.data._id}`);
             } else {
-                await axios.put(`${import.meta.env.VITE_API_URL || ''}/api/couriers/${id}`, courier, { headers: { Authorization: `Bearer ${token}` } });
+                await api.put(`/api/couriers/${id}`, courier);
                 showSuccess();
             }
         } catch (error) {
-            console.error('Error saving courier:', error);
             setSaveToast({ type: 'error', msg: error.response?.data?.message || t('couriers.saveFailed', 'Error saving courier.') });
         } finally {
             setSaving(false);
@@ -145,10 +141,10 @@ export default function CourierDetails() {
                     ))}
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     {activeTab === 'general' && (
                         <div className="max-w-3xl space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.name', 'Company Name')}</label>
                                     <input
@@ -185,8 +181,8 @@ export default function CourierDetails() {
                                         onChange={e => setCourier({ ...courier, status: e.target.value })}
                                         className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-gray-50"
                                     >
-                                        <option value="Active">🟢 Active</option>
-                                        <option value="Inactive">🔴 Disabled</option>
+                                        <option value="Active">🟢 {t('couriers.statusActive', 'Active')}</option>
+                                        <option value="Inactive">🔴 {t('couriers.statusInactive', 'Disabled')}</option>
                                     </select>
                                 </div>
                             </div>

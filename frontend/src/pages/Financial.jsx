@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
-import { DollarSign, TrendingUp, TrendingDown, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2, Search, Wallet, AlertTriangle, RefreshCw, LayoutDashboard, BookOpen } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Plus, Truck, Package, CheckCircle2, Search, Wallet, AlertTriangle, RefreshCw, LayoutDashboard, BookOpen, Download } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
@@ -12,6 +12,9 @@ import { TransactionContext } from '../context/TransactionContext';
 import { AuthContext } from '../context/AuthContext';
 import TransactionModal from '../components/TransactionModal';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '../utils/apiFetch';
+import { useConfirmDialog } from '../components/ConfirmDialog';
+import TableSkeleton from '../components/TableSkeleton';
 
 // Compute ISO date range from a period key
 function periodToRange(period) {
@@ -51,8 +54,8 @@ export default function Financial() {
     // Period selector for KPI overview
     const [period, setPeriod] = useState('thisMonth');
 
-    // In-app confirm dialog — replaces window.confirm
-    const [confirmDialog, setConfirmDialog] = useState(null);
+    // Shared confirm dialog
+    const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
 
     // Tab navigation
     const [activeTab, setActiveTab] = useState('overview');
@@ -103,7 +106,7 @@ export default function Financial() {
 
     const handleBatchDelete = () => {
         if (selectedIds.size === 0) return;
-        setConfirmDialog({
+        showConfirm({
             title: t('finance.deleteBulkTitle', 'Delete {{count}} transaction(s)?', { count: selectedIds.size }),
             body: t('finance.deleteBulkBody', 'This will permanently remove the selected entries from the ledger.'),
             danger: true,
@@ -121,7 +124,7 @@ export default function Financial() {
     };
 
     const handleSingleDelete = (id) => {
-        setConfirmDialog({
+        showConfirm({
             title: t('finance.deleteTxTitle', 'Delete this transaction?'),
             body: t('finance.deleteTxBody', 'This entry will be permanently removed from the manual ledger.'),
             danger: true,
@@ -163,9 +166,7 @@ export default function Financial() {
         setOverviewError(null);
         try {
             const params = new URLSearchParams(periodToRange(period));
-            const finRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/finance/overview?${params}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const finRes = await apiFetch(`/api/finance/overview?${params}`);
             if (finRes.ok) { const json = await finRes.json(); setOverview(json.data ?? json); }
             else { const j = await finRes.json().catch(() => ({})); setOverviewError(j.error || t('finance.errorLoadOverview', 'Failed to load financial overview.')); }
         } catch (error) {
@@ -200,11 +201,7 @@ export default function Financial() {
     };
 
     if (loadingOverview || txLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-emerald-600 animate-spin"></div>
-            </div>
-        );
+        return <TableSkeleton showKpis kpiCount={4} rows={6} cols={5} />;
     }
 
     // Dynamic KPIs from the backend
@@ -262,22 +259,22 @@ export default function Financial() {
             />
 
             {overviewError && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-300">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{overviewError}</span>
-                    <button onClick={() => setOverviewError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setOverviewError(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300">✕</button>
                 </div>
             )}
             {txError && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-300">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{txError}</span>
-                    <button onClick={fetchTransactions} className="text-red-400 hover:text-red-600 text-xs font-bold">{t('common.retry', 'Retry')}</button>
+                    <button onClick={fetchTransactions} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-xs font-bold">{t('common.retry', 'Retry')}</button>
                 </div>
             )}
 
             {/* Tab Bar */}
-            <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl w-fit">
+            <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800 p-1 rounded-xl w-full sm:w-fit overflow-x-auto">
                 {[
                     { key: 'overview',     label: t('finance.tab.overview', 'Overview'),     icon: LayoutDashboard },
                     { key: 'settlements',  label: t('finance.tab.settlements', 'Settlements'), icon: Truck,
@@ -291,8 +288,8 @@ export default function Financial() {
                         className={clsx(
                             'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all',
                             activeTab === key
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                         )}
                     >
                         <Icon className="w-4 h-4 shrink-0" />
@@ -300,7 +297,7 @@ export default function Financial() {
                         {badge && (
                             <span className={clsx(
                                 'text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
-                                key === 'settlements' ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-600'
+                                key === 'settlements' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                             )}>{badge}</span>
                         )}
                     </button>
@@ -309,55 +306,55 @@ export default function Financial() {
 
             {/* Profitability Overview */}
             {activeTab === 'overview' && <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm col-span-1 md:col-span-2 flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm col-span-1 sm:col-span-2 flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">{t('finance.trueNetProfit', 'True Net Profit')}</p>
-                        <h3 className={clsx("text-4xl font-black tracking-tighter", netProfit >= 0 ? "text-emerald-600" : "text-red-600")}>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('finance.trueNetProfit', 'True Net Profit')}</p>
+                        <h3 className={clsx("text-4xl font-black tracking-tighter", netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                             {netProfit.toLocaleString()} {t('common.currency', 'DZ')}
                         </h3>
-                        <p className="text-xs text-gray-400 mt-1 font-medium">{t('finance.netProfitSub', 'Revenue (Delivered+Settled) - COGS - Expenses')}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">{t('finance.netProfitSub', 'Revenue (Delivered+Settled) - COGS - Expenses')}</p>
                     </div>
-                    <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100">
+                    <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-800">
                         <DollarSign className="w-8 h-8 text-emerald-600" />
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('finance.profitMargin', 'Profit Margin')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-2 truncate">{profitMargin}%</h3>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 truncate">{t('finance.profitMargin', 'Profit Margin')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter mb-2 truncate">{profitMargin}%</h3>
                         <div className="w-full">
                             <ProgressBar progress={Math.max(0, Math.min(100, profitMargin))} color="bg-emerald-500" />
                         </div>
                     </div>
-                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                    <div className="h-16 w-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-100 dark:border-blue-800 shrink-0">
                         <Activity className="w-8 h-8 text-blue-600" />
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('finance.recognizedRevenue', 'Recognized Revenue')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">
-                            {totalRecognizedRevenue.toLocaleString()} <span className="text-sm font-medium text-gray-400">{t('common.currency', 'DZ')}</span>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 truncate">{t('finance.recognizedRevenue', 'Recognized Revenue')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter truncate">
+                            {totalRecognizedRevenue.toLocaleString()} <span className="text-sm font-medium text-gray-400 dark:text-gray-500">{t('common.currency', 'DZ')}</span>
                         </h3>
-                        <div className="flex items-center gap-1 mt-2 text-[10px] sm:text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit truncate">
+                        <div className="flex items-center gap-1 mt-2 text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded w-fit truncate">
                             <ArrowUpRight className="w-3 h-3 shrink-0" /> <span className="truncate">{t('finance.includesSettled', 'Includes COD Settled')}</span>
                         </div>
                     </div>
-                    <div className="h-16 w-16 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shrink-0">
+                    <div className="h-16 w-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center border border-indigo-100 dark:border-indigo-800 shrink-0">
                         <Wallet className="w-8 h-8 text-indigo-600" />
                     </div>
                 </div>
             </div>
 
             {/* Cash Flow Pipelines */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
                 {/* Visual Pipeline */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 sm:p-6 overflow-hidden">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                         <Activity className="w-5 h-5 text-indigo-500" /> {t('finance.pipelineTitle', 'COD Cash Pipeline')}
                     </h3>
                     <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -384,8 +381,8 @@ export default function Financial() {
                 </div>
 
                 {/* Costs Breakdown */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col h-full">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                         <TrendingDown className="w-5 h-5 text-rose-500" /> {t('finance.costStructures', 'Cost Structures')}
                     </h3>
                     <div className="space-y-6 flex-1">
@@ -393,10 +390,10 @@ export default function Financial() {
                         <CostItem label={t('finance.fulfillment', 'Fulfillment & Gateway Fees')} value={operatingExpenses - manualExpenses} total={totalExpenses} color="bg-orange-500" />
                         <CostItem label={t('finance.manualExpenses', 'Manual Operating Expenses')} value={manualExpenses} total={totalExpenses} color="bg-purple-500" />
 
-                        <div className="mt-8 pt-6 border-t border-gray-100">
-                            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                <span className="font-bold text-gray-700">{t('finance.totalDeductions', 'Total Deductions')}</span>
-                                <span className="font-black text-gray-900 text-lg tabular-nums">{totalExpenses.toLocaleString()} {t('common.currency', 'DZ')}</span>
+                        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <span className="font-bold text-gray-700 dark:text-gray-200">{t('finance.totalDeductions', 'Total Deductions')}</span>
+                                <span className="font-black text-gray-900 dark:text-white text-lg tabular-nums">{totalExpenses.toLocaleString()} {t('common.currency', 'DZ')}</span>
                             </div>
                         </div>
                     </div>
@@ -407,53 +404,53 @@ export default function Financial() {
 
             {/* Courier Settlement Panel */}
             {activeTab === 'settlements' && (overview?.courierSettlements?.length > 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
                     <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Truck className="w-5 h-5 text-amber-500" />
                             {t('finance.courierSettlements', 'Courier Settlements')}
                         </h3>
                         {overview.totalPendingSettlements > 0 && (
-                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-black">
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-full text-xs font-black">
                                 <AlertTriangle className="w-3.5 h-3.5" />
                                 {overview.totalPendingSettlements.toLocaleString()} DZ pending
                             </span>
                         )}
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left min-w-[500px]">
+                        <table className="cf-table min-w-[500px]">
                             <thead>
-                                <tr className="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                                    <th className="pb-3 pl-1">{t('finance.courier', 'Courier')}</th>
-                                    <th className="pb-3 text-right">{t('finance.cashCollected', 'Cash Collected')}</th>
-                                    <th className="pb-3 text-right">{t('finance.pendingRemittance', 'Pending Remittance')}</th>
-                                    <th className="pb-3 text-right">{t('finance.reliabilityScore', 'Score')}</th>
+                                <tr>
+                                    <th className="text-start">{t('finance.courier', 'Courier')}</th>
+                                    <th className="text-end">{t('finance.cashCollected', 'Cash Collected')}</th>
+                                    <th className="text-end">{t('finance.pendingRemittance', 'Pending Remittance')}</th>
+                                    <th className="text-end">{t('finance.reliabilityScore', 'Score')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody>
                                 {overview.courierSettlements.map(c => (
-                                    <tr key={c._id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="py-3 pl-1 font-bold text-gray-900">{c.name}</td>
-                                        <td className="py-3 text-right font-semibold text-emerald-700 tabular-nums">
-                                            {c.cashCollected.toLocaleString()} <span className="text-xs text-gray-400">DZ</span>
+                                    <tr key={c._id}>
+                                        <td className="py-3 pl-1 font-bold text-gray-900 dark:text-white">{c.name}</td>
+                                        <td className="py-3 text-right font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                                            {c.cashCollected.toLocaleString()} <span className="text-xs text-gray-400 dark:text-gray-500">DZ</span>
                                         </td>
                                         <td className="py-3 text-right tabular-nums">
                                             {c.pendingRemittance > 0 ? (
-                                                <span className="inline-flex items-center gap-1 font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                                                <span className="inline-flex items-center gap-1 font-black text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
                                                     {c.pendingRemittance.toLocaleString()} <span className="text-[10px]">DZ</span>
                                                 </span>
                                             ) : (
-                                                <span className="text-emerald-600 font-bold flex items-center gap-1 justify-end">
+                                                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 justify-end">
                                                     <CheckCircle2 className="w-3.5 h-3.5" /> Settled
                                                 </span>
                                             )}
                                         </td>
                                         <td className="py-3 text-right">
                                             {c.reliabilityScore != null ? (
-                                                <span className={clsx('text-xs font-black px-2 py-0.5 rounded-full', c.reliabilityScore >= 80 ? 'bg-emerald-100 text-emerald-700' : c.reliabilityScore >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700')}>
+                                                <span className={clsx('text-xs font-black px-2 py-0.5 rounded-full', c.reliabilityScore >= 80 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : c.reliabilityScore >= 60 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300')}>
                                                     {c.reliabilityScore}%
                                                 </span>
-                                            ) : <span className="text-gray-300">—</span>}
+                                            ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
                                         </td>
                                     </tr>
                                 ))}
@@ -462,20 +459,20 @@ export default function Financial() {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm text-center">
-                    <Truck className="w-10 h-10 text-gray-200 mb-3" />
-                    <p className="font-bold text-gray-400">{t('finance.noSettlements', 'No courier settlements to display.')}</p>
-                    <p className="text-sm text-gray-300 mt-1">{t('finance.noSettlementsSub', 'Settlements appear once orders reach Delivered status.')}</p>
+                <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+                    <Truck className="w-10 h-10 text-gray-200 dark:text-gray-600 mb-3" />
+                    <p className="font-bold text-gray-400 dark:text-gray-500">{t('finance.noSettlements', 'No courier settlements to display.')}</p>
+                    <p className="text-sm text-gray-300 dark:text-gray-600 mt-1">{t('finance.noSettlementsSub', 'Settlements appear once orders reach Delivered status.')}</p>
                 </div>
             ))}
 
             {/* Manual Ledger List */}
             {activeTab === 'ledger' && <>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 p-5 border-b border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900">{t('finance.manualLedger', 'Manual Operating Ledger')}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 p-5 border-b border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('finance.manualLedger', 'Manual Operating Ledger')}</h3>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                        <span className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{filteredTransactions.length} {t('finance.totalTx', 'Total Tx')}</span>
+                        <span className="text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full">{filteredTransactions.length} {t('finance.totalTx', 'Total Tx')}</span>
                         {hasPermission('financial.manage_manual_transactions') && (
                             <button
                                 onClick={() => handleOpenModal()}
@@ -488,22 +485,22 @@ export default function Financial() {
                 </div>
 
                 {/* Filter Bar */}
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex-wrap">
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 flex-wrap">
                     <div className="relative flex-1 min-w-[180px] max-w-xs">
-                        <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                        <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute start-3 top-1/2 -translate-y-1/2" />
                         <input
                             ref={searchRef}
                             type="text"
                             placeholder={t('finance.searchPlaceholder', 'Search... (Press /)')}
                             value={searchTerm}
                             onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                            className="w-full ps-9 pe-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors font-bold"
+                            className="w-full ps-9 pe-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors font-bold dark:text-white"
                         />
                     </div>
                     <select
                         value={filterType}
                         onChange={e => { setFilterType(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
+                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 dark:text-white outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
                     >
                         <option value="all">{t('finance.filterAllTypes', 'All Types')}</option>
                         <option value="revenue">{t('finance.filterRevenue', 'Revenue')}</option>
@@ -512,7 +509,7 @@ export default function Financial() {
                     <select
                         value={filterCategory}
                         onChange={e => { setFilterCategory(e.target.value); setCurrentPage(1); setSelectedIds(new Set()); }}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
+                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 dark:text-white outline-none focus:border-blue-400 cursor-pointer appearance-none flex-1 min-w-[120px]"
                     >
                         <option value="all">{t('finance.filterAllCategories', 'All Categories')}</option>
                         {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -525,12 +522,41 @@ export default function Financial() {
                             {t('finance.clearFilters', 'Clear Filters')}
                         </button>
                     )}
+                    <button
+                        onClick={() => {
+                            const rows = filteredTransactions.map(tx => ({
+                                Date: moment(tx.date).format('YYYY-MM-DD'),
+                                Type: tx.type,
+                                Category: tx.category || '',
+                                Description: tx.description || '',
+                                Amount: tx.amount || 0,
+                            }));
+                            if (rows.length === 0) return;
+                            const headers = Object.keys(rows[0]);
+                            const csv = [
+                                headers.join(','),
+                                ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(','))
+                            ].join('\n');
+                            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `ledger_${moment().format('YYYY-MM-DD')}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }}
+                        className="flex items-center gap-1.5 ms-auto text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 rounded-lg px-3 py-2 transition-colors"
+                        title={t('finance.exportCsv', 'Export to CSV')}
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        {t('finance.exportCsv', 'Export CSV')}
+                    </button>
                 </div>
 
                 {/* Batch Action Bar */}
                 {selectedIds.size > 0 && hasPermission('financial.manage_manual_transactions') && (
-                    <div className="flex items-center justify-between px-5 py-3 bg-blue-50 border-b border-blue-100">
-                        <span className="text-sm font-bold text-blue-800">{t('finance.selectedCount', '{{count}} selected', { count: selectedIds.size })}</span>
+                    <div className="flex items-center justify-between px-5 py-3 bg-blue-50 dark:bg-blue-900/30 border-b border-blue-100 dark:border-blue-800">
+                        <span className="text-sm font-bold text-blue-800 dark:text-blue-200">{t('finance.selectedCount', '{{count}} selected', { count: selectedIds.size })}</span>
                         <button
                             onClick={handleBatchDelete}
                             disabled={batchDeleting}
@@ -543,11 +569,11 @@ export default function Financial() {
                 )}
 
                 <div className="flex-1 overflow-x-auto">
-                    <table className="w-full text-start border-collapse min-w-[750px]">
+                    <table className="cf-table min-w-[750px]">
                         <thead>
-                            <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
+                            <tr>
                                 {hasPermission('financial.manage_manual_transactions') && (
-                                    <th className="p-4 w-10">
+                                    <th className="w-10">
                                         <input
                                             type="checkbox"
                                             checked={isAllSelected}
@@ -556,20 +582,20 @@ export default function Financial() {
                                         />
                                     </th>
                                 )}
-                                <th className="p-4 font-semibold w-32">{t('finance.date', 'Date')}</th>
-                                <th className="p-4 font-semibold w-28">{t('finance.type', 'Type')}</th>
-                                <th className="p-4 font-semibold w-36">{t('finance.category', 'Category')}</th>
-                                <th className="p-4 font-semibold">{t('finance.desc', 'Description')}</th>
-                                <th className="p-4 font-semibold text-end w-36">{t('finance.amount', 'Amount (DZ)')}</th>
-                                {hasPermission('financial.manage_manual_transactions') && <th className="p-4 font-semibold text-center w-20">{t('finance.actions', 'Actions')}</th>}
+                                <th className="w-32">{t('finance.date', 'Date')}</th>
+                                <th className="w-28">{t('finance.type', 'Type')}</th>
+                                <th className="w-36">{t('finance.category', 'Category')}</th>
+                                <th>{t('finance.desc', 'Description')}</th>
+                                <th className="text-end w-36">{t('finance.amount', 'Amount (DZ)')}</th>
+                                {hasPermission('financial.manage_manual_transactions') && <th className="text-center w-20">{t('finance.actions', 'Actions')}</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-sm">
+                        <tbody>
                             {paginatedTransactions.map((tx) => {
                                 const isEditing = (field) => editingTx?.id === tx._id && editingTx?.field === field;
                                 const editVal = (field) => isEditing(field) ? editingTx.value : undefined;
                                 return (
-                                    <tr key={tx._id} className={clsx("hover:bg-blue-50/20 transition-colors group", selectedIds.has(tx._id) && "bg-blue-50/40")}>
+                                    <tr key={tx._id} className={clsx("group", selectedIds.has(tx._id) && "row-selected")}>
                                         {/* Checkbox */}
                                         {hasPermission('financial.manage_manual_transactions') && (
                                             <td className="p-4">
@@ -582,7 +608,7 @@ export default function Financial() {
                                             </td>
                                         )}
                                         {/* Date — read-only */}
-                                        <td className="p-4 text-gray-500 font-medium whitespace-nowrap">
+                                        <td className="p-4 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
                                             {moment(tx.date).format('MMM DD, YYYY')}
                                         </td>
 
@@ -594,7 +620,7 @@ export default function Financial() {
                                                     value={editingTx.value}
                                                     onChange={e => setEditingTx(prev => ({ ...prev, value: e.target.value }))}
                                                     onBlur={async (e) => { await saveTypeChange(tx, e.target.value); }}
-                                                    className="text-xs font-bold px-2 py-1.5 rounded-lg border border-blue-400 appearance-none cursor-pointer outline-none w-full shadow-sm"
+                                                    className="text-xs font-bold px-2 py-1.5 rounded-lg border border-blue-400 appearance-none cursor-pointer outline-none w-full shadow-sm dark:bg-gray-700 dark:text-white dark:border-blue-500"
                                                 >
                                                     <option value="revenue">{t('finance.filterRevenue', 'Revenue')}</option>
                                                     <option value="expense">{t('finance.filterExpense', 'Expense')}</option>
@@ -605,7 +631,7 @@ export default function Financial() {
                                                     className={clsx(
                                                         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-opacity',
                                                         hasPermission('financial.manage_manual_transactions') && 'cursor-pointer hover:opacity-75',
-                                                        tx.type === 'revenue' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                        tx.type === 'revenue' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                                     )}
                                                     title={hasPermission('financial.manage_manual_transactions') ? "Click to change" : ""}
                                                 >
@@ -624,14 +650,14 @@ export default function Financial() {
                                                     onChange={e => setEditingTx(prev => ({ ...prev, value: e.target.value }))}
                                                     onBlur={() => handleInlineSave(tx)}
                                                     onKeyDown={e => e.key === 'Enter' && handleInlineSave(tx)}
-                                                    className="w-full border border-blue-400 rounded-lg px-2 py-1 text-sm outline-none shadow-sm"
+                                                    className="w-full border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm outline-none shadow-sm dark:bg-gray-700 dark:text-white"
                                                 />
                                             ) : (
                                                 <span
                                                     onClick={() => hasPermission('financial.manage_manual_transactions') && startEdit(tx, 'category')}
-                                                    className={clsx("font-semibold text-gray-700 block", hasPermission('financial.manage_manual_transactions') && "cursor-pointer hover:text-blue-600 hover:underline underline-offset-2")}
+                                                    className={clsx("font-semibold text-gray-700 dark:text-gray-200 block", hasPermission('financial.manage_manual_transactions') && "cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline underline-offset-2")}
                                                     title={hasPermission('financial.manage_manual_transactions') ? "Click to edit" : ""}
-                                                >{tx.category || <span className="text-gray-300">—</span>}</span>
+                                                >{tx.category || <span className="text-gray-300 dark:text-gray-600">—</span>}</span>
                                             )}
                                         </td>
 
@@ -644,14 +670,14 @@ export default function Financial() {
                                                     onChange={e => setEditingTx(prev => ({ ...prev, value: e.target.value }))}
                                                     onBlur={() => handleInlineSave(tx)}
                                                     onKeyDown={e => e.key === 'Enter' && handleInlineSave(tx)}
-                                                    className="w-full border border-blue-400 rounded-lg px-2 py-1 text-sm outline-none shadow-sm"
+                                                    className="w-full border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm outline-none shadow-sm dark:bg-gray-700 dark:text-white"
                                                 />
                                             ) : (
                                                 <span
                                                     onClick={() => hasPermission('financial.manage_manual_transactions') && startEdit(tx, 'description')}
-                                                    className={clsx("text-gray-500 block truncate max-w-[220px]", hasPermission('financial.manage_manual_transactions') && "cursor-pointer hover:text-blue-600 hover:underline underline-offset-2")}
+                                                    className={clsx("text-gray-500 dark:text-gray-400 block truncate max-w-[220px]", hasPermission('financial.manage_manual_transactions') && "cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline underline-offset-2")}
                                                     title={hasPermission('financial.manage_manual_transactions') ? "Click to edit" : ""}
-                                                >{tx.description || <span className="text-gray-300 italic">Add description…</span>}</span>
+                                                >{tx.description || <span className="text-gray-300 dark:text-gray-600 italic">Add description…</span>}</span>
                                             )}
                                         </td>
 
@@ -665,7 +691,7 @@ export default function Financial() {
                                                     onChange={e => setEditingTx(prev => ({ ...prev, value: e.target.value }))}
                                                     onBlur={() => handleInlineSave(tx)}
                                                     onKeyDown={e => e.key === 'Enter' && handleInlineSave(tx)}
-                                                    className="w-28 border border-blue-400 rounded-lg px-2 py-1 text-sm text-end outline-none shadow-sm ml-auto block"
+                                                    className="w-28 border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm text-end outline-none shadow-sm ml-auto block dark:bg-gray-700 dark:text-white"
                                                 />
                                             ) : (
                                                 <span
@@ -673,7 +699,7 @@ export default function Financial() {
                                                     className={clsx(
                                                         'font-bold tabular-nums',
                                                         hasPermission('financial.manage_manual_transactions') && 'cursor-pointer hover:underline underline-offset-2',
-                                                        tx.type === 'revenue' ? 'text-emerald-700' : 'text-gray-900'
+                                                        tx.type === 'revenue' ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-white'
                                                     )}
                                                     title={hasPermission('financial.manage_manual_transactions') ? "Click to edit" : ""}
                                                 >
@@ -686,10 +712,10 @@ export default function Financial() {
                                         {hasPermission('financial.manage_manual_transactions') && (
                                             <td className="p-4">
                                                 <div className="flex items-center justify-center gap-1.5">
-                                                    <button onClick={() => handleOpenModal(tx)} className="p-1.5 text-gray-400 hover:text-blue-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
+                                                    <button onClick={() => handleOpenModal(tx)} className="p-1.5 text-gray-400 hover:text-blue-600 bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600 rounded-lg transition-colors">
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
-                                                    <button onClick={() => handleSingleDelete(tx._id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-white shadow-sm border border-gray-100 rounded-lg transition-colors">
+                                                    <button onClick={() => handleSingleDelete(tx._id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600 rounded-lg transition-colors">
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
@@ -700,7 +726,7 @@ export default function Financial() {
                             })}
                             {paginatedTransactions.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="p-8 text-center border border-dashed rounded-xl m-4 text-gray-400 italic">
+                                    <td colSpan="6" className="p-8 text-center border border-dashed dark:border-gray-600 rounded-xl m-4 text-gray-400 dark:text-gray-500 italic">
                                         {t('finance.noTransactions', 'No manual transactions recorded yet.')}
                                     </td>
                                 </tr>
@@ -724,42 +750,42 @@ export default function Financial() {
                         }
                     }
                     return (
-                        <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl flex-wrap gap-3">
+                        <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-900/30 rounded-b-2xl flex-wrap gap-3">
                             {/* Left */}
                             <div className="flex items-center gap-3">
-                                <span className="text-sm text-gray-400">
-                                    Page <strong className="text-gray-700">{currentPage}</strong> of <strong className="text-gray-700">{totalPages}</strong>
+                                <span className="text-sm text-gray-400 dark:text-gray-500">
+                                    Page <strong className="text-gray-700 dark:text-gray-200">{currentPage}</strong> of <strong className="text-gray-700 dark:text-gray-200">{totalPages}</strong>
                                 </span>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-xs text-gray-400">Show</span>
+                                    <span className="text-xs text-gray-400 dark:text-gray-500">Show</span>
                                     <select
                                         value={perPage}
                                         onChange={e => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                                        className="bg-white border border-gray-200 rounded-lg py-1 px-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 cursor-pointer"
+                                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg py-1 px-2 text-sm font-semibold text-gray-700 dark:text-white outline-none focus:border-blue-400 cursor-pointer"
                                     >
                                         {[10, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
-                                    <span className="text-xs text-gray-400">per page</span>
+                                    <span className="text-xs text-gray-400 dark:text-gray-500">per page</span>
                                 </div>
                             </div>
                             {/* Right */}
                             <div className="flex items-center gap-1">
                                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-                                    className="px-3 py-1.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                    className="px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                                     ‹ Prev
                                 </button>
                                 {range.map((p, i) =>
                                     p === '...' ? (
-                                        <span key={`e-${i}`} className="px-2 py-1.5 text-sm text-gray-400">…</span>
+                                        <span key={`e-${i}`} className="px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">…</span>
                                     ) : (
                                         <button key={p} onClick={() => setCurrentPage(p)}
                                             className={clsx('min-w-[36px] px-2 py-1.5 text-sm font-bold rounded-lg border transition-all',
-                                                p === currentPage ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                p === currentPage ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                                             )}>{p}</button>
                                     )
                                 )}
                                 <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                    className="px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                                     Next ›
                                 </button>
                             </div>
@@ -778,47 +804,19 @@ export default function Financial() {
                 />
             )}
 
-            {/* In-app confirm dialog */}
-            {confirmDialog && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm animate-in zoom-in-95 duration-150">
-                        <div className="p-5 border-b border-red-100 bg-red-50/40">
-                            <div className="flex items-start gap-3">
-                                <div className="mt-0.5 w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-black text-gray-900 leading-snug">{confirmDialog.title}</p>
-                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{confirmDialog.body}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-2 p-4">
-                            <button onClick={() => setConfirmDialog(null)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                {t('finance.cancel', 'Cancel')}
-                            </button>
-                            <button
-                                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
-                                className="px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                            >
-                                {t('finance.deleteBtn', 'Delete')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {confirmDialogEl}
         </div>
     );
 }
 
 function PipelineNode({ label, value, color, bg, icon: Icon }) {
     return (
-        <div className={clsx("p-3 sm:p-4 rounded-xl border border-gray-100 flex flex-col gap-2 sm:gap-3", bg)}>
+        <div className={clsx("p-3 sm:p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-2 sm:gap-3", bg)}>
             <div className="flex items-center gap-1.5 sm:gap-2">
                 <Icon className={clsx("w-4 h-4 shrink-0", color)} />
                 <span className={clsx("text-[10px] sm:text-xs font-bold uppercase tracking-wider line-clamp-1", color)} title={label}>{label}</span>
             </div>
-            <span className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight truncate">{value.toLocaleString()}</span>
+            <span className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight truncate">{value.toLocaleString()}</span>
         </div>
     );
 }
@@ -828,10 +826,10 @@ function CostItem({ label, value, total, color }) {
     return (
         <div>
             <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-bold text-gray-700">{label}</span>
-                <span className="text-sm font-black text-gray-900">{value.toLocaleString()} <span className="text-gray-400 font-medium ms-1">({percent.toFixed(1)}%)</span></span>
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{label}</span>
+                <span className="text-sm font-black text-gray-900 dark:text-white">{value.toLocaleString()} <span className="text-gray-400 dark:text-gray-500 font-medium ms-1">({percent.toFixed(1)}%)</span></span>
             </div>
-            <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+            <div className="w-full bg-gray-100 dark:bg-gray-700 h-2.5 rounded-full overflow-hidden">
                 <div className={clsx("h-full rounded-full transition-all duration-500", color)} style={{ width: `${percent}%` }}></div>
             </div>
         </div>
@@ -840,7 +838,7 @@ function CostItem({ label, value, total, color }) {
 
 function ProgressBar({ progress, color }) {
     return (
-        <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden mt-3">
+        <div className="w-full bg-gray-100 dark:bg-gray-700 h-2.5 rounded-full overflow-hidden mt-3">
             <div className={clsx("h-full rounded-full transition-all duration-500", color)} style={{ width: `${progress}%` }}></div>
         </div>
     );

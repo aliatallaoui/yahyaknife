@@ -4,8 +4,10 @@ import PageHeader from '../components/PageHeader';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
 import { useHotkey } from '../hooks/useHotkey';
+import TableSkeleton from '../components/TableSkeleton';
 
 // Build a list of the last 6 months as { value, label } options
 function buildPeriodOptions() {
@@ -31,12 +33,18 @@ export default function HRPayroll() {
     const [paymentModal, setPaymentModal] = useState(null);
     const [paymentAmount, setPaymentAmount] = useState('');
 
+    // Escape key to close payment modal
+    useEffect(() => {
+        if (!paymentModal) return;
+        const handler = (e) => { if (e.key === 'Escape') { setPaymentModal(null); setPaymentAmount(''); } };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [paymentModal]);
+
     const fetchPayroll = async (selectedPeriod) => {
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll?period=${selectedPeriod}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/hr/payroll?period=${selectedPeriod}`);
             const json = await res.json();
             const data = json.data ?? (Array.isArray(json) ? json : []);
             setRecords(data);
@@ -53,9 +61,9 @@ export default function HRPayroll() {
 
     const handleGenerateRun = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/generate`, {
+            const res = await apiFetch(`/api/hr/payroll/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ period })
             });
             if (res.ok) fetchPayroll(period);
@@ -67,9 +75,8 @@ export default function HRPayroll() {
 
     const handleApprove = async (recordId) => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${recordId}/approve`, {
-                method: 'PUT',
-                headers: { Authorization: `Bearer ${token}` }
+            const res = await apiFetch(`/api/hr/payroll/${recordId}/approve`, {
+                method: 'PUT'
             });
             if (res.ok) {
                 fetchPayroll(period);
@@ -78,17 +85,36 @@ export default function HRPayroll() {
                 setErrorMsg(data.error || t('hr.alertFailedApprove', 'Approval failed'));
             }
         } catch (error) {
-            console.error('Approval error:', error);
             setErrorMsg(t('hr.alertFailedApprove', 'Approval failed'));
         }
+    };
+
+    const [bulkApproving, setBulkApproving] = useState(false);
+    const handleBulkApprove = async () => {
+        const pendingRecords = records.filter(r => r.status === 'Pending Approval');
+        if (pendingRecords.length === 0) return;
+        setBulkApproving(true);
+        setErrorMsg(null);
+        let failed = 0;
+        for (const record of pendingRecords) {
+            try {
+                const res = await apiFetch(`/api/hr/payroll/${record._id}/approve`, {
+                    method: 'PUT'
+                });
+                if (!res.ok) failed++;
+            } catch { failed++; }
+        }
+        setBulkApproving(false);
+        if (failed > 0) setErrorMsg(t('hr.bulkApprovePartialFail', `${failed} record(s) failed to approve.`));
+        fetchPayroll(period);
     };
 
     const submitPayment = async () => {
         if (!paymentModal || !paymentAmount) return;
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${paymentModal.id}/pay`, {
+            const res = await apiFetch(`/api/hr/payroll/${paymentModal.id}/pay`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount: parseFloat(paymentAmount) })
             });
             if (res.ok) {
@@ -100,7 +126,6 @@ export default function HRPayroll() {
                 setErrorMsg(data.error || t('hr.alertFailedPayment'));
             }
         } catch (error) {
-            console.error(t('hr.alertFailedPayment'), error);
             setErrorMsg(t('hr.alertFailedPayment'));
         }
     };
@@ -146,6 +171,16 @@ export default function HRPayroll() {
                                 <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                         </select>
+                        {hasPermission('hr.approve_payroll') && pendingCount > 0 && (
+                            <button
+                                onClick={handleBulkApprove}
+                                disabled={bulkApproving}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 leading-none disabled:opacity-60"
+                            >
+                                <CheckCircle className="w-4 h-4" />
+                                {bulkApproving ? t('hr.approving', 'Approving...') : t('hr.btnApproveAll', `Approve All (${pendingCount})`)}
+                            </button>
+                        )}
                         {hasPermission('hr.manage_payroll') && (
                             <button
                                 onClick={handleGenerateRun}
@@ -158,41 +193,41 @@ export default function HRPayroll() {
                 }
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.totalPayrollLoad')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{totalLoad.toLocaleString()} <span className="text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
+                        <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.totalPayrollLoad')}</p>
+                        <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{totalLoad.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
                     </div>
-                    <div className="h-16 w-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
-                        <Calculator className="w-8 h-8 text-gray-600" />
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
+                        <Calculator className="w-5 h-5 sm:w-8 sm:h-8 text-gray-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">{t('hr.totalDeductions')}</p>
-                        <h3 className="text-3xl font-black text-rose-700 tracking-tighter truncate">{totalDeductions.toLocaleString()} <span className="text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
+                        <p className="text-xs sm:text-sm font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">{t('hr.totalDeductions')}</p>
+                        <h3 className="text-xl sm:text-3xl font-black text-rose-700 tracking-tighter truncate">{totalDeductions.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
                     </div>
-                    <div className="h-16 w-16 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 shrink-0">
-                        <ShieldAlert className="w-8 h-8 text-rose-600" />
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-rose-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-rose-100 shrink-0">
+                        <ShieldAlert className="w-5 h-5 sm:w-8 sm:h-8 text-rose-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">{t('hr.totalOtAdditions')}</p>
-                        <h3 className="text-3xl font-black text-emerald-700 tracking-tighter truncate">{totalOT.toLocaleString()} <span className="text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
+                        <p className="text-xs sm:text-sm font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">{t('hr.totalOtAdditions')}</p>
+                        <h3 className="text-xl sm:text-3xl font-black text-emerald-700 tracking-tighter truncate">{totalOT.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
                     </div>
-                    <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 shrink-0">
-                        <Clock className="w-8 h-8 text-emerald-600" />
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-emerald-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-emerald-100 shrink-0">
+                        <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-amber-600 uppercase tracking-wider mb-1 truncate">{t('hr.clearanceStatus')}</p>
-                        <h3 className="text-2xl font-black text-amber-700 tracking-tighter truncate">{pendingCount > 0 ? `${pendingCount} ${t('hr.statusPending')}` : t('hr.allCleared')}</h3>
+                        <p className="text-xs sm:text-sm font-bold text-amber-600 uppercase tracking-wider mb-1 truncate">{t('hr.clearanceStatus')}</p>
+                        <h3 className="text-lg sm:text-2xl font-black text-amber-700 tracking-tighter truncate">{pendingCount > 0 ? `${pendingCount} ${t('hr.statusPending')}` : t('hr.allCleared')}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
-                        {pendingCount > 0 ? <ShieldAlert className="w-8 h-8 text-amber-600" /> : <CheckCircle className="w-8 h-8 text-emerald-600" />}
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-amber-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
+                        {pendingCount > 0 ? <ShieldAlert className="w-5 h-5 sm:w-8 sm:h-8 text-amber-600" /> : <CheckCircle className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-600" />}
                     </div>
                 </div>
             </div>
@@ -242,23 +277,28 @@ export default function HRPayroll() {
             </div>
 
             {/* Payroll Grid */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="cf-table-wrap">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start min-w-[1000px]">
-                        <thead className="bg-gray-50">
+                    <table className="cf-table min-w-[1000px]">
+                        <thead>
                             <tr>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('hr.colEmployeeDet')}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-end">{t('hr.colBaseContract')}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-end">{t('hr.colDeductions')}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-end">{t('hr.colOtAdditions')}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-900 uppercase tracking-wider text-end">{t('hr.colFinalPayable')}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">{t('hr.colStatus')}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">{t('hr.colActions')}</th>
+                                <th>{t('hr.colEmployeeDet')}</th>
+                                <th className="text-end">{t('hr.colBaseContract')}</th>
+                                <th className="text-end">{t('hr.colDeductions')}</th>
+                                <th className="text-end">{t('hr.colOtAdditions')}</th>
+                                <th className="text-end !text-gray-900">{t('hr.colFinalPayable')}</th>
+                                <th className="text-center">{t('hr.colStatus')}</th>
+                                <th className="text-center">{t('hr.colActions')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
+                            {loading && (
+                                <tr><td colSpan={7} className="p-0">
+                                    <TableSkeleton rows={5} cols={7} showHeader={false} />
+                                </td></tr>
+                            )}
                             {records.length === 0 && !loading && (
-                                <tr>
+                                <tr className="empty-state">
                                     <td colSpan={7} className="py-16 text-center text-sm text-gray-400 font-medium">
                                         <Calculator className="w-8 h-8 mx-auto mb-2 text-gray-200" />
                                         {t('hr.noPayrollRecords', 'No payroll records for this period. Generate a run to get started.')}
@@ -266,10 +306,13 @@ export default function HRPayroll() {
                                 </tr>
                             )}
                             {records.length > 0 && filteredRecords.length === 0 && (
-                                <tr><td colSpan={7} className="p-8 text-center text-sm text-gray-400">{t('hr.noEmployeesFound', 'No records match your search or filter.')}</td></tr>
+                                <tr className="empty-state"><td colSpan={7} className="px-6 py-12 text-center">
+                                    <Search className="w-8 h-8 mx-auto text-gray-200 mb-2" />
+                                    <p className="text-sm text-gray-400 font-medium">{t('hr.noEmployeesFound', 'No records match your search or filter.')}</p>
+                                </td></tr>
                             )}
                             {filteredRecords.map(record => (
-                                <tr key={record._id} className="hover:bg-gray-50/50 transition-colors">
+                                <tr key={record._id}>
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-gray-900">{record.employeeId?.name || t('hr.unknownEmployee')}</div>
                                         <div className="text-xs text-gray-500 font-medium mt-0.5">{record.employeeId?.role || '-'}</div>

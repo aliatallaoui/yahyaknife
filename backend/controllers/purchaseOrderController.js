@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const PurchaseOrder = require('../models/PurchaseOrder');
 const ProductVariant = require('../models/ProductVariant');
@@ -14,10 +15,12 @@ exports.getPurchaseOrders = async (req, res) => {
                 path: 'items.itemRef', // Changed from variant to itemRef
                 populate: { path: 'productId' } // For ProductVariant cases
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
         res.json(pos);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching purchase orders');
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -52,7 +55,8 @@ exports.createPurchaseOrder = async (req, res) => {
 
         res.status(201).json(populatedPO);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error creating purchase order');
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -130,6 +134,7 @@ exports.updatePOStatus = async (req, res) => {
 
         res.json(updatedPO);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error updating purchase order status');
+        res.status(500).json({ error: 'Server error' });
     }
 };

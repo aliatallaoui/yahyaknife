@@ -22,16 +22,16 @@ export default function SettingsSecurity() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">{t('currentPwd')}</label>
-                                <input type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <label htmlFor="sec-current" className="block text-xs font-bold text-gray-700 mb-1">{t('currentPwd')}</label>
+                                <input id="sec-current" type="password" autoComplete="current-password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">{t('newPwd')}</label>
-                                <input type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <label htmlFor="sec-new" className="block text-xs font-bold text-gray-700 mb-1">{t('newPwd')}</label>
+                                <input id="sec-new" type="password" autoComplete="new-password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">{t('confirmPwd')}</label>
-                                <input type="password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <label htmlFor="sec-confirm" className="block text-xs font-bold text-gray-700 mb-1">{t('confirmPwd')}</label>
+                                <input id="sec-confirm" type="password" autoComplete="new-password" placeholder="••••••••" className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
                             </div>
                             <button className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg text-sm shadow-md hover:bg-indigo-700 transition">{t('updatePwd')}</button>
                         </div>

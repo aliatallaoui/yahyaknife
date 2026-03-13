@@ -1,19 +1,23 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const ProductVariant = require('../models/ProductVariant');
 const Supplier = require('../models/Supplier');
 const Warehouse = require('../models/Warehouse');
 const StockMovementLedger = require('../models/StockMovementLedger');
+const audit = require('../shared/utils/auditLog');
 
 exports.getProducts = async (req, res) => {
     try {
         const products = await Product.find({ isActive: true })
             .populate('supplier')
             .populate('category')
-            .populate('variants');
+            .populate('variants')
+            .lean();
         res.json(products);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching products');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -50,14 +54,21 @@ exports.createProduct = async (req, res) => {
 
         res.status(201).json(populatedProduct);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error creating product');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const { name, category, brand, description, supplier } = req.body;
+        const updates = {};
+        if (name !== undefined) updates.name = name;
+        if (category !== undefined) updates.category = category;
+        if (brand !== undefined) updates.brand = brand;
+        if (description !== undefined) updates.description = description;
+        if (supplier !== undefined) updates.supplier = supplier;
 
         const product = await Product.findByIdAndUpdate(id, updates, { new: true, runValidators: true }).populate('supplier').populate('category');
         if (!product) {
@@ -65,7 +76,8 @@ exports.updateProduct = async (req, res) => {
         }
         res.json(product);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error updating product');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -84,32 +96,41 @@ exports.deleteProduct = async (req, res) => {
         }
         res.json({ message: "Product successfully archived." });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error deleting product');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.getInventoryMetrics = async (req, res) => {
     try {
-        const products = await Product.find({ isActive: true });
-        const variants = await ProductVariant.find({ status: 'Active' });
+        const [totalProducts, inventoryAgg] = await Promise.all([
+            Product.countDocuments({ isActive: true }),
+            ProductVariant.aggregate([
+                { $match: { status: 'Active' } },
+                {
+                    $group: {
+                        _id: null,
+                        totalInventoryValue: { $sum: { $multiply: ['$cost', '$totalStock'] } },
+                        lowStockCount: {
+                            $sum: {
+                                $cond: [{ $lte: [{ $subtract: ['$totalStock', '$reservedStock'] }, '$reorderLevel'] }, 1, 0]
+                            }
+                        }
+                    }
+                }
+            ])
+        ]);
 
-        let totalInventoryValue = 0;
-        let lowStockCount = 0;
-
-        variants.forEach(v => {
-            totalInventoryValue += (v.cost * v.totalStock);
-            if (v.availableStock <= v.reorderLevel) {
-                lowStockCount++;
-            }
-        });
+        const inv = inventoryAgg[0] || { totalInventoryValue: 0, lowStockCount: 0 };
 
         res.json({
-            totalProducts: products.length,
-            totalInventoryValue,
-            lowStockCount
+            totalProducts,
+            totalInventoryValue: inv.totalInventoryValue,
+            lowStockCount: inv.lowStockCount
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching inventory metrics');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -124,20 +145,23 @@ const Category = require('../models/Category');
 
 exports.getCategories = async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true });
+        const categories = await Category.find({ isActive: true }).lean();
         res.json(categories);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching categories');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.createCategory = async (req, res) => {
     try {
         const { name, description, isActive } = req.body;
+        if (!name) return res.status(400).json({ message: 'Category name is required.' });
         const newCategory = await Category.create({ name, description, isActive });
         res.status(201).json(newCategory);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error creating category');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -149,7 +173,8 @@ exports.updateCategory = async (req, res) => {
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json(category);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error updating category');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -160,7 +185,8 @@ exports.deleteCategory = async (req, res) => {
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json({ message: "Category archived." });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error deleting category');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -168,20 +194,23 @@ exports.deleteCategory = async (req, res) => {
 
 exports.getWarehouses = async (req, res) => {
     try {
-        const warehouses = await Warehouse.find({ status: { $ne: 'Closed' } });
+        const warehouses = await Warehouse.find({ status: { $ne: 'Closed' } }).lean();
         res.json(warehouses);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching warehouses');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
 exports.createWarehouse = async (req, res) => {
     try {
         const { name, code, location, manager, capacity, status } = req.body;
+        if (!name || !code) return res.status(400).json({ message: 'Warehouse name and code are required.' });
         const w = await Warehouse.create({ name, code, location, manager, capacity, status });
         res.status(201).json(w);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error creating warehouse');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -193,7 +222,8 @@ exports.updateWarehouse = async (req, res) => {
         const w = await Warehouse.findByIdAndUpdate(req.params.id, { name, code, location, manager, capacity, status }, { new: true });
         res.json(w);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error updating warehouse');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -204,6 +234,10 @@ exports.adjustStock = async (req, res) => {
         const { variantId, warehouseId, adjustmentQuantity, notes } = req.body;
 
         if (!adjustmentQuantity) return res.status(400).json({ message: "Adjustment quantity required." });
+        if (!variantId || !mongoose.Types.ObjectId.isValid(variantId))
+            return res.status(400).json({ message: "Valid variantId is required." });
+        if (warehouseId && !mongoose.Types.ObjectId.isValid(warehouseId))
+            return res.status(400).json({ message: "Invalid warehouseId." });
 
         const variant = await ProductVariant.findById(variantId);
         if (!variant) return res.status(404).json({ message: "Variant not found." });
@@ -233,9 +267,18 @@ exports.adjustStock = async (req, res) => {
             notes: notes || 'Manual Inventory Readjustment'
         });
 
+        audit({
+            tenant: req.user?.tenant,
+            actorUserId: req.user?._id,
+            action: 'ADJUST_STOCK_MANUAL',
+            module: 'inventory',
+            metadata: { variantId, adjustmentQuantity, notes, ledgerId: ledger._id }
+        });
+
         res.json({ message: "Stock adjusted successfully", variant, ledger });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error adjusting stock');
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
@@ -254,7 +297,77 @@ exports.getStockLedger = async (req, res) => {
 
         res.json(ledger);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Error fetching stock ledger');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+// --- RTO (Return to Origin) Processing ---
+const Order = require('../models/Order');
+
+exports.processRTO = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const tenantId = req.user.tenant;
+        const { searchKey } = req.body; // Can be Order ID or Tracking ID
+        const userId = req.user._id;
+
+        if (!searchKey) throw new Error('Tracking ID or Order ID required');
+
+        // Find the order by internal orderId or tracking number
+        const order = await Order.findOne({
+            tenant: tenantId,
+            $or: [{ orderId: searchKey }, { 'trackingInfo.trackingNumber': searchKey }]
+        }).session(session);
+
+        if (!order) throw new Error(`Order/Shipment not found for query: ${searchKey}`);
+
+        if (order.status === 'Returned' && order.fulfillmentStatus === 'Returned') {
+            throw new Error('This order has already been processed and restocked.');
+        }
+
+        // Increment stock for each item
+        for (const item of order.products) {
+            if (!item.variantId) continue;
+            
+            const variant = await ProductVariant.findById(item.variantId).session(session);
+            if (variant) {
+                variant.totalStock += item.quantity;
+                await variant.save({ session });
+
+                // Log movement
+                await StockMovementLedger.create([{
+                    tenant: tenantId,
+                    variantId: variant._id,
+                    type: 'RESTOCK_RTO',
+                    quantity: item.quantity,
+                    referenceId: order.orderId,
+                    referenceModel: 'Order',
+                    notes: `RTO Restock for Order ${order.orderId}`
+                }], { session });
+            }
+        }
+
+        // Update Order
+        order.status = 'Returned';
+        order.fulfillmentStatus = 'Returned';
+        order.paymentStatus = 'No_COD';
+        order.deliveryStatus = order.deliveryStatus || {};
+        order.deliveryStatus.returnedAt = new Date();
+        await order.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        // Let the client know the restock details
+        res.json({ message: 'RTO Processed & Restocked', orderId: order.orderId, items: order.products });
+        
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        logger.error({ err: error }, 'Error processing RTO');
+        res.status(400).json({ message: error.message || 'Error processing RTO' });
     }
 };
 

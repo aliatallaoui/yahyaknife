@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { FileText, Download, Calendar, User, Clock, AlertTriangle, Briefcase, FileSpreadsheet } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import moment from 'moment';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 import { useTranslation } from 'react-i18next';
 
 export default function HRReports() {
@@ -29,17 +25,15 @@ export default function HRReports() {
         setLoading(true);
         setFetchError(null);
         try {
-            let res;
-            const authHeader = { headers: { Authorization: `Bearer ${token}` } };
-            if (activeReport === 'daily') {
-                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/daily?date=${date}`, authHeader);
-            } else {
-                res = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/hr/reports/${activeReport}?period=${period}`, authHeader);
-            }
-            setData(res.data?.data ?? res.data);
+            const url = activeReport === 'daily'
+                ? `/api/hr/reports/daily?date=${date}`
+                : `/api/hr/reports/${activeReport}?period=${period}`;
+            const res = await apiFetch(url);
+            if (!res.ok) throw new Error(t('hr.errorLoadReport', 'Failed to load report data.'));
+            const json = await res.json();
+            setData(json.data ?? json);
         } catch (error) {
-            console.error(error);
-            setFetchError(error.response?.data?.message || error.response?.data?.error || t('hr.errorLoadReport', 'Failed to load report data.'));
+            setFetchError(error.message || t('hr.errorLoadReport', 'Failed to load report data.'));
         } finally {
             setLoading(false);
         }
@@ -68,21 +62,21 @@ export default function HRReports() {
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start text-sm min-w-[600px]">
-                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                    <table className="cf-table min-w-[600px]">
+                        <thead>
                             <tr>
-                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colWorkedTime')}</th>
-                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colLateOvertime')}</th>
-                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colStatus')}</th>
+                                <th>{t('hr.colEmployee')}</th>
+                                <th className="text-center">{t('hr.colWorkedTime')}</th>
+                                <th className="text-center">{t('hr.colLateOvertime')}</th>
+                                <th className="text-center">{t('hr.colStatus')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                             {data.records.length === 0 && (
                                 <tr><td colSpan="4" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.records.map((r, i) => (
-                                <tr key={i} className="hover:bg-gray-50">
+                                <tr key={i}>
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name} <span className="text-xs text-gray-400 block">{r.employeeId?.role}</span></td>
                                     <td className="px-5 py-3 font-mono text-center">{Math.floor(r.workedMinutes / 60)}{t('hr.lblHours')} {r.workedMinutes % 60}{t('hr.lblMinutes')}</td>
                                     <td className="px-5 py-3 text-center">
@@ -104,22 +98,22 @@ export default function HRReports() {
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start text-sm min-w-[700px]">
-                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                    <table className="cf-table min-w-[700px]">
+                        <thead>
                             <tr>
-                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colBaseSalary')}</th>
-                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colDeductionsTotal')}</th>
-                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colOvertimeAddition')}</th>
-                                <th className="px-5 py-3 font-semibold text-end text-gray-900 ltr:border-l rtl:border-r border-gray-200">{t('hr.colFinalClearedSalary')}</th>
+                                <th>{t('hr.colEmployee')}</th>
+                                <th className="text-end">{t('hr.colBaseSalary')}</th>
+                                <th className="text-end">{t('hr.colDeductionsTotal')}</th>
+                                <th className="text-end">{t('hr.colOvertimeAddition')}</th>
+                                <th className="text-end text-gray-900 ltr:border-l rtl:border-r border-gray-200">{t('hr.colFinalClearedSalary')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                             {data.records.length === 0 && (
                                 <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.records.map((r, i) => (
-                                <tr key={i} className="hover:bg-gray-50">
+                                <tr key={i}>
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
                                     <td className="px-5 py-3 text-end text-gray-600">{(r.baseSalary || 0).toLocaleString()}</td>
                                     <td className="px-5 py-3 text-end text-red-600 font-bold">-{r.missingTimeDeductions + r.absenceDeductions}</td>
@@ -139,22 +133,22 @@ export default function HRReports() {
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start text-sm min-w-[700px]">
-                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                    <table className="cf-table min-w-[700px]">
+                        <thead>
                             <tr>
-                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colTotalLateMissedMin')}</th>
-                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colLossLateness')}</th>
-                                <th className="px-5 py-3 font-semibold text-end">{t('hr.colLossAbsence')}</th>
-                                <th className="px-5 py-3 font-semibold text-end text-rose-700">{t('hr.colTotalLiabilityDeducted')}</th>
+                                <th>{t('hr.colEmployee')}</th>
+                                <th className="text-end">{t('hr.colTotalLateMissedMin')}</th>
+                                <th className="text-end">{t('hr.colLossLateness')}</th>
+                                <th className="text-end">{t('hr.colLossAbsence')}</th>
+                                <th className="text-end text-rose-700">{t('hr.colTotalLiabilityDeducted')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                             {data.records.length === 0 && (
                                 <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.records.map((r, i) => (
-                                <tr key={i} className="hover:bg-gray-50">
+                                <tr key={i}>
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
                                     <td className="px-5 py-3 text-end font-mono text-gray-600">{r.metricsTotal?.totalMissingMinutes}{t('hr.lblMinutes')}</td>
                                     <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.missingTimeDeductions}</td>
@@ -174,20 +168,20 @@ export default function HRReports() {
         return (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-start text-sm min-w-[500px]">
-                        <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                    <table className="cf-table min-w-[500px]">
+                        <thead>
                             <tr>
-                                <th className="px-5 py-3 font-semibold">{t('hr.colEmployee')}</th>
-                                <th className="px-5 py-3 font-semibold text-center">{t('hr.colDaysWithOvertime')}</th>
-                                <th className="px-5 py-3 font-semibold text-end text-emerald-700">{t('hr.colTotalExtraMinutes')}</th>
+                                <th>{t('hr.colEmployee')}</th>
+                                <th className="text-center">{t('hr.colDaysWithOvertime')}</th>
+                                <th className="text-end text-emerald-700">{t('hr.colTotalExtraMinutes')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                             {data.leaders.length === 0 && (
                                 <tr><td colSpan="3" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.leaders.map((r, i) => (
-                                <tr key={i} className="hover:bg-gray-50">
+                                <tr key={i}>
                                     <td className="px-5 py-3 font-medium text-gray-900">{r.employee?.name} <span className="text-xs text-gray-400 block">{r.employee?.role}</span></td>
                                     <td className="px-5 py-3 text-center text-gray-600 font-bold">{r.daysWithOvertime} {t('hr.daysLabel')}</td>
                                     <td className="px-5 py-3 text-end text-emerald-600 font-bold bg-emerald-50/30">{r.totalOvertimeMinutes}{t('hr.lblMinutes')}</td>
@@ -286,8 +280,10 @@ export default function HRReports() {
         return rows;
     };
 
-    const handleExportPDF = () => {
+    const handleExportPDF = async () => {
         if (!data) return;
+        const { default: jsPDF } = await import('jspdf');
+        await import('jspdf-autotable');
         const doc = new jsPDF();
         const title = getReportTitle();
         doc.setFontSize(16);
@@ -304,8 +300,10 @@ export default function HRReports() {
         doc.save(`${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
     };
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
         if (!data) return;
+        const XLSX = await import('xlsx');
+        const { saveAs } = await import('file-saver');
         const wsData = [getTableColumns(), ...getTableRows()];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         const wb = XLSX.utils.book_new();
@@ -345,7 +343,7 @@ export default function HRReports() {
                 }
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-8">
                 <ReportCard id="daily" title={t('hr.reportDailyTitle')} desc={t('hr.reportDailyDesc')} icon={Calendar} />
                 <ReportCard id="monthly" title={t('hr.reportMonthlyTitle')} desc={t('hr.reportMonthlyDesc')} icon={Briefcase} />
                 <ReportCard id="payroll" title={t('hr.reportPayrollTitle')} desc={t('hr.reportPayrollDesc')} icon={User} />

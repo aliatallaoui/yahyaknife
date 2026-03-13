@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const CourierCoverage = require('../models/CourierCoverage');
 const CourierPricing = require('../models/CourierPricing');
 const Courier = require('../models/Courier');
@@ -20,10 +21,11 @@ const getCourierCoverage = async (req, res) => {
             }
         }
 
-        const coverage = await CourierCoverage.find(query).populate('courierId', 'name status');
+        const coverage = await CourierCoverage.find(query).populate('courierId', 'name status').lean();
         res.json(coverage);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Courier coverage fetch error');
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -44,7 +46,7 @@ const calculateCourierPrice = async (req, res) => {
         const weight = totalWeight !== undefined ? Number(totalWeight) : 0;
         const pIds = Array.isArray(productIds) ? productIds : [];
 
-        const price = await calculateDeliveryFee({
+        const result = await calculateDeliveryFee({
             courierId,
             wilayaCode,
             commune,
@@ -53,9 +55,18 @@ const calculateCourierPrice = async (req, res) => {
             totalWeight: weight
         });
 
-        res.json({ price });
+        if (!result.matched) {
+            return res.status(404).json({
+                price: 0,
+                matched: false,
+                message: 'No pricing rules matched this location/delivery combination. Please add a Flat or Wilaya rule for this courier.'
+            });
+        }
+
+        res.json({ price: result.fee, matched: result.matched, rule: result.rule });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Courier price calculation error');
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -77,7 +88,7 @@ const recommendCourier = async (req, res) => {
         if (typeNum === 0) coverageQuery.homeSupported = true;
         else coverageQuery.officeSupported = true;
 
-        const coverages = await CourierCoverage.find(coverageQuery);
+        const coverages = await CourierCoverage.find(coverageQuery).lean();
 
         if (coverages.length === 0) {
             return res.json({ recommended: null, available: [] });
@@ -86,7 +97,7 @@ const recommendCourier = async (req, res) => {
         const courierIds = coverages.map(c => c.courierId);
 
         // 2. Fetch those couriers with their stats
-        const activeCouriers = await Courier.find({ _id: { $in: courierIds }, status: 'Active', tenant: req.user.tenant });
+        const activeCouriers = await Courier.find({ _id: { $in: courierIds }, status: 'Active', tenant: req.user.tenant }).lean();
 
         if (activeCouriers.length === 0) {
             return res.json({ recommended: null, available: [] });
@@ -140,7 +151,8 @@ const recommendCourier = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Courier recommendation error');
+        res.status(500).json({ message: 'Server Error' });
     }
 }
 

@@ -3,6 +3,7 @@ import { useHotkey } from '../hooks/useHotkey';
 import { Box, MapPin, Search, Plus, List, ArrowRightLeft, ShieldCheck, ArrowDown, ArrowUp, AlertTriangle } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 import clsx from 'clsx';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
@@ -29,15 +30,23 @@ export default function Warehouses() {
     const [warehouseError, setWarehouseError] = useState(null);
     const [fetchError, setFetchError] = useState(null);
 
+    // Escape key to close warehouse modal
+    useEffect(() => {
+        if (!isWarehouseModalOpen) return;
+        const handler = (e) => { if (e.key === 'Escape') setIsWarehouseModalOpen(false); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [isWarehouseModalOpen]);
+
     const fetchData = async () => {
         if (!token) return;
         setLoading(true);
         setFetchError(null);
         try {
             const [wRes, lRes, sRes] = await Promise.all([
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/warehouses`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/ledger`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } })
+                apiFetch(`/api/inventory/warehouses`),
+                apiFetch(`/api/inventory/ledger`),
+                apiFetch(`/api/inventory/suppliers`)
             ]);
             setWarehouses(await wRes.json());
             setLedger(await lRes.json());
@@ -58,9 +67,9 @@ export default function Warehouses() {
         e.preventDefault();
         setWarehouseError(null);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/inventory/warehouses`, {
+            const res = await apiFetch(`/api/inventory/warehouses`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(warehouseForm)
             });
             if (res.ok) {
@@ -72,7 +81,6 @@ export default function Warehouses() {
                 setWarehouseError(data.message || t('warehouses.saveError', 'Failed to save warehouse. Please try again.'));
             }
         } catch (error) {
-            console.error(error);
             setWarehouseError(t('warehouses.saveError', 'Failed to save warehouse. Please try again.'));
         }
     };
@@ -145,7 +153,7 @@ export default function Warehouses() {
                                     </button>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 {filteredWarehouses.length > 0 ? filteredWarehouses.map(w => (
                                     <div key={w._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:border-indigo-200 hover:shadow-md transition-all">
                                         <div className="flex justify-between items-start mb-4">
@@ -164,7 +172,8 @@ export default function Warehouses() {
                                         </div>
                                         <div className="mt-2 space-y-2 mb-4">
                                             <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-                                                <MapPin className="w-4 h-4 text-gray-400" /> {w.location || t('warehouses.noLocation', 'No Location Set')}
+                                                <MapPin className="w-4 h-4 text-gray-400" /> 
+                                                {w.location ? (typeof w.location === 'string' ? w.location : [w.location.address, w.location.city, w.location.state, w.location.country].filter(Boolean).join(', ') || t('warehouses.noLocation', 'No Location Set')) : t('warehouses.noLocation', 'No Location Set')}
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
                                                 <List className="w-4 h-4 text-gray-400" /> {t('warehouses.capText', 'Capacity')}: {w.capacity.toLocaleString()} {t('warehouses.unitsText', 'Units')}
@@ -187,21 +196,21 @@ export default function Warehouses() {
                                 <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">{t('warehouses.recentText', 'Recent')} {ledger.length} {t('warehouses.entriesText', 'entries')}</span>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-start border-collapse">
+                                <table className="cf-table">
                                     <thead>
-                                        <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                                            <th className="p-4 font-semibold">{t('warehouses.colDate', 'Date')}</th>
-                                            <th className="p-4 font-semibold">{t('warehouses.colRef', 'Reference')}</th>
-                                            <th className="p-4 font-semibold">{t('warehouses.colType', 'Type')}</th>
-                                            <th className="p-4 font-semibold">{t('warehouses.colVariant', 'Variant (SKU)')}</th>
-                                            <th className="p-4 font-semibold text-end">{t('warehouses.colQty', 'Qty')}</th>
-                                            <th className="p-4 font-semibold">{t('warehouses.colLocation', 'Location')}</th>
-                                            <th className="p-4 font-semibold">{t('warehouses.colNotes', 'Notes')}</th>
+                                        <tr>
+                                            <th>{t('warehouses.colDate', 'Date')}</th>
+                                            <th>{t('warehouses.colRef', 'Reference')}</th>
+                                            <th>{t('warehouses.colType', 'Type')}</th>
+                                            <th>{t('warehouses.colVariant', 'Variant (SKU)')}</th>
+                                            <th className="text-end">{t('warehouses.colQty', 'Qty')}</th>
+                                            <th>{t('warehouses.colLocation', 'Location')}</th>
+                                            <th>{t('warehouses.colNotes', 'Notes')}</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100 text-sm">
+                                    <tbody>
                                         {filteredLedger.map(entry => (
-                                            <tr key={entry._id} className="hover:bg-gray-50/50">
+                                            <tr key={entry._id}>
                                                 <td className="p-4 text-gray-500 font-medium">{moment(entry.createdAt).format('DD MMM, HH:mm')}</td>
                                                 <td className="p-4 font-mono text-xs font-bold text-indigo-600">{entry.referenceId}</td>
                                                 <td className="p-4">

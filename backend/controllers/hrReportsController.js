@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const Attendance = require('../models/Attendance');
 const Payroll = require('../models/Payroll');
 const Employee = require('../models/Employee');
@@ -26,7 +27,8 @@ exports.getDailyReport = async (req, res) => {
 
         res.json(ok({ date: targetDate, summary, records }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching daily attendance report');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -73,7 +75,8 @@ exports.getMonthlyReport = async (req, res) => {
 
         res.json(ok({ period, data: Object.values(matrix) }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching monthly attendance report');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -97,7 +100,8 @@ exports.getPayrollReport = async (req, res) => {
 
         res.json(ok({ period: period || 'All Time', summary, records: payrolls }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching payroll report');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -127,7 +131,8 @@ exports.getOvertimeReport = async (req, res) => {
 
         res.json(ok({ period, leaders: formatted }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching overtime report');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -146,6 +151,7 @@ exports.getDeductionsReport = async (req, res) => {
 
         res.json(ok({ period, records: payrolls }));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching deductions report');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };

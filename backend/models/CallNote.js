@@ -58,7 +58,9 @@ const callNoteSchema = new mongoose.Schema({
     statusBefore: { type: String },
     statusAfter:  { type: String },
     // Which call attempt number this was on this order (1, 2, 3...)
-    callAttemptNumber: { type: Number }
+    callAttemptNumber: { type: Number },
+    // VoIP recording URL if integration is enabled
+    recordingUrl: { type: String, default: '' }
 }, {
     timestamps: true
 });

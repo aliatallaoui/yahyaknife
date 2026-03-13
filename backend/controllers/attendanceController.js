@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const logger = require('../shared/logger');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const moment = require('moment');
@@ -56,7 +57,8 @@ exports.recordPointage = async (req, res) => {
 
         res.json({ message: 'Pointage recorded successfully', attendance });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error recording pointage');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -154,10 +156,12 @@ exports.getDailyAttendance = async (req, res) => {
         const targetDate = date || moment().format('YYYY-MM-DD');
 
         const records = await Attendance.find({ tenant, date: targetDate })
-            .populate('employeeId', 'name department role contractSettings');
+            .populate('employeeId', 'name department role contractSettings')
+            .lean();
         res.json(records);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching daily attendance');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -167,10 +171,12 @@ exports.getEmployeeAttendance = async (req, res) => {
             return res.status(400).json({ error: 'Invalid employee ID' });
         const records = await Attendance.find({ tenant: req.user.tenant, employeeId: req.params.id })
             .sort({ date: -1 })
-            .limit(60);
+            .limit(60)
+            .lean();
         res.json(records);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching employee attendance');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -190,6 +196,7 @@ exports.updateAttendanceRecord = async (req, res) => {
 
         res.json(updated);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error updating attendance record');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };

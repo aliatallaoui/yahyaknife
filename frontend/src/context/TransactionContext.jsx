@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 
 export const TransactionContext = createContext();
 
@@ -16,14 +17,10 @@ export const TransactionProvider = ({ children }) => {
         setLoading(true);
         setFetchError(null);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const res = await apiFetch(`/api/transactions?limit=500`);
             if (res.ok) {
-                const data = await res.json();
-                setTransactions(data);
+                const json = await res.json();
+                setTransactions(json.data ?? json);
             }
         } catch (error) {
             setFetchError(t('finance.errorLoadTransactions', 'Failed to load transactions.'));
@@ -41,67 +38,41 @@ export const TransactionProvider = ({ children }) => {
     }, [token]);
 
     const addTransaction = async (transaction) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(transaction)
-            });
-            if (res.ok) {
-                const newTransaction = await res.json();
-                setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
-                return true;
-            }
-            throw new Error(t('finance.errorAddTransaction', 'Failed to add transaction'));
-        } catch (error) {
-            console.error(error);
-            throw error;
+        const res = await apiFetch(`/api/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transaction)
+        });
+        if (res.ok) {
+            const newTransaction = await res.json();
+            setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
+            return true;
         }
+        throw new Error(t('finance.errorAddTransaction', 'Failed to add transaction'));
     };
 
     const updateTransaction = async (id, transaction) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/transactions/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(transaction)
-            });
-            if (res.ok) {
-                const updated = await res.json();
-                setTransactions(prev => prev.map(t => t._id === id ? updated : t).sort((a, b) => new Date(b.date) - new Date(a.date)));
-                return true;
-            }
-            throw new Error(t('finance.errorUpdateTransaction', 'Failed to update transaction'));
-        } catch (error) {
-            console.error(error);
-            throw error;
+        const res = await apiFetch(`/api/transactions/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transaction)
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            setTransactions(prev => prev.map(t => t._id === id ? updated : t).sort((a, b) => new Date(b.date) - new Date(a.date)));
+            return true;
         }
+        throw new Error(t('finance.errorUpdateTransaction', 'Failed to update transaction'));
     };
 
     const deleteTransaction = async (id, type) => {
-        try {
-            const url = type ? `${import.meta.env.VITE_API_URL || ''}/api/transactions/${id}?type=${type}` : `${import.meta.env.VITE_API_URL || ''}/api/transactions/${id}`;
-            const res = await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-            if (res.ok) {
-                setTransactions(prev => prev.filter(t => t._id !== id));
-                return true;
-            }
-            throw new Error(t('finance.errorDeleteTransaction', 'Failed to delete transaction'));
-        } catch (error) {
-            console.error(error);
-            throw error;
+        const url = type ? `/api/transactions/${id}?type=${type}` : `/api/transactions/${id}`;
+        const res = await apiFetch(url, { method: 'DELETE' });
+        if (res.ok) {
+            setTransactions(prev => prev.filter(t => t._id !== id));
+            return true;
         }
+        throw new Error(t('finance.errorDeleteTransaction', 'Failed to delete transaction'));
     };
 
     return (

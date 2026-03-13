@@ -10,6 +10,7 @@ import moment from 'moment';
 import clsx from 'clsx';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '../utils/apiFetch';
 import PageHeader from '../components/PageHeader';
 
 export default function EmployeeProfile() {
@@ -30,12 +31,11 @@ export default function EmployeeProfile() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const h = { headers: { Authorization: `Bearer ${token}` } };
                 const [empRes, attRes, payRes, leaveRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}`, h),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/employees/${id}/attendance`, h),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll?employeeId=${id}`, h),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/leaves?employeeId=${id}`, h)
+                    apiFetch(`/api/hr/employees/${id}`),
+                    apiFetch(`/api/hr/employees/${id}/attendance`),
+                    apiFetch(`/api/hr/payroll?employeeId=${id}`),
+                    apiFetch(`/api/hr/leaves?employeeId=${id}`)
                 ]);
 
                 if (!empRes.ok) throw new Error('Employee not found');
@@ -68,9 +68,9 @@ export default function EmployeeProfile() {
             <User className="w-16 h-16 mb-4 text-gray-300" />
             {fetchError
                 ? <><AlertCircle className="w-10 h-10 mb-2 text-red-400" /><h2 className="text-xl font-bold text-red-600">{fetchError}</h2></>
-                : <h2 className="text-xl font-bold">{t('hr.empNotFound')}</h2>
+                : <h2 className="text-xl font-bold">{t('hr.empNotFound', 'Employee not found')}</h2>
             }
-            <button onClick={() => navigate('/hr')} className="mt-4 text-blue-600 hover:underline">{t('hr.btnReturnDirectory')}</button>
+            <button onClick={() => navigate('/hr')} className="mt-4 text-blue-600 hover:underline">{t('hr.btnReturnDirectory', 'Return to Directory')}</button>
         </div>
     );
 
@@ -109,7 +109,7 @@ export default function EmployeeProfile() {
     const todayAtt = attendance.find(a => a.date === todayStr);
 
     const formatHHMM = (dateStr) => dateStr ? moment(dateStr).format('HH:mm') : '--:--';
-    const formatHours = (mins) => `${Math.floor(mins / 60)}${t('hr.lblHours')} ${mins % 60}${t('hr.lblMinutes')}`;
+    const formatHours = (mins) => `${Math.floor(mins / 60)}${t('hr.lblHours', 'h')} ${mins % 60}${t('hr.lblMinutes', 'm')}`;
 
     // Chart Data (Last 14 days work time)
     const chartData = [...attendance].slice(0, 14).reverse().map(a => ({
@@ -135,10 +135,10 @@ export default function EmployeeProfile() {
             />
 
             {/* Top Grid: Identity & Salary */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 
                 {/* 1. Identity Card */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 flex flex-col items-center relative overflow-hidden">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-8 flex flex-col items-center relative overflow-hidden">
                     <div className="absolute top-0 w-full h-32 bg-gradient-to-br from-blue-600 to-blue-400 opacity-10"></div>
 
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-4xl font-extrabold text-white mb-4 shadow-xl shadow-blue-600/20 z-10 border-4 border-white">
@@ -249,7 +249,7 @@ export default function EmployeeProfile() {
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col mt-2">
 
                 {/* 4. Work Time Chart & Tabs Header */}
-                <div className="border-b border-gray-100 bg-gray-50/50 p-6 flex flex-col xl:flex-row items-center justify-between gap-6">
+                <div className="border-b border-gray-100 bg-gray-50/50 p-4 sm:p-6 flex flex-col xl:flex-row items-center justify-between gap-4 sm:gap-6">
 
                     {/* Time Progress Tracker */}
                     <div className="flex-1 w-full max-w-xl">
@@ -259,8 +259,8 @@ export default function EmployeeProfile() {
                                 <p className="text-xs text-gray-500">{t('hr.cumulativeWorkedHours')}</p>
                             </div>
                             <div className="ltr:text-right rtl:text-left">
-                                <span className="text-lg font-black text-blue-600">{Math.floor(totalWorkedMin / 60)}{t('hr.lblHours')}</span>
-                                <span className="text-sm font-bold text-gray-400"> / {Math.floor(totalRequiredMin / 60)}{t('hr.lblHours')}</span>
+                                <span className="text-lg font-black text-blue-600">{Math.floor(totalWorkedMin / 60)}{t('hr.lblHours', 'h')}</span>
+                                <span className="text-sm font-bold text-gray-400"> / {Math.floor(totalRequiredMin / 60)}{t('hr.lblHours', 'h')}</span>
                             </div>
                         </div>
                         <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden flex">
@@ -283,21 +283,21 @@ export default function EmployeeProfile() {
                 <div className="p-0">
                     {activeTab === 'attendance' && (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[900px]">
+                            <table className="cf-table min-w-[900px]">
                                 <thead>
-                                    <tr className="bg-white border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider font-bold">
-                                        <th className="p-4 ltr:pl-6 rtl:pr-6">{t('hr.colDate')}</th>
-                                        <th className="p-4">{t('hr.colMorning')}</th>
-                                        <th className="p-4">{t('hr.colEvening')}</th>
-                                        <th className="p-4">{t('hr.colTotalWorked')}</th>
-                                        <th className="p-4">{t('hr.colLateMissing')}</th>
-                                        <th className="p-4">{t('hr.overtime')}</th>
-                                        <th className="p-4 ltr:pr-6 rtl:pl-6 ltr:text-right rtl:text-left">{t('hr.colStatus')}</th>
+                                    <tr>
+                                        <th>{t('hr.colDate')}</th>
+                                        <th>{t('hr.colMorning')}</th>
+                                        <th>{t('hr.colEvening')}</th>
+                                        <th>{t('hr.colTotalWorked')}</th>
+                                        <th>{t('hr.colLateMissing')}</th>
+                                        <th>{t('hr.overtime')}</th>
+                                        <th className="ltr:text-right rtl:text-left">{t('hr.colStatus')}</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-sm font-medium">
+                                <tbody>
                                     {attendance.slice(0, 31).map(att => (
-                                        <tr key={att._id} className="hover:bg-gray-50/50 transition-colors">
+                                        <tr key={att._id}>
                                             <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{moment(att.date).format('MMM DD, YYYY')}</td>
                                             <td className="p-4 text-gray-500">
                                                 <div className="flex items-center gap-1.5">
@@ -316,7 +316,7 @@ export default function EmployeeProfile() {
                                             <td className="p-4 font-bold text-gray-900">{formatHours(att.workedMinutes || 0)} <span className="text-[10px] text-gray-400 font-normal">/ {formatHours(att.requiredMinutes || 0)}</span></td>
                                             <td className="p-4">
                                                 <div className="flex flex-col gap-1 text-xs">
-                                                    {att.lateMinutes > 0 && <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded w-fit">{att.lateMinutes}{t('hr.lblMinutes')} {t('hr.lblLate')}</span>}
+                                                    {att.lateMinutes > 0 && <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded w-fit">{att.lateMinutes}{t('hr.lblMinutes', 'm')} {t('hr.lblLate')}</span>}
                                                     {att.missingMinutes > 0 && <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded w-fit">{formatHours(att.missingMinutes)} {t('hr.lblMiss')}</span>}
                                                     {!att.lateMinutes && !att.missingMinutes && <span className="text-gray-300">-</span>}
                                                 </div>
@@ -344,20 +344,20 @@ export default function EmployeeProfile() {
 
                     {activeTab === 'payroll' && (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[800px]">
+                            <table className="cf-table min-w-[800px]">
                                 <thead>
-                                    <tr className="bg-white border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider font-bold">
-                                        <th className="p-4 ltr:pl-6 rtl:pr-6">{t('hr.colPeriod')}</th>
-                                        <th className="p-4">{t('hr.colBaseSalary')}</th>
-                                        <th className="p-4">{t('hr.colOtAdditions')}</th>
-                                        <th className="p-4">{t('hr.colDeductionsTotal')}</th>
-                                        <th className="p-4">{t('hr.colFinalPaid')}</th>
-                                        <th className="p-4 ltr:pr-6 rtl:pl-6 ltr:text-right rtl:text-left">{t('hr.colStatus')}</th>
+                                    <tr>
+                                        <th>{t('hr.colPeriod')}</th>
+                                        <th>{t('hr.colBaseSalary')}</th>
+                                        <th>{t('hr.colOtAdditions')}</th>
+                                        <th>{t('hr.colDeductionsTotal')}</th>
+                                        <th>{t('hr.colFinalPaid')}</th>
+                                        <th className="ltr:text-right rtl:text-left">{t('hr.colStatus')}</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-sm font-medium">
+                                <tbody>
                                     {payrolls.map(pay => (
-                                        <tr key={pay._id} className="hover:bg-gray-50/50 transition-colors">
+                                        <tr key={pay._id}>
                                             <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{moment(pay.period, 'MM-YYYY').format('MMMM YYYY')}</td>
                                             <td className="p-4 text-gray-500">{pay.baseSalary?.toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 text-emerald-600">+{(pay.overtimeAdditions || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
@@ -380,19 +380,19 @@ export default function EmployeeProfile() {
 
                     {activeTab === 'leaves' && (
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[800px]">
+                            <table className="cf-table min-w-[800px]">
                                 <thead>
-                                    <tr className="bg-white border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider font-bold">
-                                        <th className="p-4 ltr:pl-6 rtl:pr-6">{t('hr.colRequestedOn')}</th>
-                                        <th className="p-4">{t('hr.colType')}</th>
-                                        <th className="p-4">{t('hr.colDuration')}</th>
-                                        <th className="p-4">{t('hr.colReason')}</th>
-                                        <th className="p-4 ltr:pr-6 rtl:pl-6 ltr:text-right rtl:text-left">{t('hr.colStatus')}</th>
+                                    <tr>
+                                        <th>{t('hr.colRequestedOn')}</th>
+                                        <th>{t('hr.colType')}</th>
+                                        <th>{t('hr.colDuration')}</th>
+                                        <th>{t('hr.colReason')}</th>
+                                        <th className="ltr:text-right rtl:text-left">{t('hr.colStatus')}</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-sm font-medium">
+                                <tbody>
                                     {leaves.map(l => (
-                                        <tr key={l._id} className="hover:bg-gray-50/50 transition-colors">
+                                        <tr key={l._id}>
                                             <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{moment(l.requestDate).format('MMM DD, YYYY')}</td>
                                             <td className="p-4 text-gray-700">
                                                 <span className="bg-gray-100 px-2.5 py-1 rounded-md text-xs font-bold">{l.type}</span>

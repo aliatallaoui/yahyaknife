@@ -11,6 +11,15 @@ const tenantSchema = new mongoose.Schema({
         enum: ['Free', 'Basic', 'Pro', 'Enterprise'],
         default: 'Free'
     },
+    subscription: {
+        status: {
+            type: String,
+            enum: ['trialing', 'active', 'past_due', 'canceled', 'expired'],
+            default: 'trialing'
+        },
+        trialEndsAt: { type: Date, default: null },
+        currentPeriodEnd: { type: Date, default: null },
+    },
     settings: {
         currency: { type: String, default: 'DZD' },
         timezone: { type: String, default: 'Africa/Algiers' }

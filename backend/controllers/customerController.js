@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
 
@@ -6,10 +7,14 @@ const Order = require('../models/Order');
 // @access  Private
 const getCustomers = async (req, res) => {
     try {
-        const customers = await Customer.find({ tenant: req.user.tenant }).sort({ createdAt: -1 });
-        res.json(customers);
+        const filter = { tenant: req.user.tenant };
+        const [customers, total] = await Promise.all([
+            Customer.find(filter).sort({ createdAt: -1 }).skip(req.skip).limit(req.limit).lean(),
+            Customer.countDocuments(filter)
+        ]);
+        res.json({ data: customers, pagination: req.paginationMeta(total) });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -34,8 +39,8 @@ const lookupCustomerByPhone = async (req, res) => {
 
         const riskIndicator = activeOrders.length > 0 ? 'High' : (customer?.blacklisted ? 'High' : 'Low');
         const warning = activeOrders.length > 0
-            ? 'Duplicate active orders found for this phone'
-            : (customer?.blacklisted ? 'High return risk customer' : null);
+            ? 'warning_duplicate_orders'
+            : (customer?.blacklisted ? 'warning_high_risk' : null);
 
         res.json({
             exists: !!customer,
@@ -45,7 +50,7 @@ const lookupCustomerByPhone = async (req, res) => {
             warning
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -93,7 +98,7 @@ const deleteCustomer = async (req, res) => {
         if (!customer) return res.status(404).json({ message: 'Customer not found' });
         res.json({ message: 'Customer removed' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -102,12 +107,17 @@ const deleteCustomer = async (req, res) => {
 // @access  Private
 const getCustomerOrders = async (req, res) => {
     try {
-        const orders = await Order.find({ customer: req.params.id, tenant: req.user.tenant })
-            .populate('products.variantId')
-            .sort({ createdAt: -1 });
-        res.json(orders);
+        const filter = { customer: req.params.id, tenant: req.user.tenant };
+        const [orders, total] = await Promise.all([
+            Order.find(filter)
+                .populate('products.variantId')
+                .sort({ createdAt: -1 })
+                .skip(req.skip).limit(req.limit).lean(),
+            Order.countDocuments(filter)
+        ]);
+        res.json({ data: orders, pagination: req.paginationMeta(total) });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -133,7 +143,7 @@ const getCustomerMetrics = async (req, res) => {
             Customer.countDocuments({ ...tenantFilter, isReturning: false }),
             Customer.countDocuments({ ...tenantFilter, isReturning: true }),
             Customer.countDocuments({ ...tenantFilter, refusalRate: { $gte: 30 } }),
-            Customer.find(tenantFilter, { acquisitionChannel: 1, lifetimeValue: 1, segment: 1 })
+            Customer.find(tenantFilter, { acquisitionChannel: 1, lifetimeValue: 1, segment: 1 }).lean()
         ]);
 
         const acquisitionDistribution = {};
@@ -168,26 +178,13 @@ const getCustomerMetrics = async (req, res) => {
             averageLTV: totalCustomers > 0 ? totalLTV / totalCustomers : 0
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
     }
 };
 
 const getFeedback = async (_req, res) => {
-    try {
-        // Placeholder — no Feedback model yet
-        res.json({
-            averageRating: 4.8,
-            totalReviews: 4,
-            recentFeedback: [
-                { _id: 1, customerId: { name: 'Alice Johnson' }, rating: 5, comment: 'Excellent service!', date: '2023-10-25' },
-                { _id: 2, customerId: { name: 'Bob Smith' }, rating: 4, comment: 'Good, but room for improvement.', date: '2023-10-24' },
-                { _id: 3, customerId: { name: 'Charlie Brown' }, rating: 5, comment: 'Love the new features.', date: '2023-10-23' },
-                { _id: 4, customerId: { name: 'Diana Prince' }, rating: 3, comment: 'Average experience.', date: '2023-10-22' }
-            ]
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    // Feedback feature not yet implemented — return empty result
+    res.json({ averageRating: 0, totalReviews: 0, recentFeedback: [] });
 };
 
 /**
@@ -269,7 +266,7 @@ const updateCustomerMetrics = async (customerId) => {
 
         await customer.save();
     } catch (error) {
-        console.error('Failed to update customer metrics:', error);
+        logger.error({ err: error }, 'Failed to update customer metrics');
     }
 };
 

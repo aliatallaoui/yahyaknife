@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../utils/apiFetch';
 import { X, Users, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
@@ -29,39 +31,45 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
 
         setSubmitting(true);
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/procurement/suppliers`, {
-                name,
-                supplierCategory: category,
-                contactPerson: {
-                    name: contactName,
-                    email: contactEmail,
-                    phone: contactPhone
-                },
-                address: {
-                    city,
-                    country
-                }
-            }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            const res = await apiFetch('/api/procurement/suppliers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    supplierCategory: category,
+                    contactPerson: {
+                        name: contactName,
+                        email: contactEmail,
+                        phone: contactPhone
+                    },
+                    address: {
+                        city,
+                        country
+                    }
+                })
             });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to add supplier');
+            }
             onSuccess();
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || err.message);
+            setError(err.message);
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" {...backdropProps}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden" {...panelProps}>
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
                         <Users className="w-5 h-5 text-indigo-600" />
                         {t('procurement.addSupplier', 'Add Supplier')}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-200 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -75,8 +83,9 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
 
                     <form id="new-supplier-form" onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.colVendorName', 'Vendor Name')} *</label>
+                            <label htmlFor="sup-name" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.colVendorName', 'Vendor Name')} *</label>
                             <input
+                                id="sup-name"
                                 type="text"
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                 value={name}
@@ -86,8 +95,9 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.category', 'Category')}</label>
+                            <label htmlFor="sup-category" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.category', 'Category')}</label>
                             <input
+                                id="sup-category"
                                 type="text"
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                 value={category}
@@ -97,9 +107,11 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.colContactPerson', 'Contact Name')} *</label>
+                                <label htmlFor="sup-contact" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.colContactPerson', 'Contact Name')} *</label>
                                 <input
+                                    id="sup-contact"
                                     type="text"
+                                    autoComplete="name"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={contactName}
                                     onChange={e => setContactName(e.target.value)}
@@ -107,9 +119,12 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.phone', 'Phone')}</label>
+                                <label htmlFor="sup-phone" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.phone', 'Phone')}</label>
                                 <input
-                                    type="text"
+                                    id="sup-phone"
+                                    type="tel"
+                                    autoComplete="tel"
+                                    dir="ltr"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={contactPhone}
                                     onChange={e => setContactPhone(e.target.value)}
@@ -118,9 +133,12 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.email', 'Email')} *</label>
+                            <label htmlFor="sup-email" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.email', 'Email')} *</label>
                             <input
+                                id="sup-email"
                                 type="email"
+                                autoComplete="email"
+                                dir="ltr"
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                 value={contactEmail}
                                 onChange={e => setContactEmail(e.target.value)}
@@ -130,8 +148,9 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.city', 'City')}</label>
+                                <label htmlFor="sup-city" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.city', 'City')}</label>
                                 <input
+                                    id="sup-city"
                                     type="text"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={city}
@@ -139,8 +158,9 @@ export default function NewSupplierModal({ isOpen, onClose, onSuccess }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.country', 'Country')}</label>
+                                <label htmlFor="sup-country" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('customer.country', 'Country')}</label>
                                 <input
+                                    id="sup-country"
                                     type="text"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={country}

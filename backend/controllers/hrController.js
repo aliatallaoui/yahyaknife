@@ -1,3 +1,4 @@
+const logger = require('../shared/logger');
 const mongoose = require('mongoose');
 const Employee = require('../models/Employee');
 const LeaveRequest = require('../models/LeaveRequest');
@@ -8,7 +9,7 @@ const { ok, created, message, paginated } = require('../shared/utils/ApiResponse
 exports.getHRMetrics = async (req, res) => {
     try {
         const tenant = req.user.tenant;
-        const employees = await Employee.find({ tenant });
+        const employees = await Employee.find({ tenant }).lean();
 
         const departmentDistribution = {};
         let activeEmployees = 0;
@@ -43,7 +44,7 @@ exports.getHRMetrics = async (req, res) => {
             absentToday: Math.max(0, activeEmployees - presentToday)
         }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -51,12 +52,12 @@ exports.getEmployees = async (req, res) => {
     try {
         const filter = { tenant: req.user.tenant };
         const [employees, total] = await Promise.all([
-            Employee.find(filter).sort({ joinDate: -1 }).skip(req.skip).limit(req.limit),
+            Employee.find(filter).sort({ joinDate: -1 }).skip(req.skip).limit(req.limit).lean(),
             Employee.countDocuments(filter)
         ]);
         res.json(paginated(employees, { total, hasNextPage: req.skip + employees.length < total }));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -68,7 +69,8 @@ exports.getEmployeeById = async (req, res) => {
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
         res.json(ok(employee));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error fetching employee by ID');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -82,10 +84,11 @@ exports.getLeaveRequests = async (req, res) => {
         }
         const requests = await LeaveRequest.find(query)
             .populate('employeeId', 'name department role')
-            .sort({ requestDate: -1 });
+            .sort({ requestDate: -1 })
+            .lean();
         res.json(ok(requests));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -136,7 +139,8 @@ exports.deleteEmployee = async (req, res) => {
         if (!deleted) return res.status(404).json({ error: 'Employee not found' });
         res.json(message('Employee deleted'));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err }, 'Error deleting employee');
+        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -178,6 +182,8 @@ exports.updateLeaveRequestStatus = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
         const { status } = req.body;
+        if (!status || !['Pending', 'Approved', 'Rejected'].includes(status))
+            return res.status(400).json({ error: 'Status must be one of: Pending, Approved, Rejected' });
         const request = await LeaveRequest.findOne({ _id: req.params.id, tenant: req.user.tenant });
         if (!request) return res.status(404).json({ error: 'Leave Request not found' });
 

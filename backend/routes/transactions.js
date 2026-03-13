@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { protect, requirePermission } = require('../middleware/authMiddleware');
+const { PERMS } = require('../shared/constants/permissions');
 
 router.use(protect);
+const paginate = require('../shared/middleware/paginate');
 const {
     getTransactions,
     addTransaction,
@@ -11,11 +13,11 @@ const {
 } = require('../controllers/transactionController');
 
 router.route('/')
-    .get(requirePermission('finance.view'), getTransactions)
-    .post(requirePermission('finance.view'), addTransaction);
+    .get(requirePermission(PERMS.FINANCE_VIEW), paginate, getTransactions)
+    .post(requirePermission(PERMS.FINANCE_VIEW), addTransaction);
 
 router.route('/:id')
-    .put(requirePermission('finance.view'), updateTransaction)
-    .delete(requirePermission('finance.view'), deleteTransaction);
+    .put(requirePermission(PERMS.FINANCE_VIEW), updateTransaction)
+    .delete(requirePermission(PERMS.FINANCE_VIEW), deleteTransaction);
 
 module.exports = router;

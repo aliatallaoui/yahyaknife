@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 
 const CustomerContext = createContext();
 
@@ -17,12 +18,10 @@ export const CustomerProvider = ({ children }) => {
         if (!token) return;
         setLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/customers?limit=500`);
             if (!res.ok) throw new Error(t('crm.errorFetchCustomers', 'Failed to fetch customers'));
-            const data = await res.json();
-            setCustomers(data);
+            const json = await res.json();
+            setCustomers(json.data ?? json);
             setError(null);
         } catch (err) {
             setError(err.message);
@@ -36,55 +35,34 @@ export const CustomerProvider = ({ children }) => {
     }, [token]);
 
     const createCustomer = async (customerData) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(customerData)
-            });
-            if (!res.ok) throw new Error(t('crm.errorCreateCustomer', 'Failed to create customer'));
-            const newCustomer = await res.json();
-            setCustomers([newCustomer, ...customers]);
-            return newCustomer;
-        } catch (err) {
-            throw err;
-        }
+        const res = await apiFetch(`/api/customers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(customerData)
+        });
+        if (!res.ok) throw new Error(t('crm.errorCreateCustomer', 'Failed to create customer'));
+        const newCustomer = await res.json();
+        setCustomers([newCustomer, ...customers]);
+        return newCustomer;
     };
 
     const updateCustomer = async (id, updateData) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(updateData)
-            });
-            if (!res.ok) throw new Error(t('crm.errorUpdateCustomer', 'Failed to update customer'));
-            const updatedCustomer = await res.json();
-            setCustomers(customers.map(c => c._id === id ? updatedCustomer : c));
-            return updatedCustomer;
-        } catch (err) {
-            throw err;
-        }
+        const res = await apiFetch(`/api/customers/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+        if (!res.ok) throw new Error(t('crm.errorUpdateCustomer', 'Failed to update customer'));
+        const updatedCustomer = await res.json();
+        setCustomers(customers.map(c => c._id === id ? updatedCustomer : c));
+        return updatedCustomer;
     };
 
     const deleteCustomer = async (id) => {
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error(t('crm.errorDeleteCustomer', 'Failed to delete customer'));
-            setCustomers(customers.filter(c => c._id !== id));
-            return true;
-        } catch (err) {
-            throw err;
-        }
+        const res = await apiFetch(`/api/customers/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(t('crm.errorDeleteCustomer', 'Failed to delete customer'));
+        setCustomers(customers.filter(c => c._id !== id));
+        return true;
     };
 
     const refreshCustomers = fetchCustomers;

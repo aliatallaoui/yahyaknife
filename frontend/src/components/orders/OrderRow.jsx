@@ -4,7 +4,7 @@ import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2, Copy } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
-import { ORDER_STATUS_COLORS } from '../../constants/statusColors';
+import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../../constants/statusColors';
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -13,8 +13,6 @@ const PRIORITY_STYLES = {
 };
 
 const STATUS_STYLES = ORDER_STATUS_COLORS;
-
-const COD_STATUSES = ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
 
 const OrderRow = React.memo(({
     order,
@@ -149,7 +147,7 @@ const OrderRow = React.memo(({
                                                     <div className="flex items-start gap-4 relative">
                                                         <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-gray-900 z-10 shrink-0 mt-0.5"></div>
                                                         <div className="flex flex-col text-xs leading-none">
-                                                            <span className="font-bold text-gray-100">{t(`sales.statusConfirmed`) || 'Confirmed'}</span>
+                                                            <span className="font-bold text-gray-100">{getOrderStatusLabel(t, 'Confirmed')}</span>
                                                             <span className="text-[10px] text-gray-400 font-mono mt-1">{t('ordersControl.timeline.processed')}</span>
                                                         </div>
                                                     </div>
@@ -167,7 +165,7 @@ const OrderRow = React.memo(({
                                                     <div className="flex items-start gap-4 relative">
                                                         <div className="w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-gray-900 z-10 shrink-0 mt-0.5"></div>
                                                         <div className="flex flex-col text-xs leading-none">
-                                                            <span className="font-bold text-gray-100">{t(`sales.status${order.status.replace(/\s+/g, '')}`) || order.status}</span>
+                                                            <span className="font-bold text-gray-100">{getOrderStatusLabel(t, order.status)}</span>
                                                             <span className="text-[10px] text-emerald-400 mt-1">{t('ordersControl.timeline.successfulDelivery')}</span>
                                                         </div>
                                                     </div>
@@ -177,7 +175,7 @@ const OrderRow = React.memo(({
                                                         <div className="w-3.5 h-3.5 rounded-full bg-rose-500 border-2 border-gray-900 z-10 shrink-0 mt-0.5"></div>
                                                         <div className="flex flex-col text-xs leading-none">
                                                             <span className="font-bold text-gray-100">{t('ordersControl.timeline.unsuccessful')}</span>
-                                                            <span className="text-[10px] text-rose-400 mt-1">{t(`sales.status${order.status.replace(/\s+/g, '')}`) || order.status}</span>
+                                                            <span className="text-[10px] text-rose-400 mt-1">{getOrderStatusLabel(t, order.status)}</span>
                                                         </div>
                                                     </div>
                                                 )}
@@ -225,7 +223,7 @@ const OrderRow = React.memo(({
                                                     return true; // 'all' stage shows everything
                                                 }).map(s => (
                                                     <option key={s} value={s} className="bg-white text-gray-900 font-bold">
-                                                        {t(`sales.status${s.replace(/\s+/g, '')}`) || s}
+                                                        {getOrderStatusLabel(t, s)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -234,7 +232,7 @@ const OrderRow = React.memo(({
                                                 className={clsx("inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border cursor-not-allowed opacity-90", STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600 border-gray-200')}
                                                 title={t('ordersControl.messages.syncOnly', { defaultValue: 'Status controlled by Courier Sync' })}
                                             >
-                                                {t(`sales.status${order.status.replace(/\s+/g, '')}`) || order.status}
+                                                {getOrderStatusLabel(t, order.status)}
                                             </span>
                                         )}
                                     </div>
@@ -495,17 +493,17 @@ const OrderRow = React.memo(({
                                     {order.totalAmount >= 100000 ? (
                                         <div className="inline-flex items-center bg-gradient-to-r from-amber-100 to-yellow-200 text-amber-900 px-2 py-1 rounded shadow-sm border border-amber-300 transform hover:scale-105 transition-transform" title={t('ordersControl.orderRow.goldHighlight')}>
                                             <span className="font-black mr-1 text-[13px]">{order.totalAmount.toLocaleString()}</span>
-                                            <span className="text-[9px] font-black uppercase">DZD</span>
+                                            <span className="text-[9px] font-black uppercase">{t('common.dzd', 'DZD')}</span>
                                         </div>
                                     ) : order.totalAmount >= 50000 ? (
                                         <div className="inline-flex items-center bg-purple-100 text-purple-900 px-2 py-1 rounded shadow-sm border border-purple-200 transform hover:scale-105 transition-transform" title={t('ordersControl.orderRow.purpleHighlight')}>
                                             <span className="font-black mr-1 text-[13px]">{order.totalAmount.toLocaleString()}</span>
-                                            <span className="text-[9px] font-black uppercase">DZD</span>
+                                            <span className="text-[9px] font-black uppercase">{t('common.dzd', 'DZD')}</span>
                                         </div>
                                     ) : (
                                         <div className="inline-flex items-center">
                                             <span className="font-black text-gray-900 mr-1">{(order.totalAmount || 0).toLocaleString()}</span>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase">DZD</span>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase">{t('common.dzd', 'DZD')}</span>
                                         </div>
                                     )}
                                 </td>
@@ -606,7 +604,7 @@ const OrderRow = React.memo(({
                                         <div className="flex items-center justify-between mt-0.5"><span className="text-gray-500 font-medium">{t('ordersControl.expanded.trackingCode')}</span> <span className="font-mono font-bold text-gray-800">{order.trackingNumber || '-'}</span></div>
                                         <div className="flex items-center justify-between mt-2">
                                             <span className="text-gray-500 font-medium">{t('ordersControl.expanded.timelineStage')}</span>
-                                            <span className="font-bold text-gray-800 mt-0.5">{t(`sales.status${order.status.replace(/\s+/g, '')}`) || order.status}</span>
+                                            <span className="font-bold text-gray-800 mt-0.5">{getOrderStatusLabel(t, order.status)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -652,11 +650,25 @@ const OrderRow = React.memo(({
 
     // Check if order object changed
     if (prevProps.order._id !== nextProps.order._id) return false;
+    if (prevProps.order.updatedAt !== nextProps.order.updatedAt) return false;
     if (prevProps.order.status !== nextProps.order.status) return false;
     if (prevProps.order.priority !== nextProps.order.priority) return false;
     if ((prevProps.order.tags || []).join(',') !== (nextProps.order.tags || []).join(',')) return false;
     if (prevProps.order.assignedAgent?._id !== nextProps.order.assignedAgent?._id) return false;
     if (prevProps.order.courier?._id !== nextProps.order.courier?._id) return false;
+    if (prevProps.order.customer?.name !== nextProps.order.customer?.name) return false;
+    if (prevProps.order.customer?.phone !== nextProps.order.customer?.phone) return false;
+    // Check shipping details
+    if (prevProps.order.shipping?.phone1 !== nextProps.order.shipping?.phone1) return false;
+    if (prevProps.order.shipping?.phone2 !== nextProps.order.shipping?.phone2) return false;
+    if (prevProps.order.shipping?.address !== nextProps.order.shipping?.address) return false;
+    // Check regional data
+    if (prevProps.order.wilaya !== nextProps.order.wilaya) return false;
+    if (prevProps.order.commune !== nextProps.order.commune) return false;
+    // Check financial
+    if (prevProps.order.totalAmount !== nextProps.order.totalAmount) return false;
+    // Check products (simple length and IDs logic is usually enough for UI if updatedAt isn't fully trusted)
+    if (prevProps.order.products?.length !== nextProps.order.products?.length) return false;
 
     return true;
 });

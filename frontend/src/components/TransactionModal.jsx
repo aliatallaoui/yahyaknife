@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { X, Save, Loader2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
+import useModalDismiss from '../hooks/useModalDismiss';
+import { apiFetch } from '../utils/apiFetch';
 
 export default function TransactionModal({ isOpen, onClose, onSubmit, initialData }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const isEdit = !!initialData;
 
     // Form State
@@ -31,7 +34,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
     useEffect(() => {
         if (isHR && payrollRecords.length === 0) {
             setPayrollLoading(true);
-            fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+            apiFetch(`/api/hr/payroll`)
                 .then(r => r.ok ? r.json() : [])
                 .then(json => {
                     const data = json.data ?? (Array.isArray(json) ? json : []);
@@ -114,11 +117,10 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
             // If HR category and a worker is selected, also sync payroll
             if (isHR && selectedPayrollId) {
-                const payRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hr/payroll/${selectedPayrollId}/pay`, {
+                const payRes = await apiFetch(`/api/hr/payroll/${selectedPayrollId}/pay`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Bearer ${localStorage.getItem('token')}`
                     },
                     body: JSON.stringify({ amount: Number(amount) })
                 });
@@ -150,8 +152,8 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
     const selectedRecord = payrollRecords.find(p => p._id === selectedPayrollId);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" {...panelProps}>
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-900">
                         {isEdit ? t('modals.trxTitleEdit') : t('modals.trxTitleAdd')}
@@ -199,8 +201,9 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Category */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxCategory')}</label>
+                        <label htmlFor="trx-category" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxCategory')}</label>
                         <select
+                            id="trx-category"
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                             value={category}
@@ -243,6 +246,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                             ) : (
                                 <>
                                     <select
+                                        id="trx-employee"
                                         value={selectedPayrollId}
                                         onChange={(e) => setSelectedPayrollId(e.target.value)}
                                         className="w-full border border-violet-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400 bg-white"
@@ -253,7 +257,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                             const empName = pr.employeeId?.name || 'Unknown';
                                             return (
                                                 <option key={pr._id} value={pr._id}>
-                                                    {empName} — {pr.period} — Remaining: {remaining.toLocaleString()} DZ
+                                                    {empName} — {pr.period} — {t('modals.workerRemaining', 'Remaining')}: {remaining.toLocaleString()} {t('common.dzd', 'DZD')}
                                                 </option>
                                             );
                                         })}
@@ -283,8 +287,9 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Amount */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxAmount')}</label>
+                        <label htmlFor="trx-amount" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxAmount')}</label>
                         <input
+                            id="trx-amount"
                             type="number"
                             step="0.01"
                             required
@@ -297,8 +302,9 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Date */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDate')}</label>
+                        <label htmlFor="trx-date" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDate')}</label>
                         <input
+                            id="trx-date"
                             type="date"
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -309,8 +315,9 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDesc')}</label>
+                        <label htmlFor="trx-desc" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDesc')}</label>
                         <input
+                            id="trx-desc"
                             type="text"
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

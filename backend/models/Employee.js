@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const employeeSchema = new mongoose.Schema({
     tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
     phone: { type: String },
     role: { type: String, required: true },
     department: {
@@ -44,5 +44,9 @@ const employeeSchema = new mongoose.Schema({
         }
     }
 }, { timestamps: true });
+
+// --- Performance Indexes ---
+employeeSchema.index({ tenant: 1, status: 1 });                      // Active employee lists
+employeeSchema.index({ tenant: 1, email: 1 }, { unique: true });     // Tenant-scoped email uniqueness
 
 module.exports = mongoose.model('Employee', employeeSchema);

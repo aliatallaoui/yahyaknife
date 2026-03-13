@@ -2,6 +2,12 @@
 const mongoose = require('mongoose');
 
 const auditLogSchema = new mongoose.Schema({
+    tenant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tenant',
+        required: true,
+        index: true
+    },
     actorUserId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -27,6 +33,10 @@ const auditLogSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// --- Performance Indexes ---
+auditLogSchema.index({ tenant: 1, createdAt: -1 });                  // Tenant audit trail
+auditLogSchema.index({ actorUserId: 1, createdAt: -1 });             // User activity lookup
 
 const AuditLog = mongoose.model('AuditLog', auditLogSchema);
 

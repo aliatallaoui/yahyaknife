@@ -2,9 +2,11 @@ import { useState, useContext, useEffect } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
     const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
     const { createSupplier, updateSupplier } = useContext(InventoryContext);
 
     const [formData, setFormData] = useState({
@@ -66,13 +68,13 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto overflow-hidden" {...panelProps}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-800">
                         {editSupplier ? t('modals.supTitleEdit', 'Edit Supplier') : t('modals.supTitleAdd', 'Add New Supplier')}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -86,8 +88,9 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supName', 'Company Name *')}</label>
+                            <label htmlFor="supmod-name" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supName', 'Company Name *')}</label>
                             <input
+                                id="supmod-name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -99,8 +102,9 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supContact', 'Contact Person')}</label>
+                            <label htmlFor="supmod-contact" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supContact', 'Contact Person')}</label>
                             <input
+                                id="supmod-contact"
                                 type="text"
                                 name="contactPerson"
                                 value={formData.contactPerson}
@@ -112,10 +116,12 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supEmail', 'Email')}</label>
+                                <label htmlFor="supmod-email" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supEmail', 'Email')}</label>
                                 <input
+                                    id="supmod-email"
                                     type="email"
                                     name="email"
+                                    dir="ltr"
                                     value={formData.email}
                                     onChange={handleChange}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
@@ -123,10 +129,12 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supPhone', 'Phone')}</label>
+                                <label htmlFor="supmod-phone" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supPhone', 'Phone')}</label>
                                 <input
+                                    id="supmod-phone"
                                     type="tel"
                                     name="phone"
+                                    dir="ltr"
                                     value={formData.phone}
                                     onChange={handleChange}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
@@ -136,8 +144,9 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supAddress', 'Address')}</label>
+                            <label htmlFor="supmod-address" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supAddress', 'Address')}</label>
                             <input
+                                id="supmod-address"
                                 type="text"
                                 name="address"
                                 value={formData.address}

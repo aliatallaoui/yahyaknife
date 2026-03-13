@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Toolti
 import { useTranslation } from 'react-i18next';
 import PageHeader from '../components/PageHeader';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/apiFetch';
 
 export default function CustomerProfile() {
     const { id } = useParams();
@@ -24,6 +25,14 @@ export default function CustomerProfile() {
     const [blacklistError, setBlacklistError] = useState(null);
     const [fetchError, setFetchError] = useState(null);
 
+    // Escape key to close blacklist confirm dialog
+    useEffect(() => {
+        if (!blacklistConfirm) return;
+        const handler = (e) => { if (e.key === 'Escape') setBlacklistConfirm(false); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [blacklistConfirm]);
+
     useEffect(() => {
         const loadCustomerData = async () => {
             // Priority: Find in context first for instant load
@@ -31,18 +40,18 @@ export default function CustomerProfile() {
 
             try {
                 // Fetch fresh profile and orders and tickets
-                const authHeader = { headers: { Authorization: `Bearer ${token}` } };
                 const [ordersRes, profilesRes, ticketsRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers/${id}/orders`, authHeader),
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/customers`, authHeader), // Refresh full list to get newest metrics for this ID
-                    fetch(`${import.meta.env.VITE_API_URL || ''}/api/support?customerId=${id}`, authHeader)
+                    apiFetch(`/api/customers/${id}/orders`),
+                    apiFetch(`/api/customers`), // Refresh full list to get newest metrics for this ID
+                    apiFetch(`/api/support?customerId=${id}`)
                 ]);
 
-                if (ordersRes.ok) setOrders(await ordersRes.json());
+                if (ordersRes.ok) { const oj = await ordersRes.json(); setOrders(oj.data ?? oj); }
                 if (ticketsRes.ok) { const tj = await ticketsRes.json(); setTickets(tj.data ?? (Array.isArray(tj) ? tj : [])); }
 
                 if (profilesRes.ok) {
-                    const allCustomers = await profilesRes.json();
+                    const cj = await profilesRes.json();
+                    const allCustomers = cj.data ?? cj;
                     const freshData = allCustomers.find(c => c._id === id);
                     if (freshData) setCustomer(freshData);
                     else if (existingCustomer) setCustomer(existingCustomer);
@@ -109,7 +118,7 @@ export default function CustomerProfile() {
                     <div className="flex items-center gap-2">
                         {hasPermission('orders.create') && customer && (
                             <button
-                                onClick={() => navigate(`/sales?newOrder=1&phone=${encodeURIComponent(customer.phone || '')}&name=${encodeURIComponent(customer.name || '')}`)}
+                                onClick={() => navigate(`/orders-hub?newOrder=1&phone=${encodeURIComponent(customer.phone || '')}&name=${encodeURIComponent(customer.name || '')}`)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-700 font-bold rounded-xl transition-all border border-white/30 active:scale-95 leading-none text-xs hover:bg-white/90 shadow-sm"
                             >
                                 <Plus className="w-4 h-4" /> {t('crm.newOrder', 'New Order')}
@@ -134,7 +143,7 @@ export default function CustomerProfile() {
             )}
 
             {/* Profile Header Card */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-gray-100 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 end-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-bl-full -z-10 opacity-50 rtl:rounded-bl-none rtl:rounded-br-full"></div>
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -209,19 +218,19 @@ export default function CustomerProfile() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
                 {/* 1. Value & Revenue Metrics */}
-                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm col-span-1 lg:col-span-2 flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-sm col-span-1 lg:col-span-2 flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
                         <Package className="w-5 h-5 text-indigo-500" /> {t('crm.opValueTitle', 'Operational & Value Footprint')}
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
                         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">{t('crm.colLTV', 'Lifetime Value')}</p>
-                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter truncate">{(customer.lifetimeValue || 0).toLocaleString()} <span className="text-sm">DZ</span></h3>
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter truncate">{(customer.lifetimeValue || 0).toLocaleString()} <span className="text-sm">{t('common.dzd', 'DZD')}</span></h3>
                             </div>
                             <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
                                 <TrendingUp className="w-6 h-6 text-gray-600" />
@@ -230,7 +239,7 @@ export default function CustomerProfile() {
                         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">{t('crm.avgOrderValue', 'Avg Order Value')}</p>
-                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter truncate">{Math.round(customer.averageOrderValue || 0).toLocaleString()} <span className="text-sm">DZ</span></h3>
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter truncate">{Math.round(customer.averageOrderValue || 0).toLocaleString()} <span className="text-sm">{t('common.dzd', 'DZD')}</span></h3>
                             </div>
                             <div className="h-12 w-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
                                 <Package className="w-6 h-6 text-gray-600" />
@@ -264,7 +273,7 @@ export default function CustomerProfile() {
                                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
                                     <RechartsTooltip
-                                        formatter={(value, name, props) => [`${value.toLocaleString()} DZ`, props.payload.status]}
+                                        formatter={(value, name, props) => [`${value.toLocaleString()} ${t('common.dzd', 'DZD')}`, props.payload.status]}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                     />
                                     <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={40}>
@@ -382,19 +391,19 @@ export default function CustomerProfile() {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-start border-collapse min-w-[800px]">
+                                <table className="cf-table min-w-[800px]">
                                     <thead>
-                                        <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
-                                            <th className="p-4 font-semibold rounded-tl-xl ps-6">{t('crm.colOrderId', 'Order ID')}</th>
-                                            <th className="p-4 font-semibold">{t('crm.colDate', 'Date')}</th>
-                                            <th className="p-4 font-semibold">{t('crm.colItems', 'Items')}</th>
-                                            <th className="p-4 font-semibold">{t('crm.colAmount', 'Amount')}</th>
-                                            <th className="p-4 font-semibold rounded-tr-xl">{t('crm.colResult', 'Result')}</th>
+                                        <tr>
+                                            <th>{t('crm.colOrderId', 'Order ID')}</th>
+                                            <th>{t('crm.colDate', 'Date')}</th>
+                                            <th>{t('crm.colItems', 'Items')}</th>
+                                            <th>{t('crm.colAmount', 'Amount')}</th>
+                                            <th>{t('crm.colResult', 'Result')}</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-50 text-sm">
+                                    <tbody>
                                         {orders.map(order => (
-                                            <tr key={order._id} className="hover:bg-gray-50/50 transition-colors">
+                                            <tr key={order._id}>
                                                 <td className="p-4 ps-6 font-medium text-gray-900">
                                                     {order.orderNumber || order._id.toString().substring(18)}
                                                 </td>
@@ -408,7 +417,7 @@ export default function CustomerProfile() {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 font-black text-gray-900">
-                                                    {order.totalAmount.toLocaleString()} DZ
+                                                    {order.totalAmount.toLocaleString()} {t('common.dzd', 'DZD')}
                                                 </td>
                                                 <td className="p-4">
                                                     <span className={clsx(
@@ -437,19 +446,19 @@ export default function CustomerProfile() {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-start border-collapse min-w-[800px]">
+                                <table className="cf-table min-w-[800px]">
                                     <thead>
-                                        <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider">
-                                            <th className="p-4 font-semibold rounded-tl-xl ps-6">{t('crm.colTicketNo', 'Ticket No.')}</th>
-                                            <th className="p-4 font-semibold">{t('crm.colOpened', 'Date Opened')}</th>
-                                            <th className="p-4 font-semibold">{t('crm.colSubject', 'Subject')}</th>
-                                            <th className="p-4 font-semibold">{t('crm.colStatus', 'Status')}</th>
-                                            <th className="p-4 font-semibold rounded-tr-xl">{t('crm.colPriority', 'Priority')}</th>
+                                        <tr>
+                                            <th>{t('crm.colTicketNo', 'Ticket No.')}</th>
+                                            <th>{t('crm.colOpened', 'Date Opened')}</th>
+                                            <th>{t('crm.colSubject', 'Subject')}</th>
+                                            <th>{t('crm.colStatus', 'Status')}</th>
+                                            <th>{t('crm.colPriority', 'Priority')}</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-50 text-sm">
+                                    <tbody>
                                         {tickets.map(ticket => (
-                                            <tr key={ticket._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => window.location.href = '/support'}>
+                                            <tr key={ticket._id} className="cursor-pointer" onClick={() => window.location.href = '/support'}>
                                                 <td className="p-4 ps-6 font-medium text-gray-900">
                                                     {ticket.ticketNumber}
                                                 </td>

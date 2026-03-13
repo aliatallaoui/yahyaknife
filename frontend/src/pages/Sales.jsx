@@ -2,7 +2,8 @@ import React, { useState, useContext, useEffect, useRef } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
 import { ShoppingCart, TrendingUp, Users, Search, Download, Plus, Pencil, Trash2, CheckCircle2, Clock, AlertCircle, Filter, CheckSquare, ChevronDown, ChevronUp, Package, MapPin, Tag, CreditCard, AlertTriangle, FileText, Wrench, Truck, ShoppingBag, X } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
-import axios from 'axios';
+import api from '../utils/axiosInstance';
+import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import moment from 'moment';
 import { SalesContext } from '../context/SalesContext';
@@ -12,25 +13,11 @@ import OrderModal from '../components/OrderModal';
 import BatchDispatchModal from '../components/BatchDispatchModal';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/apiFetch';
+
+import { ORDER_STATUS_COLORS as STATUS_STYLES, COD_STATUSES, getOrderStatusLabel } from '../constants/statusColors';
 
 const COLORS = ['#4361EE', '#111827', '#6B7280', '#D1D5DB', '#F87171', '#34D399'];
-
-const COD_STATUSES = ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'];
-
-const STATUS_STYLES = {
-    'New': 'bg-gray-100 text-gray-700 border-gray-200',
-    'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
-    'Preparing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    'Ready for Pickup': 'bg-violet-50 text-violet-700 border-violet-200',
-    'Dispatched': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    'Shipped': 'bg-amber-50 text-amber-700 border-amber-200',
-    'Out for Delivery': 'bg-orange-50 text-orange-700 border-orange-200',
-    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    'Paid': 'bg-green-50 text-green-700 border-green-200',
-    'Refused': 'bg-red-50 text-red-700 border-red-200',
-    'Returned': 'bg-rose-50 text-rose-700 border-rose-200',
-    'Cancelled': 'bg-gray-50 text-gray-400 border-gray-200 line-through',
-};
 
 export default function Sales() {
     const { t } = useTranslation();
@@ -74,9 +61,20 @@ export default function Sales() {
 
     // In-app feedback — replaces alert() / window.confirm()
     const [confirmDialog, setConfirmDialog] = useState(null); // { title, body, danger, onConfirm }
-    const [toast, setToast] = useState(null); // { type: 'success'|'error', text }
-    const showToast = (type, text) => { setToast({ type, text }); setTimeout(() => setToast(null), 4000); };
+    const showToast = (type, text) => { 
+        if (type === 'error') toast.error(text, { duration: 4000 });
+        else toast.success(text, { duration: 4000 });
+    };
     const [dispatchingOrderId, setDispatchingOrderId] = useState(null);
+
+    // Escape key to close confirm dialog
+    useEffect(() => {
+        if (!confirmDialog) return;
+        const handler = (e) => { if (e.key === 'Escape') setConfirmDialog(null); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [confirmDialog]);
+
     const toggleExpand = (id) => setExpandedOrderId(prev => prev === id ? null : id);
 
     const startOrderEdit = (order, field) =>
@@ -98,9 +96,7 @@ export default function Sales() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
-        fetch(`${import.meta.env.VITE_API_URL || ''}/api/couriers`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
+        apiFetch(`/api/couriers`)
             .then(res => {
                 if (!res.ok) throw new Error(`Failed to load couriers: ${res.status}`);
                 return res.json();
@@ -143,10 +139,7 @@ export default function Sales() {
             onConfirm: async () => {
                 setDispatchingOrderId(orderId);
                 try {
-                    const token = localStorage.getItem('token');
-                    await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/shipments/quick-dispatch/${orderId}`, {}, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+                    await api.post(`/api/shipments/quick-dispatch/${orderId}`, {});
                     showToast('success', 'Order dispatched — tracking info saved.');
                     fetchSalesData(currentPage, perPage);
                 } catch (err) {
@@ -173,7 +166,6 @@ export default function Sales() {
                     setSelectedOrderIds(new Set());
                     fetchSalesData(currentPage, perPage);
                 } catch (err) {
-                    console.error(err);
                     showToast('error', 'Error batch verifying orders.');
                 }
             },
@@ -353,9 +345,9 @@ export default function Sales() {
                                     selectedStatusFilter ? 'border-blue-400 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600'
                                 )}
                             >
-                                <option value="">All Statuses</option>
+                                <option value="">{t('ordersControl.filters.status', 'All Statuses')}</option>
                                 {['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned', 'Cancelled'].map(s => (
-                                    <option key={s} value={s}>{s}</option>
+                                    <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>
                                 ))}
                             </select>
 
@@ -420,23 +412,23 @@ export default function Sales() {
                         }
 
                         <div className="flex-1 overflow-x-auto">
-                            <table className="w-full text-start border-collapse">
+                            <table className="cf-table">
                                 <thead>
-                                    <tr className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
-                                        <th className="px-4 py-3 w-10">
+                                    <tr>
+                                        <th className="w-10">
                                             <input type="checkbox" onChange={() => toggleSelectAll(filteredOrders)} checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" />
                                         </th>
-                                        <th className="px-4 py-3 font-semibold text-start">Order</th>
-                                        <th className="px-4 py-3 font-semibold text-start">Customer</th>
-                                        <th className="px-4 py-3 font-semibold text-start">Items</th>
-                                        <th className="px-4 py-3 font-semibold text-start">Channel</th>
-                                        <th className="px-4 py-3 font-semibold text-start">Courier</th>
-                                        <th className="px-4 py-3 font-semibold text-end">Amount</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Status</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Actions</th>
+                                        <th className="text-start">Order</th>
+                                        <th className="text-start">Customer</th>
+                                        <th className="text-start">Items</th>
+                                        <th className="text-start">Channel</th>
+                                        <th className="text-start">Courier</th>
+                                        <th className="text-end">Amount</th>
+                                        <th className="text-center">Status</th>
+                                        <th className="text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-sm">
+                                <tbody>
                                     {filteredOrders.length === 0 ? (
                                         <tr><td colSpan="9" className="py-16 text-center">
                                             <div className="flex flex-col items-center gap-3 text-gray-400">
@@ -452,7 +444,7 @@ export default function Sales() {
                                         const isExpanded = expandedOrderId === order._id;
                                         return (
                                             <React.Fragment key={order._id}>
-                                                <tr onClick={() => toggleExpand(order._id)} className={clsx("cursor-pointer group transition-colors", selectedOrderIds.has(order._id) ? "bg-blue-50" : "hover:bg-gray-50/60")}>
+                                                <tr onClick={() => toggleExpand(order._id)} className={clsx("cursor-pointer group", selectedOrderIds.has(order._id) && "row-selected")}>
 
                                                     {/* Checkbox */}
                                                     <td className="px-4 py-3.5">
@@ -557,7 +549,7 @@ export default function Sales() {
                                                                 title={hasPermission('orders.edit') ? "Click to edit" : ""}
                                                             >
                                                                 <p className={clsx("font-black text-gray-900 text-base tabular-nums transition-colors", hasPermission('orders.edit') && "group-hover/amt:text-blue-600")}>{order.totalAmount?.toLocaleString()}</p>
-                                                                <p className="text-[10px] text-gray-400 font-medium">DZD</p>
+                                                                <p className="text-[10px] text-gray-400 font-medium">{t('common.dzd', 'DZD')}</p>
                                                             </div>
                                                         )}
                                                     </td>
@@ -582,7 +574,7 @@ export default function Sales() {
                                                                     )}
                                                                 >
                                                                     {COD_STATUSES.map(s => (
-                                                                        <option key={s} value={s}>{s}</option>
+                                                                        <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>
                                                                     ))}
                                                                 </select>
                                                             )}
@@ -625,7 +617,7 @@ export default function Sales() {
                                                     <tr>
                                                         <td colSpan={9} className="p-0 border-b border-gray-100 bg-gray-50/50 relative overflow-hidden">
                                                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
-                                                            <div className="p-5 pl-8 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-200">
+                                                            <div className="p-4 ps-6 sm:p-5 sm:ps-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 animate-in slide-in-from-top-2 duration-200">
 
                                                                 {/* Order Products */}
                                                                 <div className="space-y-3">
@@ -640,12 +632,12 @@ export default function Sales() {
                                                                                         <p className="text-sm font-bold text-gray-900 leading-tight">{p.name || 'Product'}</p>
                                                                                         <div className="flex items-center gap-2 mt-1">
                                                                                             <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">Qty: {p.quantity}</span>
-                                                                                            <span className="text-[10px] text-gray-400 font-medium tracking-wide">{(p.unitPrice || 0).toLocaleString()} DZD / ea</span>
+                                                                                            <span className="text-[10px] text-gray-400 font-medium tracking-wide">{(p.unitPrice || 0).toLocaleString()} {t('common.dzd', 'DZD')} / {t('common.each', 'ea')}</span>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
                                                                                         <p className="font-black text-blue-600 tabular-nums text-sm">{((p.quantity || 1) * (p.unitPrice || 0)).toLocaleString()}</p>
-                                                                                        <p className="text-[9px] font-bold text-blue-300 uppercase">DZD Total</p>
+                                                                                        <p className="text-[9px] font-bold text-blue-300 uppercase">{t('common.dzd', 'DZD')} {t('common.total', 'Total')}</p>
                                                                                     </div>
                                                                                 </div>
                                                                             ))}
@@ -671,7 +663,7 @@ export default function Sales() {
                                                                             </div>
                                                                             <div>
                                                                                 <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Current Status</p>
-                                                                                <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg inline-block whitespace-nowrap">{order.status || 'New'}</span>
+                                                                                <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg inline-block whitespace-nowrap">{getOrderStatusLabel(t, order.status || 'New')}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -722,7 +714,7 @@ export default function Sales() {
                                                                     {(order.financials?.shippingCosts > 0) && (
                                                                         <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex justify-between items-center mt-auto">
                                                                             <p className="text-xs font-bold text-gray-500">Logistics Cost</p>
-                                                                            <p className="text-sm font-black text-gray-700">{order.financials.shippingCosts.toLocaleString()} <span className="text-[10px] text-gray-400 font-bold">DZD</span></p>
+                                                                            <p className="text-sm font-black text-gray-700">{order.financials.shippingCosts.toLocaleString()} <span className="text-[10px] text-gray-400 font-bold">{t('common.dzd', 'DZD')}</span></p>
                                                                         </div>
                                                                     )}
                                                                 </div>

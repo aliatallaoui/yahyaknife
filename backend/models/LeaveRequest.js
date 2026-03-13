@@ -19,4 +19,7 @@ const leaveRequestSchema = new mongoose.Schema({
     requestDate: { type: Date, default: Date.now }
 }, { timestamps: true });
 
+// --- Performance Indexes ---
+leaveRequestSchema.index({ tenant: 1, employeeId: 1, status: 1 });   // Employee leave dashboard
+
 module.exports = mongoose.model('LeaveRequest', leaveRequestSchema);
