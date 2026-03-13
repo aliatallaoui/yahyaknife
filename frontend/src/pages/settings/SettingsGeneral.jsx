@@ -86,65 +86,65 @@ export default function SettingsGeneral() {
 
     return (
         <div className="p-8 animate-in fade-in duration-300">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">{t('title')}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h3>
 
             <div className="space-y-8 max-w-2xl">
 
                 {/* Localization */}
                 <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2"><Globe className="w-4 h-4 text-gray-400" /> {t('localization')}</h4>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2"><Globe className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('localization')}</h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="gen-lang" className="block text-xs font-bold text-gray-700 mb-1">{t('language')}</label>
+                            <label htmlFor="gen-lang" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('language')}</label>
                             <select
                                 id="gen-lang"
                                 value={language}
                                 onChange={(e) => setLanguage(e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
+                                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 shadow-sm"
                             >
                                 <option value="en">English (US)</option>
                                 <option value="fr">Français</option>
                                 <option value="ar">العربية (Arabic)</option>
                             </select>
-                            <p className="text-[10px] text-gray-400 mt-1">{t('langDesc')}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{t('langDesc')}</p>
                         </div>
                         <div>
-                            <label htmlFor="gen-tz" className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('timezone')}</label>
+                            <label htmlFor="gen-tz" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('timezone')}</label>
                             <select
                                 id="gen-tz"
                                 value={timezone}
                                 onChange={(e) => setTimezone(e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
+                                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 shadow-sm"
                             >
                                 <option value="UTC">UTC (Universal Coordinated Time)</option>
                                 <option value="Africa/Algiers">Africa/Algiers (CET)</option>
                                 <option value="America/New_York">America/New_York (EST)</option>
                             </select>
-                            <p className="text-[10px] text-gray-400 mt-1">{t('tzDesc')}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{t('tzDesc')}</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                         <div>
-                            <label htmlFor="gen-date" className="block text-xs font-bold text-gray-700 mb-1">{t('dateFormat')}</label>
+                            <label htmlFor="gen-date" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('dateFormat')}</label>
                             <select
                                 id="gen-date"
                                 value={dateFormat}
                                 onChange={(e) => setDateFormat(e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
+                                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 shadow-sm"
                             >
                                 <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2026)</option>
                                 <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2026)</option>
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="gen-currency" className="block text-xs font-bold text-gray-700 mb-1">{t('currency')}</label>
+                            <label htmlFor="gen-currency" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('currency')}</label>
                             <select
                                 id="gen-currency"
                                 value={currency}
                                 onChange={(e) => setCurrency(e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white shadow-sm"
+                                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-gray-100 shadow-sm"
                             >
                                 <option value="DZD">DZD (Algerian Dinar)</option>
                                 <option value="USD">USD ($)</option>
@@ -155,10 +155,10 @@ export default function SettingsGeneral() {
 
                 {/* Appearance */}
                 <div className="space-y-4 pt-4">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2"><Palette className="w-4 h-4 text-gray-400" /> {t('appearance')}</h4>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2"><Palette className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('appearance')}</h4>
 
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-3">{t('themePref')}</label>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-3">{t('themePref')}</label>
                         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <ThemeOption icon={Monitor} label={t('themeSystem')} desc={t('themeSystemDesc', 'Match OS')} value="system" current={theme} onClick={() => handleThemeChange('system')} />
                             <ThemeOption icon={Sun} label={t('themeLight')} desc={t('themeLightDesc', 'Always light')} value="light" current={theme} onClick={() => handleThemeChange('light')} />
@@ -169,12 +169,12 @@ export default function SettingsGeneral() {
 
                 <div className={clsx("pt-8 flex gap-3 items-center", isAr ? "justify-start" : "justify-end")}>
                     {saveSuccess && (
-                        <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5 animate-in slide-in-from-end-2">
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-in slide-in-from-end-2">
                             <CheckCircle2 className="w-4 h-4" /> {t('saved')}
                         </span>
                     )}
                     {saveError && (
-                        <span className="text-sm font-semibold text-rose-600 flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                             <AlertTriangle className="w-4 h-4" /> {saveError}
                         </span>
                     )}
@@ -198,17 +198,19 @@ function ThemeOption({ icon: Icon, label, desc, value, current, onClick }) {
             onClick={onClick}
             className={clsx(
                 "flex-1 flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200",
-                isActive ? "border-indigo-600 bg-indigo-50 shadow-sm scale-[1.02]" : "border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm"
+                isActive
+                    ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm scale-[1.02]"
+                    : "border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm"
             )}
         >
             <div className={clsx(
                 "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-                isActive ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-400"
+                isActive ? "bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300" : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
             )}>
                 <Icon className="w-5 h-5" />
             </div>
-            <span className={clsx("text-xs font-bold", isActive ? "text-indigo-800" : "text-gray-600")}>{label}</span>
-            {desc && <span className={clsx("text-[10px]", isActive ? "text-indigo-500" : "text-gray-400")}>{desc}</span>}
+            <span className={clsx("text-xs font-bold", isActive ? "text-indigo-800 dark:text-indigo-300" : "text-gray-600 dark:text-gray-400")}>{label}</span>
+            {desc && <span className={clsx("text-[10px]", isActive ? "text-indigo-500 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500")}>{desc}</span>}
         </div>
     );
 }

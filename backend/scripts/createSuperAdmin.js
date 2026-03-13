@@ -34,9 +34,13 @@ const createSuperAdmin = async () => {
         }
 
         const salt = await bcrypt.genSalt(10);
-        const password = 'SuperAdmin@2026';
+        const password = process.env.SUPER_ADMIN_PASSWORD;
+        if (!password || password.length < 12) {
+            console.error('ERROR: Set SUPER_ADMIN_PASSWORD env var (min 12 chars) before running this script.');
+            process.exit(1);
+        }
         const hashedPassword = await bcrypt.hash(password, salt);
-        const email = 'superadmin@company.com';
+        const email = process.env.SUPER_ADMIN_EMAIL || 'superadmin@company.com';
 
         const user = await User.findOneAndUpdate(
             { email },
@@ -54,7 +58,6 @@ const createSuperAdmin = async () => {
 
         console.log(`\nSuper Admin created successfully!`);
         console.log(`Email: ${email}`);
-        console.log(`Password: ${password}`);
         console.log(`Tenant: ${tenant.name} (${tenant._id})`);
 
         process.exit(0);

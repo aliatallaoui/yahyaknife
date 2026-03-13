@@ -1,7 +1,16 @@
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const path = require('path');
 
-const LOCAL_URI = 'mongodb://127.0.0.1:27017/saas-dashboard';
-const REMOTE_URI = 'mongodb://yahyaknife_db_user:bIAt9KaxaJbS24xj@ac-f20sful-shard-00-00.sacozgo.mongodb.net:27017,ac-f20sful-shard-00-01.sacozgo.mongodb.net:27017,ac-f20sful-shard-00-02.sacozgo.mongodb.net:27017/?ssl=true&replicaSet=atlas-ynzj40-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+const LOCAL_URI = process.env.LOCAL_MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
+const REMOTE_URI = process.env.REMOTE_MONGO_URI || process.env.MONGO_URI;
+
+if (!REMOTE_URI) {
+    console.error('ERROR: REMOTE_MONGO_URI (or MONGO_URI) env var is required. Set it in backend/.env');
+    process.exit(1);
+}
 
 async function migrateData() {
     console.log('Starting Database Migration: Local -> Atlas');
