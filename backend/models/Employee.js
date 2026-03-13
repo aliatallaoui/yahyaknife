@@ -42,7 +42,8 @@ const employeeSchema = new mongoose.Schema({
             type: [String],
             default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Sunday'] // Typical Algerian/Middle-East Work week
         }
-    }
+    },
+    deletedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 // --- Performance Indexes ---

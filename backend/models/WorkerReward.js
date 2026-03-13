@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const workerRewardSchema = new mongoose.Schema({
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
     dateAwarded: { type: Date, default: Date.now },
     type: {
         type: String,

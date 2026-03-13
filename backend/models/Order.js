@@ -28,6 +28,12 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    // How this order was assigned (for filtering & display)
+    assignmentMode: {
+        type: String,
+        enum: ['manual', 'product', 'store', 'round_robin', 'claim', 'auto_least_loaded', null],
+        default: null
+    },
     confirmedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -45,7 +51,19 @@ const orderSchema = new mongoose.Schema({
     channel: {
         type: String,
         required: true,
-        enum: ['Shopify', 'WooCommerce', 'Website', 'WhatsApp', 'Facebook', 'TikTok', 'Instagram', 'Manual', 'Direct', 'Marketplace', 'Other']
+        enum: ['Shopify', 'WooCommerce', 'Website', 'WhatsApp', 'Facebook', 'TikTok', 'Instagram', 'Manual', 'Direct', 'Marketplace', 'LandingPage', 'Other']
+    },
+    // ── Sales Channel Source Tracking ───────────────────────────────────────
+    salesChannelSource: {
+        salesChannel: { type: mongoose.Schema.Types.ObjectId, ref: 'SalesChannel' },
+        landingPage: { type: mongoose.Schema.Types.ObjectId, ref: 'LandingPage' },
+        utm: {
+            source: { type: String },
+            medium: { type: String },
+            campaign: { type: String },
+            term: { type: String },
+            content: { type: String }
+        }
     },
     // Main COD Lifecycle Status
     status: {
@@ -127,8 +145,10 @@ const orderSchema = new mongoose.Schema({
 orderSchema.index({ tenant: 1, _id: -1 }); // Fast Cursor Pagination
 orderSchema.index({ tenant: 1, status: 1, _id: -1 }); // Fast View Pagination
 orderSchema.index({ tenant: 1, lockedAt: 1 }); // Quick scan for stale locks
+orderSchema.index({ tenant: 1, assignedAgent: 1, status: 1, deletedAt: 1 }); // Agent queue filtering
 orderSchema.index({ tenant: 1, 'shipping.phone1': 1 }); // Call Center Lookup
 orderSchema.index({ tenant: 1, courier: 1, 'deliveryStatus.deliveredAt': -1 }); // Courier KPI lookups
+orderSchema.index({ tenant: 1, courier: 1, status: 1 }); // Courier settlement queries
 
 orderSchema.index({ tenant: 1, createdAt: -1 }); // Date-range analytics & daily rollup
 orderSchema.index({ tenant: 1, customer: 1 }); // Customer order history

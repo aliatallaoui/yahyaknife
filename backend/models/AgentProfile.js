@@ -7,6 +7,12 @@ const agentProfileSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    tenant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tenant',
+        required: true,
+        index: true
+    },
     compensationModel: {
         type: String,
         enum: ['Fixed', 'Commission', 'Hybrid'],

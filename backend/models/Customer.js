@@ -46,7 +46,8 @@ const customerSchema = new mongoose.Schema({
     returnRate: { type: Number, default: 0 },
     riskLevel: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Low' },
     requiresDeliveryVerification: { type: Boolean, default: false }, // Force manual call before dispatch
-    blacklisted: { type: Boolean, default: false } // Auto-blocked from future orders
+    blacklisted: { type: Boolean, default: false }, // Auto-blocked from future orders
+    deletedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 // Tenant Isolating Unique Constraints & Speedy Lookups

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const productVariantSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
     productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
@@ -9,7 +10,7 @@ const productVariantSchema = new mongoose.Schema({
     sku: {
         type: String,
         required: true,
-        unique: true
+        // unique per tenant — enforced by compound index below
     },
     attributes: {
         type: Map,
@@ -85,8 +86,9 @@ const productVariantSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // --- Performance Indexes ---
-productVariantSchema.index({ productId: 1, status: 1 });             // Product detail page
-productVariantSchema.index({ status: 1, totalStock: 1 });            // Low-stock alert scan
+productVariantSchema.index({ tenant: 1, sku: 1 }, { unique: true }); // SKU unique per tenant
+productVariantSchema.index({ tenant: 1, productId: 1, status: 1 }); // Product detail page
+productVariantSchema.index({ tenant: 1, status: 1, totalStock: 1 }); // Low-stock alert scan
 
 productVariantSchema.virtual('availableStock').get(function () {
     return this.totalStock - this.reservedStock;

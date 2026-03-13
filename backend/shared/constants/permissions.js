@@ -27,6 +27,7 @@ const PERMS = {
     // ── Shipments ────────────────────────────────────────────────────────────
     SHIPMENTS_VIEW:         'shipments.view',
     SHIPMENTS_CREATE:       'shipments.create',
+    SHIPMENTS_EDIT:         'shipments.edit',
     SHIPMENTS_CANCEL:       'shipments.cancel',
     SHIPMENTS_EXPORT:       'shipments.export',
 
@@ -38,6 +39,7 @@ const PERMS = {
 
     // ── Finance ──────────────────────────────────────────────────────────────
     FINANCE_VIEW:               'finance.view',
+    FINANCE_EDIT:               'finance.edit',
     FINANCE_EXPORT:             'finance.export',
     FINANCE_SETTLE_COURIER:     'finance.settle.courier',
     FINANCE_PAYROLL_VIEW:       'finance.payroll.view',
@@ -47,6 +49,7 @@ const PERMS = {
     COURIERS_VIEW:          'couriers.view',
     COURIERS_CREATE:        'couriers.create',
     COURIERS_EDIT:          'couriers.edit',
+    COURIERS_DELETE:        'couriers.delete',
     COURIERS_API_CONNECT:   'couriers.api.connect',
 
     // ── Inventory ────────────────────────────────────────────────────────────
@@ -72,6 +75,11 @@ const PERMS = {
     CALLCENTER_PROCESS:             'callcenter.process_orders',
     CALLCENTER_VIEW_REPORTS:        'callcenter.view_reports',
     CALLCENTER_MANAGE_ASSIGNMENTS:  'callcenter.manage_assignments',
+    CALLCENTER_VIEW_UNASSIGNED:     'callcenter.view_unassigned',
+    CALLCENTER_CLAIM_ORDERS:        'callcenter.claim_orders',
+    CALLCENTER_REASSIGN:            'callcenter.reassign_orders',
+    CALLCENTER_OVERRIDE_LOCK:       'callcenter.override_lock',
+    CALLCENTER_MANAGE_RULES:        'callcenter.manage_rules',
 
     // ── Procurement ──────────────────────────────────────────────────────────
     PROCUREMENT_VIEW:           'procurement.read',
@@ -82,6 +90,25 @@ const PERMS = {
     // ── Support ──────────────────────────────────────────────────────────────
     SUPPORT_VIEW:               'support.view',
     SUPPORT_EDIT:               'support.edit',
+
+    // ── Sales Channels ──────────────────────────────────────────────────────
+    SALES_CHANNELS_VIEW:        'saleschannels.view',
+    SALES_CHANNELS_CREATE:      'saleschannels.create',
+    SALES_CHANNELS_EDIT:        'saleschannels.edit',
+    SALES_CHANNELS_DELETE:      'saleschannels.delete',
+    SALES_CHANNELS_PUBLISH:     'saleschannels.publish',
+    SALES_CHANNELS_ANALYTICS:   'saleschannels.analytics',
+
+    // ── Tenant ──────────────────────────────────────────────────────────────
+    TENANT_VIEW:            'tenant.view',
+    TENANT_SETTINGS:        'tenant.settings',
+    TENANT_INVITE:          'tenant.invite',
+    TENANT_BILLING:         'tenant.billing',
+    TENANT_DELETE:          'tenant.delete',
+
+    // ── Webhooks ────────────────────────────────────────────────────────────
+    WEBHOOKS_VIEW:          'webhooks.view',
+    WEBHOOKS_MANAGE:        'webhooks.manage',
 
     // ── System ───────────────────────────────────────────────────────────────
     SYSTEM_ROLES:           'system.roles',

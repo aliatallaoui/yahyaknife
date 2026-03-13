@@ -37,5 +37,6 @@ const payrollSchema = new mongoose.Schema({
 
 // Ensure one payroll generated per employee per month per tenant
 payrollSchema.index({ tenant: 1, employeeId: 1, period: 1 }, { unique: true });
+payrollSchema.index({ tenant: 1, period: 1 }); // Period-level listing (payroll dashboard)
 
 module.exports = mongoose.model('Payroll', payrollSchema);

@@ -7,6 +7,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a name']
     },
+    phone: {
+        type: String,
+        default: ''
+    },
+    jobTitle: {
+        type: String,
+        default: ''
+    },
     email: {
         type: String,
         required: [true, 'Please add an email'],
@@ -60,7 +68,15 @@ const userSchema = new mongoose.Schema({
     },
     tenant: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tenant'
+        ref: 'Tenant',
+        required: [true, 'User must belong to a tenant'],
+        index: true
+    },
+    platformRole: {
+        type: String,
+        enum: ['platform_admin', null],
+        default: null,
+        index: true
     }
 }, {
     timestamps: true

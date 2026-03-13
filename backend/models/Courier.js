@@ -50,7 +50,8 @@ const courierSchema = new mongoose.Schema({
     totalDeliveries: { type: Number, default: 0 },
     successRate: { type: Number, default: 0 },
     averageDeliveryTimeMinutes: { type: Number, default: 0 },
-    reliabilityScore: { type: Number, default: 100 }
+    reliabilityScore: { type: Number, default: 100 },
+    deletedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 courierSchema.index({ tenant: 1, status: 1 });

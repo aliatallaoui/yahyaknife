@@ -8,9 +8,9 @@ const { LEGACY_PERMISSION_MAP } = require('../config/permissions');
 const AUTH_CACHE_TTL = 600; // 10 minutes
 const TENANT_SUB_CACHE_TTL = 120; // 2 minutes (subscription status can change)
 
-// Paths that are protected (need auth) but exempt from subscription check
+// Paths that are protected (need auth) but exempt from subscription + tenant check
 // so the frontend can always fetch user/subscription info
-const SUBSCRIPTION_EXEMPT_PATHS = ['/api/auth/me', '/api/auth/refresh'];
+const SUBSCRIPTION_EXEMPT_PATHS = ['/api/auth/me', '/api/auth/refresh', '/api/auth/tenants', '/api/auth/switch-tenant'];
 
 const protect = async (req, res, next) => {
     let token;
@@ -20,8 +20,6 @@ const protect = async (req, res, next) => {
         req.headers.authorization.startsWith('Bearer')
     ) {
         token = req.headers.authorization.split(' ')[1];
-    } else if (req.query && req.query.token) {
-        token = req.query.token;
     }
 
     if (token) {
@@ -41,6 +39,18 @@ const protect = async (req, res, next) => {
             }
 
             req.user = user;
+
+            // Prefer tenant from JWT claim (authoritative, set at login)
+            // Fall back to user.tenant for tokens issued before this change
+            if (decoded.tenant) {
+                req.user.tenant = decoded.tenant;
+            }
+
+            // Impersonation flag — platform admin viewing another tenant
+            if (decoded.impersonating) {
+                req.user.impersonating = true;
+                req.user.realTenant = decoded.realTenant;
+            }
 
             // Compute effective permissions
             let effectivePermissions = new Set(user.role ? user.role.permissions : []);
@@ -69,11 +79,22 @@ const protect = async (req, res, next) => {
             // ─── Subscription / Trial Gate ───────────────────────────────
             // Skip for exempt paths (e.g. /me so frontend can always read subscription status)
             const isExempt = SUBSCRIPTION_EXEMPT_PATHS.some(p => req.originalUrl.startsWith(p));
+
+            // Platform admins and /api/platform routes bypass subscription + tenant guards
+            const isPlatformAdmin = user.platformRole === 'platform_admin';
+            const isPlatformRoute = req.originalUrl.startsWith('/api/platform');
+            if (isPlatformAdmin && isPlatformRoute) {
+                return next();
+            }
+
             if (!isExempt && user.tenant) {
                 const subCacheKey = `tenant:sub:${user.tenant}`;
                 const tenant = await cacheService.getOrSet(subCacheKey, async () => {
-                    return Tenant.findById(user.tenant).select('subscription isActive').lean();
+                    return Tenant.findById(user.tenant).select('subscription isActive planTier').lean();
                 }, TENANT_SUB_CACHE_TTL);
+
+                // Attach plan tier for downstream middleware (e.g. tenant rate limiter)
+                if (tenant) req.tenantPlanTier = tenant.planTier || 'Free';
 
                 if (!tenant || !tenant.isActive) {
                     return res.status(403).json({ message: 'Tenant is inactive.' });
@@ -109,6 +130,17 @@ const protect = async (req, res, next) => {
                     }
                 }
                 // Legacy tenants without subscription field — allow through
+            }
+
+            // ─── Tenant Guard ─────────────────────────────────────────────
+            // After auth + subscription checks, ensure user has a tenant context.
+            // Exempt paths (e.g. /me) skip this — they need to work for orphan users too.
+            if (!isExempt && !req.user.tenant) {
+                logger.warn({ userId: req.user._id, path: req.originalUrl }, 'protect: user has no tenant context');
+                return res.status(400).json({
+                    message: 'No tenant context. Contact your administrator.',
+                    code: 'NO_TENANT',
+                });
             }
 
             return next();

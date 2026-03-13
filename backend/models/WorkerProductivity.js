@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const workerProductivitySchema = new mongoose.Schema({
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
     date: { type: Date, default: Date.now },
     tasksCompleted: { type: Number, default: 0 },
     operations: [{
