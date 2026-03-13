@@ -45,34 +45,34 @@ export default function SettingsSecurity() {
 
     return (
         <div className="p-8 animate-in fade-in duration-300">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">{t('title')}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h3>
 
             <div className="space-y-10 max-w-3xl">
 
                 {/* Password Section */}
                 <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2"><Key className="w-4 h-4 text-gray-400" /> {t('changePwd')}</h4>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2"><Key className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('changePwd')}</h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="sec-current" className="block text-xs font-bold text-gray-700 mb-1">{t('currentPwd')}</label>
-                                <input id="sec-current" type="password" autoComplete="current-password" placeholder="••••••••" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <label htmlFor="sec-current" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('currentPwd')}</label>
+                                <input id="sec-current" type="password" autoComplete="current-password" placeholder="••••••••" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500" />
                             </div>
                             <div>
-                                <label htmlFor="sec-new" className="block text-xs font-bold text-gray-700 mb-1">{t('newPwd')}</label>
-                                <input id="sec-new" type="password" autoComplete="new-password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <label htmlFor="sec-new" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('newPwd')}</label>
+                                <input id="sec-new" type="password" autoComplete="new-password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500" />
                             </div>
                             <div>
-                                <label htmlFor="sec-confirm" className="block text-xs font-bold text-gray-700 mb-1">{t('confirmPwd')}</label>
-                                <input id="sec-confirm" type="password" autoComplete="new-password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50" />
+                                <label htmlFor="sec-confirm" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('confirmPwd')}</label>
+                                <input id="sec-confirm" type="password" autoComplete="new-password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm outline-none focus:border-indigo-500 bg-gray-50/50 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500" />
                             </div>
                             <button disabled={saving || !currentPassword || !newPassword || !confirmPassword} onClick={handleChangePassword} className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg text-sm shadow-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">{saving ? '...' : t('updatePwd')}</button>
                         </div>
 
-                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 h-fit">
-                            <h5 className="text-xs font-bold text-gray-900 mb-2">{t('pwdReqTitle')}</h5>
-                            <ul className={clsx("text-[11px] text-gray-600 space-y-2 list-disc", isAr ? "pr-4" : "pl-4")}>
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 border border-gray-100 dark:border-gray-700 h-fit">
+                            <h5 className="text-xs font-bold text-gray-900 dark:text-gray-100 mb-2">{t('pwdReqTitle')}</h5>
+                            <ul className={clsx("text-[11px] text-gray-600 dark:text-gray-400 space-y-2 list-disc", isAr ? "pr-4" : "pl-4")}>
                                 <li>{t('pwdReq1')}</li>
                                 <li>{t('pwdReq2')}</li>
                                 <li>{t('pwdReq3')}</li>
@@ -83,27 +83,27 @@ export default function SettingsSecurity() {
 
                 {/* Two-Factor Authentication */}
                 <div className="space-y-4 pt-2">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-gray-400" /> {t('mfaTitle')}</div>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('mfaTitle')}</div>
                         {twoFactorEnabled ?
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">{t('mfaEnabled')}</span> :
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700">{t('mfaOff')}</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">{t('mfaEnabled')}</span> :
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">{t('mfaOff')}</span>
                         }
                     </h4>
 
-                    <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-200 p-5 rounded-xl shadow-sm gap-4">
+                    <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-5 rounded-xl shadow-sm gap-4">
                         <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                                 <Shield className="w-5 h-5" />
                             </div>
                             <div>
-                                <h5 className="text-sm font-bold text-gray-900">{t('authApp')}</h5>
-                                <p className="text-xs text-gray-500 mt-1">{t('authAppDesc')}</p>
+                                <h5 className="text-sm font-bold text-gray-900 dark:text-white">{t('authApp')}</h5>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('authAppDesc')}</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                            className={clsx("px-4 py-2 font-bold rounded-lg text-sm border shadow-sm transition whitespace-nowrap", twoFactorEnabled ? "text-rose-600 bg-white border-rose-200 hover:bg-rose-50" : "text-gray-700 bg-white border-gray-200 hover:bg-gray-50")}
+                            className={clsx("px-4 py-2 font-bold rounded-lg text-sm border shadow-sm transition whitespace-nowrap", twoFactorEnabled ? "text-rose-600 dark:text-rose-400 bg-white dark:bg-gray-800 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/20" : "text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700")}
                         >
                             {twoFactorEnabled ? t('mfaDisable') : t('mfaSetup')}
                         </button>
@@ -112,32 +112,32 @@ export default function SettingsSecurity() {
 
                 {/* Active Sessions */}
                 <div className="space-y-4 pt-2">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2"><MonitorSmartphone className="w-4 h-4 text-gray-400" /> {t('sessionsTitle')}</h4>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2"><MonitorSmartphone className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('sessionsTitle')}</h4>
 
-                    <p className="text-xs text-gray-500 mb-4">{t('sessionsDesc')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('sessionsDesc')}</p>
 
                     <div className="space-y-3">
-                        <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                        <div className="flex items-center justify-between p-4 bg-emerald-50/50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl">
                             <div className="flex items-start gap-3">
-                                <Laptop className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+                                <Laptop className="w-5 h-5 text-emerald-500 dark:text-emerald-400 mt-0.5 shrink-0" />
                                 <div>
-                                    <p className="text-sm font-bold text-gray-900">{t('session1Title')}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{t('session1Desc')}</p>
-                                    <span className="text-[10px] font-bold text-emerald-600 mt-1 inline-block">{t('sessionCurrent')}</span>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{t('session1Title')}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('session1Desc')}</p>
+                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-1 inline-block">{t('sessionCurrent')}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-white border border-gray-100 shadow-sm rounded-xl">
+                        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
                             <div className="flex items-start gap-3">
-                                <Smartphone className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" />
+                                <Smartphone className="w-5 h-5 text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
                                 <div>
-                                    <p className="text-sm font-bold text-gray-900">{t('session2Title')}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{t('session2Desc')}</p>
-                                    <span className="text-[10px] text-gray-400 mt-1 inline-block">{t('session2Time')}</span>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{t('session2Title')}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('session2Desc')}</p>
+                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 inline-block">{t('session2Time')}</span>
                                 </div>
                             </div>
-                            <button className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title={t('revokeSession')}>
+                            <button className="p-2 text-rose-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition" title={t('revokeSession')}>
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
