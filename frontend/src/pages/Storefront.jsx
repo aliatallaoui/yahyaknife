@@ -901,7 +901,7 @@ function StorefrontBlock({
       }
       return (
         <div ref={formRef} className="px-4 md:px-8 py-8 max-w-xl mx-auto" id="codForm">
-          <form onSubmit={handleSubmit} className="bg-gray-50 rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <form onSubmit={handleSubmit} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-xl font-bold text-center mb-5" style={{ color: primaryColor }}>
               {formConfig?.submitButtonText ? `${formConfig.submitButtonText}` : 'Order Now — Cash on Delivery'}
             </h3>
@@ -919,7 +919,7 @@ function StorefrontBlock({
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Wilaya *</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Wilaya *</label>
                 <select
                   value={formData.wilayaCode}
                   onChange={e => {
@@ -929,7 +929,7 @@ function StorefrontBlock({
                     updateForm('commune', '');
                     setCommunes([]);
                   }}
-                  className={clsx('w-full px-3 py-2.5 rounded-xl border text-sm', formErrors.wilayaCode ? 'border-red-400' : 'border-gray-200')}
+                  className={clsx('w-full px-3 py-2.5 rounded-xl border text-sm dark:bg-gray-700 dark:text-gray-100', formErrors.wilayaCode ? 'border-red-400' : 'border-gray-200 dark:border-gray-600')}
                 >
                   <option value="">Select wilaya...</option>
                   {WILAYAS.map(w => (
