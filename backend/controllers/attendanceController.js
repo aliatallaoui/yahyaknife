@@ -28,7 +28,7 @@ exports.recordPointage = async (req, res) => {
         const tenant = req.user.tenant;
         const { employeeId, type, timestamp, date } = req.body;
 
-        const employee = await Employee.findOne({ _id: employeeId, tenant });
+        const employee = await Employee.findOne({ _id: employeeId, tenant, deletedAt: null });
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
         const dateStr = date || (timestamp ? moment(timestamp).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'));
@@ -58,7 +58,7 @@ exports.recordPointage = async (req, res) => {
         res.json({ message: 'Pointage recorded successfully', attendance });
     } catch (err) {
         logger.error({ err }, 'Error recording pointage');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -156,12 +156,12 @@ exports.getDailyAttendance = async (req, res) => {
         const targetDate = date || moment().format('YYYY-MM-DD');
 
         const records = await Attendance.find({ tenant, date: targetDate })
-            .populate('employeeId', 'name department role contractSettings')
+            .populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role contractSettings' })
             .lean();
-        res.json(records);
+        res.json(records.filter(r => r.employeeId));
     } catch (err) {
         logger.error({ err }, 'Error fetching daily attendance');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -169,6 +169,9 @@ exports.getEmployeeAttendance = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid employee ID' });
+        // Verify employee is not soft-deleted before returning history
+        const emp = await require('../models/Employee').findOne({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null }).select('_id').lean();
+        if (!emp) return res.status(404).json({ error: 'Employee not found' });
         const records = await Attendance.find({ tenant: req.user.tenant, employeeId: req.params.id })
             .sort({ date: -1 })
             .limit(60)
@@ -176,7 +179,7 @@ exports.getEmployeeAttendance = async (req, res) => {
         res.json(records);
     } catch (err) {
         logger.error({ err }, 'Error fetching employee attendance');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -197,6 +200,6 @@ exports.updateAttendanceRecord = async (req, res) => {
         res.json(updated);
     } catch (err) {
         logger.error({ err }, 'Error updating attendance record');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };

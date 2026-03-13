@@ -2,16 +2,16 @@ const logger = require('../shared/logger');
 const Expense = require('../models/Expense');
 const Revenue = require('../models/Revenue');
 const Order = require('../models/Order');
-const Product = require('../models/Product');
 const Payroll = require('../models/Payroll');
 const Courier = require('../models/Courier');
 const { ok } = require('../shared/utils/ApiResponse');
+const { fireAndRetry } = require('../shared/utils/retryAsync');
 
 // Get financial overview metrics (total revenue, total expenses, net profit, profit margin)
 exports.getFinancialOverview = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(401).json({ error: 'Tenant context required' });
+        if (!tenantId) return res.status(403).json({ error: 'Tenant context required' });
 
         // Optional date range — defaults to all-time if not provided
         let dateFilter = {};
@@ -43,7 +43,7 @@ exports.getFinancialOverview = async (req, res) => {
                 { $group: { _id: null, total: { $sum: '$amountPaid' } } }
             ]),
             // Courier settlements — always all-time (COD remittance is not date-bound)
-            Courier.find({ tenant: tenantId }).select('name pendingRemittance cashCollected reliabilityScore').lean()
+            Courier.find({ tenant: tenantId, deletedAt: null }).select('name pendingRemittance cashCollected reliabilityScore').lean()
         ]);
 
         const manualExpenses = expenseAgg[0]?.total || 0;
@@ -52,7 +52,7 @@ exports.getFinancialOverview = async (req, res) => {
 
         // 2. Automated Orders P&L Pipeline
         const orderAgg = await Order.aggregate([
-            { $match: { tenant: tenantId, status: { $ne: 'Cancelled' }, ...dateFilter } },
+            { $match: { tenant: tenantId, deletedAt: null, status: { $ne: 'Cancelled' }, ...dateFilter } },
             {
                 $group: {
                     _id: "$status",
@@ -73,8 +73,11 @@ exports.getFinancialOverview = async (req, res) => {
         let totalGatewayFees = 0;
 
         orderAgg.forEach(o => {
-            totalCOGS += o.cogs;
-            totalGatewayFees += (o.gatewayFees + o.marketplaceFees);
+            // Only count COGS/fees for recognized revenue (Delivered/Paid) — cash-basis accounting
+            if (['Delivered', 'Paid'].includes(o._id)) {
+                totalCOGS += o.cogs;
+                totalGatewayFees += (o.gatewayFees + o.marketplaceFees);
+            }
 
             if (['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(o._id)) expectedRevenue += o.grossSales;
             if (['Shipped', 'Out for Delivery'].includes(o._id)) transitRevenue += o.grossSales;
@@ -158,11 +161,12 @@ exports.getRevenues = async (req, res) => {
 
 const CourierSettlement = require('../models/CourierSettlement');
 const mongoose = require('mongoose');
+const OrderService = require('../domains/orders/order.service');
 
 exports.getCourierBalances = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        const couriers = await Courier.find({ tenant: tenantId })
+        const couriers = await Courier.find({ tenant: tenantId, deletedAt: null })
             .select('name phone integrationType pendingRemittance cashCollected cashSettled')
             .sort({ pendingRemittance: -1 })
             .lean();
@@ -182,6 +186,7 @@ exports.getCourierDeliveries = async (req, res) => {
         // Fetch orders assigned to this courier that are Delivered
         const deliveries = await Order.find({
             tenant: tenantId,
+            deletedAt: null,
             courier: courierId,
             status: 'Delivered',
             paymentStatus: { $in: ['Delivered_Not_Collected', 'COD_Expected'] }
@@ -202,6 +207,8 @@ exports.settleCourierCash = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
+    let committedOrders = null; // populated after transaction commits
+
     try {
         const tenantId = req.user.tenant;
         const { courierId, orderIds, amountPaid, notes } = req.body;
@@ -211,12 +218,13 @@ exports.settleCourierCash = async (req, res) => {
             throw new Error('Missing orderIds or amountPaid');
         }
 
-        const courier = await Courier.findOne({ _id: courierId, tenant: tenantId }).session(session);
+        const courier = await Courier.findOne({ _id: courierId, tenant: tenantId, deletedAt: null }).session(session);
         if (!courier) throw new Error('Courier not found');
 
         const orders = await Order.find({
             _id: { $in: orderIds },
             tenant: tenantId,
+            deletedAt: null,
             courier: courierId,
             status: 'Delivered',
             paymentStatus: { $in: ['Delivered_Not_Collected', 'COD_Expected'] }
@@ -230,6 +238,11 @@ exports.settleCourierCash = async (req, res) => {
         orders.forEach(o => {
             totalExpectedCash += (o.financials?.codAmount || 0);
         });
+
+        // Prevent over-settlement: amount cannot exceed courier's pending remittance
+        if (amountPaid > courier.pendingRemittance) {
+            throw new Error(`Settlement amount (${amountPaid}) exceeds pending remittance (${courier.pendingRemittance})`);
+        }
 
         const shortfall = totalExpectedCash - amountPaid;
 
@@ -246,18 +259,6 @@ exports.settleCourierCash = async (req, res) => {
 
         await settlement.save({ session });
 
-        await Order.updateMany(
-            { _id: { $in: orders.map(o => o._id) } },
-            { 
-                $set: { 
-                    status: 'Paid', 
-                    paymentStatus: 'Paid_and_Settled',
-                    'deliveryStatus.codPaidAt': new Date()
-                } 
-            },
-            { session }
-        );
-
         courier.cashSettled += amountPaid;
         courier.pendingRemittance = courier.cashCollected - courier.cashSettled;
         await courier.save({ session });
@@ -265,12 +266,39 @@ exports.settleCourierCash = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        res.json(ok({ message: 'Settlement processed successfully', settlement }));
+        // Mark for post-transaction order mutations
+        committedOrders = { orders, tenantId, userId, settlement };
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
         session.endSession();
         logger.error({ err: error }, 'Courier settlement error');
-        res.status(400).json({ message: error.message || 'Settlement failed' });
+        return res.status(400).json({ message: error.message || 'Settlement failed' });
     }
+
+    // Route order status mutations through OrderService (outside transaction
+    // because OrderService doesn't accept a session — consistent with the
+    // codebase pattern of disabled transactions for standalone MongoDB).
+    // Each order gets its own fireAndRetry so a single transient failure
+    // doesn't block the rest, and retries recover from DB blips.
+    for (const order of committedOrders.orders) {
+        fireAndRetry(`settlement:orderPaid:${order._id}`, () =>
+            OrderService.updateOrder({
+                orderId: order._id,
+                tenantId: committedOrders.tenantId,
+                userId: committedOrders.userId,
+                updateData: {
+                    status: 'Paid',
+                    paymentStatus: 'Paid_and_Settled',
+                    'deliveryStatus.codPaidAt': new Date(),
+                    statusNote: 'Settled via courier cash settlement'
+                },
+                bypassStateMachine: true
+            })
+        );
+    }
+
+    res.json(ok({ message: 'Settlement processed successfully', settlement: committedOrders.settlement }));
 };

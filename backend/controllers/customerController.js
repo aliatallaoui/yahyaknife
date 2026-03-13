@@ -1,13 +1,16 @@
 const logger = require('../shared/logger');
+const mongoose = require('mongoose');
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // @desc    Get all customers (tenant-scoped)
 // @route   GET /api/customers
 // @access  Private
 const getCustomers = async (req, res) => {
     try {
-        const filter = { tenant: req.user.tenant };
+        const filter = { tenant: req.user.tenant, deletedAt: null };
         const [customers, total] = await Promise.all([
             Customer.find(filter).sort({ createdAt: -1 }).skip(req.skip).limit(req.limit).lean(),
             Customer.countDocuments(filter)
@@ -29,12 +32,13 @@ const lookupCustomerByPhone = async (req, res) => {
         const tenantId = req.user.tenant;
 
         const [customer, activeOrders] = await Promise.all([
-            Customer.findOne({ phone, tenant: tenantId }),
+            Customer.findOne({ phone, tenant: tenantId, deletedAt: null }).lean(),
             Order.find({
                 tenant: tenantId,
+                deletedAt: null,
                 'shipping.phone1': phone,
                 status: { $in: ['New', 'Calling', 'No Answer', 'Postponed', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery'] }
-            }).select('orderId status products totalAmount createdAt')
+            }).select('orderId status products totalAmount createdAt').lean()
         ]);
 
         const riskIndicator = activeOrders.length > 0 ? 'High' : (customer?.blacklisted ? 'High' : 'Low');
@@ -72,7 +76,8 @@ const createCustomer = async (req, res) => {
 // @access  Private
 const updateCustomer = async (req, res) => {
     try {
-        const customer = await Customer.findOne({ _id: req.params.id, tenant: req.user.tenant });
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid customer ID' });
+        const customer = await Customer.findOne({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null });
         if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
         customer.name = req.body.name || customer.name;
@@ -94,7 +99,12 @@ const updateCustomer = async (req, res) => {
 // @access  Private
 const deleteCustomer = async (req, res) => {
     try {
-        const customer = await Customer.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid customer ID' });
+        const customer = await Customer.findOneAndUpdate(
+            { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
+            { deletedAt: new Date() },
+            { new: true }
+        );
         if (!customer) return res.status(404).json({ message: 'Customer not found' });
         res.json({ message: 'Customer removed' });
     } catch (error) {
@@ -107,6 +117,7 @@ const deleteCustomer = async (req, res) => {
 // @access  Private
 const getCustomerOrders = async (req, res) => {
     try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid customer ID' });
         const filter = { customer: req.params.id, tenant: req.user.tenant };
         const [orders, total] = await Promise.all([
             Order.find(filter)
@@ -126,7 +137,7 @@ const getCustomerOrders = async (req, res) => {
 // @access  Private
 const getCustomerMetrics = async (req, res) => {
     try {
-        const tenantFilter = { tenant: req.user.tenant };
+        const tenantFilter = { tenant: req.user.tenant, deletedAt: null };
 
         const [
             totalCustomers,
@@ -194,77 +205,61 @@ const getFeedback = async (_req, res) => {
  */
 const updateCustomerMetrics = async (customerId) => {
     try {
-        const customer = await Customer.findById(customerId);
+        const customer = await Customer.findOne({ _id: customerId, deletedAt: null }).select('_id tenant').lean();
         if (!customer) return;
 
-        // Scope order query by both customer and tenant
-        const orders = await Order.find({
-            customer: customerId,
-            tenant: customer.tenant,
-            status: { $ne: 'Cancelled' }
-        });
+        // Single aggregation — computes all metrics from orders atomically (no read-then-write race)
+        const fulfilledStatuses = ['Shipped', 'Out for Delivery', 'Delivered', 'Paid'];
+        const deliveredStatuses = ['Delivered', 'Paid'];
+        const [stats] = await Order.aggregate([
+            { $match: { customer: customer._id, tenant: customer.tenant, deletedAt: null, status: { $ne: 'Cancelled' } } },
+            { $sort: { createdAt: -1 } },
+            { $group: {
+                _id: null,
+                totalOrders: { $sum: 1 },
+                fulfilledCount: { $sum: { $cond: [{ $in: ['$status', fulfilledStatuses] }, 1, 0] } },
+                deliveredCount: { $sum: { $cond: [{ $in: ['$status', deliveredStatuses] }, 1, 0] } },
+                ltv: { $sum: { $cond: [{ $in: ['$status', fulfilledStatuses] }, { $ifNull: ['$totalAmount', 0] }, 0] } },
+                netProfit: { $sum: { $cond: [{ $in: ['$status', fulfilledStatuses] }, { $ifNull: ['$financials.netProfit', 0] }, 0] } },
+                refusals: { $sum: { $cond: [{ $eq: ['$status', 'Refused'] }, 1, 0] } },
+                attemptedDeliveries: { $sum: { $cond: [{ $in: ['$status', [...fulfilledStatuses, 'Refused', 'Returned']] }, 1, 0] } },
+                lastOrderDate: { $first: '$createdAt' },
+                firstOrderDate: { $last: '$createdAt' }
+            }}
+        ]);
 
-        let fulfilledCount = 0;
-        let ltv = 0;
-        let netProfit = 0;
-        let refusals = 0;
-        let attemptedDeliveries = 0;
-        let deliveredCount = 0;
-
-        orders.forEach(o => {
-            if (['Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(o.status)) {
-                fulfilledCount++;
-                ltv += (o.totalAmount || 0);
-                netProfit += (o.financials?.netProfit || 0);
-                attemptedDeliveries++;
-                if (['Delivered', 'Paid'].includes(o.status)) deliveredCount++;
-            } else if (['Refused', 'Returned'].includes(o.status)) {
-                attemptedDeliveries++;
-                if (o.status === 'Refused') refusals++;
-            }
-        });
-
-        customer.totalOrders = orders.length;
-        customer.deliveredOrders = deliveredCount;
-        customer.lifetimeValue = ltv;
-        customer.averageOrderValue = fulfilledCount > 0 ? ltv / fulfilledCount : 0;
-        customer.netProfitGenerated = netProfit;
-
-        customer.totalRefusals = refusals;
-        customer.refusalRate = attemptedDeliveries > 0 ? (refusals / attemptedDeliveries) * 100 : 0;
-        customer.deliverySuccessRate = attemptedDeliveries > 0 ? (deliveredCount / attemptedDeliveries) * 100 : 0;
-
-        customer.trustScore = Math.max(0, 100 - (customer.refusalRate || 0));
-        customer.fraudProbability = Math.min(100, customer.refusalRate * 1.5);
-
-        customer.repeatedRefusalFlag = customer.totalRefusals >= 2;
-        customer.requiresDeliveryVerification = customer.refusalRate > 20 || customer.fraudProbability > 50;
-
-        if (orders.length > 0) {
-            orders.sort((a, b) => b.createdAt - a.createdAt);
-            customer.lastOrderDate = orders[0].createdAt;
-            customer.lastInteractionDate = orders[0].createdAt;
-            customer.isReturning = orders.length > 1;
-
-            const firstOrder = orders[orders.length - 1];
-            customer.cohortMonth = new Date(firstOrder.createdAt).toISOString().slice(0, 7);
-
-            if (customer.lifetimeValue > 100000) customer.segment = 'Whale';
-            else if (customer.lifetimeValue > 50000 || customer.totalOrders > 5) customer.segment = 'VIP';
-            else if (customer.totalOrders > 1) customer.segment = 'Repeat Buyer';
-            else customer.segment = 'One-Time Buyer';
-
-            const daysSinceLastOrder = (Date.now() - customer.lastOrderDate.getTime()) / (1000 * 3600 * 24);
-            customer.churnRiskScore = Math.min(100, (daysSinceLastOrder / 90) * 100);
-
-            if (daysSinceLastOrder > 120) { customer.status = 'Churned'; customer.segment = 'Dormant'; }
-            else if (daysSinceLastOrder > 60) customer.status = 'At Risk';
-            else customer.status = 'Active';
-        } else {
-            customer.status = 'Inactive';
+        if (!stats) {
+            // No orders — set inactive
+            await Customer.updateOne({ _id: customerId }, { $set: { status: 'Inactive', totalOrders: 0, deliveredOrders: 0, lifetimeValue: 0 } });
+            return;
         }
 
-        await customer.save();
+        const { totalOrders, fulfilledCount, deliveredCount, ltv, netProfit, refusals, attemptedDeliveries, lastOrderDate, firstOrderDate } = stats;
+        const refusalRate = attemptedDeliveries > 0 ? (refusals / attemptedDeliveries) * 100 : 0;
+        const deliverySuccessRate = attemptedDeliveries > 0 ? (deliveredCount / attemptedDeliveries) * 100 : 0;
+        const trustScore = Math.max(0, 100 - refusalRate);
+        const fraudProbability = Math.min(100, refusalRate * 1.5);
+        const daysSinceLastOrder = (Date.now() - new Date(lastOrderDate).getTime()) / (1000 * 3600 * 24);
+        const churnRiskScore = Math.min(100, (daysSinceLastOrder / 90) * 100);
+
+        let segment, status;
+        if (daysSinceLastOrder > 120) { status = 'Churned'; segment = 'Dormant'; }
+        else if (daysSinceLastOrder > 60) { status = 'At Risk'; segment = ltv > 100000 ? 'Whale' : ltv > 50000 || totalOrders > 5 ? 'VIP' : totalOrders > 1 ? 'Repeat Buyer' : 'One-Time Buyer'; }
+        else { status = 'Active'; segment = ltv > 100000 ? 'Whale' : ltv > 50000 || totalOrders > 5 ? 'VIP' : totalOrders > 1 ? 'Repeat Buyer' : 'One-Time Buyer'; }
+
+        // Single atomic write — no race window
+        await Customer.updateOne({ _id: customerId, deletedAt: null }, { $set: {
+            totalOrders, deliveredOrders: deliveredCount, lifetimeValue: ltv,
+            averageOrderValue: fulfilledCount > 0 ? ltv / fulfilledCount : 0,
+            netProfitGenerated: netProfit, totalRefusals: refusals,
+            refusalRate, deliverySuccessRate, trustScore, fraudProbability,
+            repeatedRefusalFlag: refusals >= 2,
+            requiresDeliveryVerification: refusalRate > 20 || fraudProbability > 50,
+            lastOrderDate, lastInteractionDate: lastOrderDate,
+            isReturning: totalOrders > 1,
+            cohortMonth: new Date(firstOrderDate).toISOString().slice(0, 7),
+            segment, status, churnRiskScore
+        }});
     } catch (error) {
         logger.error({ err: error }, 'Failed to update customer metrics');
     }

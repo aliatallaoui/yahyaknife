@@ -61,6 +61,16 @@ exports.createRole = async (req, res) => {
 
         const sanitized = (permissions || []).filter(p => ALL_PERMISSIONS_FLAT.includes(p));
 
+        // Prevent privilege escalation: non-Super Admin cannot grant permissions they don't hold
+        const isSA = req.user.role && req.user.role.name === 'Super Admin';
+        if (!isSA) {
+            const callerPerms = new Set(req.user.computedPermissions || []);
+            const escalated = sanitized.filter(p => !callerPerms.has(p));
+            if (escalated.length > 0) {
+                return res.status(403).json({ message: `Cannot grant permissions you do not hold: ${escalated.join(', ')}` });
+            }
+        }
+
         const role = await Role.create({
             name: name.trim(),
             description: description.trim(),

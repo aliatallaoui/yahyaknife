@@ -118,7 +118,7 @@ async function executeTool(call, tenantId) {
             const manualRevenue = revenues.length > 0 ? revenues[0].total : 0;
 
             const orderAgg = await Order.aggregate([
-                { $match: { ...tenantFilter, status: { $ne: 'Cancelled' } } },
+                { $match: { ...tenantFilter, deletedAt: null, status: { $ne: 'Cancelled' } } },
                 { $group: { _id: null, totalSales: { $sum: '$totalAmount' } } }
             ]);
             const totalSales = orderAgg.length > 0 ? orderAgg[0].totalSales : 0;
@@ -232,7 +232,7 @@ async function executeTool(call, tenantId) {
 const handleChat = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(401).json({ error: 'Tenant context required' });
+        if (!tenantId) return res.status(403).json({ error: 'Tenant context required' });
 
         const { messages } = req.body;
 

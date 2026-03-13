@@ -1,7 +1,10 @@
 const logger = require('../shared/logger');
+const mongoose = require('mongoose');
 const CourierCoverage = require('../models/CourierCoverage');
 const Courier = require('../models/Courier');
 const axios = require('axios');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // @desc    Get all coverage areas for a courier
 // @route   GET /api/couriers/:id/coverage
@@ -9,7 +12,8 @@ const axios = require('axios');
 exports.getCoverage = async (req, res) => {
     try {
         const { id } = req.params;
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         const coverage = await CourierCoverage.find({ courierId: id })
             .sort({ wilayaCode: 1, commune: 1 })
@@ -27,9 +31,10 @@ exports.getCoverage = async (req, res) => {
 exports.upsertCoverage = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         const { wilayaCode, commune, homeSupported, officeSupported } = req.body;
-        
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const updated = await CourierCoverage.findOneAndUpdate(
@@ -50,8 +55,9 @@ exports.upsertCoverage = async (req, res) => {
 exports.deleteCoverage = async (req, res) => {
     try {
         const { id, coverageId } = req.params;
+        if (!validId(id) || !validId(coverageId)) return res.status(400).json({ message: 'Invalid ID' });
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const deleted = await CourierCoverage.findOneAndDelete({ _id: coverageId, courierId: id });
@@ -70,7 +76,8 @@ exports.deleteCoverage = async (req, res) => {
 exports.syncEcotrackCoverage = async (req, res) => {
     try {
         const { id } = req.params;
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
 
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         if (courier.integrationType !== 'API') {

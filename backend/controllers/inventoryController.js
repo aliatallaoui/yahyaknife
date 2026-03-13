@@ -1,5 +1,7 @@
 const logger = require('../shared/logger');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const Product = require('../models/Product');
 const ProductVariant = require('../models/ProductVariant');
 const Supplier = require('../models/Supplier');
@@ -9,10 +11,11 @@ const audit = require('../shared/utils/auditLog');
 
 exports.getProducts = async (req, res) => {
     try {
-        const products = await Product.find({ isActive: true })
+        const products = await Product.find({ tenant: req.user.tenant, isActive: true })
             .populate('supplier')
             .populate('category')
             .populate('variants')
+            .limit(500)
             .lean();
         res.json(products);
     } catch (error) {
@@ -30,12 +33,24 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json({ message: "Please provide required product fields (name, category)." });
         }
 
+        // Collect image URLs from multer upload
+        const images = req.files?.length
+            ? req.files.map(f => `/uploads/products/${f.filename}`)
+            : [];
+
         const newProduct = await Product.create({
-            name, category, brand, description, supplier: supplier || null
+            tenant: req.user.tenant, name, category, brand, description, supplier: supplier || null, images
         });
 
-        if (variants && Array.isArray(variants) && variants.length > 0) {
-            await ProductVariant.insertMany(variants.map(v => ({
+        // Parse variants from JSON string (multipart form sends strings)
+        let parsedVariants = variants;
+        if (typeof variants === 'string') {
+            try { parsedVariants = JSON.parse(variants); } catch { parsedVariants = []; }
+        }
+
+        if (parsedVariants && Array.isArray(parsedVariants) && parsedVariants.length > 0) {
+            await ProductVariant.insertMany(parsedVariants.map(v => ({
+                tenant: req.user.tenant,
                 productId: newProduct._id,
                 sku: v.sku,
                 attributes: v.attributes || {},
@@ -62,7 +77,8 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, category, brand, description, supplier } = req.body;
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid product ID' });
+        const { name, category, brand, description, supplier, existingImages } = req.body;
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (category !== undefined) updates.category = category;
@@ -70,11 +86,35 @@ exports.updateProduct = async (req, res) => {
         if (description !== undefined) updates.description = description;
         if (supplier !== undefined) updates.supplier = supplier;
 
-        const product = await Product.findByIdAndUpdate(id, updates, { new: true, runValidators: true }).populate('supplier').populate('category');
-        if (!product) {
+        // Merge existing kept images + newly uploaded images
+        let kept = [];
+        if (existingImages) {
+            try { kept = typeof existingImages === 'string' ? JSON.parse(existingImages) : existingImages; } catch { kept = []; }
+        }
+        const newUploads = req.files?.length ? req.files.map(f => `/uploads/products/${f.filename}`) : [];
+        updates.images = [...kept, ...newUploads];
+
+        // Clean up removed images from disk
+        const product = await Product.findOne({ _id: id, tenant: req.user.tenant }).lean();
+        if (product) {
+            const keptSet = new Set(kept);
+            const uploadsBase = path.resolve(__dirname, '..');
+            for (const img of (product.images || [])) {
+                if (!keptSet.has(img)) {
+                    const filePath = path.resolve(__dirname, '..', img);
+                    // Guard against path traversal — only delete files inside project root
+                    if (!filePath.startsWith(uploadsBase + path.sep)) continue;
+                    fs.unlink(filePath, () => {}); // fire-and-forget
+                }
+            }
+        }
+
+        const updated = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, updates, { new: true, runValidators: true })
+            .populate('supplier').populate('category').populate('variants');
+        if (!updated) {
             return res.status(404).json({ message: "Product not found." });
         }
-        res.json(product);
+        res.json(updated);
     } catch (error) {
         logger.error({ err: error }, 'Error updating product');
         res.status(500).json({ error: 'Server Error' });
@@ -84,12 +124,13 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid product ID' });
 
         // Soft delete
-        const product = await Product.findByIdAndUpdate(id, { isActive: false }, { new: true });
+        const product = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { isActive: false }, { new: true });
 
         // Also archive associated variants
-        await ProductVariant.updateMany({ productId: id }, { status: 'Archived' });
+        await ProductVariant.updateMany({ productId: id, tenant: req.user.tenant }, { status: 'Archived' });
 
         if (!product) {
             return res.status(404).json({ message: "Product not found." });
@@ -103,10 +144,11 @@ exports.deleteProduct = async (req, res) => {
 
 exports.getInventoryMetrics = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const [totalProducts, inventoryAgg] = await Promise.all([
-            Product.countDocuments({ isActive: true }),
+            Product.countDocuments({ tenant: tenantId, isActive: true }),
             ProductVariant.aggregate([
-                { $match: { status: 'Active' } },
+                { $match: { tenant: new mongoose.Types.ObjectId(tenantId), status: 'Active' } },
                 {
                     $group: {
                         _id: null,
@@ -145,7 +187,7 @@ const Category = require('../models/Category');
 
 exports.getCategories = async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true }).lean();
+        const categories = await Category.find({ tenant: req.user.tenant, isActive: true }).lean();
         res.json(categories);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching categories');
@@ -157,7 +199,7 @@ exports.createCategory = async (req, res) => {
     try {
         const { name, description, isActive } = req.body;
         if (!name) return res.status(400).json({ message: 'Category name is required.' });
-        const newCategory = await Category.create({ name, description, isActive });
+        const newCategory = await Category.create({ tenant: req.user.tenant, name, description, isActive });
         res.status(201).json(newCategory);
     } catch (error) {
         logger.error({ err: error }, 'Error creating category');
@@ -168,8 +210,9 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid category ID' });
         const { name, description, isActive } = req.body;
-        const category = await Category.findByIdAndUpdate(id, { name, description, isActive }, { new: true, runValidators: true });
+        const category = await Category.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { name, description, isActive }, { new: true, runValidators: true });
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json(category);
     } catch (error) {
@@ -181,7 +224,8 @@ exports.updateCategory = async (req, res) => {
 exports.deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        const category = await Category.findByIdAndUpdate(id, { isActive: false }, { new: true });
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid category ID' });
+        const category = await Category.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { isActive: false }, { new: true });
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json({ message: "Category archived." });
     } catch (error) {
@@ -239,7 +283,7 @@ exports.adjustStock = async (req, res) => {
         if (warehouseId && !mongoose.Types.ObjectId.isValid(warehouseId))
             return res.status(400).json({ message: "Invalid warehouseId." });
 
-        const variant = await ProductVariant.findById(variantId);
+        const variant = await ProductVariant.findOne({ _id: variantId, tenant: req.user.tenant });
         if (!variant) return res.status(404).json({ message: "Variant not found." });
 
         // Update overall total stock

@@ -1,14 +1,16 @@
 const logger = require('../shared/logger');
+const mongoose = require('mongoose');
 const Courier = require('../models/Courier');
 const Order = require('../models/Order');
-const OrderStatusHistory = require('../models/OrderStatusHistory');
 const CourierSettlement = require('../models/CourierSettlement');
 const audit = require('../shared/utils/auditLog');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // Get all couriers with calculated KPIs
 exports.getCouriers = async (req, res) => {
     try {
-        const couriers = await Courier.find({ tenant: req.user.tenant }).select('-apiToken -apiId').sort({ name: 1 }).lean();
+        const couriers = await Courier.find({ tenant: req.user.tenant, deletedAt: null }).select('-apiToken -apiId').sort({ name: 1 }).lean();
         res.json(couriers);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching couriers');
@@ -43,6 +45,7 @@ exports.createCourier = async (req, res) => {
 exports.updateCourier = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         // Strip immutable / computed fields from the update payload
         const {
             tenant, cashCollected, cashSettled, pendingRemittance,
@@ -51,7 +54,7 @@ exports.updateCourier = async (req, res) => {
             ...safe
         } = req.body;
         const updated = await Courier.findOneAndUpdate(
-            { _id: id, tenant: req.user.tenant },
+            { _id: id, tenant: req.user.tenant, deletedAt: null },
             { $set: safe },
             { new: true, runValidators: true }
         );
@@ -64,10 +67,63 @@ exports.updateCourier = async (req, res) => {
     }
 };
 
+// Soft-delete a courier
+exports.deleteCourier = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
+        const tenantId = req.user.tenant;
+
+        // Block deletion if courier has active (in-transit) shipments
+        const activeShipments = await Order.countDocuments({
+            courier: id,
+            tenant: tenantId,
+            status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'In Transit'] },
+            deletedAt: null
+        });
+        if (activeShipments > 0) {
+            return res.status(409).json({
+                error: `Cannot delete courier with ${activeShipments} active shipment(s). Reassign or complete them first.`
+            });
+        }
+
+        // Also check pre-dispatch orders assigned to this courier
+        const preDispatchOrders = await Order.countDocuments({
+            courier: id,
+            tenant: tenantId,
+            status: { $in: require('../shared/constants/orderStatuses').PRE_DISPATCH },
+            deletedAt: null
+        });
+
+        const courier = await Courier.findOneAndUpdate(
+            { _id: id, tenant: tenantId, deletedAt: null },
+            { deletedAt: new Date() },
+            { new: true }
+        );
+        if (!courier) return res.status(404).json({ error: 'Courier not found' });
+
+        // Unassign courier from any pre-dispatch orders to prevent ghost references
+        if (preDispatchOrders > 0) {
+            await Order.updateMany(
+                { courier: id, tenant: tenantId, status: { $in: require('../shared/constants/orderStatuses').PRE_DISPATCH }, deletedAt: null },
+                { $set: { courier: null } }
+            );
+        }
+
+        audit({ tenant: tenantId, actorUserId: req.user._id, action: 'DELETE_COURIER', module: 'couriers', metadata: { courierId: id, courierName: courier.name, preDispatchUnassigned: preDispatchOrders } });
+
+        res.json({ message: 'Courier deleted successfully' });
+    } catch (error) {
+        logger.error({ err: error }, 'Error deleting courier');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
 // Settle Cash (Transfer Collected to Settled)
 exports.settleCourierCash = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         const { amountToSettle, notes } = req.body;
         const tenantId = req.user.tenant;
 
@@ -75,7 +131,7 @@ exports.settleCourierCash = async (req, res) => {
             return res.status(400).json({ message: 'Settlement amount must be a positive number' });
         }
 
-        const courier = await Courier.findOne({ _id: id, tenant: tenantId });
+        const courier = await Courier.findOne({ _id: id, tenant: tenantId, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         if (amountToSettle > courier.pendingRemittance) {
@@ -111,26 +167,23 @@ exports.settleCourierCash = async (req, res) => {
             }
         }
 
-        // Single batch update instead of N saves
+        // Route each order through OrderService for state machine, audit trail, and side effects
+        // Lazy require to avoid circular dependency (order.service → courierController → order.service)
         if (settledOrderIds.length > 0) {
-            await Order.updateMany(
-                { _id: { $in: settledOrderIds }, tenant: tenantId },
-                { $set: { paymentStatus: 'Paid', status: 'Paid' } }
-            );
-
-            // Audit trail: create an OrderStatusHistory record for each settled order
-            const now = new Date();
-            await OrderStatusHistory.insertMany(
-                settledOrderIds.map(orderId => ({
-                    tenant: tenantId,
-                    orderId,
-                    status: 'Paid',
-                    previousStatus: 'Delivered',
-                    changedBy: req.user._id,
-                    changedAt: now,
-                    note: 'Settled via courier cash payment'
-                }))
-            );
+            const OrderService = require('../domains/orders/order.service');
+            for (const settledOrderId of settledOrderIds) {
+                await OrderService.updateOrder({
+                    orderId: settledOrderId,
+                    tenantId,
+                    userId: req.user._id,
+                    updateData: {
+                        status: 'Paid',
+                        paymentStatus: 'Paid',
+                        statusNote: 'Settled via courier cash payment'
+                    },
+                    bypassStateMachine: true
+                });
+            }
         }
 
         // Persist the settlement event for audit trail + finance reporting
@@ -162,9 +215,10 @@ exports.settleCourierCash = async (req, res) => {
 exports.getSettlementHistory = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         const tenantId = req.user.tenant;
 
-        const courier = await Courier.findOne({ _id: id, tenant: tenantId });
+        const courier = await Courier.findOne({ _id: id, tenant: tenantId, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const settlements = await CourierSettlement.find({ courier: id, tenant: tenantId })
@@ -184,9 +238,10 @@ exports.getSettlementHistory = async (req, res) => {
 exports.assignOrdersToCourier = async (req, res) => {
     try {
         const { id } = req.params; // Courier ID
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         const { orderIds } = req.body; // Array of Order ObjectIDs
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         if (!Array.isArray(orderIds) || orderIds.length === 0) {
@@ -238,11 +293,11 @@ exports.assignOrdersToCourier = async (req, res) => {
 
 exports.recalculateCourierKPIs = async (courierId) => {
     try {
-        const courier = await Courier.findById(courierId).select('_id tenant totalDeliveries successRate averageDeliveryTimeMinutes');
+        const courier = await Courier.findOne({ _id: courierId, deletedAt: null }).select('_id tenant totalDeliveries successRate averageDeliveryTimeMinutes');
         if (!courier) return;
 
         const [kpiData] = await Order.aggregate([
-            { $match: { courier: courier._id, tenant: courier.tenant } },
+            { $match: { courier: courier._id, tenant: courier.tenant, deletedAt: null } },
             {
                 $group: {
                     _id: null,
@@ -295,22 +350,23 @@ exports.recalculateCourierKPIs = async (courierId) => {
 };
 
 // Helper: Synchronize Courier Cash Liability upon Order Delivery / Status Reversal
-exports.syncCourierCash = async (courierId, amountDelta) => {
+exports.syncCourierCash = async (courierId, amountDelta, tenantId) => {
     try {
         if (!courierId || amountDelta === 0) return;
 
-        const courier = await Courier.findById(courierId).select('_id cashCollected cashSettled pendingRemittance');
-        if (!courier) return;
-
-        // Use the pre-save hook to ensure pendingRemittance stays accurate
-        courier.cashCollected += amountDelta;
-
-        // Prevent negative collections artificially
-        if (courier.cashCollected < 0) {
-            courier.cashCollected = 0;
-        }
-
-        await courier.save();
+        // Atomic increment to prevent lost updates from concurrent delivery events.
+        // Also recalculate pendingRemittance atomically (mirrors pre-save hook logic).
+        const filter = { _id: courierId, deletedAt: null };
+        if (tenantId) filter.tenant = tenantId;
+        const updated = await Courier.findOneAndUpdate(
+            filter,
+            [
+                { $set: { cashCollected: { $max: [0, { $add: ['$cashCollected', amountDelta] }] } } },
+                { $set: { pendingRemittance: { $subtract: ['$cashCollected', '$cashSettled'] } } }
+            ],
+            { new: true }
+        );
+        if (!updated) return;
     } catch (error) {
         logger.error({ err: error }, 'Error syncing courier cash');
     }

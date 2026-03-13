@@ -1,14 +1,13 @@
 const logger = require('../shared/logger');
-const Expense = require('../models/Expense');
+const mongoose = require('mongoose');
+const moment = require('moment');
 const Revenue = require('../models/Revenue');
 const ProductVariant = require('../models/ProductVariant');
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const Courier = require('../models/Courier');
+const Tenant = require('../models/Tenant');
 const cacheService = require('../services/cacheService');
-const { generateExecutiveInsights } = require('../utils/aiInsights');
-
-const moment = require('moment');
 
 const DASHBOARD_CACHE_TTL = 300; // 5 minutes
 
@@ -47,10 +46,10 @@ exports.getDashboardData = async (req, res) => {
                         }
                     }
                 ]),
-                Courier.find({ tenant: tenantId }).select('cashCollected pendingRemittance reliabilityScore').lean(),
+                Courier.find({ tenant: tenantId, deletedAt: null }).select('cashCollected pendingRemittance reliabilityScore').lean(),
                 // Single aggregation replaces ProductVariant.find() full scan + loop
                 ProductVariant.aggregate([
-                    { $match: { status: 'Active' } },
+                    { $match: { tenant: new mongoose.Types.ObjectId(tenantId), status: 'Active' } },
                     {
                         $group: {
                             _id: null,
@@ -64,12 +63,12 @@ exports.getDashboardData = async (req, res) => {
                     }
                 ]),
                 Order.aggregate([
-                    { $match: { tenant: tenantId, createdAt: dateQuery.createdAt, 'deliveryStatus.deliveryTimeMinutes': { $gt: 0 } } },
+                    { $match: { tenant: tenantId, deletedAt: null, createdAt: dateQuery.createdAt, 'deliveryStatus.deliveryTimeMinutes': { $gt: 0 } } },
                     { $group: { _id: null, avgMinutes: { $avg: '$deliveryStatus.deliveryTimeMinutes' }, count: { $sum: 1 } } }
                 ]),
                 Order.countDocuments({ ...dateQuery, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
-                ProductVariant.countDocuments({ status: 'Active', $expr: { $lte: [{ $subtract: ["$totalStock", "$reservedStock"] }, "$reorderLevel"] } }),
-                Customer.countDocuments({ tenant: tenantId, blacklisted: true }),
+                ProductVariant.countDocuments({ tenant: tenantId, status: 'Active', $expr: { $lte: [{ $subtract: ["$totalStock", "$reservedStock"] }, "$reorderLevel"] } }),
+                Customer.countDocuments({ tenant: tenantId, deletedAt: null, blacklisted: true }),
                 (async () => {
                     try {
                         const Attendance = require('../models/Attendance');
@@ -82,12 +81,12 @@ exports.getDashboardData = async (req, res) => {
             // --- Process order status aggregation ---
             let totalOrders = 0, awaitingConfirmation = 0, awaitingDispatch = 0, inDelivery = 0;
             let deliveredOrders = 0, refusedOrders = 0, returnedOrders = 0;
-            let totalRevenue = 0, realProfit = 0, expectedRevenue = 0, deliveredRevenue = 0;
+            let recognizedRevenue = 0, realProfit = 0, expectedRevenue = 0, deliveredRevenue = 0;
 
             orderStatusAgg.forEach(s => {
                 totalOrders += s.count;
-                totalRevenue += s.totalAmount;
                 if (['Delivered', 'Paid'].includes(s._id)) {
+                    recognizedRevenue += s.totalAmount;
                     realProfit += s.totalAmount - (s.cogs || 0) - (s.courierFee || 0) - (s.fees || 0);
                 }
                 if (s._id === 'New') awaitingConfirmation += s.count;
@@ -123,8 +122,8 @@ exports.getDashboardData = async (req, res) => {
                     courierPerformanceScore: couriers.length > 0 ? (couriers.reduce((acc, c) => acc + (c.reliabilityScore || 0), 0) / couriers.length).toFixed(1) : null
                 },
                 financialMetrics: {
-                    totalSalesVolume: totalRevenue,
-                    averageOrderValue: totalOrders > 0 ? (totalRevenue / totalOrders) : 0,
+                    totalSalesVolume: recognizedRevenue,
+                    averageOrderValue: deliveredOrders > 0 ? (recognizedRevenue / deliveredOrders) : 0,
                     expectedRevenue, deliveredRevenue,
                     cashCollected: globalCashCollected,
                     courierSettlementsPending: globalSettlementsPending,
@@ -159,6 +158,33 @@ exports.getDashboardData = async (req, res) => {
         return res.json(data);
     } catch (error) {
         logger.error({ err: error }, 'Error generating advanced dashboard metrics');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+// @desc    Get setup progress for getting-started checklist
+// @route   GET /api/dashboard/setup-progress
+// @access  Private
+exports.getSetupProgress = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+
+        const [productCount, courierCount, orderCount, tenant] = await Promise.all([
+            ProductVariant.countDocuments({ tenant: new mongoose.Types.ObjectId(tenantId), status: 'Active' }),
+            Courier.countDocuments({ tenant: tenantId, deletedAt: null }),
+            Order.countDocuments({ tenant: tenantId, deletedAt: null }),
+            Tenant.findById(tenantId).select('onboardingCompletedAt settings.companyName').lean(),
+        ]);
+
+        res.json({
+            hasProducts: productCount > 0,
+            hasCourier: courierCount > 0,
+            hasOrders: orderCount > 0,
+            profileCompleted: !!(tenant?.settings?.companyName),
+            onboardingCompletedAt: tenant?.onboardingCompletedAt || null,
+        });
+    } catch (error) {
+        logger.error({ err: error }, 'Error fetching setup progress');
         res.status(500).json({ error: 'Server Error' });
     }
 };

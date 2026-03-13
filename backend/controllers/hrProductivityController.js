@@ -11,11 +11,11 @@ const Employee = require('../models/Employee');
  */
 const resolveTenantEmployeeIds = async (tenant, requestedId) => {
     if (requestedId) {
-        const emp = await Employee.findOne({ _id: requestedId, tenant }).select('_id').lean();
+        const emp = await Employee.findOne({ _id: requestedId, tenant, deletedAt: null }).select('_id').lean();
         if (!emp) return null; // not found in this tenant
         return [emp._id];
     }
-    return Employee.find({ tenant }).distinct('_id');
+    return Employee.find({ tenant, deletedAt: null }).distinct('_id');
 };
 
 exports.getProductivity = async (req, res) => {
@@ -48,10 +48,10 @@ exports.logProductivity = async (req, res) => {
             return res.status(400).json({ error: 'Valid employeeId is required' });
 
         // Verify employee belongs to this tenant
-        const emp = await Employee.findOne({ _id: employeeId, tenant }).select('_id').lean();
+        const emp = await Employee.findOne({ _id: employeeId, tenant, deletedAt: null }).select('_id').lean();
         if (!emp) return res.status(404).json({ error: 'Employee not found' });
 
-        const prod = new WorkerProductivity({ employeeId, date, tasksCompleted, operations, notes });
+        const prod = new WorkerProductivity({ employeeId, tenant, date, tasksCompleted, operations, notes });
         const saved = await prod.save();
         res.status(201).json(saved);
     } catch (err) {
@@ -89,10 +89,10 @@ exports.grantReward = async (req, res) => {
             return res.status(400).json({ error: 'Valid employeeId is required' });
 
         // Verify employee belongs to this tenant
-        const emp = await Employee.findOne({ _id: employeeId, tenant }).select('_id').lean();
+        const emp = await Employee.findOne({ _id: employeeId, tenant, deletedAt: null }).select('_id').lean();
         if (!emp) return res.status(404).json({ error: 'Employee not found' });
 
-        const reward = new WorkerReward({ employeeId, dateAwarded, type, amount, currency, reason, relatedProductivityId });
+        const reward = new WorkerReward({ employeeId, tenant, dateAwarded, type, amount, currency, reason, relatedProductivityId });
         const saved = await reward.save();
         res.status(201).json(saved);
     } catch (err) {

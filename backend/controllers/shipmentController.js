@@ -36,7 +36,7 @@ exports.quickDispatch = async (req, res) => {
 exports.getAllShipments = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(401).json({ error: 'Tenant context required' });
+        if (!tenantId) return res.status(403).json({ error: 'Tenant context required' });
 
         const STATUS_MAP = {
             'Dispatched':       'Created in Courier',
@@ -134,11 +134,14 @@ exports.generateManifest = async (req, res) => {
         const { ids } = req.query;
         if (!ids) return res.status(400).send('No shipment IDs provided');
 
-        const idArray = ids.split(',');
+        const idArray = ids.split(',').map(id => id.trim());
+        if (!idArray.every(id => validId(id))) {
+            return res.status(400).send('One or more invalid order IDs');
+        }
         
         // Fetch original Orders which ALWAYS contain the product and customer details
         // even if they haven't been dispatched to a courier yet.
-        const orders = await Order.find({ _id: { $in: idArray }, tenant: tenantId }).populate('customer').lean();
+        const orders = await Order.find({ _id: { $in: idArray }, tenant: tenantId, deletedAt: null }).populate('customer').lean();
         
         if (orders.length === 0) return res.status(404).send('Aucune commande trouvée.');
 
@@ -243,8 +246,11 @@ exports.updateShipment = async (req, res) => {
             return res.status(403).json({ message: `Cannot edit a shipment that is already ${shipment.shipmentStatus}` });
         }
 
-        const { tenant: _t, activityHistory: _h, shipmentStatus: _ss, ...safeBody } = req.body;
-        Object.assign(shipment, safeBody);
+        // Allowlist editable fields — prevent mass-assignment of system fields
+        const allowed = ['recipientName', 'recipientPhone', 'address', 'wilaya', 'commune', 'notes', 'weight', 'dimensions', 'deliveryType', 'codAmount'];
+        for (const field of allowed) {
+            if (req.body[field] !== undefined) shipment[field] = req.body[field];
+        }
         shipment.activityHistory.push({ status: 'Shipment Updated', remarks: 'User edited shipment details before courier validation', changedBy: req.user._id });
 
         const updated = await shipment.save();

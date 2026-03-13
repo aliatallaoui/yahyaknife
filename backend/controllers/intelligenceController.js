@@ -15,11 +15,12 @@ exports.getStockoutPredictions = async (req, res) => {
 
         // Single aggregation instead of N+1 Order.find per variant
         const [variants, salesAgg] = await Promise.all([
-            ProductVariant.find({ status: 'Active' }).lean(),
+            ProductVariant.find({ tenant: tenantId, status: 'Active' }).lean(),
             Order.aggregate([
                 {
                     $match: {
                         tenant: tenantId,
+                        deletedAt: null,
                         createdAt: { $gte: thirtyDaysAgo },
                         status: { $nin: ['Cancelled', 'Refused', 'Returned'] }
                     }
@@ -65,7 +66,7 @@ exports.evaluateOrderRisk = async (req, res) => {
         const { orderId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(orderId))
             return res.status(400).json({ message: 'Invalid order ID' });
-        const order = await Order.findOne({ _id: orderId, tenant: req.user.tenant }).populate('customer');
+        const order = await Order.findOne({ _id: orderId, tenant: req.user.tenant, deletedAt: null }).populate('customer');
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         const customer = order.customer;
@@ -110,7 +111,7 @@ exports.evaluateOrderRisk = async (req, res) => {
 exports.optimizeCourierSelection = async (req, res) => {
     try {
         const { region } = req.query;
-        const query = { tenant: req.user.tenant, status: 'Active' };
+        const query = { tenant: req.user.tenant, status: 'Active', deletedAt: null };
         if (region) query.coverageZones = { $in: [region] };
 
         const couriers = await Courier.find(query).lean();
@@ -140,8 +141,8 @@ exports.getGlobalIntelligence = async (req, res) => {
         const tenantId = req.user.tenant;
 
         const [criticalStock, suspiciousCustomers] = await Promise.all([
-            ProductVariant.countDocuments({ status: 'Active', $expr: { $lte: [{ $subtract: ['$totalStock', '$reservedStock'] }, '$reorderLevel'] } }),
-            Customer.countDocuments({ tenant: tenantId, blacklisted: true })
+            ProductVariant.countDocuments({ tenant: tenantId, status: 'Active', $expr: { $lte: [{ $subtract: ['$totalStock', '$reservedStock'] }, '$reorderLevel'] } }),
+            Customer.countDocuments({ tenant: tenantId, deletedAt: null, blacklisted: true })
         ]);
 
         res.json({

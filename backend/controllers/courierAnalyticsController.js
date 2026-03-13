@@ -18,6 +18,7 @@ exports.getCourierKPIs = async (req, res) => {
                 {
                     $match: {
                         tenant: tenantId,
+                        deletedAt: null,
                         createdAt: { $gte: startDate },
                         status: { $in: dispatchStatuses }
                     }
@@ -132,7 +133,7 @@ exports.getRegionalPerformance = async (req, res) => {
             const dispatchStatuses = ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'];
 
             return await Order.aggregate([
-                { $match: { tenant: tenantId, createdAt: { $gte: startDate }, status: { $in: dispatchStatuses } } },
+                { $match: { tenant: tenantId, deletedAt: null, createdAt: { $gte: startDate }, status: { $in: dispatchStatuses } } },
                 {
                     $group: {
                         _id: "$shipping.wilaya",

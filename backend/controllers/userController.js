@@ -23,7 +23,10 @@ const validateRoleForTenant = async (roleId, tenantId) => {
 // @access  Private (system.users)
 const getUsers = async (req, res) => {
     try {
-        const users = await User.find({ tenant: req.user.tenant }).select('-password').populate('role').lean();
+        const users = await User.find({ tenant: req.user.tenant })
+            .select('name email role isActive preferences createdAt permissionOverrides phone jobTitle tenant')
+            .populate('role')
+            .lean();
         res.json(users);
     } catch (error) {
         logger.error({ err: error }, 'User list fetch error');
@@ -139,11 +142,21 @@ const updateUserAccess = async (req, res) => {
             if (!Array.isArray(permissionOverrides)) {
                 return res.status(400).json({ message: 'permissionOverrides must be an array' });
             }
-            user.permissionOverrides = permissionOverrides.filter(o =>
+            const filtered = permissionOverrides.filter(o =>
                 o && typeof o.permission === 'string' &&
                 ALL_PERMISSIONS_FLAT.includes(o.permission) &&
                 ['allow', 'deny'].includes(o.effect)
             );
+            // Prevent privilege escalation: non-Super Admin cannot grant permissions they don't hold
+            const isSA = req.user.role && req.user.role.name === 'Super Admin';
+            if (!isSA) {
+                const callerPerms = new Set(req.user.computedPermissions || []);
+                const escalated = filtered.filter(o => o.effect === 'allow' && !callerPerms.has(o.permission));
+                if (escalated.length > 0) {
+                    return res.status(403).json({ message: `Cannot grant permissions you do not hold: ${escalated.map(o => o.permission).join(', ')}` });
+                }
+            }
+            user.permissionOverrides = filtered;
         }
 
         const updatedUser = await user.save();
@@ -254,10 +267,82 @@ const updateMyPreferences = async (req, res) => {
     }
 };
 
+// @desc    Update My Profile (name, phone, jobTitle)
+// @route   PUT /api/users/profile
+// @access  Private
+const updateMyProfile = async (req, res) => {
+    try {
+        const { name, phone, jobTitle } = req.body;
+
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (name !== undefined) {
+            if (!name || !name.trim()) return res.status(400).json({ message: 'Name is required' });
+            user.name = name.trim();
+        }
+        if (phone !== undefined) user.phone = phone?.trim() || '';
+        if (jobTitle !== undefined) user.jobTitle = jobTitle?.trim() || '';
+
+        const updated = await user.save();
+        cacheService.del(`auth:user:${updated._id}`);
+
+        res.json({
+            _id: updated._id,
+            name: updated.name,
+            email: updated.email,
+            phone: updated.phone,
+            jobTitle: updated.jobTitle
+        });
+    } catch (error) {
+        logger.error({ err: error }, 'Profile update error');
+        res.status(500).json({ message: 'Server Error updating profile' });
+    }
+};
+
+// @desc    Change My Password
+// @route   PUT /api/users/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current password and new password are required' });
+        }
+        if (newPassword.length < 12) {
+            return res.status(400).json({ message: 'New password must be at least 12 characters' });
+        }
+
+        const user = await User.findById(req.user._id).select('+password');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+
+        user.password = newPassword;
+        // Invalidate refresh token to force re-login on other devices
+        user.refreshToken = undefined;
+        user.refreshTokenExpiresAt = undefined;
+        await user.save();
+
+        cacheService.del(`auth:user:${user._id}`);
+
+        res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+        logger.error({ err: error }, 'Password change error');
+        res.status(500).json({ message: 'Server Error changing password' });
+    }
+};
+
 module.exports = {
     getUsers,
     createUser,
     updateUserAccess,
     deleteUser,
-    updateMyPreferences
+    updateMyPreferences,
+    updateMyProfile,
+    changePassword
 };

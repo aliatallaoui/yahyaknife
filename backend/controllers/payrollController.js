@@ -4,7 +4,6 @@ const Payroll = require('../models/Payroll');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const Expense = require('../models/Expense');
-const moment = require('moment');
 const audit = require('../shared/utils/auditLog');
 
 exports.generateMonthlyPayroll = async (req, res) => {
@@ -16,7 +15,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
 
         const [month, year] = period.split('-');
 
-        const employees = await Employee.find({ tenant, status: 'Active' });
+        const employees = await Employee.find({ tenant, status: 'Active', deletedAt: null });
         const payrollResults = [];
 
         const paddedMonth = month.padStart(2, '0');
@@ -106,7 +105,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
         res.json({ message: `Successfully generated payroll for ${period}`, count: payrollResults.length, data: payrollResults });
     } catch (err) {
         logger.error({ err }, 'Error generating monthly payroll');
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -125,12 +124,14 @@ exports.getPayrollRecords = async (req, res) => {
         }
 
         const records = await Payroll.find(query)
-            .populate('employeeId', 'name department role email')
-            .sort({ createdAt: -1 });
-        res.json(records);
+            .populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role email' })
+            .sort({ createdAt: -1 })
+            .limit(500)
+            .lean();
+        res.json(records.filter(r => r.employeeId));
     } catch (err) {
         logger.error({ err }, 'Error fetching payroll records');
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -138,23 +139,25 @@ exports.getPayrollRecords = async (req, res) => {
 exports.approvePayroll = async (req, res) => {
     try {
         const { id } = req.params;
-        const payroll = await Payroll.findOne({ _id: id, tenant: req.user.tenant });
-        if (!payroll) return res.status(404).json({ error: 'Payroll record not found' });
 
-        if (payroll.status !== 'Pending Approval') {
-            return res.status(400).json({ error: `Cannot approve payroll in '${payroll.status}' status. Only 'Pending Approval' records can be approved.` });
+        // Atomic conditional update — prevents double-approval race
+        const payroll = await Payroll.findOneAndUpdate(
+            { _id: id, tenant: req.user.tenant, status: 'Pending Approval' },
+            { $set: { status: 'Approved', approvedBy: req.user._id, approvedAt: new Date() } },
+            { new: true }
+        );
+
+        if (!payroll) {
+            const exists = await Payroll.findOne({ _id: id, tenant: req.user.tenant }).select('status').lean();
+            if (!exists) return res.status(404).json({ error: 'Payroll record not found' });
+            return res.status(400).json({ error: `Cannot approve payroll in '${exists.status}' status. Only 'Pending Approval' records can be approved.` });
         }
-
-        payroll.status = 'Approved';
-        payroll.approvedBy = req.user._id;
-        payroll.approvedAt = new Date();
-        await payroll.save();
 
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'APPROVE_PAYROLL', module: 'hr', metadata: { payrollId: id, employeeId: payroll.employeeId, period: payroll.period, amount: payroll.finalPayableSalary } });
         res.json(payroll);
     } catch (err) {
         logger.error({ err }, 'Error approving payroll');
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -164,31 +167,47 @@ exports.recordPayment = async (req, res) => {
         const { id } = req.params;
         const { amount } = req.body;
 
-        const payroll = await Payroll.findOne({ _id: id, tenant: req.user.tenant });
-        if (!payroll) return res.status(404).json({ error: 'Payroll record not found' });
+        // Pre-read for validation (lightweight lean query)
+        const existing = await Payroll.findOne({ _id: id, tenant: req.user.tenant }).select('status amountPaid finalPayableSalary').lean();
+        if (!existing) return res.status(404).json({ error: 'Payroll record not found' });
 
-        if (!['Approved', 'Partially Paid'].includes(payroll.status)) {
-            return res.status(400).json({ error: `Payroll must be 'Approved' before payment can be recorded. Current status: '${payroll.status}'.` });
+        if (!['Approved', 'Partially Paid'].includes(existing.status)) {
+            return res.status(400).json({ error: `Payroll must be 'Approved' before payment can be recorded. Current status: '${existing.status}'.` });
         }
 
-        let paymentAmount = amount ? Number(amount) : (payroll.finalPayableSalary - payroll.amountPaid);
+        let paymentAmount = amount ? Number(amount) : (existing.finalPayableSalary - existing.amountPaid);
         if (paymentAmount <= 0) {
             return res.status(400).json({ error: 'Invalid payment amount.' });
         }
 
-        const newAmountPaid = payroll.amountPaid + paymentAmount;
-        if (newAmountPaid > payroll.finalPayableSalary) {
-            return res.status(400).json({ error: `Cannot overpay. Maximum remaining balance is ${payroll.finalPayableSalary - payroll.amountPaid} DZD` });
-        }
+        // Atomic conditional update — prevents overpayment race
+        // The condition ensures amountPaid + paymentAmount <= finalPayableSalary at write time
+        const payroll = await Payroll.findOneAndUpdate(
+            {
+                _id: id,
+                tenant: req.user.tenant,
+                status: { $in: ['Approved', 'Partially Paid'] },
+                $expr: { $lte: [{ $add: ['$amountPaid', paymentAmount] }, '$finalPayableSalary'] }
+            },
+            [
+                { $set: { amountPaid: { $add: ['$amountPaid', paymentAmount] } } },
+                { $set: { status: { $cond: [{ $gte: ['$amountPaid', '$finalPayableSalary'] }, 'Paid', 'Partially Paid'] } } }
+            ],
+            { new: true }
+        );
 
-        const newStatus = (newAmountPaid >= payroll.finalPayableSalary) ? 'Paid' : 'Partially Paid';
-        payroll.amountPaid = newAmountPaid;
-        payroll.status = newStatus;
-        await payroll.save();
+        if (!payroll) {
+            // Re-check to give specific error message
+            const recheck = await Payroll.findOne({ _id: id, tenant: req.user.tenant }).select('amountPaid finalPayableSalary status').lean();
+            if (!recheck) return res.status(404).json({ error: 'Payroll record not found' });
+            if (!['Approved', 'Partially Paid'].includes(recheck.status))
+                return res.status(400).json({ error: `Payroll status changed to '${recheck.status}' — cannot record payment.` });
+            return res.status(400).json({ error: `Cannot overpay. Maximum remaining balance is ${recheck.finalPayableSalary - recheck.amountPaid} DZD` });
+        }
 
         // Sync payment to financial ledger
         try {
-            const employee = await Employee.findById(payroll.employeeId);
+            const employee = await Employee.findOne({ _id: payroll.employeeId, tenant: req.user.tenant, deletedAt: null });
             const empName = employee?.name || 'Unknown Employee';
             await Expense.create({
                 tenant: req.user.tenant,
@@ -207,6 +226,6 @@ exports.recordPayment = async (req, res) => {
         res.json(payroll);
     } catch (err) {
         logger.error({ err }, 'Error recording payroll payment');
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Server error' });
     }
 };

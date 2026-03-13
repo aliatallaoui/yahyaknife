@@ -12,10 +12,11 @@ exports.getPurchaseOrders = async (req, res) => {
         const pos = await PurchaseOrder.find()
             .populate('supplier')
             .populate({
-                path: 'items.itemRef', // Changed from variant to itemRef
-                populate: { path: 'productId' } // For ProductVariant cases
+                path: 'items.itemRef',
+                populate: { path: 'productId' }
             })
             .sort({ createdAt: -1 })
+            .limit(200)
             .lean();
         res.json(pos);
     } catch (error) {

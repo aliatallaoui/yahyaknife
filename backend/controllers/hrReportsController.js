@@ -13,8 +13,9 @@ exports.getDailyReport = async (req, res) => {
         const targetDate = date || moment().format('YYYY-MM-DD');
 
         const records = await Attendance.find({ tenant, date: targetDate })
-            .populate('employeeId', 'name department role')
-            .lean();
+            .populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role' })
+            .lean()
+            .then(recs => recs.filter(r => r.employeeId));
 
         const summary = {
             total: records.length,
@@ -28,7 +29,7 @@ exports.getDailyReport = async (req, res) => {
         res.json(ok({ date: targetDate, summary, records }));
     } catch (err) {
         logger.error({ err }, 'Error fetching daily attendance report');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -48,9 +49,10 @@ exports.getMonthlyReport = async (req, res) => {
         const periodEnd   = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
 
         const records = await Attendance.find({ tenant, date: { $gte: periodStart, $lt: periodEnd } })
-            .populate('employeeId', 'name department role')
+            .populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role' })
             .sort({ date: 1 })
-            .lean();
+            .lean()
+            .then(recs => recs.filter(r => r.employeeId));
 
         const matrix = {};
         records.forEach(rec => {
@@ -76,7 +78,7 @@ exports.getMonthlyReport = async (req, res) => {
         res.json(ok({ period, data: Object.values(matrix) }));
     } catch (err) {
         logger.error({ err }, 'Error fetching monthly attendance report');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -88,9 +90,10 @@ exports.getPayrollReport = async (req, res) => {
         const filter = { tenant, ...(period ? { period } : {}) };
 
         const payrolls = await Payroll.find(filter)
-            .populate('employeeId', 'name department role email')
+            .populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role email' })
             .sort({ finalPayableSalary: -1 })
-            .lean();
+            .lean()
+            .then(recs => recs.filter(r => r.employeeId));
 
         const summary = {
             totalLoad: payrolls.reduce((acc, curr) => acc + curr.finalPayableSalary, 0),
@@ -101,7 +104,7 @@ exports.getPayrollReport = async (req, res) => {
         res.json(ok({ period: period || 'All Time', summary, records: payrolls }));
     } catch (err) {
         logger.error({ err }, 'Error fetching payroll report');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -114,15 +117,21 @@ exports.getOvertimeReport = async (req, res) => {
         if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
-        const searchPrefix = `${year}-${month.padStart(2, '0')}`;
+        const mm = month.padStart(2, '0');
+        const periodStart = `${year}-${mm}-01`;
+        const nextMonth = String(Number(mm) + 1).padStart(2, '0');
+        const periodEnd = mm === '12' ? `${Number(year) + 1}-01-01` : `${year}-${nextMonth}-01`;
 
         const records = await Attendance.aggregate([
-            { $match: { tenant, date: { $regex: `^${searchPrefix}` }, overtimeMinutes: { $gt: 0 } } },
+            { $match: { tenant, date: { $gte: periodStart, $lt: periodEnd }, overtimeMinutes: { $gt: 0 } } },
             { $group: { _id: '$employeeId', totalOvertimeMinutes: { $sum: '$overtimeMinutes' }, daysWithOvertime: { $sum: 1 } } },
             { $sort: { totalOvertimeMinutes: -1 } }
         ]);
 
-        const populated = await Employee.populate(records, { path: '_id', select: 'name department role' });
+        // Filter to active employees only
+        const activeEmpIds = await Employee.find({ tenant, deletedAt: null }).select('_id').lean().then(docs => docs.map(d => d._id));
+        const activeRecords = records.filter(r => activeEmpIds.some(id => id.equals(r._id)));
+        const populated = await Employee.populate(activeRecords, { path: '_id', select: 'name department role' });
         const formatted = populated.map(p => ({
             employee: p._id,
             totalOvertimeMinutes: p.totalOvertimeMinutes,
@@ -132,7 +141,7 @@ exports.getOvertimeReport = async (req, res) => {
         res.json(ok({ period, leaders: formatted }));
     } catch (err) {
         logger.error({ err }, 'Error fetching overtime report');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -147,11 +156,13 @@ exports.getDeductionsReport = async (req, res) => {
             tenant,
             period,
             $or: [{ missingTimeDeductions: { $gt: 0 } }, { absenceDeductions: { $gt: 0 } }]
-        }).populate('employeeId', 'name department role').sort({ absenceDeductions: -1, missingTimeDeductions: -1 }).lean();
+        }).populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role' })
+          .sort({ absenceDeductions: -1, missingTimeDeductions: -1 }).lean()
+          .then(recs => recs.filter(r => r.employeeId));
 
         res.json(ok({ period, records: payrolls }));
     } catch (err) {
         logger.error({ err }, 'Error fetching deductions report');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };

@@ -1,4 +1,5 @@
 const logger = require('../shared/logger');
+const mongoose = require('mongoose');
 const ProductVariant = require('../models/ProductVariant');
 const StockMovementLedger = require('../models/StockMovementLedger');
 const PurchaseOrder = require('../models/PurchaseOrder');
@@ -12,11 +13,12 @@ const cacheService = require('../services/cacheService');
 
 exports.getSkuIntelligence = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const thirtyDaysAgo = moment().subtract(30, 'days').toDate();
 
         // Single aggregation: sold-last-30-days grouped by variantId (replaces N individual aggregations)
         const [variants, salesByVariant] = await Promise.all([
-            ProductVariant.find({ status: { $ne: 'Archived' } }).populate('productId', 'name brand category').lean(),
+            ProductVariant.find({ tenant: tenantId, status: { $ne: 'Archived' } }).populate('productId', 'name brand category').lean(),
             StockMovementLedger.aggregate([
                 { $match: { type: 'DEDUCTION', createdAt: { $gte: thirtyDaysAgo } } },
                 { $group: { _id: '$variantId', totalSold: { $sum: { $abs: '$quantity' } } } }
@@ -294,7 +296,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
             // 2. Sales Trend (Time Series based on range days)
             const diffDays = Math.max(1, endDate.diff(startDate, 'days'));
             const trendPipeline = [
-                { $match: dateQuery },
+                { $match: { ...dateQuery, deletedAt: null } },
                 {
                     $group: {
                         _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -423,7 +425,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
             }));
 
             // 5. Courier Analytics
-            const couriers = await Courier.find({ tenant: tenantId }).select('_id name').lean();
+            const couriers = await Courier.find({ tenant: tenantId, deletedAt: null }).select('_id name').lean();
             const courierIds = couriers.map(c => c._id);
             const courierAgg = await Order.aggregate([
                 { $match: { ...dateQuery, courier: { $in: courierIds } } },
@@ -445,7 +447,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
             });
 
             // 6. Top Customers
-            const topCustomersAgg = await Customer.find({ tenant: tenantId })
+            const topCustomersAgg = await Customer.find({ tenant: tenantId, deletedAt: null })
                 .sort({ lifetimeValue: -1 })
                 .limit(10)
                 .select('name totalOrders lifetimeValue averageOrderValue')
@@ -460,7 +462,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
 
             // 7. Stock Health
             const stockHealthAgg = await ProductVariant.aggregate([
-                { $match: { status: 'Active' } },
+                { $match: { tenant: new mongoose.Types.ObjectId(tenantId), status: 'Active' } },
                 {
                     $group: {
                         _id: null,

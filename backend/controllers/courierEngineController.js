@@ -21,8 +21,10 @@ const getCourierCoverage = async (req, res) => {
             }
         }
 
-        const coverage = await CourierCoverage.find(query).populate('courierId', 'name status').lean();
-        res.json(coverage);
+        const coverage = await CourierCoverage.find(query)
+            .populate({ path: 'courierId', match: { deletedAt: null }, select: 'name status' })
+            .lean();
+        res.json(coverage.filter(c => c.courierId));
     } catch (error) {
         logger.error({ err: error }, 'Courier coverage fetch error');
         res.status(500).json({ message: 'Server Error' });
@@ -97,7 +99,7 @@ const recommendCourier = async (req, res) => {
         const courierIds = coverages.map(c => c.courierId);
 
         // 2. Fetch those couriers with their stats
-        const activeCouriers = await Courier.find({ _id: { $in: courierIds }, status: 'Active', tenant: req.user.tenant }).lean();
+        const activeCouriers = await Courier.find({ _id: { $in: courierIds }, status: 'Active', tenant: req.user.tenant, deletedAt: null }).lean();
 
         if (activeCouriers.length === 0) {
             return res.json({ recommended: null, available: [] });
@@ -108,13 +110,13 @@ const recommendCourier = async (req, res) => {
             // Try exact match with commune first
             let pricing = await CourierPricing.findOne({
                 courierId: courier._id, wilayaCode, commune, deliveryType: typeNum
-            });
+            }).lean();
 
             // Fallback to wilaya level
             if (!pricing) {
                 pricing = await CourierPricing.findOne({
                     courierId: courier._id, wilayaCode, $or: [{ commune: { $exists: false } }, { commune: '' }, { commune: null }], deliveryType: typeNum
-                });
+                }).lean();
             }
 
             return {

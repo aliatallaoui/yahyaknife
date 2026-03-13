@@ -1,5 +1,6 @@
 const logger = require('../shared/logger');
 const StockMovementLedger = require('../models/StockMovementLedger');
+const ProductVariant = require('../models/ProductVariant');
 
 /**
  * Unified stock movement logger — writes to StockMovementLedger (single source of truth).
@@ -51,7 +52,8 @@ exports.getProductLedger = async (req, res) => {
 
         const movements = await StockMovementLedger.find({ variantId })
             .sort({ createdAt: -1 })
-            .limit(100);
+            .limit(100)
+            .lean();
 
         res.json(movements);
     } catch (error) {
@@ -65,13 +67,18 @@ exports.getProductLedger = async (req, res) => {
 // @access  Private
 exports.getGlobalLedger = async (req, res) => {
     try {
-        const movements = await StockMovementLedger.find()
+        // StockMovementLedger has no tenant field — scope via tenant's variant IDs
+        const tenantVariantIds = await ProductVariant.find({ tenant: req.user.tenant })
+            .select('_id').lean().then(docs => docs.map(d => d._id));
+
+        const movements = await StockMovementLedger.find({ variantId: { $in: tenantVariantIds } })
             .populate({
                 path: 'variantId',
                 populate: { path: 'productId', select: 'name' }
             })
             .sort({ createdAt: -1 })
-            .limit(50);
+            .limit(50)
+            .lean();
 
         res.json(movements);
     } catch (error) {

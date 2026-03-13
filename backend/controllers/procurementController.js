@@ -35,6 +35,8 @@ exports.createSupplier = async (req, res) => {
 
 exports.updateSupplier = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ error: 'Invalid supplier ID' });
         const { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes } = req.body;
         const sup = await Supplier.findByIdAndUpdate(
             req.params.id,
@@ -87,9 +89,12 @@ exports.getPurchaseOrders = async (req, res) => {
 
 exports.createPurchaseOrder = async (req, res) => {
     try {
-        // Auto-generate PO number
-        const count = await PurchaseOrder.countDocuments();
-        const poNumber = `PO-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+        // Auto-generate PO number — sort-based to avoid race condition with countDocuments
+        const year = new Date().getFullYear();
+        const lastPo = await PurchaseOrder.findOne({ poNumber: new RegExp(`^PO-${year}-`) })
+            .sort({ poNumber: -1 }).select('poNumber').lean();
+        const lastSeq = lastPo ? parseInt(lastPo.poNumber.split('-')[2], 10) || 0 : 0;
+        const poNumber = `PO-${year}-${String(lastSeq + 1).padStart(4, '0')}`;
 
         const { supplier, items, expectedDeliveryDate, notes, orderDate } = req.body;
         if (!supplier || !mongoose.Types.ObjectId.isValid(supplier))
@@ -109,15 +114,21 @@ exports.createPurchaseOrder = async (req, res) => {
 
         await po.save();
 
-        // Also update Supplier lead time metrics if delivery date is expected
+        // Update supplier lead time with exponential moving average
         if (po.expectedDeliveryDate && po.supplier) {
             const startStr = orderDate || new Date();
             const daysLead = Math.ceil((new Date(po.expectedDeliveryDate) - new Date(startStr)) / (1000 * 60 * 60 * 24));
-
-            // Basic rolling average approximation
-            await Supplier.findByIdAndUpdate(po.supplier, {
-                $inc: { 'performanceMetrics.averageLeadTimeDays': daysLead > 0 ? daysLead : 0 }
-            });
+            if (daysLead > 0) {
+                const sup = await Supplier.findById(po.supplier).select('performanceMetrics');
+                if (sup) {
+                    const current = sup.performanceMetrics?.averageLeadTimeDays || 0;
+                    // EMA: blend 70% existing average + 30% new observation (or set directly if first)
+                    sup.performanceMetrics.averageLeadTimeDays = current > 0
+                        ? Math.round(current * 0.7 + daysLead * 0.3)
+                        : daysLead;
+                    await sup.save();
+                }
+            }
         }
 
         res.status(201).json(created(po));

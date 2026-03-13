@@ -8,12 +8,20 @@ const AgentProfile = require('../models/AgentProfile');
 const User = require('../models/User');
 const ProductVariant = require('../models/ProductVariant');
 const cacheService = require('../services/cacheService');
-const OrderService = require('../domains/orders/order.service');
+
 const ShipmentService = require('../domains/dispatch/shipment.service');
+const OrderService = require('../domains/orders/order.service');
 const { sendMessage, getTemplates } = require('../services/messageService');
 const { fireAndRetry } = require('../shared/utils/retryAsync');
 const { ok } = require('../shared/utils/ApiResponse');
 const { TERMINAL } = require('../shared/constants/orderStatuses');
+
+// ─── Admin / Owner role check — these roles see ALL tenant orders ─────────────
+const ADMIN_ROLES = new Set(['Super Admin', 'Owner / Founder']);
+function isAdminUser(user) {
+    const roleName = user.role?.name || user.role;
+    return ADMIN_ROLES.has(roleName);
+}
 
 // ─── Actionable statuses (orders the call center actively works on) ───────────
 const ACTIONABLE_STATUSES = ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Postponed'];
@@ -37,6 +45,7 @@ exports.getAgentDashboard = async (req, res) => {
     try {
         const agentId = req.user._id;
         const tenantId = req.user.tenant;
+        const isAdmin = isAdminUser(req.user);
         const cacheKey = `tenant:${tenantId}:agent:${agentId}:dashboard`;
 
         const dashboardData = await cacheService.getOrSet(cacheKey, async () => {
@@ -44,7 +53,8 @@ exports.getAgentDashboard = async (req, res) => {
             todayStart.setHours(0, 0, 0, 0);
             const now = new Date();
 
-            const baseFilter = { tenant: tenantId, assignedAgent: agentId, deletedAt: null };
+            const baseFilter = { tenant: tenantId, deletedAt: null };
+            if (!isAdmin) baseFilter.assignedAgent = agentId;
 
             const [
                 totalAssigned,
@@ -64,13 +74,14 @@ exports.getAgentDashboard = async (req, res) => {
                 // FIFO + priority aggregation: callbacks due → high priority → oldest first
                 Order.aggregate([
                     { $match: { ...baseFilter, status: { $in: ACTIONABLE_STATUSES } } },
-                    { $match: {
+                    // Admins see all orders; agents only see unlocked or their own locked orders
+                    ...(isAdmin ? [] : [{ $match: {
                         $or: [
                             { lockedBy: null },
                             { lockedBy: agentId },
                             { lockedAt: { $lt: new Date(Date.now() - 5 * 60 * 1000) } }
                         ]
-                    }},
+                    }}]),
                     { $addFields: {
                         sortBucket: {
                             $cond: [
@@ -89,9 +100,14 @@ exports.getAgentDashboard = async (req, res) => {
                         }
                     }},
                     { $sort: { sortBucket: 1, _id: 1 } },
-                    { $limit: 200 },
+                    { $limit: isAdmin ? 500 : 200 },
                     { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: '_cust' } },
                     { $unwind: { path: '$_cust', preserveNullAndEmptyArrays: true } },
+                    // For admins: resolve assigned agent name
+                    ...(isAdmin ? [
+                        { $lookup: { from: 'users', localField: 'assignedAgent', foreignField: '_id', as: '_agent' } },
+                        { $unwind: { path: '$_agent', preserveNullAndEmptyArrays: true } },
+                    ] : []),
                     { $addFields: {
                         customer: {
                             _id: '$_cust._id',
@@ -100,12 +116,13 @@ exports.getAgentDashboard = async (req, res) => {
                             trustScore: '$_cust.trustScore',
                             riskLevel: '$_cust.riskLevel',
                             blacklisted: '$_cust.blacklisted'
-                        }
+                        },
+                        ...(isAdmin ? { assignedAgentName: '$_agent.name' } : {})
                     }},
-                    { $project: { _cust: 0 } }
+                    { $project: { _cust: 0, _agent: 0 } }
                 ]),
-                CallNote.countDocuments({ agent: agentId, createdAt: { $gte: todayStart } }),
-                AgentProfile.findOne({ user: agentId }).lean(),
+                CallNote.countDocuments({ agent: agentId, tenant: tenantId, createdAt: { $gte: todayStart } }),
+                AgentProfile.findOne({ user: agentId, tenant: tenantId }).lean(),
                 // Cancelled today (for confirm rate calc)
                 Order.countDocuments({ ...baseFilter, status: { $in: ['Cancelled', 'Cancelled by Customer'] }, updatedAt: { $gte: todayStart } }),
                 // Recent call actions for streak calculation (last 20)
@@ -160,7 +177,7 @@ exports.logCallAction = async (req, res) => {
         const tenantId = req.user.tenant;
 
         // Tenant-scoped fetch
-        const order = await Order.findOne({ _id: orderId, tenant: tenantId });
+        const order = await Order.findOne({ _id: orderId, tenant: tenantId, deletedAt: null });
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         // Agents can only act on orders assigned to them (managers are exempt)
@@ -239,9 +256,9 @@ exports.logCallAction = async (req, res) => {
                 !['Cancelled', 'Cancelled by Customer', 'Returned', 'Refused'].includes(statusBefore)) {
                 for (const item of order.products) {
                     if (!item.variantId) continue;
-                    await ProductVariant.findByIdAndUpdate(item.variantId, {
+                    fireAndRetry('restoreStock:callCenter', () => ProductVariant.findByIdAndUpdate(item.variantId, {
                         $inc: { reservedStock: -item.quantity, totalSold: -item.quantity }
-                    }).catch(err => logger.error({ err }, 'Failed to restore reserved stock on cancellation'));
+                    }));
                 }
             }
             // Update customer metrics on any status change
@@ -260,64 +277,44 @@ exports.logCallAction = async (req, res) => {
 
 exports.assignOrders = async (req, res) => {
     try {
-        const { mode, targetAgentId, orderIds, region } = req.body;
+        const { mode, targetAgentId, orderIds, region, reason } = req.body;
         const tenantId = req.user.tenant;
+        const changedBy = req.user._id;
 
-        // Validate targetAgentId belongs to this tenant (for Manual and Region modes)
-        if ((mode === 'Manual' || mode === 'Region') && targetAgentId) {
+        // Validate targetAgentId belongs to this tenant
+        if (targetAgentId) {
             const agentUser = await User.findOne({ _id: targetAgentId, tenant: tenantId });
             if (!agentUser) return res.status(400).json({ message: 'Target agent not found in this workspace' });
         }
 
         if (mode === 'Manual') {
-            await Order.updateMany(
-                { _id: { $in: orderIds }, tenant: tenantId },
-                { $set: { assignedAgent: targetAgentId } }
-            );
-            return res.json({ message: `${orderIds.length} orders assigned manually.` });
+            if (!targetAgentId || !orderIds?.length) return res.status(400).json({ message: 'targetAgentId and orderIds required for manual mode' });
+            let count = 0;
+            for (const oid of orderIds) {
+                await assignmentService.reassignOrder(oid, tenantId, targetAgentId, changedBy, reason || 'Manual assignment by manager');
+                count++;
+            }
+            return res.json(ok({ message: `${count} orders assigned manually.`, count }));
         }
 
         if (mode === 'Region') {
-            const result = await Order.updateMany(
-                { tenant: tenantId, wilaya: region, status: 'New', assignedAgent: null },
-                { $set: { assignedAgent: targetAgentId } }
-            );
-            return res.json({ message: `${result.modifiedCount} regional orders assigned.` });
-        }
-
-        if (mode === 'Auto_RoundRobin') {
-            const activeProfiles = await AgentProfile.find({ isActive: true }).populate('user').lean();
-            if (activeProfiles.length === 0) return res.status(400).json({ message: 'No active agents available.' });
-
-            const unassignedOrders = await Order.find(
-                { tenant: tenantId, status: 'New', assignedAgent: null },
-                { _id: 1 }
-            );
-
-            if (unassignedOrders.length === 0) {
-                return res.json({ message: 'No unassigned orders to distribute.' });
+            if (!targetAgentId || !region) return res.status(400).json({ message: 'targetAgentId and region required' });
+            const orders = await Order.find({ tenant: tenantId, wilaya: region, status: 'New', assignedAgent: null, deletedAt: null }, { _id: 1 }).lean();
+            let count = 0;
+            for (const o of orders) {
+                await assignmentService.assignOrder(o._id, tenantId, targetAgentId, 'manual', changedBy, `Region assignment: ${region}`);
+                count++;
             }
-
-            // Partition order IDs across agents in round-robin slices
-            const buckets = activeProfiles.map(() => []);
-            unassignedOrders.forEach((o, i) => buckets[i % activeProfiles.length].push(o._id));
-
-            // One updateMany per agent (not one save per order)
-            await Promise.all(
-                activeProfiles.map((profile, i) =>
-                    buckets[i].length > 0
-                        ? Order.updateMany(
-                            { _id: { $in: buckets[i] }, tenant: tenantId },
-                            { $set: { assignedAgent: profile.user._id } }
-                          )
-                        : Promise.resolve()
-                )
-            );
-
-            return res.json({ message: `Auto-distributed ${unassignedOrders.length} orders across ${activeProfiles.length} agents.` });
+            return res.json(ok({ message: `${count} regional orders assigned.`, count }));
         }
 
-        res.status(400).json({ message: 'Invalid assignment mode' });
+        if (mode === 'Auto_Distribute' || mode === 'Auto_RoundRobin') {
+            // Uses the priority resolver (product → store → round-robin)
+            const count = await assignmentService.distributeUnassignedOrders(tenantId, changedBy);
+            return res.json(ok({ message: `${count} orders auto-distributed using priority rules.`, count }));
+        }
+
+        res.status(400).json({ message: 'Invalid assignment mode. Use: Manual, Region, Auto_Distribute' });
     } catch (error) {
         logger.error({ err: error }, 'Assignment Error');
         res.status(500).json({ message: 'Server Error assigning orders' });
@@ -347,7 +344,8 @@ exports.getOrderCallHistory = async (req, res) => {
 exports.getManagerAnalytics = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        const agents = await AgentProfile.find({ isActive: true }).populate('user', 'name email').lean();
+        const agents = await AgentProfile.find({ tenant: tenantId, isActive: true }).populate('user', 'name email').lean()
+            .then(profiles => profiles.filter(p => p.user)); // null-safety: skip orphaned profiles
 
         if (agents.length === 0) return res.json({ leaderboard: [] });
 
@@ -437,7 +435,7 @@ exports.getOrderIntel = async (req, res) => {
 
         const cacheKey = `tenant:${tenantId}:orderIntel:${orderId}`;
         const intel = await cacheService.getOrSet(cacheKey, async () => {
-            const order = await Order.findOne({ _id: orderId, tenant: tenantId })
+            const order = await Order.findOne({ _id: orderId, tenant: tenantId, deletedAt: null })
                 .populate('customer', 'name phone totalOrders deliveredOrders totalRefusals cancelledOrders trustScore riskLevel segment deliverySuccessRate blacklisted')
                 .populate('products.variantId', 'callScript')
                 .select('customer shipping products')
@@ -572,46 +570,10 @@ exports.getManagerOperations = async (req, res) => {
     }
 };
 
-// --- AUTO-ASSIGN SINGLE ORDER (called from order.service.js on creation) ---
-
-/**
- * Auto-assign a single new order to the agent with the fewest active orders.
- * Uses "least-loaded" strategy. Only runs if active agents exist.
- * Fire-and-forget safe — failures are logged, never thrown.
- */
-exports.autoAssignOrder = async (orderId, tenantId) => {
-    try {
-        const activeProfiles = await AgentProfile.find({ isActive: true }).lean();
-        if (activeProfiles.length === 0) return;
-
-        const agentIds = activeProfiles.map(p => p.user);
-
-        // Find agent with fewest active orders (least-loaded)
-        const workloads = await Order.aggregate([
-            { $match: { tenant: tenantId, assignedAgent: { $in: agentIds }, status: { $in: ACTIONABLE_STATUSES }, deletedAt: null } },
-            { $group: { _id: '$assignedAgent', count: { $sum: 1 } } }
-        ]);
-
-        const loadMap = {};
-        workloads.forEach(w => { loadMap[w._id.toString()] = w.count; });
-
-        // Pick agent with lowest load (or first agent if all have 0)
-        let bestAgent = agentIds[0];
-        let bestLoad = loadMap[agentIds[0]?.toString()] || 0;
-        for (const id of agentIds) {
-            const load = loadMap[id.toString()] || 0;
-            if (load < bestLoad) {
-                bestAgent = id;
-                bestLoad = load;
-            }
-        }
-
-        await Order.updateOne({ _id: orderId, tenant: tenantId }, { $set: { assignedAgent: bestAgent } });
-        logger.info({ orderId: orderId.toString(), agent: bestAgent.toString() }, 'Auto-assigned order to least-loaded agent');
-    } catch (err) {
-        logger.error({ err, orderId: orderId?.toString() }, 'Auto-assign failed');
-    }
-};
+// --- AUTO-ASSIGN is now handled by assignment.service.js ---
+// Kept as a re-export for backward compatibility
+const assignmentService = require('../domains/call-center/assignment.service');
+exports.autoAssignOrder = assignmentService.autoAssignOrder;
 
 // --- SUPERVISOR REVIEW QUEUE (escalated/flagged orders needing attention) ---
 
@@ -903,11 +865,25 @@ exports.bulkUpdateOrders = async (req, res) => {
         }
 
         if (action === 'cancel') {
-            const result = await Order.updateMany(
-                { ...filter, status: { $in: ACTIONABLE_STATUSES } },
-                { $set: { status: 'Cancelled by Customer' } }
-            );
-            return res.json(ok({ modifiedCount: result.modifiedCount, action: 'cancel' }));
+            const cancelFilter = { ...filter, status: { $in: ACTIONABLE_STATUSES } };
+            const ordersToCancelIds = await Order.find(cancelFilter).select('_id').lean();
+            let successCount = 0;
+            const errors = [];
+            for (const { _id } of ordersToCancelIds) {
+                try {
+                    await OrderService.updateOrder(
+                        _id,
+                        { status: 'Cancelled by Customer' },
+                        req.user._id,
+                        { bypassStateMachine: true }
+                    );
+                    successCount++;
+                } catch (err) {
+                    logger.error({ err, orderId: _id }, 'Bulk cancel: failed to cancel order');
+                    errors.push({ orderId: _id.toString(), message: err.message });
+                }
+            }
+            return res.json(ok({ modifiedCount: successCount, failedCount: errors.length, errors, action: 'cancel' }));
         }
 
         if (action === 'unassign') {
@@ -1002,13 +978,14 @@ exports.getAgentPerformanceDetail = async (req, res) => {
         // Fetch recent confirmed orders
         const confirmedOrders = await Order.find({
             tenant: tenantId,
+            deletedAt: null,
             confirmedBy: agentId,
             updatedAt: { $gte: since }
         }).select('orderId status totalAmount date shipping.wilayaName customer').populate('customer', 'name phone').sort({ updatedAt: -1 }).limit(50).lean();
 
         // Calculate specific agent stats for the period
         const stats = await Order.aggregate([
-            { $match: { tenant: tenantId, assignedAgent: new mongoose.Types.ObjectId(agentId), updatedAt: { $gte: since } } },
+            { $match: { tenant: tenantId, deletedAt: null, assignedAgent: new mongoose.Types.ObjectId(agentId), updatedAt: { $gte: since } } },
             { $group: {
                 _id: null,
                 totalAssigned: { $sum: 1 },
@@ -1186,7 +1163,7 @@ exports.getOrderTracking = async (req, res) => {
                 .populate('confirmedBy', 'name')
                 .select('orderId status shipping wilaya commune totalAmount createdAt updatedAt confirmedBy assignedAgent verificationStatus')
                 .lean(),
-            OrderStatusHistory.find({ order: orderId })
+            OrderStatusHistory.find({ order: orderId, tenant: tenantId })
                 .populate('changedBy', 'name')
                 .sort({ createdAt: 1 })
                 .lean(),
@@ -1293,20 +1270,26 @@ exports.getFollowUpQueue = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const agentId = req.user._id;
+        const isAdmin = isAdminUser(req.user);
 
         // Orders that are dispatched/shipped/out for delivery and assigned to this agent
         // These need follow-up calls (remind customer to answer delivery call, etc.)
         const POST_DISPATCH_FOLLOWUP = ['Dispatched', 'Shipped', 'Out for Delivery', 'Failed Attempt'];
 
-        const orders = await Order.find({
+        const followUpFilter = {
             tenant: tenantId,
             status: { $in: POST_DISPATCH_FOLLOWUP },
             deletedAt: null,
-            $or: [
+        };
+        // Admins see all follow-up orders; agents see only theirs + unassigned
+        if (!isAdmin) {
+            followUpFilter.$or = [
                 { assignedAgent: agentId },
                 { assignedAgent: null },
-            ],
-        })
+            ];
+        }
+
+        const orders = await Order.find(followUpFilter)
             .populate('customer', 'name phone')
             .sort({ updatedAt: -1 })
             .limit(100)
@@ -1334,6 +1317,324 @@ exports.getFollowUpQueue = async (req, res) => {
     } catch (error) {
         logger.error({ err: error }, 'getFollowUpQueue error');
         res.status(500).json({ message: 'Server Error loading follow-up queue' });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ASSIGNMENT SYSTEM — QUEUES, CLAIM, REASSIGN, RULES CRUD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const AssignmentRule = require('../models/AssignmentRule');
+const AssignmentHistory = require('../models/AssignmentHistory');
+
+// --- AGENT QUEUES (separated views) ---
+
+/**
+ * GET /my-queue — Orders assigned to the current agent, segmented.
+ */
+exports.getMyQueue = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const agentId = req.user._id;
+        const isAdmin = isAdminUser(req.user);
+        const STALE_LOCK_MS = 5 * 60 * 1000;
+
+        const baseFilter = {
+            tenant: tenantId,
+            deletedAt: null,
+            status: { $nin: [...TERMINAL, 'Cancelled by Customer'] }
+        };
+        if (!isAdmin) baseFilter.assignedAgent = agentId;
+
+        // Admin sees all; agent sees only unlocked/own-locked
+        const assignedFilter = { ...baseFilter, status: { $in: ACTIONABLE_STATUSES } };
+        if (!isAdmin) assignedFilter.$or = [{ lockedBy: null }, { lockedAt: { $lt: new Date(Date.now() - STALE_LOCK_MS) } }];
+
+        const inProgressFilter = { ...baseFilter };
+        if (isAdmin) {
+            inProgressFilter.lockedBy = { $ne: null };
+            inProgressFilter.lockedAt = { $gte: new Date(Date.now() - STALE_LOCK_MS) };
+        } else {
+            inProgressFilter.lockedBy = agentId;
+            inProgressFilter.lockedAt = { $gte: new Date(Date.now() - STALE_LOCK_MS) };
+        }
+
+        const [assigned, inProgress, followUp] = await Promise.all([
+            // Assigned — actionable statuses
+            Order.find(assignedFilter)
+            .populate('customer', 'name phone trustScore blacklisted')
+            .select('orderId status wilaya commune totalAmount priority tags assignmentMode assignedAgent channel createdAt updatedAt postponedUntil')
+            .sort({ priority: -1, createdAt: 1 })
+            .limit(isAdmin ? 500 : 100)
+            .lean(),
+
+            // In Progress — locked orders
+            Order.find(inProgressFilter)
+            .populate('customer', 'name phone trustScore blacklisted')
+            .select('orderId status wilaya commune totalAmount priority tags assignmentMode assignedAgent channel createdAt updatedAt')
+            .lean(),
+
+            // Follow-up — postponed/no answer orders assigned to me
+            Order.find({
+                ...baseFilter,
+                status: { $in: ['Postponed', 'No Answer', 'Wrong Number', 'Out of Coverage'] }
+            })
+            .populate('customer', 'name phone trustScore')
+            .select('orderId status wilaya commune totalAmount priority tags assignmentMode postponedUntil createdAt updatedAt')
+            .sort({ postponedUntil: 1, updatedAt: 1 })
+            .limit(100)
+            .lean()
+        ]);
+
+        res.json(ok({
+            assigned: assigned.length,
+            inProgress: inProgress.length,
+            followUp: followUp.length,
+            orders: { assigned, inProgress, followUp }
+        }));
+    } catch (error) {
+        logger.error({ err: error }, 'getMyQueue error');
+        res.status(500).json({ message: 'Server Error loading agent queue' });
+    }
+};
+
+/**
+ * GET /unassigned-queue — Unassigned orders (shared pool).
+ * Requires CALLCENTER_VIEW_UNASSIGNED permission.
+ */
+exports.getUnassignedQueue = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+
+        const orders = await Order.find({
+            tenant: tenantId,
+            assignedAgent: null,
+            deletedAt: null,
+            status: { $in: ['New', ...ACTIONABLE_STATUSES] }
+        })
+        .populate('customer', 'name phone trustScore blacklisted')
+        .select('orderId status wilaya commune totalAmount priority tags channel salesChannelSource createdAt products')
+        .sort({ priority: -1, createdAt: 1 })
+        .limit(200)
+        .lean();
+
+        res.json(ok({ total: orders.length, orders }));
+    } catch (error) {
+        logger.error({ err: error }, 'getUnassignedQueue error');
+        res.status(500).json({ message: 'Server Error loading unassigned queue' });
+    }
+};
+
+/**
+ * POST /claim/:orderId — Agent claims an unassigned order.
+ */
+exports.claimOrder = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const agentId = req.user._id;
+        const { orderId } = req.params;
+
+        const order = await assignmentService.claimOrder(orderId, tenantId, agentId);
+        cacheService.del(`tenant:${tenantId}:agent:${agentId}:dashboard`);
+
+        res.json(ok({ message: 'Order claimed successfully', orderId: order.orderId }));
+    } catch (error) {
+        logger.error({ err: error }, 'claimOrder error');
+        res.status(400).json({ message: error.message || 'Failed to claim order' });
+    }
+};
+
+/**
+ * POST /reassign — Reassign an order to a different agent.
+ * Requires CALLCENTER_REASSIGN permission.
+ */
+exports.reassignOrder = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const changedBy = req.user._id;
+        const { orderId, newAgentId, reason } = req.body;
+
+        if (!orderId || !newAgentId) return res.status(400).json({ message: 'orderId and newAgentId required' });
+
+        const agentUser = await User.findOne({ _id: newAgentId, tenant: tenantId });
+        if (!agentUser) return res.status(400).json({ message: 'Target agent not found' });
+
+        const order = await assignmentService.reassignOrder(orderId, tenantId, newAgentId, changedBy, reason || '');
+
+        // Clear caches
+        cacheService.del(`tenant:${tenantId}:managerOps`);
+
+        res.json(ok({ message: 'Order reassigned', orderId: order.orderId, newAgent: agentUser.name }));
+    } catch (error) {
+        logger.error({ err: error }, 'reassignOrder error');
+        res.status(400).json({ message: error.message || 'Failed to reassign order' });
+    }
+};
+
+/**
+ * GET /assignment-history/:orderId — Full reassignment audit trail for an order.
+ */
+exports.getAssignmentHistory = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const { orderId } = req.params;
+        const history = await assignmentService.getOrderAssignmentHistory(orderId, tenantId);
+        res.json(ok(history));
+    } catch (error) {
+        logger.error({ err: error }, 'getAssignmentHistory error');
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ASSIGNMENT RULES CRUD (product-agent, store-agent mappings)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /assignment-rules — List all active rules for this tenant.
+ */
+exports.getAssignmentRules = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const rules = await AssignmentRule.find({ tenant: tenantId })
+            .populate('agent', 'name email')
+            .sort({ type: 1, createdAt: -1 })
+            .lean();
+
+        // Enrich with source names
+        const Product = require('../models/Product');
+        const SalesChannel = require('../models/SalesChannel');
+
+        const productIds = [];
+        const channelIds = [];
+        for (const rule of rules) {
+            if (rule.type === 'product' && rule.sourceId) productIds.push(rule.sourceId);
+            else if (rule.type === 'store' && rule.sourceId) channelIds.push(rule.sourceId);
+        }
+
+        const [products, channels] = await Promise.all([
+            productIds.length ? Product.find({ _id: { $in: productIds } }).select('name').lean() : [],
+            channelIds.length ? SalesChannel.find({ _id: { $in: channelIds }, tenant: tenantId }).select('name').lean() : [],
+        ]);
+
+        const nameMap = new Map();
+        for (const p of products) nameMap.set(p._id.toString(), p.name);
+        for (const s of channels) nameMap.set(s._id.toString(), s.name);
+
+        const enriched = rules.map((rule) => {
+            let sourceName = 'Unknown';
+            if (rule.type === 'product') {
+                sourceName = nameMap.get(rule.sourceId?.toString()) || 'Deleted Product';
+            } else if (rule.type === 'store') {
+                sourceName = nameMap.get(rule.sourceId?.toString()) || 'Deleted Channel';
+            }
+            return { ...rule, sourceName };
+        });
+
+        res.json(ok(enriched));
+    } catch (error) {
+        logger.error({ err: error }, 'getAssignmentRules error');
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+/**
+ * POST /assignment-rules — Create a new assignment rule.
+ */
+exports.createAssignmentRule = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const { type, sourceId, agentId } = req.body;
+
+        if (!['product', 'store'].includes(type)) return res.status(400).json({ message: 'type must be product or store' });
+        if (!sourceId || !agentId) return res.status(400).json({ message: 'sourceId and agentId required' });
+        if (!mongoose.Types.ObjectId.isValid(agentId)) return res.status(400).json({ message: 'Invalid agentId' });
+
+        // Verify agent belongs to tenant
+        const agentUser = await User.findOne({ _id: agentId, tenant: tenantId });
+        if (!agentUser) return res.status(400).json({ message: 'Agent not found in this workspace' });
+
+        const rule = await AssignmentRule.findOneAndUpdate(
+            { tenant: tenantId, type, sourceId },
+            { agent: agentId, isActive: true, createdBy: req.user._id },
+            { upsert: true, new: true }
+        );
+
+        res.status(201).json(ok(rule));
+    } catch (error) {
+        if (error.code === 11000) return res.status(409).json({ message: 'A rule for this source already exists' });
+        logger.error({ err: error }, 'createAssignmentRule error');
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+/**
+ * PUT /assignment-rules/:id — Update a rule (change agent or toggle active).
+ */
+exports.updateAssignmentRule = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid rule ID' });
+        const { agentId, isActive } = req.body;
+
+        const updates = {};
+        if (agentId !== undefined) {
+            if (!mongoose.Types.ObjectId.isValid(agentId)) return res.status(400).json({ message: 'Invalid agentId' });
+            const agentUser = await User.findOne({ _id: agentId, tenant: tenantId });
+            if (!agentUser) return res.status(400).json({ message: 'Agent not found' });
+            updates.agent = agentId;
+        }
+        if (isActive !== undefined) updates.isActive = isActive;
+
+        const rule = await AssignmentRule.findOneAndUpdate(
+            { _id: req.params.id, tenant: tenantId },
+            updates,
+            { new: true }
+        ).populate('agent', 'name email');
+
+        if (!rule) return res.status(404).json({ message: 'Rule not found' });
+        res.json(ok(rule));
+    } catch (error) {
+        logger.error({ err: error }, 'updateAssignmentRule error');
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+/**
+ * DELETE /assignment-rules/:id — Remove a rule.
+ */
+exports.deleteAssignmentRule = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        if (!mongoose.Types.ObjectId.isValid(req.params.id))
+            return res.status(400).json({ message: 'Invalid rule ID' });
+        const result = await AssignmentRule.findOneAndDelete({ _id: req.params.id, tenant: tenantId });
+        if (!result) return res.status(404).json({ message: 'Rule not found' });
+        res.json(ok({ message: 'Rule deleted' }));
+    } catch (error) {
+        logger.error({ err: error }, 'deleteAssignmentRule error');
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// --- AGENTS LIST (lightweight, no system.users perm needed) ---
+
+/**
+ * GET /agents — List all users in this tenant who can be assigned orders.
+ * Returns only _id, name, email, role name. Used for agent dropdowns.
+ */
+exports.getAgentsList = async (req, res) => {
+    try {
+        const tenantId = req.user.tenant;
+        const users = await User.find({ tenant: tenantId, isActive: true })
+            .select('name email role')
+            .populate('role', 'name')
+            .lean();
+        res.json(ok(users));
+    } catch (error) {
+        logger.error({ err: error }, 'getAgentsList error');
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 

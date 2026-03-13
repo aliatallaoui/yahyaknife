@@ -1,6 +1,9 @@
 const logger = require('../shared/logger');
+const mongoose = require('mongoose');
 const CourierPricing = require('../models/CourierPricing');
 const Courier = require('../models/Courier');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // @desc    Get all pricing rules for a courier
 // @route   GET /api/couriers/:id/pricing
@@ -8,11 +11,13 @@ const Courier = require('../models/Courier');
 exports.getPricingRules = async (req, res) => {
     try {
         const { id } = req.params;
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         const rules = await CourierPricing.find({ courierId: id })
             .populate('productIds', 'name sku')
-            .sort({ priority: -1 });
+            .sort({ priority: -1 })
+            .lean();
         res.json(rules);
     } catch (error) {
         logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
@@ -25,8 +30,9 @@ exports.getPricingRules = async (req, res) => {
 exports.addPricingRule = async (req, res) => {
     try {
         const { id } = req.params;
-        
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
+
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
@@ -44,8 +50,9 @@ exports.addPricingRule = async (req, res) => {
 exports.updatePricingRule = async (req, res) => {
     try {
         const { id, ruleId } = req.params;
+        if (!validId(id) || !validId(ruleId)) return res.status(400).json({ message: 'Invalid ID' });
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { courierId: _c, _id: _i, __v, ...safe } = req.body;
@@ -69,8 +76,9 @@ exports.updatePricingRule = async (req, res) => {
 exports.deletePricingRule = async (req, res) => {
     try {
         const { id, ruleId } = req.params;
+        if (!validId(id) || !validId(ruleId)) return res.status(400).json({ message: 'Invalid ID' });
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const deletedRule = await CourierPricing.findOneAndDelete({ _id: ruleId, courierId: id });

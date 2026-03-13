@@ -37,6 +37,7 @@ exports.enqueueOrderExport = async (req, res) => {
         if (search) {
             const matchingCustomers = await Customer.find({
                 tenant: tenantId,
+                deletedAt: null,
                 $text: { $search: search }
             }).select('_id');
             const customerIds = matchingCustomers.map(c => c._id);
@@ -51,8 +52,9 @@ exports.enqueueOrderExport = async (req, res) => {
             }
         }
 
-        // Fire background worker
-        const jobId = await queueService.enqueueExport(tenantId, query, userEmail);
+        // Fire background worker — plan tier determines queue priority
+        const planTier = req.tenantPlanTier || 'Free';
+        const jobId = await queueService.enqueueExport(tenantId, query, userEmail, planTier);
 
         // Instantly return 202 Accepted so the UI doesn't freeze
         res.status(202).json({

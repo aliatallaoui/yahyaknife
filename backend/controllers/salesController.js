@@ -47,7 +47,7 @@ exports.getOrders = async (req, res) => {
         }
 
         // Use estimatedDocumentCount when there's no cursor to save total DB scan time
-        const totalOrdersQuery = req.query.lastId ? null : Order.countDocuments({ tenant: req.user.tenant });
+        const totalOrdersQuery = req.query.lastId ? null : Order.countDocuments({ tenant: req.user.tenant, deletedAt: null });
         
         const ordersQuery = Order.find(query)
             .populate('customer', 'name email')
@@ -57,9 +57,10 @@ exports.getOrders = async (req, res) => {
             })
             .sort({ _id: -1 }) // Use _id sorting for index alignment (equivalent to date sort)
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
-        const [totalOrders, orders] = req.query.lastId 
+        const [totalOrders, orders] = req.query.lastId
             ? [null, await ordersQuery]
             : await Promise.all([totalOrdersQuery, ordersQuery]);
 
@@ -102,7 +103,11 @@ exports.getAdvancedOrders = async (req, res) => {
             
             if (sortField === 'updatedAt' && cursor.includes('_')) {
                 const [dateStr, idStr] = cursor.split('_');
+                if (!mongoose.Types.ObjectId.isValid(idStr))
+                    return res.status(400).json({ error: 'Invalid cursor.' });
                 const cursorDate = new Date(dateStr);
+                if (isNaN(cursorDate.getTime()))
+                    return res.status(400).json({ error: 'Invalid cursor date.' });
                 query.$or = [
                     { updatedAt: { [op]: cursorDate } },
                     { updatedAt: cursorDate, _id: { [op]: new mongoose.Types.ObjectId(idStr) } }
@@ -133,14 +138,14 @@ exports.getAdvancedOrders = async (req, res) => {
             }
         }
 
-        // 1. Advanced Filters
-        if (status) query.status = status;
-        if (priority) query.priority = priority;
-        if (tags) query.tags = { $in: Array.isArray(tags) ? tags : [tags] };
-        if (courier) query.courier = courier === 'unassigned' ? null : courier;
-        if (agent) query.assignedAgent = agent === 'unassigned' ? null : agent;
-        if (wilaya) query.wilaya = wilaya;
-        if (channel) query.channel = channel;
+        // 1. Advanced Filters — coerce to strings to prevent NoSQL operator injection
+        if (status && typeof status === 'string') query.status = status;
+        if (priority && typeof priority === 'string') query.priority = priority;
+        if (tags) query.tags = { $in: (Array.isArray(tags) ? tags : [tags]).filter(t => typeof t === 'string').slice(0, 20) };
+        if (courier && typeof courier === 'string') query.courier = courier === 'unassigned' ? null : courier;
+        if (agent && typeof agent === 'string') query.assignedAgent = agent === 'unassigned' ? null : agent;
+        if (wilaya && typeof wilaya === 'string') query.wilaya = wilaya;
+        if (channel && typeof channel === 'string') query.channel = channel;
 
         if (dateFrom || dateTo) {
             query.createdAt = {};
@@ -155,6 +160,7 @@ exports.getAdvancedOrders = async (req, res) => {
             // Find matching customers by name or phone
             const matchingCustomers = await Customer.find({
                 tenant: req.user.tenant,
+                deletedAt: null,
                 $or: [
                     { name: searchRegex },
                     { phone: searchRegex }
@@ -190,9 +196,10 @@ exports.getAdvancedOrders = async (req, res) => {
                 populate: { path: 'productId' }
             })
             .sort(sortObj)
-            .limit(queryLimit + 1);
+            .limit(queryLimit + 1)
+            .lean();
 
-        const [totalOrders, results] = cursor 
+        const [totalOrders, results] = cursor
             ? [null, await ordersQuery]
             : await Promise.all([totalOrdersQuery, ordersQuery]);
 
@@ -287,12 +294,20 @@ exports.updateBulkOrders = async (req, res) => {
             });
         }
 
+        // Validate all orderIds
+        if (!orderIds.every(id => mongoose.Types.ObjectId.isValid(id)))
+            return res.status(400).json({ message: 'One or more invalid order IDs' });
+
         const updateDoc = {};
         switch (action) {
             case 'assign_agent':
+                if (payload.agentId && payload.agentId !== 'unassigned' && !mongoose.Types.ObjectId.isValid(payload.agentId))
+                    return res.status(400).json({ message: 'Invalid agent ID' });
                 updateDoc.assignedAgent = payload.agentId === 'unassigned' ? null : payload.agentId;
                 break;
             case 'assign_courier':
+                if (payload.courierId && payload.courierId !== 'unassigned' && !mongoose.Types.ObjectId.isValid(payload.courierId))
+                    return res.status(400).json({ message: 'Invalid courier ID' });
                 updateDoc.courier = payload.courierId === 'unassigned' ? null : payload.courierId;
                 break;
             default:
@@ -443,6 +458,8 @@ exports.updateOrder = async (req, res) => {
 exports.deleteOrder = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id))
+            return res.status(400).json({ message: 'Invalid order ID' });
         // Soft delete — same as bulkDeleteOrders. Permanent removal goes through purgeOrders.
         const order = await Order.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant, deletedAt: null },

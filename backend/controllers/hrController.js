@@ -9,33 +9,62 @@ const { ok, created, message, paginated } = require('../shared/utils/ApiResponse
 exports.getHRMetrics = async (req, res) => {
     try {
         const tenant = req.user.tenant;
-        const employees = await Employee.find({ tenant }).lean();
 
+        // Aggregate employee metrics in a single pipeline instead of full-scan
+        const [empMetrics] = await Employee.aggregate([
+            { $match: { tenant, deletedAt: null } },
+            { $group: {
+                _id: null,
+                totalEmployees: { $sum: 1 },
+                activeEmployees: { $sum: { $cond: [{ $eq: ['$status', 'Active'] }, 1, 0] } },
+                estimatedPayrollDZD: { $sum: { $cond: [
+                    { $eq: ['$status', 'Active'] },
+                    { $ifNull: [{ $ifNull: ['$contractSettings.monthlySalary', '$salary'] }, 0] },
+                    0
+                ] } },
+                departments: { $push: '$department' }
+            } }
+        ]);
+
+        const totalEmployees = empMetrics?.totalEmployees || 0;
+        const activeEmployees = empMetrics?.activeEmployees || 0;
+        const estimatedPayrollDZD = empMetrics?.estimatedPayrollDZD || 0;
+
+        // Build department distribution from the array
         const departmentDistribution = {};
-        let activeEmployees = 0;
-        let estimatedPayrollDZD = 0;
-
-        employees.forEach(emp => {
-            if (!departmentDistribution[emp.department]) departmentDistribution[emp.department] = 0;
-            departmentDistribution[emp.department]++;
-            if (emp.status === 'Active') {
-                activeEmployees++;
-                estimatedPayrollDZD += (emp.contractSettings?.monthlySalary || emp.salary || 0);
-            }
-        });
+        if (empMetrics?.departments) {
+            empMetrics.departments.forEach(dept => {
+                if (!departmentDistribution[dept]) departmentDistribution[dept] = 0;
+                departmentDistribution[dept]++;
+            });
+        }
 
         const today = moment().format('YYYY-MM-DD');
-        const todayAttendance = await Attendance.find({ tenant, date: today }).lean();
 
-        let presentToday = 0;
-        let lateToday = 0;
-        todayAttendance.forEach(att => {
-            if (['Present', 'Completed with Recovery', 'Overtime', 'Incomplete', 'Late'].includes(att.status) || (!att.status && att.morningIn)) presentToday++;
-            if (att.lateMinutes > 0) lateToday++;
-        });
+        // Get active employee IDs to filter attendance (exclude deleted employees)
+        const activeEmpIds = await Employee.find({ tenant, deletedAt: null, status: 'Active' })
+            .select('_id').lean().then(docs => docs.map(d => d._id));
+
+        // Aggregate attendance counters — only for active employees
+        const [attMetrics] = await Attendance.aggregate([
+            { $match: { tenant, date: today, employeeId: { $in: activeEmpIds } } },
+            { $group: {
+                _id: null,
+                presentToday: { $sum: { $cond: [
+                    { $or: [
+                        { $in: ['$status', ['Present', 'Completed with Recovery', 'Overtime', 'Incomplete', 'Late']] },
+                        { $and: [{ $eq: ['$status', null] }, { $ne: ['$morningIn', null] }] }
+                    ] }, 1, 0
+                ] } },
+                lateToday: { $sum: { $cond: [{ $gt: ['$lateMinutes', 0] }, 1, 0] } }
+            } }
+        ]);
+
+        const presentToday = attMetrics?.presentToday || 0;
+        const lateToday = attMetrics?.lateToday || 0;
 
         res.json(ok({
-            totalEmployees: employees.length,
+            totalEmployees,
             activeEmployees,
             departmentDistribution,
             estimatedPayrollDZD,
@@ -50,7 +79,7 @@ exports.getHRMetrics = async (req, res) => {
 
 exports.getEmployees = async (req, res) => {
     try {
-        const filter = { tenant: req.user.tenant };
+        const filter = { tenant: req.user.tenant, deletedAt: null };
         const [employees, total] = await Promise.all([
             Employee.find(filter).sort({ joinDate: -1 }).skip(req.skip).limit(req.limit).lean(),
             Employee.countDocuments(filter)
@@ -65,12 +94,12 @@ exports.getEmployeeById = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
-        const employee = await Employee.findOne({ _id: req.params.id, tenant: req.user.tenant });
+        const employee = await Employee.findOne({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null }).lean();
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
         res.json(ok(employee));
     } catch (err) {
         logger.error({ err }, 'Error fetching employee by ID');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -83,10 +112,11 @@ exports.getLeaveRequests = async (req, res) => {
             query.employeeId = req.query.employeeId;
         }
         const requests = await LeaveRequest.find(query)
-            .populate('employeeId', 'name department role')
+            .populate({ path: 'employeeId', match: { deletedAt: null }, select: 'name department role' })
             .sort({ requestDate: -1 })
+            .limit(500)
             .lean();
-        res.json(ok(requests));
+        res.json(ok(requests.filter(r => r.employeeId)));
     } catch (error) {
         logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
     }
@@ -119,11 +149,11 @@ exports.updateEmployee = async (req, res) => {
             joinDate, status, managerId, contractSettings
         } = req.body;
         const updated = await Employee.findOneAndUpdate(
-            { _id: req.params.id, tenant: req.user.tenant },
+            { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
             { name, email, phone, role, department, salary, performanceScore, leaveBalance,
               joinDate, status, managerId, contractSettings },
             { new: true }
-        );
+        ).lean();
         if (!updated) return res.status(404).json({ error: 'Employee not found' });
         res.json(ok(updated));
     } catch (err) {
@@ -135,12 +165,16 @@ exports.deleteEmployee = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
-        const deleted = await Employee.findOneAndDelete({ _id: req.params.id, tenant: req.user.tenant });
+        const deleted = await Employee.findOneAndUpdate(
+            { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
+            { deletedAt: new Date() },
+            { new: true }
+        );
         if (!deleted) return res.status(404).json({ error: 'Employee not found' });
         res.json(message('Employee deleted'));
     } catch (err) {
         logger.error({ err }, 'Error deleting employee');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -195,7 +229,7 @@ exports.updateLeaveRequestStatus = async (req, res) => {
                 return res.status(400).json({ error: 'Cannot re-approve a rejected leave request. Create a new request instead.' });
             }
             // Only deduct from 'Pending' → 'Approved'
-            const employee = await Employee.findOne({ _id: request.employeeId, tenant: req.user.tenant });
+            const employee = await Employee.findOne({ _id: request.employeeId, tenant: req.user.tenant, deletedAt: null });
             if (employee) {
                 const diffDays = Math.ceil(Math.abs(new Date(request.endDate) - new Date(request.startDate)) / (1000 * 60 * 60 * 24)) + 1;
                 if (employee.leaveBalance >= diffDays || request.type === 'Unpaid') {
