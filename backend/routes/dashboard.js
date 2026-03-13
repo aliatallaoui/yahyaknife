@@ -6,6 +6,8 @@ const { PERMS } = require('../shared/constants/permissions');
 
 router.use(protect);
 
-router.get('/metrics', requirePermission(PERMS.OVERVIEW_READ), dashboardController.getDashboardData);
+const wrap = require('../shared/middleware/asyncHandler');
+router.get('/metrics', requirePermission(PERMS.OVERVIEW_READ), wrap(dashboardController.getDashboardData));
+router.get('/setup-progress', wrap(dashboardController.getSetupProgress));
 
 module.exports = router;

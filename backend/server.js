@@ -31,6 +31,11 @@ const supportRoutes = require('./routes/support');
 const aiRoutes = require('./routes/aiRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const callCenterRoutes = require('./routes/callCenterRoutes');
+const salesChannelRoutes = require('./routes/salesChannels');
+const tenantRoutes = require('./routes/tenants');
+const platformAdminRoutes = require('./routes/platformAdmin');
+const webhookRoutes = require('./routes/webhooks');
+const storefrontRoutes = require('./routes/storefront');
 const path = require('path');
 const { initJobs } = require('./cron/scheduler');
 const errorHandler = require('./shared/errors/errorHandler');
@@ -43,6 +48,10 @@ const REQUIRED_ENV = ['MONGO_URI', 'JWT_SECRET'];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length > 0) {
     logger.fatal({ missing }, 'Missing required environment variables');
+    process.exit(1);
+}
+if (process.env.JWT_SECRET.length < 32) {
+    logger.fatal('JWT_SECRET must be at least 32 characters. Generate one with: openssl rand -hex 32');
     process.exit(1);
 }
 
@@ -143,6 +152,12 @@ const globalLimiter = rateLimit({
 });
 app.use('/api/', globalLimiter);
 
+// ─── Per-Tenant Rate Limiter ────────────────────────────────────────────────
+// Applied globally but only activates after auth populates req.user.tenant.
+// Limits are derived from the tenant's plan tier (Free=60/min, Enterprise=1000/min).
+const { tenantRateLimit } = require('./middleware/tenantRateLimit');
+app.use('/api/', tenantRateLimit);
+
 // ─── Health Check ────────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => {
@@ -184,7 +199,13 @@ app.use('/api/shipments', shipmentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/exports', exportRoutes);
 app.use('/api/call-center', callCenterRoutes);
+app.use('/api/sales-channels', salesChannelRoutes);
+app.use('/api/tenants', tenantRoutes);
+app.use('/api/platform', platformAdminRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/s', storefrontRoutes);  // Public storefront — no auth
 app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Global error handler — must be last
 app.use(errorHandler);
@@ -204,6 +225,9 @@ mongoose.connect(MONGO_URI, {
     .then(() => {
         logger.info('Connected to MongoDB');
         initJobs(); // Start background workers
+        // Register webhook event listeners
+        const { registerWebhookListeners } = require('./listeners/webhookListener');
+        registerWebhookListeners();
     })
     .catch(err => {
         logger.fatal({ err }, 'MongoDB connection error');

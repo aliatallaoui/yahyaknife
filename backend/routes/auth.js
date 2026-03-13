@@ -8,8 +8,12 @@ const {
     refreshAccessToken,
     forgotPassword,
     resetPassword,
+    listUserTenants,
+    switchTenant,
+    completeOnboarding,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
+const wrap = require('../shared/middleware/asyncHandler');
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -19,11 +23,14 @@ const authLimiter = rateLimit({
     message: { message: 'Too many attempts from this IP, please try again in 15 minutes.' }
 });
 
-router.post('/register', authLimiter, registerUser);
-router.post('/login', authLimiter, loginUser);
-router.post('/refresh', authLimiter, refreshAccessToken);
-router.post('/forgot-password', authLimiter, forgotPassword);
-router.put('/reset-password/:token', authLimiter, resetPassword);
-router.get('/me', protect, getMe);
+router.post('/register', authLimiter, wrap(registerUser));
+router.post('/login', authLimiter, wrap(loginUser));
+router.post('/refresh', authLimiter, wrap(refreshAccessToken));
+router.post('/forgot-password', authLimiter, wrap(forgotPassword));
+router.put('/reset-password/:token', authLimiter, wrap(resetPassword));
+router.get('/me', protect, wrap(getMe));
+router.get('/tenants', protect, wrap(listUserTenants));
+router.post('/switch-tenant', protect, wrap(switchTenant));
+router.patch('/onboarding', protect, wrap(completeOnboarding));
 
 module.exports = router;

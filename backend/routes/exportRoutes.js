@@ -14,11 +14,13 @@ const exportLimiter = rateLimit({
 // @route   POST /api/exports/orders
 // @desc    Trigger a background CSV export of orders
 // @access  Private
-router.post('/orders', protect, requirePermission(PERMS.ORDERS_EXPORT), exportLimiter, exportController.enqueueOrderExport);
+const wrap = require('../shared/middleware/asyncHandler');
+
+router.post('/orders', protect, requirePermission(PERMS.ORDERS_EXPORT), exportLimiter, wrap(exportController.enqueueOrderExport));
 
 // @route   GET /api/exports/:jobId/status
 // @desc    Poll the progress of an export job
 // @access  Private
-router.get('/:jobId/status', protect, exportController.getExportJobStatus);
+router.get('/:jobId/status', protect, requirePermission(PERMS.ORDERS_EXPORT), wrap(exportController.getExportJobStatus));
 
 module.exports = router;

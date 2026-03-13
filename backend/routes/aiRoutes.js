@@ -19,6 +19,7 @@ const aiLimiter = rateLimit({
 });
 
 // Handle chat requests from the Copilot widget
-router.post('/chat', protect, aiLimiter, handleChat);
+const wrap = require('../shared/middleware/asyncHandler');
+router.post('/chat', protect, aiLimiter, wrap(handleChat));
 
 module.exports = router;
