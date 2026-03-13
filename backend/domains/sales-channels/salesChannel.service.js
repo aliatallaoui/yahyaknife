@@ -507,7 +507,7 @@ exports.submitStorefrontOrder = async ({ channelSlug, pageSlug, body, ip }) => {
     }
 
     // ── Resolve Variant & Price ─────────────────────────────────────────────
-    const variant = await ProductVariant.findById(variantId).lean();
+    const variant = await ProductVariant.findOne({ _id: variantId, tenant: channel.tenant }).lean();
     if (!variant) throw AppError.notFound('Product Variant');
 
     const qty = Math.min(Math.max(Number(quantity) || 1, 1), page.formConfig?.maxQuantity || 10);

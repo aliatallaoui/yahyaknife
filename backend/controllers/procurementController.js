@@ -170,8 +170,8 @@ exports.receivePurchaseOrder = async (req, res) => {
                 let stockChange = receivedItem.quantityReceivedThisBatch;
 
                 if (poItem.itemModel === 'ProductVariant') {
-                    // Update Product Variant Stock
-                    const pv = await ProductVariant.findById(poItem.itemRef).session(session);
+                    // Update Product Variant Stock (tenant-scoped to prevent cross-tenant mutations)
+                    const pv = await ProductVariant.findOne({ _id: poItem.itemRef, tenant: req.user.tenant }).session(session);
                     if (pv) {
                         pv.totalStock += stockChange;
                         // Adjust rolling cost conceptually (simplified replacement strategy here)

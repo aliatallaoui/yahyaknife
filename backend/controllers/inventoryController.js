@@ -368,7 +368,7 @@ exports.processRTO = async (req, res) => {
             $or: [{ orderId: searchKey }, { 'trackingInfo.trackingNumber': searchKey }]
         }).session(session);
 
-        if (!order) throw new Error(`Order/Shipment not found for query: ${searchKey}`);
+        if (!order) throw new Error('Order/Shipment not found for the given tracking or order ID');
 
         if (order.status === 'Returned' && order.fulfillmentStatus === 'Returned') {
             throw new Error('This order has already been processed and restocked.');
@@ -378,7 +378,7 @@ exports.processRTO = async (req, res) => {
         for (const item of order.products) {
             if (!item.variantId) continue;
             
-            const variant = await ProductVariant.findById(item.variantId).session(session);
+            const variant = await ProductVariant.findOne({ _id: item.variantId, tenant: tenantId }).session(session);
             if (variant) {
                 variant.totalStock += item.quantity;
                 await variant.save({ session });

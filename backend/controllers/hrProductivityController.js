@@ -55,7 +55,8 @@ exports.logProductivity = async (req, res) => {
         const saved = await prod.save();
         res.status(201).json(saved);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        logger.error({ err }, 'Error logging productivity');
+        res.status(400).json({ error: 'Invalid productivity data' });
     }
 };
 
@@ -96,6 +97,7 @@ exports.grantReward = async (req, res) => {
         const saved = await reward.save();
         res.status(201).json(saved);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        logger.error({ err }, 'Error granting reward');
+        res.status(400).json({ error: 'Invalid reward data' });
     }
 };
