@@ -12,11 +12,13 @@ const CourierPricing = require('../models/CourierPricing');
  * @param {Number} payload.totalWeight - Total weight of the order in kg
  * @returns {Number} the calculated delivery fee
  */
-async function calculateDeliveryFee({ courierId, wilayaCode, commune, deliveryType, productIds = [], totalWeight = 0 }) {
+async function calculateDeliveryFee({ courierId, wilayaCode, commune, deliveryType, productIds = [], totalWeight = 0, tenant }) {
     if (!courierId) return { fee: 0, matched: false, rule: null };
 
     // Fetch all pricing rules for this courier, sorted by priority (descending)
-    const rules = await CourierPricing.find({ courierId }).sort({ priority: -1 });
+    const query = { courierId };
+    if (tenant) query.tenant = tenant;
+    const rules = await CourierPricing.find(query).sort({ priority: -1 });
 
     if (!rules || rules.length === 0) {
         return { fee: 0, matched: false, rule: null };

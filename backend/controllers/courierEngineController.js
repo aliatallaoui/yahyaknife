@@ -10,7 +10,7 @@ const getCourierCoverage = async (req, res) => {
     try {
         const { courierId, wilayaCode, deliveryType } = req.query; // deliveryType: 0 (home), 1 (office)
 
-        let query = {};
+        let query = { tenant: req.user.tenant };
         if (courierId) query.courierId = courierId;
         if (wilayaCode) query.wilayaCode = wilayaCode;
         if (deliveryType !== undefined) {
@@ -22,7 +22,7 @@ const getCourierCoverage = async (req, res) => {
         }
 
         const coverage = await CourierCoverage.find(query)
-            .populate({ path: 'courierId', match: { deletedAt: null }, select: 'name status' })
+            .populate({ path: 'courierId', match: { deletedAt: null, tenant: req.user.tenant }, select: 'name status' })
             .lean();
         res.json(coverage.filter(c => c.courierId));
     } catch (error) {
@@ -54,7 +54,8 @@ const calculateCourierPrice = async (req, res) => {
             commune,
             deliveryType: typeNum,
             productIds: pIds,
-            totalWeight: weight
+            totalWeight: weight,
+            tenant: req.user.tenant
         });
 
         if (!result.matched) {
@@ -86,7 +87,7 @@ const recommendCourier = async (req, res) => {
         const typeNum = deliveryType !== undefined ? Number(deliveryType) : 0;
 
         // 1. Find all couriers that cover this area for this delivery type
-        let coverageQuery = { wilayaCode, commune };
+        let coverageQuery = { wilayaCode, commune, tenant: req.user.tenant };
         if (typeNum === 0) coverageQuery.homeSupported = true;
         else coverageQuery.officeSupported = true;
 
@@ -109,13 +110,13 @@ const recommendCourier = async (req, res) => {
         let candidates = await Promise.all(activeCouriers.map(async (courier) => {
             // Try exact match with commune first
             let pricing = await CourierPricing.findOne({
-                courierId: courier._id, wilayaCode, commune, deliveryType: typeNum
+                courierId: courier._id, wilayaCode, commune, deliveryType: typeNum, tenant: req.user.tenant
             }).lean();
 
             // Fallback to wilaya level
             if (!pricing) {
                 pricing = await CourierPricing.findOne({
-                    courierId: courier._id, wilayaCode, $or: [{ commune: { $exists: false } }, { commune: '' }, { commune: null }], deliveryType: typeNum
+                    courierId: courier._id, wilayaCode, $or: [{ commune: { $exists: false } }, { commune: '' }, { commune: null }], deliveryType: typeNum, tenant: req.user.tenant
                 }).lean();
             }
 

@@ -66,10 +66,12 @@ async function fetchVariantCosts(tenantId, products) {
 }
 
 /** Calculate Courier Fee based on pricing rules */
-async function calculateCourierFee(courierId, wilayaCode, commune) {
+async function calculateCourierFee(courierId, wilayaCode, commune, tenantId) {
     if (!courierId) return null;
-    
-    const pricingRules = await CourierPricing.find({ courierId }).sort({ priority: -1 }).lean();
+
+    const query = { courierId };
+    if (tenantId) query.tenant = tenantId;
+    const pricingRules = await CourierPricing.find(query).sort({ priority: -1 }).lean();
     if (!pricingRules.length) return null;
 
     let matchedRule = null;
@@ -128,12 +130,16 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     let subtotalAmt = 0;
     let totalCOGS = 0;
     const processedProducts = products.map(item => {
-        if (!item.quantity || item.unitPrice === undefined) {
-            throw AppError.validationFailed({ products: 'Each product must have quantity and unitPrice' });
-        }
         const qty = Number(item.quantity);
+        const price = Number(item.unitPrice);
+        if (!Number.isFinite(qty) || qty <= 0 || !Number.isInteger(qty)) {
+            throw AppError.validationFailed({ products: 'Each product must have a positive integer quantity' });
+        }
+        if (!Number.isFinite(price) || price < 0) {
+            throw AppError.validationFailed({ products: 'Each product must have a non-negative unitPrice' });
+        }
         const cost = item.variantId ? (costMap[item.variantId.toString()] || 0) : 0;
-        subtotalAmt += qty * item.unitPrice;
+        subtotalAmt += qty * price;
         totalCOGS += qty * cost;
         return { ...item, quantity: qty };
     });
@@ -146,7 +152,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     // Server-side Courier Fee Override
     let courierFee = financials?.courierFee || 0;
     if (courier && shipping?.wilayaCode) {
-        const backendFee = await calculateCourierFee(courier, shipping.wilayaCode, shipping.commune);
+        const backendFee = await calculateCourierFee(courier, shipping.wilayaCode, shipping.commune, tenantId);
         if (backendFee !== null) courierFee = backendFee;
     }
 
@@ -248,16 +254,16 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     const isActive = !['Refused', 'Returned', 'Cancelled', 'Cancelled by Customer'].includes(savedOrder.status);
 
     if (isFulfilled) {
-        await Customer.findByIdAndUpdate(resolvedCustomerId, { $inc: { lifetimeValue: savedOrder.totalAmount } });
+        await Customer.findOneAndUpdate({ _id: resolvedCustomerId, tenant: tenantId }, { $inc: { lifetimeValue: savedOrder.totalAmount } });
     }
 
     for (const item of savedOrder.products) {
         if (!item.variantId) continue;
         if (isFulfilled) {
-            await ProductVariant.findByIdAndUpdate(item.variantId, { $inc: { totalStock: -item.quantity, totalSold: item.quantity } });
+            await ProductVariant.findOneAndUpdate({ _id: item.variantId, tenant: tenantId }, { $inc: { totalStock: -item.quantity, totalSold: item.quantity } });
             await logStockMovement(item.variantId, -item.quantity, 'Sale', `Fulfilled Order ${savedOrder.orderId}`, savedOrder._id);
         } else if (isActive) {
-            await ProductVariant.findByIdAndUpdate(item.variantId, { $inc: { reservedStock: item.quantity, totalSold: item.quantity } });
+            await ProductVariant.findOneAndUpdate({ _id: item.variantId, tenant: tenantId }, { $inc: { reservedStock: item.quantity, totalSold: item.quantity } });
             await logStockMovement(item.variantId, -item.quantity, 'Sale', `Reserved for Order ${savedOrder.orderId}`, savedOrder._id);
         }
     }
@@ -401,7 +407,7 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
             }
         }
         if (isOldFulfilled && existingOrder.customer) {
-            await Customer.findByIdAndUpdate(existingOrder.customer, { $inc: { lifetimeValue: -existingOrder.totalAmount } });
+            await Customer.findOneAndUpdate({ _id: existingOrder.customer, tenant: tenantId }, { $inc: { lifetimeValue: -existingOrder.totalAmount } });
         }
     }
 
@@ -422,14 +428,14 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         }
         if (isNewFulfilled && existingOrder.customer) {
             const updatedAmount = updateData.totalAmount !== undefined ? updateData.totalAmount : existingOrder.totalAmount;
-            await Customer.findByIdAndUpdate(existingOrder.customer, { $inc: { lifetimeValue: updatedAmount } });
+            await Customer.findOneAndUpdate({ _id: existingOrder.customer, tenant: tenantId }, { $inc: { lifetimeValue: updatedAmount } });
         }
     }
 
     // Apply inventory deltas
     for (const [vId, delta] of Object.entries(variantDeltas)) {
         if (delta.reserved === 0 && delta.total === 0 && delta.sold === 0) continue;
-        await ProductVariant.findByIdAndUpdate(vId, {
+        await ProductVariant.findOneAndUpdate({ _id: vId, tenant: tenantId }, {
             $inc: { reservedStock: delta.reserved, totalStock: delta.total, totalSold: delta.sold }
         });
         const moveInfo = [];
@@ -459,7 +465,7 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         const customerUpdates = {};
         if (updateData.customerName) customerUpdates.name = updateData.customerName;
         if (updateData.customerPhone) customerUpdates.phone = updateData.customerPhone;
-        await Customer.findByIdAndUpdate(existingOrder.customer, { $set: customerUpdates });
+        await Customer.findOneAndUpdate({ _id: existingOrder.customer, tenant: tenantId }, { $set: customerUpdates });
     }
 
     // Strip immutable / protected fields before persisting

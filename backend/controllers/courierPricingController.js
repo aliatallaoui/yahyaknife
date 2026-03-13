@@ -14,7 +14,7 @@ exports.getPricingRules = async (req, res) => {
         if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
-        const rules = await CourierPricing.find({ courierId: id })
+        const rules = await CourierPricing.find({ courierId: id, tenant: req.user.tenant })
             .populate('productIds', 'name sku')
             .sort({ priority: -1 })
             .lean();
@@ -36,11 +36,11 @@ exports.addPricingRule = async (req, res) => {
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
-        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority, courierId: id });
+        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority, courierId: id, tenant: req.user.tenant });
         
         res.status(201).json(newRule);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Courier pricing error'); res.status(400).json({ error: 'Invalid pricing data' });
     }
 };
 
@@ -56,9 +56,10 @@ exports.updatePricingRule = async (req, res) => {
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { courierId: _c, _id: _i, __v, ...safe } = req.body;
+        const { tenant: _t, ...safe2 } = safe;
         const updatedRule = await CourierPricing.findOneAndUpdate(
-            { _id: ruleId, courierId: id },
-            { $set: safe },
+            { _id: ruleId, courierId: id, tenant: req.user.tenant },
+            { $set: safe2 },
             { new: true, runValidators: true }
         );
 
@@ -66,7 +67,7 @@ exports.updatePricingRule = async (req, res) => {
         
         res.json(updatedRule);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Courier pricing error'); res.status(400).json({ error: 'Invalid pricing data' });
     }
 };
 
@@ -81,7 +82,7 @@ exports.deletePricingRule = async (req, res) => {
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
-        const deletedRule = await CourierPricing.findOneAndDelete({ _id: ruleId, courierId: id });
+        const deletedRule = await CourierPricing.findOneAndDelete({ _id: ruleId, courierId: id, tenant: req.user.tenant });
         if (!deletedRule) return res.status(404).json({ message: 'Pricing rule not found' });
 
         res.json({ message: 'Pricing rule deleted successfully' });

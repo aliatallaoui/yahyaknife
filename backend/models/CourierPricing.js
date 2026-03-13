@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const courierPricingSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     courierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Courier', required: true, index: true },
     
     // Core Engine Types
@@ -29,5 +30,7 @@ const courierPricingSchema = new mongoose.Schema({
     priority: { type: Number, default: 0 }
 
 }, { timestamps: true });
+
+courierPricingSchema.index({ tenant: 1, courierId: 1, wilayaCode: 1 });
 
 module.exports = mongoose.model('CourierPricing', courierPricingSchema);

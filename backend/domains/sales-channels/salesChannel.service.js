@@ -396,7 +396,8 @@ exports.getStorefrontCoverage = async ({ tenantId, wilayaCode }) => {
     const courierIds = couriers.map(c => c._id);
     const coverage = await CourierCoverage.find({
         courierId: { $in: courierIds },
-        wilayaCode: String(wilayaCode)
+        wilayaCode: String(wilayaCode),
+        tenant: tenantId
     }).lean();
 
     // Group by commune
@@ -431,7 +432,7 @@ exports.calculateStorefrontDeliveryPrice = async ({ tenantId, channelId, wilayaC
 
     if (!courierId) return { price: null, courier: null };
 
-    const rules = await CourierPricing.find({ courierId }).sort({ priority: -1 }).lean();
+    const rules = await CourierPricing.find({ courierId, tenant: tenantId }).sort({ priority: -1 }).lean();
     let matched = null;
 
     for (const rule of rules) {

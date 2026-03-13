@@ -47,11 +47,13 @@ async function seed() {
       const exists = await CourierCoverage.findOne({
         courierId: courier._id,
         wilayaCode,
-        commune
+        commune,
+        tenant: courier.tenant
       });
       if (!exists) {
         await CourierCoverage.create({
           courierId: courier._id,
+          tenant: courier.tenant,
           wilayaCode,
           commune,
           homeSupported: true,

@@ -15,7 +15,7 @@ exports.getCoverage = async (req, res) => {
         if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
-        const coverage = await CourierCoverage.find({ courierId: id })
+        const coverage = await CourierCoverage.find({ courierId: id, tenant: req.user.tenant })
             .sort({ wilayaCode: 1, commune: 1 })
             .lean();
         res.json(coverage);
@@ -38,14 +38,15 @@ exports.upsertCoverage = async (req, res) => {
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const updated = await CourierCoverage.findOneAndUpdate(
-            { courierId: id, wilayaCode, commune },
-            { homeSupported, officeSupported },
+            { courierId: id, wilayaCode, commune, tenant: req.user.tenant },
+            { homeSupported, officeSupported, tenant: req.user.tenant },
             { new: true, upsert: true }
         );
         
         res.status(200).json(updated);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Error upserting courier coverage');
+        res.status(400).json({ error: 'Invalid coverage data' });
     }
 };
 
@@ -60,7 +61,7 @@ exports.deleteCoverage = async (req, res) => {
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
-        const deleted = await CourierCoverage.findOneAndDelete({ _id: coverageId, courierId: id });
+        const deleted = await CourierCoverage.findOneAndDelete({ _id: coverageId, courierId: id, tenant: req.user.tenant });
         if (!deleted) return res.status(404).json({ message: 'Coverage area not found' });
 
         res.json({ message: 'Coverage area deleted successfully' });
@@ -134,12 +135,13 @@ exports.syncEcotrackCoverage = async (req, res) => {
     
                         operations.push({
                             updateOne: {
-                                filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName },
-                                update: { 
-                                    $set: { 
-                                        homeSupported, 
-                                        officeSupported 
-                                    } 
+                                filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName, tenant: req.user.tenant },
+                                update: {
+                                    $set: {
+                                        homeSupported,
+                                        officeSupported,
+                                        tenant: req.user.tenant
+                                    }
                                 },
                                 upsert: true
                             }
@@ -201,12 +203,13 @@ exports.syncEcotrackCoverage = async (req, res) => {
 
                             operations.push({
                                 updateOne: {
-                                    filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName },
-                                    update: { 
-                                        $set: { 
-                                            homeSupported, 
-                                            officeSupported 
-                                        } 
+                                    filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName, tenant: req.user.tenant },
+                                    update: {
+                                        $set: {
+                                            homeSupported,
+                                            officeSupported,
+                                            tenant: req.user.tenant
+                                        }
                                     },
                                     upsert: true
                                 }
