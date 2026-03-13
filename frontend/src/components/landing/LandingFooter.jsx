@@ -17,7 +17,7 @@ export default function LandingFooter() {
                                 <Layers className="w-4 h-4 text-white" />
                             </div>
                             <span className="text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 uppercase tracking-tighter">
-                                Platform<span className="text-blue-600">X</span>
+                                COD <span className="text-blue-600">Flow</span>
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 font-medium max-w-sm leading-relaxed">
@@ -48,7 +48,7 @@ export default function LandingFooter() {
                 </div>
 
                 <div className="pt-8 border-t border-gray-200/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-gray-400">
-                    <p>&copy; {new Date().getFullYear()} PlatformX. {t('landing.copyright', 'جميع الحقوق محفوظة.')}</p>
+                    <p>&copy; {new Date().getFullYear()} COD Flow. {t('landing.copyright', 'جميع الحقوق محفوظة.')}</p>
                     <p>{t('landing.madeWith', 'صُنع بكل حب لخدمة التجارة الإلكترونية.')}</p>
                 </div>
             </div>

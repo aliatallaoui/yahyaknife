@@ -62,7 +62,7 @@ export default function PricingSection() {
                         {t('landing.pricingTitle', 'أسعار تتناسب مع نموك')}
                     </h2>
                     <p className="text-gray-500 font-medium text-lg relative z-10">
-                        {t('landing.pricingSubtitle', 'ابدأ مجاناً لمدة 10 أيام، ولا تدفع إلا عندما تتأكد من القيمة.')}
+                        {t('landing.pricingSubtitle', 'ابدأ مجاناً لمدة 14 يوم، ولا تدفع إلا عندما تتأكد من القيمة.')}
                     </p>
                 </div>
 

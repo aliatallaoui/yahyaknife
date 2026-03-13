@@ -39,7 +39,7 @@ export default function HeroSection() {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                         <Link to="/register" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 text-base">
-                            {t('landing.ctaPrimary', 'احصل على 10 أيام مجاناً')}
+                            {t('landing.ctaPrimary', 'احصل على 14 يوم مجاناً')}
                             <ArrowRight className={`w-5 h-5 ${isRtl ? 'rotate-180' : ''}`} />
                         </Link>
                         <a href="#features" className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-bold rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2">
@@ -67,7 +67,7 @@ export default function HeroSection() {
                             </div>
                             <div className="flex-1 mx-4">
                                 <div className="bg-gray-800 rounded-lg px-4 py-1.5 text-xs text-gray-400 font-mono text-center max-w-xs mx-auto">
-                                    app.platformx.dz/dashboard
+                                    app.codflow.dz/dashboard
                                 </div>
                             </div>
                         </div>

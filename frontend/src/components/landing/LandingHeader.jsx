@@ -30,7 +30,7 @@ export default function LandingHeader() {
                             <Layers className="w-5 h-5 text-white" />
                         </div>
                         <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 uppercase tracking-tighter">
-                            Platform<span className="text-blue-600">X</span>
+                            COD <span className="text-blue-600">Flow</span>
                         </span>
                     </Link>
 
@@ -84,7 +84,7 @@ export default function LandingHeader() {
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-8">
                                 <span className="text-lg font-black text-gray-900 uppercase tracking-tighter">
-                                    Platform<span className="text-blue-600">X</span>
+                                    COD <span className="text-blue-600">Flow</span>
                                 </span>
                                 <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
                                     <X className="w-5 h-5" />

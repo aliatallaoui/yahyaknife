@@ -19,7 +19,7 @@ export default function CTASection() {
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 mb-8">
                             <Sparkles className="w-4 h-4 text-amber-400" />
                             <span className="text-xs font-bold text-white/80 uppercase tracking-widest">
-                                {t('landing.ctaBadge', '10 أيام مجاناً')}
+                                {t('landing.ctaBadge', '14 يوم مجاناً')}
                             </span>
                         </div>
 

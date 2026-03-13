@@ -39,7 +39,7 @@ export default function GettingStarted() {
     if (loading || dismissed || !progress) return null;
 
     const steps = [
-        { key: 'profile', done: progress.profileCompleted, icon: Rocket, label: t('stepProfile'), path: '/settings/general', color: 'indigo' },
+        { key: 'profile', done: progress.profileCompleted, icon: Rocket, label: t('stepProfile'), path: '/settings/workspace', color: 'indigo' },
         { key: 'product', done: progress.hasProducts, icon: Package, label: t('stepProduct'), path: '/inventory', color: 'blue' },
         { key: 'courier', done: progress.hasCourier, icon: Truck, label: t('stepCourier'), path: '/couriers', color: 'emerald' },
         { key: 'order', done: progress.hasOrders, icon: ShoppingCart, label: t('stepOrder'), path: '/orders-hub', color: 'amber' },
