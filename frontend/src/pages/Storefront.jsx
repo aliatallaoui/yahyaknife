@@ -727,7 +727,7 @@ function StorefrontBlock({
                       vStyle === 'cards' && 'flex-1 min-w-[120px] p-4 text-center',
                       isSelected
                         ? 'text-white shadow-md'
-                        : 'border-gray-200 text-gray-700 hover:border-gray-400 bg-white'
+                        : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 bg-white dark:bg-gray-800'
                     )}
                     style={isSelected ? { borderColor: primaryColor, backgroundColor: primaryColor } : {}}
                   >

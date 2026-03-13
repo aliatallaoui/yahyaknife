@@ -195,7 +195,7 @@ exports.generateManifest = async (req, res) => {
             <div class="header">
                 <div>
                     <h1>Bordereau d'Envoi (Manifest)</h1>
-                    <p style="margin: 5px 0 0 0; color: #4b5563;">Total Colis: <strong>${shipments.length}</strong></p>
+                    <p style="margin: 5px 0 0 0; color: #4b5563;">Total Colis: <strong>${orders.length}</strong></p>
                 </div>
                 <div class="meta">
                     <p style="margin: 0;">Date d'impression: ${printDate}</p>

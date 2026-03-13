@@ -212,9 +212,9 @@ export default function EmployeeProfile() {
                         <div className="flex items-center gap-4 mb-6">
                             <div className={clsx(
                                 "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                                todayAtt?.status === 'Present' || todayAtt?.status === 'Completed' || todayAtt?.status === 'Overtime' || todayAtt?.status === 'Completed with Recovery' ? "bg-emerald-50 text-emerald-500" :
-                                    todayAtt?.status === 'Late' || todayAtt?.status === 'Incomplete' ? "bg-amber-50 text-amber-500" :
-                                        todayAtt?.status === 'Absent' ? "bg-rose-50 text-rose-500" : "bg-gray-50 text-gray-400"
+                                todayAtt?.status === 'Present' || todayAtt?.status === 'Completed' || todayAtt?.status === 'Overtime' || todayAtt?.status === 'Completed with Recovery' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500" :
+                                    todayAtt?.status === 'Late' || todayAtt?.status === 'Incomplete' ? "bg-amber-50 dark:bg-amber-900/30 text-amber-500" :
+                                        todayAtt?.status === 'Absent' ? "bg-rose-50 dark:bg-rose-900/30 text-rose-500" : "bg-gray-50 dark:bg-gray-700/50 text-gray-400"
                             )}>
                                 {(!todayAtt || todayAtt.status === 'Absent') ? <XCircle className="w-8 h-8" /> :
                                     (todayAtt.status === 'Late' || todayAtt.status === 'Incomplete') ? <AlertCircle className="w-8 h-8" /> :
@@ -225,11 +225,11 @@ export default function EmployeeProfile() {
                                     "text-2xl font-black tracking-tight",
                                     todayAtt?.status === 'Present' || todayAtt?.status === 'Completed' || todayAtt?.status === 'Overtime' || todayAtt?.status === 'Completed with Recovery' ? "text-emerald-600" :
                                         todayAtt?.status === 'Late' || todayAtt?.status === 'Incomplete' ? "text-amber-600" :
-                                            todayAtt?.status === 'Absent' ? "text-rose-600" : "text-gray-900"
+                                            todayAtt?.status === 'Absent' ? "text-rose-600" : "text-gray-900 dark:text-white"
                                 )}>
                                     {todayAtt?.status ? (todayAtt.status === 'Present' ? t('hr.statusPresent') : todayAtt.status === 'Completed' ? t('hr.statusCompleted') : todayAtt.status === 'Late' ? t('hr.statusLate') : todayAtt.status === 'Incomplete' ? t('hr.statusIncomplete') : todayAtt.status === 'Absent' ? t('hr.statusAbsent') : todayAtt.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : todayAtt.status === 'Overtime' ? t('hr.overtime') : todayAtt.status === 'Not Marked' ? t('hr.notMarked') : todayAtt.status) : t('hr.notMarked')}
                                 </h4>
-                                <p className="text-sm font-semibold text-gray-500">{fmtWeekdayDate()}</p>
+                                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{fmtWeekdayDate()}</p>
                             </div>
                         </div>
 
@@ -243,10 +243,10 @@ export default function EmployeeProfile() {
 
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        <StatSquare label={t('hr.workedDays')} value={workedDaysAmount} icon={Calendar} color="bg-blue-50 text-blue-600" />
-                        <StatSquare label={t('hr.absences')} value={absencesAmount} icon={XCircle} color="bg-rose-50 text-rose-600" />
-                        <StatSquare label={t('hr.lates')} value={latesAmount} icon={Clock} color="bg-amber-50 text-amber-600" />
-                        <StatSquare label={t('hr.overtime')} value={formatHours(totalOvertimeMin)} icon={TrendingUp} color="bg-purple-50 text-purple-600" />
+                        <StatSquare label={t('hr.workedDays')} value={workedDaysAmount} icon={Calendar} color="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+                        <StatSquare label={t('hr.absences')} value={absencesAmount} icon={XCircle} color="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
+                        <StatSquare label={t('hr.lates')} value={latesAmount} icon={Clock} color="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+                        <StatSquare label={t('hr.overtime')} value={formatHours(totalOvertimeMin)} icon={TrendingUp} color="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" />
                     </div>
                 </div>
             </div>
