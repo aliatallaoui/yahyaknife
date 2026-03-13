@@ -8,15 +8,8 @@ const Category = require('./models/Category');
 const Supplier = require('./models/Supplier');
 const Order = require('./models/Order');
 const Customer = require('./models/Customer');
-const Feedback = require('./models/Feedback');
 const Employee = require('./models/Employee');
 const LeaveRequest = require('./models/LeaveRequest');
-const Project = require('./models/Project');
-const Task = require('./models/Task');
-const Milestone = require('./models/Milestone');
-const RawMaterial = require('./models/RawMaterial');
-const BillOfMaterial = require('./models/BillOfMaterial');
-const ProductionOrder = require('./models/ProductionOrder');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/saas-dashboard';
 
@@ -29,10 +22,8 @@ const seedData = async () => {
         await Promise.all([
             Expense.deleteMany(), Revenue.deleteMany(), Product.deleteMany(),
             ProductVariant.deleteMany(), Category.deleteMany(), Supplier.deleteMany(),
-            Order.deleteMany(), Customer.deleteMany(), Feedback.deleteMany(),
-            Employee.deleteMany(), LeaveRequest.deleteMany(), Project.deleteMany(),
-            Task.deleteMany(), Milestone.deleteMany(), RawMaterial.deleteMany(),
-            BillOfMaterial.deleteMany(), ProductionOrder.deleteMany()
+            Order.deleteMany(), Customer.deleteMany(),
+            Employee.deleteMany(), LeaveRequest.deleteMany()
         ]);
 
         // 1. Suppliers
@@ -152,18 +143,10 @@ const seedData = async () => {
         }
         await Revenue.insertMany(revenues);
 
-        // 8. Other DB entries (Feedback, Employees, Projects, Manufacturing)
-        console.log('Building remaining peripheral relationships...');
-        // Skipping HR/Projects/Manufacturing bulk for brevity as they are decoupled right now and don't affect Core CRM/Inventory APIs directly, but can easily be added back if needed by the views. To ensure the views don't break, I'll add minimal HR/Mfg data.
-
-        const employees = await Employee.insertMany([
+        // 8. HR seed data
+        await Employee.insertMany([
             { name: 'Staff A', email: 'a@company.com', department: 'Engineering', role: 'Software Engineer', salary: 75000, joinDate: new Date(), status: 'Active' },
             { name: 'Staff B', email: 'b@company.com', department: 'HR', role: 'Manager', salary: 85000, joinDate: new Date(), status: 'Active' }
-        ]);
-
-        const rawMaterials = await RawMaterial.insertMany([
-            { name: 'Steel', sku: 'RM-STL-001', category: 'Metal', costPerUnit: 12.50, unitOfMeasure: 'meters', stockLevel: 250, minimumStock: 50, supplier: suppliers[0]._id },
-            { name: 'Plastic', sku: 'RM-PLA-001', category: 'Plastic', costPerUnit: 4.10, unitOfMeasure: 'units', stockLevel: 500, minimumStock: 100, supplier: suppliers[1]._id }
         ]);
 
         console.log('Platform Data Synchronized and Seeded Successfully!');

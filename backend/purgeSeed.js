@@ -11,7 +11,6 @@ const Revenue = require('./models/Revenue');
 const Expense = require('./models/Expense');
 const Payroll = require('./models/Payroll');
 const StockMovementLedger = require('./models/StockMovementLedger');
-const InventoryLedger = require('./models/InventoryLedger');
 const PurchaseOrder = require('./models/PurchaseOrder');
 const DailyRollup = require('./models/DailyRollup');
 const KPISnapshot = require('./models/KPISnapshot');
@@ -32,7 +31,7 @@ async function purgeAll() {
         const collections = [
             Order, OrderItem, OrderNote, OrderStatusHistory,
             Customer, Shipment, Revenue, Expense, Payroll,
-            StockMovementLedger, InventoryLedger, PurchaseOrder,
+            StockMovementLedger, PurchaseOrder,
             DailyRollup, KPISnapshot, WeeklyReport, AuditLog,
             CallNote, CourierSettlement
         ];

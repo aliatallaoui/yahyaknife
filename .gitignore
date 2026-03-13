@@ -120,6 +120,10 @@ backend/seedAdmin.js
 backend/seedAllModels.js
 backend/test-dynamic.js
 
+# Uploaded files (keep directory structure via .gitkeep)
+backend/uploads/products/*
+!backend/uploads/products/.gitkeep
+
 # Claude Code tooling
 claude.exe
 install.cmd
@@ -127,3 +131,4 @@ backend/test_inventory.js
 
 backend/setupLocal.js
 backend/scripts/migrate_hr_tenant.js
+backend/seedAssignmentDemo.js
