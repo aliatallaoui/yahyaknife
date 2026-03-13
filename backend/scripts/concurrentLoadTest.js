@@ -34,7 +34,7 @@ function apiCall(path, token, method = 'GET', postBody = null) {
         const ms = Date.now() - start;
         let json;
         try { json = JSON.parse(body); } catch { json = null; }
-        resolve({ status: res.statusCode, ms, bodyLength: body.length, path });
+        resolve({ status: res.statusCode, ms, bodyLength: body.length, path, json });
       });
     });
     req.on('error', e => resolve({ status: 0, ms: Date.now() - start, bodyLength: 0, path, error: e.message }));
