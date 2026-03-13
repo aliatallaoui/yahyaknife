@@ -659,8 +659,8 @@ function StorefrontBlock({
               )}
             </>
           ) : (
-            <div className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center">
-              <Package className="w-20 h-20 text-gray-300" />
+            <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
+              <Package className="w-20 h-20 text-gray-300 dark:text-gray-600" />
             </div>
           )}
         </div>
@@ -700,12 +700,12 @@ function StorefrontBlock({
       }
       return (
         <div className="px-4 md:px-8 py-4 max-w-3xl mx-auto">
-          <h3 className="font-bold text-sm text-gray-700 mb-3">Choose Option:</h3>
+          <h3 className="font-bold text-sm text-gray-700 dark:text-gray-300 mb-3">Choose Option:</h3>
           {vStyle === 'dropdown' ? (
             <select
               value={selectedVariant?._id || ''}
               onChange={e => setSelectedVariant(variants.find(v => v._id === e.target.value))}
-              className="w-full px-3 py-3 rounded-xl border border-gray-200 text-sm"
+              className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
             >
               {variants.map(v => (
                 <option key={v._id} value={v._id}>
