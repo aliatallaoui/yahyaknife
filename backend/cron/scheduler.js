@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const Customer = require('../models/Customer');
+const Tenant = require('../models/Tenant');
 const { initCronJobs } = require('./trackerSync');
 const { generateKPISnapshots } = require('../jobs/kpiGenerator');
 const { runDailyRollup, runWeeklyReport } = require('../jobs/dailyRollup');
@@ -24,22 +25,32 @@ const initJobs = () => {
     cron.schedule('0 1 * * *', async () => {
         logger.info("[CRON] Running COD Fraud Sweep & Courier Sync...");
         try {
-            // A. Fraud Sweep: Flag customers with refusal rate 30–50%, Blacklist > 50%
-            const [flagged, blacklisted] = await Promise.all([
-                Customer.updateMany(
-                    { refusalRate: { $gt: 30, $lte: 50 }, totalRefusals: { $gte: 2 } },
-                    { $set: { requiresDeliveryVerification: true } }
-                ),
-                Customer.updateMany(
-                    { refusalRate: { $gt: 50 }, totalRefusals: { $gte: 3 } },
-                    { $set: { blacklisted: true, status: 'At Risk' } }
-                )
-            ]);
+            const tenants = await Tenant.find({ isActive: true }).select('_id').lean();
+            let totalFlagged = 0;
+            let totalBlacklisted = 0;
 
-            logger.info(`[CRON] Fraud Sweep complete. Flagged: ${flagged.modifiedCount}, Blacklisted: ${blacklisted.modifiedCount} accounts.`);
+            for (const tenant of tenants) {
+                try {
+                    // A. Fraud Sweep: Flag customers with refusal rate 30–50%, Blacklist > 50%
+                    const [flagged, blacklisted] = await Promise.all([
+                        Customer.updateMany(
+                            { tenant: tenant._id, refusalRate: { $gt: 30, $lte: 50 }, totalRefusals: { $gte: 2 } },
+                            { $set: { requiresDeliveryVerification: true } }
+                        ),
+                        Customer.updateMany(
+                            { tenant: tenant._id, refusalRate: { $gt: 50 }, totalRefusals: { $gte: 3 } },
+                            { $set: { blacklisted: true, status: 'At Risk' } }
+                        )
+                    ]);
+                    totalFlagged += flagged.modifiedCount;
+                    totalBlacklisted += blacklisted.modifiedCount;
+                } catch (tenantErr) {
+                    logger.error({ err: tenantErr, tenantId: tenant._id }, '[CRON] Fraud sweep error for tenant');
+                }
+            }
 
-            // B. Mock Courier Assignment (e.g., auto assign based on region optimization)
-            logger.info(`[CRON] Recalculating Courier Regional performance weights for auto-dispatch.`);
+            logger.info({ flagged: totalFlagged, blacklisted: totalBlacklisted, tenantCount: tenants.length },
+                '[CRON] Fraud Sweep complete');
         } catch (err) {
             logger.error({ err }, '[CRON] Error (Fraud/Courier)');
         }

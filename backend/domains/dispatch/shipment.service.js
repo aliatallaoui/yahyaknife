@@ -20,7 +20,7 @@ const OrderService = require('../orders/order.service');
 
 /** Resolve the internal order */
 async function resolveOrder(orderId, tenantId) {
-    const query = { _id: orderId };
+    const query = { _id: orderId, deletedAt: null };
     if (tenantId) query.tenant = tenantId;
     const doc = await Order.findOne(query);
     if (!doc) throw AppError.notFound('Order');

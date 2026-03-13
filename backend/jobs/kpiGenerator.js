@@ -13,8 +13,8 @@ const generateKPISnapshots = async () => {
         for (const tenant of tenants) {
             try {
                 const tenantId = tenant._id;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const now = new Date();
+                const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
                 // Run aggregations for this tenant
                 const [
@@ -28,15 +28,15 @@ const generateKPISnapshots = async () => {
                     shippedEver,
                     returnedEver
                 ] = await Promise.all([
-                    Order.countDocuments({ tenant: tenantId, createdAt: { $gte: today }, status: 'New' }),
-                    Order.countDocuments({ tenant: tenantId, status: 'New' }),
-                    Order.countDocuments({ tenant: tenantId, status: 'Confirmed' }),
-                    Order.countDocuments({ tenant: tenantId, status: { $in: ['Preparing', 'Ready for Pickup'] } }),
-                    Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-                    Order.countDocuments({ tenant: tenantId, createdAt: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
-                    Order.countDocuments({ tenant: tenantId, updatedAt: { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
-                    Order.countDocuments({ tenant: tenantId, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
-                    Order.countDocuments({ tenant: tenantId, status: { $in: ['Returned', 'Refused'] } })
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, createdAt: { $gte: today }, status: 'New' }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, status: 'New' }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, status: 'Confirmed' }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, status: { $in: ['Preparing', 'Ready for Pickup'] } }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, createdAt: { $gte: today }, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery'] } }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, updatedAt: { $gte: today }, status: { $in: ['Delivered', 'Paid'] } }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'] } }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, status: { $in: ['Returned', 'Refused'] } })
                 ]);
 
                 const returnRate = shippedEver > 0 ? ((returnedEver / shippedEver) * 100).toFixed(1) : 0;

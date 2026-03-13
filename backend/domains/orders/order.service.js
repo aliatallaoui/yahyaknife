@@ -18,22 +18,24 @@ const AppError = require('../../shared/errors/AppError');
 const logger = require('../../shared/logger');
 const { logStockMovement } = require('../../controllers/stockController');
 const { updateCustomerMetrics } = require('../../controllers/customerController');
+const usageTracker = require('../../services/usageTracker');
+const { eventBus, EVENTS } = require('../../shared/events/eventBus');
 const { syncCourierCash, recalculateCourierKPIs } = require('../../controllers/courierController');
 const cacheService = require('../../services/cacheService');
 const { fireAndRetry } = require('../../shared/utils/retryAsync');
-const { autoAssignOrder } = require('../../controllers/callCenterController');
+const { autoAssignOrder } = require('../call-center/assignment.service');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Resolve or create a customer by phone, within a session (pre-transaction) */
 async function resolveCustomer(tenantId, customerId, customerPhone, customerName) {
     if (customerId) {
-        const c = await Customer.findById(customerId);
+        const c = await Customer.findOne({ _id: customerId, tenant: tenantId, deletedAt: null });
         if (c) return c;
     }
     if (!customerPhone) throw AppError.validationFailed({ customerPhone: 'Phone number is required' });
 
-    let customer = await Customer.findOne({ phone: customerPhone, tenant: tenantId });
+    let customer = await Customer.findOne({ phone: customerPhone, tenant: tenantId, deletedAt: null });
     if (!customer) {
         customer = await Customer.create({
             name: customerName || 'Unknown',
@@ -53,7 +55,11 @@ async function fetchVariantCosts(products) {
     const variantIds = products.filter(p => p.variantId).map(p => p.variantId);
     if (variantIds.length === 0) return {};
 
-    const variants = await ProductVariant.find({ _id: { $in: variantIds } }, { cost: 1 });
+    const variants = await ProductVariant.find({ _id: { $in: variantIds } }, { cost: 1, status: 1 });
+    const inactive = variants.filter(v => v.status && v.status !== 'Active');
+    if (inactive.length > 0) {
+        throw AppError.validationFailed({ products: `Inactive product variant(s): ${inactive.map(v => v._id).join(', ')}` });
+    }
     const map = {};
     variants.forEach(v => { map[v._id.toString()] = v.cost || 0; });
     return map;
@@ -88,7 +94,8 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         orderId, customerId, customerName, customerPhone,
         channel, products, status, paymentStatus,
         fulfillmentStatus, fulfillmentPipeline, notes,
-        shipping, financials, courier, priority, tags, verificationStatus
+        shipping, financials, courier, priority, tags, verificationStatus,
+        salesChannelSource
     } = body;
 
     if (!orderId || !channel || !products || products.length === 0) {
@@ -173,7 +180,8 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             shipping: shipping || {},
             wilaya: shipping?.wilayaCode ? `${shipping.wilayaCode} - ${shipping.wilayaName}` : 'Unknown',
             commune: shipping?.commune || 'Unknown',
-            notes: notes || ''
+            notes: notes || '',
+            salesChannelSource: salesChannelSource || undefined
         });
 
         savedOrder = created;
@@ -181,6 +189,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         // OrderItems snapshot
         const orderItemDocs = processedProducts.map(p => ({
             orderId: savedOrder._id,
+            tenant: tenantId,
             productId: p.productId || null,
             variantId: p.variantId || null,
             sku: p.sku || '',
@@ -205,6 +214,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         if (notes) {
             await OrderNote.create({
                 orderId: savedOrder._id,
+                tenant: tenantId,
                 type: 'Call Center',
                 content: notes,
                 createdBy: userId || null
@@ -214,6 +224,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         if (autoRiskNote) {
             await OrderNote.create({
                 orderId: savedOrder._id,
+                tenant: tenantId,
                 type: 'System Note',
                 content: autoRiskNote,
                 createdBy: userId || null
@@ -260,6 +271,19 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     if (mainStatus === 'New' && !savedOrder.assignedAgent) {
         fireAndRetry('autoAssignOrder', () => autoAssignOrder(savedOrder._id, tenantId));
     }
+
+    // Track usage for billing
+    usageTracker.increment(tenantId, 'orders').catch(() => {});
+
+    // Emit domain event for webhook + other listeners
+    eventBus.emit(EVENTS.ORDER_CREATED, {
+        tenantId,
+        orderId: savedOrder.orderId,
+        _id: savedOrder._id.toString(),
+        status: savedOrder.status,
+        totalAmount: savedOrder.totalAmount,
+        customerId: savedOrder.customer?.toString(),
+    });
 
     return savedOrder;
 };
@@ -427,7 +451,7 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         let delta = 0;
         if (isOldCOD) delta -= existingOrder.totalAmount;
         if (isNewCOD) delta += updateData.totalAmount !== undefined ? updateData.totalAmount : existingOrder.totalAmount;
-        if (delta !== 0) await syncCourierCash(activeCourierId, delta);
+        if (delta !== 0) await syncCourierCash(activeCourierId, delta, tenantId);
     }
 
     // Sync customer name/phone if edited
@@ -464,6 +488,26 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
 
     // Invalidate dashboard cache for this tenant
     cacheService.flushByPrefix(`dash:${tenantId}:`);
+
+    // Emit domain events for webhook listeners
+    const statusChanged = updatedOrder.status !== oldMainStatus;
+    if (statusChanged) {
+        eventBus.emit(EVENTS.ORDER_STATUS_CHANGED, {
+            tenantId,
+            orderId: updatedOrder.orderId,
+            _id: updatedOrder._id.toString(),
+            oldStatus: existingOrder.status,
+            newStatus: updatedOrder.status,
+        });
+
+        if (updatedOrder.status === 'Delivered') {
+            eventBus.emit(EVENTS.ORDER_DELIVERED, { tenantId, orderId: updatedOrder.orderId, _id: updatedOrder._id.toString() });
+        } else if (['Cancelled', 'Cancelled by Customer'].includes(updatedOrder.status)) {
+            eventBus.emit(EVENTS.ORDER_CANCELLED, { tenantId, orderId: updatedOrder.orderId, _id: updatedOrder._id.toString() });
+        } else if (updatedOrder.status === 'Returned') {
+            eventBus.emit(EVENTS.ORDER_RETURNED, { tenantId, orderId: updatedOrder.orderId, _id: updatedOrder._id.toString() });
+        }
+    }
 
     return updatedOrder;
 };

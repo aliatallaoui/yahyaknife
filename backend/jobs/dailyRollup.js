@@ -24,15 +24,16 @@ const runDailyRollup = async (targetDate) => {
     try {
         const tenants = await Tenant.find({ isActive: true }).select('_id').lean();
 
-        // Low stock count is shared across all tenants (shared catalog)
-        const lowStockCount = await ProductVariant.countDocuments({
-            status: 'Active',
-            $expr: { $lte: ['$totalStock', '$reorderLevel'] }
-        });
-
         for (const tenant of tenants) {
             try {
                 const tenantId = tenant._id;
+
+                // Low stock count per tenant
+                const lowStockCount = await ProductVariant.countDocuments({
+                    tenant: tenantId,
+                    status: 'Active',
+                    $expr: { $lte: ['$totalStock', '$reorderLevel'] }
+                });
 
                 // ── Order metrics ───────────────────────────────────────────────────
                 // We use the OrderStatusHistory model pattern: count orders whose
@@ -47,13 +48,14 @@ const runDailyRollup = async (targetDate) => {
                     orderMetrics
                 ] = await Promise.all([
                     // Orders created on this specific date (createdAt is the Mongoose timestamp field)
-                    Order.countDocuments({ tenant: tenantId, createdAt: { $gte: dayStart, $lte: dayEnd } }),
+                    Order.countDocuments({ tenant: tenantId, deletedAt: null, createdAt: { $gte: dayStart, $lte: dayEnd } }),
 
                     // Aggregate order status breakdown for the day
                     Order.aggregate([
                         {
                             $match: {
                                 tenant: tenantId,
+                                deletedAt: null,
                                 createdAt: { $gte: dayStart, $lte: dayEnd }
                             }
                         },

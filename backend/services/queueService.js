@@ -4,9 +4,14 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { createObjectCsvWriter } = require('csv-writer');
 const Order = require('../models/Order');
+const { PriorityQueue } = require('./priorityQueue');
+const usageTracker = require('./usageTracker');
 
 // In-memory job registry. In production, this would be Redis/BullMQ.
 const exportJobs = new Map();
+
+// Priority queue for exports — higher-tier tenants process first
+const exportQueue = new PriorityQueue({ concurrency: 2, name: 'export' });
 
 // Ensure exports directory exists
 const EXPORT_DIR = path.join(__dirname, '..', 'public', 'exports');
@@ -16,16 +21,21 @@ if (!fs.existsSync(EXPORT_DIR)) {
 
 const queueService = {
     /**
-     * Start pushing orders to a CSV asynchronously
+     * Start pushing orders to a CSV asynchronously.
+     * Jobs are prioritised by tenant plan tier (Enterprise first, Free last).
+     * @param {string} tenantId
+     * @param {Object} query
+     * @param {string} userEmail
+     * @param {string} [planTier='Free'] - Tenant's plan tier for queue priority
      */
-    async enqueueExport(tenantId, query, userEmail) {
+    async enqueueExport(tenantId, query, userEmail, planTier = 'Free') {
         const jobId = uuidv4();
         const fileName = `export_${tenantId}_${Date.now()}.csv`;
         const filePath = path.join(EXPORT_DIR, fileName);
 
         exportJobs.set(jobId, {
             id: jobId,
-            status: 'processing',
+            status: 'queued',
             progress: 0,
             fileName: null,
             downloadUrl: null,
@@ -33,11 +43,13 @@ const queueService = {
             createdAt: new Date()
         });
 
-        // Fire and forget the background worker
-        this._processExport(jobId, tenantId, query, filePath, fileName).catch(err => {
-            logger.error({ err, jobId }, 'Export job failed');
-            exportJobs.set(jobId, { ...exportJobs.get(jobId), status: 'failed', error: err.message });
-        });
+        // Route through priority queue
+        exportQueue.enqueue(
+            jobId,
+            () => this._processExport(jobId, tenantId, query, filePath, fileName),
+            planTier,
+            { tenantId, userEmail }
+        );
 
         return jobId;
     },
@@ -118,13 +130,16 @@ const queueService = {
             await csvWriter.writeRecords(batchRecords);
         }
 
-        exportJobs.set(jobId, { 
-            ...exportJobs.get(jobId), 
-            status: 'completed', 
-            progress: 100, 
+        exportJobs.set(jobId, {
+            ...exportJobs.get(jobId),
+            status: 'completed',
+            progress: 100,
             fileName,
             downloadUrl: `/exports/${fileName}`
         });
+
+        // Track usage
+        usageTracker.increment(tenantId, 'exports').catch(() => {});
 
         // Set an auto-cleanup timeout (delete file after 24 hours)
         setTimeout(() => {
@@ -136,5 +151,7 @@ const queueService = {
         }, 24 * 60 * 60 * 1000);
     }
 };
+
+queueService.exportQueue = exportQueue;
 
 module.exports = queueService;
