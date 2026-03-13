@@ -8,25 +8,25 @@ const { syncActiveShipments } = require('../cron/trackerSync');
 const cacheService = require('../services/cacheService');
 const KPISnapshot = require('../models/KPISnapshot');
 
-let lastEcotrackSyncTime = 0; // In-memory timestamp for rate limiting
+let lastCourierSyncTime = 0; // In-memory timestamp for rate limiting
 
 exports.triggerEcotrackSync = async (req, res) => {
     try {
         const now = Date.now();
         const oneHourMs = 60 * 60 * 1000;
 
-        if (now - lastEcotrackSyncTime < oneHourMs) {
-            const timeLeft = Math.ceil((oneHourMs - (now - lastEcotrackSyncTime)) / 60000);
+        if (now - lastCourierSyncTime < oneHourMs) {
+            const timeLeft = Math.ceil((oneHourMs - (now - lastCourierSyncTime)) / 60000);
             return res.status(429).json({ error: `You can only sync once per hour. Please wait ${timeLeft} minutes.` });
         }
 
         await syncActiveShipments();
-        lastEcotrackSyncTime = Date.now();
+        lastCourierSyncTime = Date.now();
 
-        res.json({ message: 'ECOTRACK sync sequence manually fired and completed.', lastSync: lastEcotrackSyncTime });
+        res.json({ message: 'Courier sync completed (all providers).', lastSync: lastCourierSyncTime });
     } catch (error) {
-        logger.error({ err: error }, 'Manual ECOTRACK Sync Error');
-        res.status(500).json({ error: 'Failed to run ECOTRACK sync' });
+        logger.error({ err: error }, 'Manual Courier Sync Error');
+        res.status(500).json({ error: 'Failed to run courier sync' });
     }
 };
 

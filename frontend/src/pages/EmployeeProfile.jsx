@@ -252,21 +252,21 @@ export default function EmployeeProfile() {
             </div>
 
             {/* Bottom Section: Tabs & Historic Grid */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col mt-2">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col mt-2">
 
                 {/* 4. Work Time Chart & Tabs Header */}
-                <div className="border-b border-gray-100 bg-gray-50/50 p-4 sm:p-6 flex flex-col xl:flex-row items-center justify-between gap-4 sm:gap-6">
+                <div className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30 p-4 sm:p-6 flex flex-col xl:flex-row items-center justify-between gap-4 sm:gap-6">
 
                     {/* Time Progress Tracker */}
                     <div className="flex-1 w-full max-w-xl">
                         <div className="flex justify-between items-end mb-2">
                             <div>
-                                <h4 className="text-sm font-bold text-gray-900">{t('hr.monthlyTimeFulfillment')}</h4>
-                                <p className="text-xs text-gray-500">{t('hr.cumulativeWorkedHours')}</p>
+                                <h4 className="text-sm font-bold text-gray-900 dark:text-white">{t('hr.monthlyTimeFulfillment')}</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{t('hr.cumulativeWorkedHours')}</p>
                             </div>
                             <div className="ltr:text-right rtl:text-left">
                                 <span className="text-lg font-black text-blue-600">{Math.floor(totalWorkedMin / 60)}{t('hr.lblHours', 'h')}</span>
-                                <span className="text-sm font-bold text-gray-400"> / {Math.floor(totalRequiredMin / 60)}{t('hr.lblHours', 'h')}</span>
+                                <span className="text-sm font-bold text-gray-400 dark:text-gray-500"> / {Math.floor(totalRequiredMin / 60)}{t('hr.lblHours', 'h')}</span>
                             </div>
                         </div>
                         <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden flex">
