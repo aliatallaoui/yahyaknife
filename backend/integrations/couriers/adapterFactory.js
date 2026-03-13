@@ -26,12 +26,8 @@ const YalidineAdapter = require('./YalidineAdapter');
  * @throws {Error} if courier has no API integration or unknown provider
  */
 function getAdapter(courier) {
-    if (!courier) {
-        throw new Error('Cannot resolve adapter: courier is null');
-    }
-
-    // Manual couriers don't have API integration — fall back to Ecotrack global
-    if (courier.integrationType === 'Manual' || !courier.apiProvider) {
+    // No courier assigned or manual integration → fall back to Ecotrack global
+    if (!courier || courier.integrationType === 'Manual' || !courier.apiProvider) {
         return ecotrackAdapter;
     }
 

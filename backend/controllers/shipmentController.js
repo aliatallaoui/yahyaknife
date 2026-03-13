@@ -48,7 +48,7 @@ exports.getAllShipments = async (req, res) => {
             'Returned':         'Returned',
         };
 
-        const [dispatchedOrders, ecotrackShipments] = await Promise.all([
+        const [dispatchedOrders, courierShipments] = await Promise.all([
             Order.find({
                 tenant: tenantId,
                 status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned'] },
@@ -63,6 +63,7 @@ exports.getAllShipments = async (req, res) => {
             internalOrder:     o._id,
             internalOrderId:   o.orderId || o._id.toString(),
             externalTrackingId: o.trackingInfo?.trackingNumber || null,
+            courierProvider:   o.trackingInfo?.carrier || 'ECOTRACK',
             customerName:      o.shipping?.recipientName || o.customer?.name || 'Unknown',
             phone1:            o.shipping?.phone1 || o.customer?.phone || '',
             wilayaName:        o.shipping?.wilayaName || '',
@@ -77,9 +78,9 @@ exports.getAllShipments = async (req, res) => {
 
         // Deduplicate: Shipment records take precedence over order-derived rows
         const orderIdsSeen = new Set(mappedOrders.map(s => s.internalOrderId));
-        const filteredEcotrack = ecotrackShipments.filter(s => !orderIdsSeen.has(s.internalOrderId));
+        const filteredShipments = courierShipments.filter(s => !orderIdsSeen.has(s.internalOrderId));
 
-        const combined = [...mappedOrders, ...filteredEcotrack]
+        const combined = [...mappedOrders, ...filteredShipments]
             .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 
         res.json(combined);
@@ -109,7 +110,7 @@ exports.exportShipments = async (req, res) => {
         if (!tenantId) return res.status(401).json({ message: 'Not authorized' });
 
         const shipments = await Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).lean();
-        const fields = ['externalTrackingId', 'internalOrderId', 'customerName', 'phone1', 'wilayaName', 'commune', 'shipmentStatus', 'paymentStatus', 'codAmount', 'createdAt'];
+        const fields = ['externalTrackingId', 'internalOrderId', 'courierProvider', 'customerName', 'phone1', 'wilayaName', 'commune', 'shipmentStatus', 'paymentStatus', 'codAmount', 'createdAt'];
 
         let csv = fields.join(',') + '\n';
         shipments.forEach(s => {

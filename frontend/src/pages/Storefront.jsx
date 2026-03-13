@@ -936,7 +936,7 @@ function StorefrontBlock({
                     <option key={w.code} value={w.code} data-name={w.name}>{w.code} - {w.name}</option>
                   ))}
                 </select>
-                {formErrors.wilayaCode && <p className="text-xs text-red-500 mt-0.5">{formErrors.wilayaCode}</p>}
+                {formErrors.wilayaCode && <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">{formErrors.wilayaCode}</p>}
               </div>
 
               <div>
@@ -952,7 +952,7 @@ function StorefrontBlock({
                     <option key={i} value={c.commune}>{c.commune}{c.officeSupported ? ' (Home + Office)' : ' (Home)'}</option>
                   ))}
                 </select>
-                {formErrors.commune && <p className="text-xs text-red-500 mt-0.5">{formErrors.commune}</p>}
+                {formErrors.commune && <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">{formErrors.commune}</p>}
               </div>
 
               <FormField icon={MapPin} label="Address"
@@ -960,7 +960,7 @@ function StorefrontBlock({
 
               {formConfig?.fields?.deliveryType?.visible !== false && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Delivery Type</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Delivery Type</label>
                   <div className="flex gap-2">
                     {[{ value: 0, label: 'Home Delivery' }, { value: 1, label: 'Office / Stop Desk' }].map(dt => (
                       <button key={dt.value} type="button"
@@ -968,7 +968,7 @@ function StorefrontBlock({
                         className={clsx('flex-1 py-2 rounded-xl text-xs font-medium border-2 transition-colors',
                           formData.deliveryType === dt.value
                             ? 'text-white'
-                            : 'border-gray-200 text-gray-600 bg-white'
+                            : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700'
                         )}
                         style={formData.deliveryType === dt.value ? { borderColor: primaryColor, backgroundColor: primaryColor } : {}}>
                         {dt.label}
@@ -980,15 +980,15 @@ function StorefrontBlock({
 
               {formConfig?.fields?.quantity?.visible !== false && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100">
+                      className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-300">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-lg font-bold min-w-[2ch] text-center">{quantity}</span>
+                    <span className="text-lg font-bold min-w-[2ch] text-center dark:text-gray-100">{quantity}</span>
                     <button type="button" onClick={() => setQuantity(Math.min(formConfig?.maxQuantity || 10, quantity + 1))}
-                      className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100">
+                      className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-300">
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -1001,32 +1001,32 @@ function StorefrontBlock({
               )}
 
               {/* Price Summary */}
-              <div className="bg-white rounded-xl p-4 space-y-2 mt-4">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 space-y-2 mt-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Price:</span>
+                  <span className="text-gray-500 dark:text-gray-400">Price:</span>
                   <div className="flex items-center gap-2">
-                    {hasDiscount && <span className="line-through text-gray-400 text-xs">{originalPrice} DA</span>}
-                    <span className="font-bold">{unitPrice} DA</span>
+                    {hasDiscount && <span className="line-through text-gray-400 dark:text-gray-500 text-xs">{originalPrice} DA</span>}
+                    <span className="font-bold dark:text-gray-100">{unitPrice} DA</span>
                   </div>
                 </div>
                 {quantity > 1 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Subtotal ({quantity}x):</span>
-                    <span className="font-bold">{subtotal} DA</span>
+                    <span className="text-gray-500 dark:text-gray-400">Subtotal ({quantity}x):</span>
+                    <span className="font-bold dark:text-gray-100">{subtotal} DA</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Delivery:</span>
-                  <span className="font-bold">{deliveryPrice !== null ? `${deliveryPrice} DA` : '—'}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Delivery:</span>
+                  <span className="font-bold dark:text-gray-100">{deliveryPrice !== null ? `${deliveryPrice} DA` : '—'}</span>
                 </div>
-                <div className="border-t border-gray-100 pt-2 flex justify-between">
-                  <span className="font-bold">Total:</span>
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-2 flex justify-between">
+                  <span className="font-bold dark:text-gray-100">Total:</span>
                   <span className="text-xl font-extrabold" style={{ color: primaryColor }}>{totalPrice} DA</span>
                 </div>
               </div>
 
               {formErrors.submit && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-xl p-3 text-sm text-red-700 dark:text-red-400">
                   {formErrors.submit}
                 </div>
               )}
@@ -1082,13 +1082,13 @@ function StorefrontBlock({
         <div className="px-4 md:px-8 py-8 max-w-3xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {(s.items || []).map((item, i) => (
-              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50">
+              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
                   <Check className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-gray-900">{item.title}</h4>
-                  {item.description && <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>}
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-white">{item.title}</h4>
+                  {item.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.description}</p>}
                 </div>
               </div>
             ))}
@@ -1138,17 +1138,17 @@ function StorefrontBlock({
         <div className="px-4 md:px-8 py-10 relative" style={s.backgroundImage ? {
           background: `linear-gradient(rgba(249,250,251,0.88), rgba(249,250,251,0.92)), url(${safeMediaUrl(s.backgroundImage)}) center/cover`
         } : { backgroundColor: '#f9fafb' }}>
-          <h3 className="font-bold text-xl text-center mb-6 text-gray-900 relative">What our customers say</h3>
+          <h3 className="font-bold text-xl text-center mb-6 text-gray-900 dark:text-white relative">What our customers say</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto relative">
             {(s.items || []).map((item, i) => (
-              <div key={i} className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl shadow-sm">
+              <div key={i} className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-5 rounded-2xl shadow-sm">
                 <div className="flex mb-2">
                   {Array.from({ length: item.rating || 5 }).map((_, j) => (
                     <Star key={j} className="w-4 h-4 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-sm text-gray-600 mb-3">"{item.text}"</p>
-                <p className="text-sm font-bold text-gray-800">{item.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">"{item.text}"</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{item.name}</p>
               </div>
             ))}
           </div>
@@ -1189,19 +1189,19 @@ function StorefrontBlock({
           background: `linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.95)), url(${safeMediaUrl(s.backgroundImage)}) center/cover`,
           borderRadius: '1rem', padding: '2rem'
         } : {}}>
-          <h3 className="font-bold text-xl text-center mb-6 text-gray-900 relative">Frequently Asked Questions</h3>
+          <h3 className="font-bold text-xl text-center mb-6 text-gray-900 dark:text-white relative">Frequently Asked Questions</h3>
           <div className="space-y-2 relative">
             {(s.items || []).map((item, i) => (
-              <div key={i} className="border border-gray-200 rounded-xl overflow-hidden bg-white/80 backdrop-blur-sm">
+              <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between p-4 text-start hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-start hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <span className="font-medium text-sm text-gray-900">{item.question}</span>
-                  <ChevronDown className={clsx('w-4 h-4 text-gray-400 shrink-0 transition-transform', openFaq === i && 'rotate-180')} />
+                  <span className="font-medium text-sm text-gray-900 dark:text-white">{item.question}</span>
+                  <ChevronDown className={clsx('w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0 transition-transform', openFaq === i && 'rotate-180')} />
                 </button>
                 {openFaq === i && (
-                  <div className="px-4 pb-4 text-sm text-gray-600">{item.answer}</div>
+                  <div className="px-4 pb-4 text-sm text-gray-600 dark:text-gray-400">{item.answer}</div>
                 )}
               </div>
             ))}
@@ -1261,11 +1261,11 @@ function StorefrontBlock({
       }
       return (
         <div className="px-4 md:px-8 py-6 max-w-xl mx-auto">
-          <div className="flex items-center gap-4 p-5 rounded-2xl border-2 border-green-200 bg-green-50">
-            <Shield className="w-12 h-12 text-green-600 shrink-0" />
+          <div className="flex items-center gap-4 p-5 rounded-2xl border-2 border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20">
+            <Shield className="w-12 h-12 text-green-600 dark:text-green-400 shrink-0" />
             <div>
-              <h4 className="font-bold text-gray-900">{s.title || 'Money Back Guarantee'}</h4>
-              <p className="text-sm text-green-700 mt-0.5">{s.description}</p>
+              <h4 className="font-bold text-gray-900 dark:text-white">{s.title || 'Money Back Guarantee'}</h4>
+              <p className="text-sm text-green-700 dark:text-green-300 mt-0.5">{s.description}</p>
             </div>
           </div>
         </div>
@@ -1323,10 +1323,10 @@ function StorefrontBlock({
               const Icon = b.icon;
               return (
                 <div key={i} className="flex flex-col items-center gap-1.5">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-gray-600" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <Icon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                   </div>
-                  <span className="text-[11px] text-gray-500 text-center font-medium">{b.label}</span>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 text-center font-medium">{b.label}</span>
                 </div>
               );
             })}
@@ -1361,12 +1361,12 @@ function StorefrontBlock({
           background: `linear-gradient(rgba(239,246,255,0.88), rgba(239,246,255,0.92)), url(${safeMediaUrl(s.backgroundImage)}) center/cover`,
           borderRadius: '1rem'
         } : {}}>
-          <div className="bg-blue-50/80 backdrop-blur-sm rounded-2xl p-5 relative">
+          <div className="bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-5 relative">
             <div className="flex items-center gap-3 mb-3">
-              <Truck className="w-7 h-7 text-blue-600" />
-              <h4 className="font-bold text-blue-800">{s.title || 'Delivery Information'}</h4>
+              <Truck className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+              <h4 className="font-bold text-blue-800 dark:text-blue-300">{s.title || 'Delivery Information'}</h4>
             </div>
-            <div className="space-y-1.5 text-sm text-blue-700">
+            <div className="space-y-1.5 text-sm text-blue-700 dark:text-blue-300">
               <p>Coverage: {s.wilayas || 'All 58 wilayas'}</p>
               <p>Estimated: {s.timeframe || '2-5 business days'}</p>
               <p>Payment: Cash on Delivery</p>
@@ -1402,14 +1402,14 @@ function StorefrontBlock({
           background: `linear-gradient(rgba(254,242,242,0.85), rgba(254,242,242,0.9)), url(${safeMediaUrl(s.backgroundImage)}) center/cover`,
           borderRadius: '0.75rem'
         } : {}}>
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50/80 backdrop-blur-sm border border-red-200 relative">
-            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-            <span className="text-sm font-medium text-red-700">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50/80 dark:bg-red-900/20 backdrop-blur-sm border border-red-200 dark:border-red-500/30 relative">
+            <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0" />
+            <span className="text-sm font-medium text-red-700 dark:text-red-300">
               {(s.message || 'Only {count} left!').replace('{count}', s.count || 12)}
             </span>
           </div>
           {s.showBar && (
-            <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${Math.min(100, ((s.count || 12) / 50) * 100)}%` }} />
             </div>
           )}
@@ -1422,7 +1422,7 @@ function StorefrontBlock({
         <div className="px-4 md:px-8 py-6 max-w-3xl mx-auto" style={{ textAlign: s.alignment || 'center' }}>
           <div className={clsx(
             'text-sm leading-relaxed whitespace-pre-wrap',
-            isArtisan ? 'text-[#a89070]' : 'text-gray-700'
+            isArtisan ? 'text-[#a89070]' : 'text-gray-700 dark:text-gray-300'
           )}>{s.content}</div>
         </div>
       );
@@ -1452,20 +1452,20 @@ function StorefrontBlock({
     case 'reviews':
       return (
         <div className="px-4 md:px-8 py-8 max-w-2xl mx-auto">
-          <h3 className={clsx('font-bold text-xl text-center mb-6', isArtisan ? 'text-[#e8dcc8]' : 'text-gray-900')}>Customer Reviews</h3>
+          <h3 className={clsx('font-bold text-xl text-center mb-6', isArtisan ? 'text-[#e8dcc8]' : 'text-gray-900 dark:text-white')}>Customer Reviews</h3>
           <div className="space-y-3">
             {(s.items || []).map((item, i) => (
               <div key={i} className={clsx(
                 'rounded-xl p-4',
-                isArtisan ? 'border border-[#c9a84c]/20 bg-[#2a1f0e]/60' : 'border border-gray-100'
+                isArtisan ? 'border border-[#c9a84c]/20 bg-[#2a1f0e]/60' : 'border border-gray-100 dark:border-gray-700 dark:bg-gray-800'
               )}>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className={clsx('font-bold text-sm', isArtisan ? 'text-[#e8dcc8]' : 'text-gray-800')}>{item.name}</span>
+                  <span className={clsx('font-bold text-sm', isArtisan ? 'text-[#e8dcc8]' : 'text-gray-800 dark:text-gray-200')}>{item.name}</span>
                   <div className="flex">{Array.from({ length: item.rating || 5 }).map((_, j) => (
                     <Star key={j} className="w-3.5 h-3.5 fill-current" style={{ color: isArtisan ? primaryColor : '#facc15' }} />
                   ))}</div>
                 </div>
-                <p className={clsx('text-sm', isArtisan ? 'text-[#a89070]' : 'text-gray-600')}>{item.text}</p>
+                <p className={clsx('text-sm', isArtisan ? 'text-[#a89070]' : 'text-gray-600 dark:text-gray-400')}>{item.text}</p>
               </div>
             ))}
           </div>
@@ -1504,16 +1504,16 @@ function ArtisanFormField({ label, value, onChange, placeholder, error, type = '
 function FormField({ icon: Icon, label, value, onChange, placeholder, error, type = 'text', multiline }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
       <div className="relative">
-        {Icon && <Icon className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />}
+        {Icon && <Icon className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />}
         {multiline ? (
           <textarea
             value={value}
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
             rows={2}
-            className={clsx('w-full px-3 py-2.5 rounded-xl border text-sm resize-none', Icon && 'ps-10', error ? 'border-red-400' : 'border-gray-200')}
+            className={clsx('w-full px-3 py-2.5 rounded-xl border text-sm resize-none dark:bg-gray-700 dark:text-gray-100', Icon && 'ps-10', error ? 'border-red-400' : 'border-gray-200 dark:border-gray-600')}
           />
         ) : (
           <input
@@ -1521,11 +1521,11 @@ function FormField({ icon: Icon, label, value, onChange, placeholder, error, typ
             value={value}
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
-            className={clsx('w-full px-3 py-2.5 rounded-xl border text-sm', Icon && 'ps-10', error ? 'border-red-400' : 'border-gray-200')}
+            className={clsx('w-full px-3 py-2.5 rounded-xl border text-sm dark:bg-gray-700 dark:text-gray-100', Icon && 'ps-10', error ? 'border-red-400' : 'border-gray-200 dark:border-gray-600')}
           />
         )}
       </div>
-      {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
+      {error && <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">{error}</p>}
     </div>
   );
 }
@@ -1569,10 +1569,10 @@ function CountdownBlock({ settings, primaryColor, isArtisan }) {
         ].map((u, i) => (
           <div key={i} className={clsx(
             'rounded-xl shadow-md px-5 py-3 min-w-[65px]',
-            isArtisan ? 'bg-[#1a1208] border border-[#c9a84c]/20' : 'bg-white'
+            isArtisan ? 'bg-[#1a1208] border border-[#c9a84c]/20' : 'bg-white dark:bg-gray-800'
           )}>
             <p className="text-2xl font-extrabold" style={{ color: primaryColor }}>{u.val}</p>
-            <p className={clsx('text-[10px] uppercase font-medium', isArtisan ? 'text-[#a89070]' : 'text-gray-500')}>{u.label}</p>
+            <p className={clsx('text-[10px] uppercase font-medium', isArtisan ? 'text-[#a89070]' : 'text-gray-500 dark:text-gray-400')}>{u.label}</p>
           </div>
         ))}
       </div>

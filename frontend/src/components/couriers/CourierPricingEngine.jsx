@@ -149,8 +149,8 @@ export default function CourierPricingEngine({ courierId }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Rule Form */}
-                <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                    <h3 className="text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-100 flex items-center justify-between text-start">
+                <div className="lg:col-span-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between text-start">
                         {isEditing ? t('couriers.edit_rule', 'Edit Pricing Rule') : t('couriers.add_rule', 'Create New Rule')}
                         {isEditing && (
                             <button onClick={handleCancelEdit} className="text-xs text-gray-500 hover:text-gray-700 font-medium">{t('common.cancel', 'Cancel')}</button>
@@ -158,13 +158,13 @@ export default function CourierPricingEngine({ courierId }) {
                     </h3>
                     <form onSubmit={handleSaveRule} className="space-y-4 text-start">
                         <div>
-                            <label htmlFor="rule-type" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.rule_type', 'Rule Target Type')}</label>
+                            <label htmlFor="rule-type" className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">{t('couriers.rule_type', 'Rule Target Type')}</label>
                             <select
                                 id="rule-type"
                                 required
                                 value={formData.ruleType}
                                 onChange={e => setFormData({ ...formData, ruleType: e.target.value })}
-                                className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                             >
                                 <option value="Flat">🌍 {t('couriers.ruleFlat', 'Global Flat Rate (Fallback)')}</option>
                                 <option value="Wilaya">📍 {t('couriers.ruleWilaya', 'Wilaya Based')}</option>
@@ -175,14 +175,14 @@ export default function CourierPricingEngine({ courierId }) {
 
                         {(formData.ruleType === 'Wilaya' || formData.ruleType === 'Wilaya+Commune') && (
                             <div>
-                                <label htmlFor="rule-wilaya" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.wilayaCode', 'Wilaya Code / ID')}</label>
+                                <label htmlFor="rule-wilaya" className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">{t('couriers.wilayaCode', 'Wilaya Code / ID')}</label>
                                 <input
                                     id="rule-wilaya"
                                     type="text"
                                     required
                                     value={formData.wilayaCode}
                                     onChange={e => setFormData({ ...formData, wilayaCode: e.target.value })}
-                                    className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border"
+                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm p-2 border"
                                     placeholder="e.g. 16 for Alger"
                                 />
                             </div>
@@ -190,14 +190,14 @@ export default function CourierPricingEngine({ courierId }) {
 
                         {formData.ruleType === 'Wilaya+Commune' && (
                             <div>
-                                <label htmlFor="rule-commune" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.commune', 'Commune Name')}</label>
+                                <label htmlFor="rule-commune" className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">{t('couriers.commune', 'Commune Name')}</label>
                                 <input
                                     id="rule-commune"
                                     type="text"
                                     required
                                     value={formData.commune}
                                     onChange={e => setFormData({ ...formData, commune: e.target.value })}
-                                    className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border"
+                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm p-2 border"
                                     placeholder="e.g. Bir Mourad Rais"
                                 />
                             </div>
@@ -206,37 +206,37 @@ export default function CourierPricingEngine({ courierId }) {
                         {formData.ruleType === 'Weight' && (
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label htmlFor="rule-min-weight" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.minWeight', 'Min Weight (kg)')}</label>
+                                    <label htmlFor="rule-min-weight" className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">{t('couriers.minWeight', 'Min Weight (kg)')}</label>
                                     <input
                                         id="rule-min-weight"
                                         type="number"
                                         step="0.1"
                                         value={formData.minWeight}
                                         onChange={e => setFormData({ ...formData, minWeight: e.target.value })}
-                                        className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border"
+                                        className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm p-2 border"
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="rule-max-weight" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.maxWeight', 'Max Weight (kg)')}</label>
+                                    <label htmlFor="rule-max-weight" className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">{t('couriers.maxWeight', 'Max Weight (kg)')}</label>
                                     <input
                                         id="rule-max-weight"
                                         type="number"
                                         step="0.1"
                                         value={formData.maxWeight}
                                         onChange={e => setFormData({ ...formData, maxWeight: e.target.value })}
-                                        className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border"
+                                        className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm p-2 border"
                                     />
                                 </div>
                             </div>
                         )}
 
                         <div>
-                            <label htmlFor="rule-delivery-type" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.delivery_modifier', 'Delivery Type Modifier')}</label>
+                            <label htmlFor="rule-delivery-type" className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">{t('couriers.delivery_modifier', 'Delivery Type Modifier')}</label>
                             <select
                                 id="rule-delivery-type"
                                 value={formData.deliveryType}
                                 onChange={e => setFormData({ ...formData, deliveryType: e.target.value })}
-                                className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
                             >
                                 <option value="">{t('couriers.deliveryAny', 'Any Delivery Type (Default)')}</option>
                                 <option value="0">{t('couriers.deliveryHome', 'Home Delivery Only')}</option>
@@ -266,6 +266,7 @@ export default function CourierPricingEngine({ courierId }) {
                                     id="rule-priority"
                                     type="number"
                                     required
+                                    min="0"
                                     value={formData.priority}
                                     onChange={e => setFormData({ ...formData, priority: e.target.value })}
                                     className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border font-mono"

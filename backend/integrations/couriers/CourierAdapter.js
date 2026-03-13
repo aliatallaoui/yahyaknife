@@ -62,6 +62,16 @@ class CourierAdapter {
     }
 
     /**
+     * Fetch current tracking status from the courier's platform.
+     * @param {string} trackingId
+     * @returns {Promise<{ status: string, rawData?: object }>}
+     */
+    // eslint-disable-next-line no-unused-vars
+    async getTrackingStatus(trackingId) {
+        throw new Error('CourierAdapter.getTrackingStatus() not implemented');
+    }
+
+    /**
      * Normalize an internal order/shipment object into this courier's API payload format.
      * @param {object} shipment  - Internal shipment document fields
      * @returns {object}  - Courier-specific payload

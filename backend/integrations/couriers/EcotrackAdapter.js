@@ -92,6 +92,19 @@ class EcotrackAdapter extends CourierAdapter {
         const response = await ecotrackRequest('GET', `/api/v1/label/${trackingId}`);
         return response?.url ?? `https://api.ecotrack.dz/v1/print/label/${trackingId}`;
     }
+
+    /**
+     * Fetch current tracking status from ECOTRACK.
+     * @param {string} trackingId
+     * @returns {{ status: string, rawData: object }}
+     */
+    async getTrackingStatus(trackingId) {
+        const response = await ecotrackRequest('GET', `/api/v1/tracking/${trackingId}`);
+        return {
+            status: response?.status || response?.current_status || null,
+            rawData: response,
+        };
+    }
 }
 
 module.exports = new EcotrackAdapter(); // Singleton — stateless, safe to share

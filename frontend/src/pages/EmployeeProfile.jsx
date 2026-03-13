@@ -269,7 +269,7 @@ export default function EmployeeProfile() {
                                 <span className="text-sm font-bold text-gray-400 dark:text-gray-500"> / {Math.floor(totalRequiredMin / 60)}{t('hr.lblHours', 'h')}</span>
                             </div>
                         </div>
-                        <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden flex">
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 h-2.5 rounded-full overflow-hidden flex">
                             <div className="bg-blue-600 h-full rounded-full transition-all" style={{ width: `${totalRequiredMin > 0 ? Math.min(100, (totalWorkedMin / totalRequiredMin) * 100) : 0}%` }}></div>
                         </div>
                         <div className="mt-2 text-xs font-bold text-rose-500 ltr:text-right rtl:text-left">
@@ -278,7 +278,7 @@ export default function EmployeeProfile() {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex flex-wrap bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm shrink-0 w-full xl:w-auto overflow-x-auto gap-1">
+                    <div className="flex flex-wrap bg-white dark:bg-gray-800 p-1.5 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm shrink-0 w-full xl:w-auto overflow-x-auto gap-1">
                         <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Clock} label={t('hr.tabTimesheets')} count={attendance.length} />
                         <TabButton active={activeTab === 'payroll'} onClick={() => setActiveTab('payroll')} icon={FileText} label={t('hr.tabPayrollHistory')} count={payrolls.length} />
                         <TabButton active={activeTab === 'leaves'} onClick={() => setActiveTab('leaves')} icon={Calendar} label={t('hr.tabLeaveHistory')} count={leaves.length} />
@@ -304,36 +304,36 @@ export default function EmployeeProfile() {
                                 <tbody>
                                     {attendance.slice(0, 31).map(att => (
                                         <tr key={att._id}>
-                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{fmtMediumDate(att.date)}</td>
-                                            <td className="p-4 text-gray-500">
+                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 dark:text-white font-bold">{fmtMediumDate(att.date)}</td>
+                                            <td className="p-4 text-gray-500 dark:text-gray-400">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.morningIn ? "bg-blue-50 text-blue-600" : "text-gray-300")}>{formatHHMM(att.morningIn)}</span>
-                                                    <span className="text-gray-300 inline-block ltr:rotate-0 rtl:rotate-180">→</span>
-                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.morningOut ? "bg-blue-50 text-blue-600" : "text-gray-300")}>{formatHHMM(att.morningOut)}</span>
+                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.morningIn ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "text-gray-300 dark:text-gray-600")}>{formatHHMM(att.morningIn)}</span>
+                                                    <span className="text-gray-300 dark:text-gray-600 inline-block ltr:rotate-0 rtl:rotate-180">→</span>
+                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.morningOut ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "text-gray-300 dark:text-gray-600")}>{formatHHMM(att.morningOut)}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-gray-500">
+                                            <td className="p-4 text-gray-500 dark:text-gray-400">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.eveningIn ? "bg-indigo-50 text-indigo-600" : "text-gray-300")}>{formatHHMM(att.eveningIn)}</span>
-                                                    <span className="text-gray-300 inline-block ltr:rotate-0 rtl:rotate-180">→</span>
-                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.eveningOut ? "bg-indigo-50 text-indigo-600" : "text-gray-300")}>{formatHHMM(att.eveningOut)}</span>
+                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.eveningIn ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" : "text-gray-300 dark:text-gray-600")}>{formatHHMM(att.eveningIn)}</span>
+                                                    <span className="text-gray-300 dark:text-gray-600 inline-block ltr:rotate-0 rtl:rotate-180">→</span>
+                                                    <span className={clsx("w-14 text-center px-1.5 py-0.5 rounded text-xs", att.eveningOut ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" : "text-gray-300 dark:text-gray-600")}>{formatHHMM(att.eveningOut)}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 font-bold text-gray-900">{formatHours(att.workedMinutes || 0)} <span className="text-[10px] text-gray-400 font-normal">/ {formatHours(att.requiredMinutes || 0)}</span></td>
+                                            <td className="p-4 font-bold text-gray-900 dark:text-white">{formatHours(att.workedMinutes || 0)} <span className="text-[10px] text-gray-400 dark:text-gray-500 font-normal">/ {formatHours(att.requiredMinutes || 0)}</span></td>
                                             <td className="p-4">
                                                 <div className="flex flex-col gap-1 text-xs">
-                                                    {att.lateMinutes > 0 && <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded w-fit">{att.lateMinutes}{t('hr.lblMinutes', 'm')} {t('hr.lblLate')}</span>}
-                                                    {att.missingMinutes > 0 && <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded w-fit">{formatHours(att.missingMinutes)} {t('hr.lblMiss')}</span>}
-                                                    {!att.lateMinutes && !att.missingMinutes && <span className="text-gray-300">-</span>}
+                                                    {att.lateMinutes > 0 && <span className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded w-fit">{att.lateMinutes}{t('hr.lblMinutes', 'm')} {t('hr.lblLate')}</span>}
+                                                    {att.missingMinutes > 0 && <span className="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded w-fit">{formatHours(att.missingMinutes)} {t('hr.lblMiss')}</span>}
+                                                    {!att.lateMinutes && !att.missingMinutes && <span className="text-gray-300 dark:text-gray-600">-</span>}
                                                 </div>
                                             </td>
                                             <td className="p-4 text-purple-600 font-bold">{att.overtimeMinutes > 0 ? <span dir="ltr">{`+${formatHours(att.overtimeMinutes)}`}</span> : '-'}</td>
                                             <td className="p-4 ltr:pr-6 rtl:pl-6 ltr:text-right rtl:text-left">
                                                 <span className={clsx("px-2.5 py-1 rounded text-xs font-bold",
-                                                    att.status === 'Present' || att.status === 'Completed' ? "bg-emerald-50 text-emerald-600" :
-                                                        att.status === 'Absent' ? "bg-rose-50 text-rose-600" :
-                                                            att.status === 'Late' || att.status === 'Incomplete' ? "bg-amber-50 text-amber-600" :
-                                                                "bg-gray-100 text-gray-600"
+                                                    att.status === 'Present' || att.status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" :
+                                                        att.status === 'Absent' ? "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" :
+                                                            att.status === 'Late' || att.status === 'Incomplete' ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" :
+                                                                "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                                                 )}>
                                                     {att.status ? (att.status === 'Present' ? t('hr.statusPresent') : att.status === 'Completed' ? t('hr.statusCompleted') : att.status === 'Late' ? t('hr.statusLate') : att.status === 'Incomplete' ? t('hr.statusIncomplete') : att.status === 'Absent' ? t('hr.statusAbsent') : att.status === 'Completed with Recovery' ? t('hr.statusCompletedRecovery') : att.status === 'Overtime' ? t('hr.overtime') : att.status === 'Not Marked' ? t('hr.notMarked') : att.status) : t('hr.notMarked')}
                                                 </span>
@@ -341,7 +341,7 @@ export default function EmployeeProfile() {
                                         </tr>
                                     ))}
                                     {attendance.length === 0 && (
-                                        <tr><td colSpan="7" className="p-10 text-center text-gray-500 font-medium">{t('hr.noAttendanceRecords')}</td></tr>
+                                        <tr><td colSpan="7" className="p-10 text-center text-gray-500 dark:text-gray-400 font-medium">{t('hr.noAttendanceRecords')}</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -364,20 +364,20 @@ export default function EmployeeProfile() {
                                 <tbody>
                                     {payrolls.map(pay => (
                                         <tr key={pay._id}>
-                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{fmtMonthYear(parseMMYYYY(pay.period))}</td>
-                                            <td className="p-4 text-gray-500">{pay.baseSalary?.toLocaleString()} {t('hr.dzdCurrency')}</td>
+                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 dark:text-white font-bold">{fmtMonthYear(parseMMYYYY(pay.period))}</td>
+                                            <td className="p-4 text-gray-500 dark:text-gray-400">{pay.baseSalary?.toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 text-emerald-600">+{(pay.overtimeAdditions || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 text-rose-600">-{(pay.missingTimeDeductions + pay.absenceDeductions || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 font-black text-blue-600 text-lg">{pay.finalPayableSalary?.toLocaleString()} {t('hr.dzdCurrency')}</td>
                                             <td className="p-4 ltr:pr-6 rtl:pl-6 ltr:text-right rtl:text-left">
-                                                <span className={clsx("px-2.5 py-1 rounded text-xs font-bold", pay.status === 'Paid' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
+                                                <span className={clsx("px-2.5 py-1 rounded text-xs font-bold", pay.status === 'Paid' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400")}>
                                                     {pay.status === 'Paid' ? t('hr.statusPaid') : (pay.status === 'Pending' ? t('hr.statusPending') : pay.status)}
                                                 </span>
                                             </td>
                                         </tr>
                                     ))}
                                     {payrolls.length === 0 && (
-                                        <tr><td colSpan="6" className="p-10 text-center text-gray-500 font-medium">{t('hr.noPayrollHistory')}</td></tr>
+                                        <tr><td colSpan="6" className="p-10 text-center text-gray-500 dark:text-gray-400 font-medium">{t('hr.noPayrollHistory')}</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -399,25 +399,25 @@ export default function EmployeeProfile() {
                                 <tbody>
                                     {leaves.map(l => (
                                         <tr key={l._id}>
-                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 font-bold">{fmtMediumDate(l.requestDate)}</td>
-                                            <td className="p-4 text-gray-700">
-                                                <span className="bg-gray-100 px-2.5 py-1 rounded-md text-xs font-bold">{l.type}</span>
+                                            <td className="p-4 ltr:pl-6 rtl:pr-6 text-gray-900 dark:text-white font-bold">{fmtMediumDate(l.requestDate)}</td>
+                                            <td className="p-4 text-gray-700 dark:text-gray-300">
+                                                <span className="bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-md text-xs font-bold">{l.type}</span>
                                             </td>
-                                            <td className="p-4 text-gray-500">
+                                            <td className="p-4 text-gray-500 dark:text-gray-400">
                                                 <div className="flex items-center gap-1">
-                                                    {fmtShortDate(l.startDate)} <span className="inline-block ltr:rotate-0 rtl:rotate-180">➔</span> {fmtShortDate(l.endDate)} <span className="text-gray-400 font-normal ml-2">({diffDays(l.endDate, l.startDate) + 1} {t('hr.daysLabel')})</span>
+                                                    {fmtShortDate(l.startDate)} <span className="inline-block ltr:rotate-0 rtl:rotate-180">➔</span> {fmtShortDate(l.endDate)} <span className="text-gray-400 dark:text-gray-500 font-normal ml-2">({diffDays(l.endDate, l.startDate) + 1} {t('hr.daysLabel')})</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-gray-500 max-w-xs truncate">{l.reason}</td>
+                                            <td className="p-4 text-gray-500 dark:text-gray-400 max-w-xs truncate">{l.reason}</td>
                                             <td className="p-4 ltr:pr-6 rtl:pl-6 ltr:text-right rtl:text-left">
-                                                <span className={clsx("px-2.5 py-1 rounded text-xs font-bold", l.status === 'Approved' ? "bg-emerald-50 text-emerald-600" : l.status === 'Rejected' ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600")}>
+                                                <span className={clsx("px-2.5 py-1 rounded text-xs font-bold", l.status === 'Approved' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : l.status === 'Rejected' ? "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" : "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400")}>
                                                     {l.status === 'Approved' ? t('hr.statusApproved') : l.status === 'Rejected' ? t('hr.statusRejected') : l.status === 'Pending' ? t('hr.statusPending') : l.status}
                                                 </span>
                                             </td>
                                         </tr>
                                     ))}
                                     {leaves.length === 0 && (
-                                        <tr><td colSpan="5" className="p-10 text-center text-gray-500 font-medium">{t('hr.noLeaveRequests')}</td></tr>
+                                        <tr><td colSpan="5" className="p-10 text-center text-gray-500 dark:text-gray-400 font-medium">{t('hr.noLeaveRequests')}</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -441,12 +441,12 @@ function LayersIcon({ className }) {
 
 function ProfileRow({ icon: Icon, label, value, highlight }) {
     return (
-        <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-            <div className="flex items-center gap-2 text-gray-500">
+        <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-700/50 pb-2">
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                 <Icon className="w-4 h-4" />
                 <span className="text-sm font-semibold">{label}</span>
             </div>
-            <span className={clsx("text-sm font-bold text-right", highlight ? "text-emerald-600" : "text-gray-900")}>{value}</span>
+            <span className={clsx("text-sm font-bold text-right", highlight ? "text-emerald-600" : "text-gray-900 dark:text-white")}>{value}</span>
         </div>
     );
 }
@@ -454,12 +454,12 @@ function ProfileRow({ icon: Icon, label, value, highlight }) {
 function FinanceRow({ label, value, type, t }) {
     return (
         <div className="flex justify-between items-center text-sm">
-            <span className="font-semibold text-gray-500">{label}</span>
+            <span className="font-semibold text-gray-500 dark:text-gray-400">{label}</span>
             <span className={clsx("font-bold tabular-nums",
-                type === 'base' ? "text-gray-900" :
+                type === 'base' ? "text-gray-900 dark:text-white" :
                     type === 'addition' ? "text-emerald-600" : "text-rose-600"
             )}>
-                <span dir="ltr">{type === 'base' ? '' : type === 'addition' ? '+' : '-'} {value.toLocaleString()} <span className="text-xs text-gray-400 font-normal">{t('hr.dzdCurrency')}</span></span>
+                <span dir="ltr">{type === 'base' ? '' : type === 'addition' ? '+' : '-'} {value.toLocaleString()} <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">{t('hr.dzdCurrency')}</span></span>
             </span>
         </div>
     );
@@ -467,21 +467,21 @@ function FinanceRow({ label, value, type, t }) {
 
 function TimeBlock({ label, time }) {
     return (
-        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex flex-col items-center justify-center">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">{label}</span>
-            <span className={clsx("text-lg font-black tracking-tight", time !== '--:--' ? "text-blue-600" : "text-gray-300")}>{time}</span>
+        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center">
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 text-center">{label}</span>
+            <span className={clsx("text-lg font-black tracking-tight", time !== '--:--' ? "text-blue-600 dark:text-blue-400" : "text-gray-300 dark:text-gray-600")}>{time}</span>
         </div>
     );
 }
 
 function StatSquare({ label, value, icon: Icon, color }) {
     return (
-        <div className="border border-gray-100 rounded-2xl p-4 flex flex-col">
+        <div className="border border-gray-100 dark:border-gray-700 rounded-2xl p-4 flex flex-col bg-white dark:bg-gray-800">
             <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center mb-3", color)}>
                 <Icon className="w-4 h-4" />
             </div>
-            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{value}</span>
-            <span className="text-xs font-bold text-gray-400">{label}</span>
+            <span className="text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">{value}</span>
+            <span className="text-xs font-bold text-gray-400 dark:text-gray-500">{label}</span>
         </div>
     );
 }
@@ -492,13 +492,13 @@ function TabButton({ active, onClick, icon: Icon, label, count }) {
             onClick={onClick}
             className={clsx(
                 "flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 xl:flex-none whitespace-nowrap",
-                active ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                active ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
             )}
         >
             <Icon className="w-4 h-4" />
             {label}
             {count > 0 && (
-                <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', active ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500')}>{count}</span>
+                <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none', active ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400')}>{count}</span>
             )}
         </button>
     );

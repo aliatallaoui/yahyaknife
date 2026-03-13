@@ -36,7 +36,23 @@ exports.addPricingRule = async (req, res) => {
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
-        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority, courierId: id, tenant: req.user.tenant });
+
+        // Validate numeric fields
+        const priceNum = Number(price);
+        if (!Number.isFinite(priceNum) || priceNum < 0) {
+            return res.status(400).json({ message: 'Price must be a non-negative number' });
+        }
+        if (minWeight !== undefined && minWeight !== null && (!Number.isFinite(Number(minWeight)) || Number(minWeight) < 0)) {
+            return res.status(400).json({ message: 'minWeight must be a non-negative number' });
+        }
+        if (maxWeight !== undefined && maxWeight !== null && (!Number.isFinite(Number(maxWeight)) || Number(maxWeight) < 0)) {
+            return res.status(400).json({ message: 'maxWeight must be a non-negative number' });
+        }
+        if (deliveryType !== undefined && deliveryType !== null && ![0, 1].includes(Number(deliveryType))) {
+            return res.status(400).json({ message: 'deliveryType must be 0 (Home) or 1 (Office)' });
+        }
+
+        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price: priceNum, priority: Number(priority) || 0, courierId: id, tenant: req.user.tenant });
         
         res.status(201).json(newRule);
     } catch (error) {
@@ -55,11 +71,33 @@ exports.updatePricingRule = async (req, res) => {
         const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
-        const { courierId: _c, _id: _i, __v, ...safe } = req.body;
-        const { tenant: _t, ...safe2 } = safe;
+        const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
+
+        // Validate numeric fields if provided
+        if (price !== undefined) {
+            const priceNum = Number(price);
+            if (!Number.isFinite(priceNum) || priceNum < 0) {
+                return res.status(400).json({ message: 'Price must be a non-negative number' });
+            }
+        }
+        if (deliveryType !== undefined && deliveryType !== null && ![0, 1].includes(Number(deliveryType))) {
+            return res.status(400).json({ message: 'deliveryType must be 0 (Home) or 1 (Office)' });
+        }
+
+        const updateFields = {};
+        if (ruleType !== undefined) updateFields.ruleType = ruleType;
+        if (wilayaCode !== undefined) updateFields.wilayaCode = wilayaCode;
+        if (commune !== undefined) updateFields.commune = commune;
+        if (deliveryType !== undefined) updateFields.deliveryType = deliveryType;
+        if (productIds !== undefined) updateFields.productIds = productIds;
+        if (minWeight !== undefined) updateFields.minWeight = minWeight;
+        if (maxWeight !== undefined) updateFields.maxWeight = maxWeight;
+        if (price !== undefined) updateFields.price = Number(price);
+        if (priority !== undefined) updateFields.priority = Number(priority) || 0;
+
         const updatedRule = await CourierPricing.findOneAndUpdate(
             { _id: ruleId, courierId: id, tenant: req.user.tenant },
-            { $set: safe2 },
+            { $set: updateFields },
             { new: true, runValidators: true }
         );
 

@@ -126,18 +126,20 @@ exports.settleCourierCash = async (req, res) => {
     try {
         const { id } = req.params;
         if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
-        const { amountToSettle, notes } = req.body;
+        const amount = Number(req.body.amountToSettle);
+        const { notes } = req.body;
         const tenantId = req.user.tenant;
 
-        if (!amountToSettle || amountToSettle <= 0) {
+        if (!Number.isFinite(amount) || amount <= 0) {
             return res.status(400).json({ message: 'Settlement amount must be a positive number' });
         }
+        const amountToSettle = amount;
 
         const courier = await Courier.findOne({ _id: id, tenant: tenantId, deletedAt: null });
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         if (amountToSettle > courier.pendingRemittance) {
-            return res.status(400).json({ message: `Settlement amount (${amountToSettle}) exceeds pending remittance (${courier.pendingRemittance})` });
+            return res.status(400).json({ message: 'Settlement amount exceeds pending remittance' });
         }
 
         const previousPendingRemittance = courier.pendingRemittance;
@@ -356,12 +358,11 @@ exports.recalculateCourierKPIs = async (courierId) => {
 // Helper: Synchronize Courier Cash Liability upon Order Delivery / Status Reversal
 exports.syncCourierCash = async (courierId, amountDelta, tenantId) => {
     try {
-        if (!courierId || amountDelta === 0) return;
+        if (!courierId || !tenantId || amountDelta === 0) return;
 
         // Atomic increment to prevent lost updates from concurrent delivery events.
         // Also recalculate pendingRemittance atomically (mirrors pre-save hook logic).
-        const filter = { _id: courierId, deletedAt: null };
-        if (tenantId) filter.tenant = tenantId;
+        const filter = { _id: courierId, tenant: tenantId, deletedAt: null };
         const updated = await Courier.findOneAndUpdate(
             filter,
             [
@@ -445,21 +446,23 @@ exports.testCourierConnection = async (req, res) => {
         }
     } catch (error) {
         logger.error({ err: error, responseData: error.response?.data }, 'Test Connection Error');
-        
-        let errorMsg = error.message;
-        if (error.response?.data) {
-            if (error.response.data.error && typeof error.response.data.error === 'object') {
-                errorMsg = error.response.data.error.message || JSON.stringify(error.response.data.error);
-            } else if (error.response.data.message) {
-                errorMsg = error.response.data.message;
-            } else {
-                errorMsg = JSON.stringify(error.response.data);
-            }
+
+        // Map HTTP status codes to user-friendly messages without leaking internal details
+        const status = error.response?.status;
+        let errorMsg = 'Connection failed. Please verify your API credentials and try again.';
+        if (status === 401 || status === 403) {
+            errorMsg = 'Authentication failed. Please check your API token/credentials.';
+        } else if (status === 404) {
+            errorMsg = 'API endpoint not found. Please verify the API URL.';
+        } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            errorMsg = 'Could not reach the API server. Please check the URL.';
+        } else if (error.code === 'ECONNABORTED') {
+            errorMsg = 'Connection timed out. The API server may be unreachable.';
         }
-        
-        res.status(400).json({ 
-            success: false, 
-            message: errorMsg || 'Connection failed' 
+
+        res.status(400).json({
+            success: false,
+            message: errorMsg
         });
     }
 };

@@ -1,7 +1,10 @@
 const logger = require('../shared/logger');
+const mongoose = require('mongoose');
 const CourierCoverage = require('../models/CourierCoverage');
 const CourierPricing = require('../models/CourierPricing');
 const Courier = require('../models/Courier');
+
+const validId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // @desc    Get covered wilayas for a specific courier or all
 // @route   GET /api/couriers/engine/coverage
@@ -11,7 +14,10 @@ const getCourierCoverage = async (req, res) => {
         const { courierId, wilayaCode, deliveryType } = req.query; // deliveryType: 0 (home), 1 (office)
 
         let query = { tenant: req.user.tenant };
-        if (courierId) query.courierId = courierId;
+        if (courierId) {
+            if (!validId(courierId)) return res.status(400).json({ message: 'Invalid courier ID' });
+            query.courierId = courierId;
+        }
         if (wilayaCode) query.wilayaCode = wilayaCode;
         if (deliveryType !== undefined) {
             if (Number(deliveryType) === 0) {
@@ -43,9 +49,13 @@ const calculateCourierPrice = async (req, res) => {
         if (!courierId || !wilayaCode) {
             return res.status(400).json({ message: 'courierId and wilayaCode are required' });
         }
+        if (!validId(courierId)) return res.status(400).json({ message: 'Invalid courier ID' });
 
         const typeNum = deliveryType !== undefined ? Number(deliveryType) : 0;
         const weight = totalWeight !== undefined ? Number(totalWeight) : 0;
+        if (!Number.isFinite(typeNum) || !Number.isFinite(weight) || weight < 0) {
+            return res.status(400).json({ message: 'Invalid deliveryType or totalWeight' });
+        }
         const pIds = Array.isArray(productIds) ? productIds : [];
 
         const result = await calculateDeliveryFee({
