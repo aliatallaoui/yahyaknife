@@ -12,4 +12,6 @@ const orderNoteSchema = new mongoose.Schema({
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
+orderNoteSchema.index({ tenant: 1, orderId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('OrderNote', orderNoteSchema);

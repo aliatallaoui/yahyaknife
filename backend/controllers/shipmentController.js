@@ -53,9 +53,9 @@ exports.getAllShipments = async (req, res) => {
                 tenant: tenantId,
                 status: { $in: ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Refused', 'Returned'] },
                 deletedAt: null
-            }).populate('customer', 'name phone').sort({ updatedAt: -1 }).lean(),
+            }).populate('customer', 'name phone').sort({ updatedAt: -1 }).limit(2000).lean(),
 
-            Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).lean()
+            Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).limit(2000).lean()
         ]);
 
         const mappedOrders = dispatchedOrders.map(o => ({
@@ -141,7 +141,7 @@ exports.generateManifest = async (req, res) => {
         
         // Fetch original Orders which ALWAYS contain the product and customer details
         // even if they haven't been dispatched to a courier yet.
-        const orders = await Order.find({ _id: { $in: idArray }, tenant: tenantId, deletedAt: null }).populate('customer').lean();
+        const orders = await Order.find({ _id: { $in: idArray }, tenant: tenantId, deletedAt: null }).populate('customer', 'name phone email').lean();
         
         if (orders.length === 0) return res.status(404).send('Aucune commande trouvée.');
 

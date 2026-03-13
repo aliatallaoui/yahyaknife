@@ -65,16 +65,16 @@ export default function EmployeeProfile() {
 
     if (loading) return (
         <div className="flex justify-center items-center h-screen">
-            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin"></div>
+            <div className="w-8 h-8 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 animate-spin"></div>
         </div>
     );
 
     if (!employee) return (
-        <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-gray-500">
-            <User className="w-16 h-16 mb-4 text-gray-300" />
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+            <User className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
             {fetchError
-                ? <><AlertCircle className="w-10 h-10 mb-2 text-red-400" /><h2 className="text-xl font-bold text-red-600">{fetchError}</h2></>
-                : <h2 className="text-xl font-bold">{t('hr.empNotFound', 'Employee not found')}</h2>
+                ? <><AlertCircle className="w-10 h-10 mb-2 text-red-400" /><h2 className="text-xl font-bold text-red-600 dark:text-red-400">{fetchError}</h2></>
+                : <h2 className="text-xl font-bold dark:text-gray-300">{t('hr.empNotFound', 'Employee not found')}</h2>
             }
             <button onClick={() => navigate('/hr')} className="mt-4 text-blue-600 hover:underline">{t('hr.btnReturnDirectory', 'Return to Directory')}</button>
         </div>
@@ -144,14 +144,14 @@ export default function EmployeeProfile() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 
                 {/* 1. Identity Card */}
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-8 flex flex-col items-center relative overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 sm:p-8 flex flex-col items-center relative overflow-hidden">
                     <div className="absolute top-0 w-full h-32 bg-gradient-to-br from-blue-600 to-blue-400 opacity-10"></div>
 
-                    <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-4xl font-extrabold text-white mb-4 shadow-xl shadow-blue-600/20 z-10 border-4 border-white">
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-4xl font-extrabold text-white mb-4 shadow-xl shadow-blue-600/20 z-10 border-4 border-white dark:border-gray-800">
                         {employee.name?.charAt(0)}
                     </div>
 
-                    <h2 className="text-2xl font-extrabold text-gray-900 text-center z-10">{employee.name}</h2>
+                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white text-center z-10">{employee.name}</h2>
                     <p className="text-blue-600 font-bold mb-6 text-sm flex items-center gap-1.5 z-10">
                         <Briefcase className="w-4 h-4" /> {employee.role}
                     </p>
@@ -166,18 +166,18 @@ export default function EmployeeProfile() {
                 </div>
 
                 {/* 2. Salary Summary */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 lg:p-8 flex flex-col justify-between">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 lg:p-8 flex flex-col justify-between">
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-500" /> {t('hr.livePayrollProjection')}</h3>
-                            <span className="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full">{fmtMonthYear()}</span>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-500" /> {t('hr.livePayrollProjection')}</h3>
+                            <span className="text-xs font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full">{fmtMonthYear()}</span>
                         </div>
 
                         <div className="mb-8">
-                            <p className="text-sm font-semibold text-gray-500 mb-1">{t('hr.estimatedNetPayout')}</p>
+                            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">{t('hr.estimatedNetPayout')}</p>
                             <div className="flex items-end gap-2">
-                                <span className="text-5xl font-black text-gray-900 tracking-tight">{estGrossSalary.toLocaleString()}</span>
-                                <span className="text-lg font-bold text-gray-400 mb-1">{t('hr.dzdCurrency')}</span>
+                                <span className="text-5xl font-black text-gray-900 dark:text-white tracking-tight">{estGrossSalary.toLocaleString()}</span>
+                                <span className="text-lg font-bold text-gray-400 dark:text-gray-500 mb-1">{t('hr.dzdCurrency')}</span>
                             </div>
                         </div>
 
@@ -189,15 +189,15 @@ export default function EmployeeProfile() {
                         </div>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-gray-100">
-                        <div className="flex justify-between items-center bg-gray-50 rounded-2xl p-4">
+                    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                        <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4">
                             <div>
-                                <p className="text-xs font-bold text-gray-400 mb-0.5">{t('hr.alreadyPaidThisMonth')}</p>
+                                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-0.5">{t('hr.alreadyPaidThisMonth')}</p>
                                 <p className="text-lg font-bold text-emerald-600">{paidThisMonth.toLocaleString()} {t('hr.dzdCurrency')}</p>
                             </div>
                             <div className="ltr:text-right rtl:text-left">
-                                <p className="text-xs font-bold text-gray-400 mb-0.5">{t('hr.remainingToPay')}</p>
-                                <p className="text-lg font-bold text-gray-900">{unpaidEst.toLocaleString()} {t('hr.dzdCurrency')}</p>
+                                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-0.5">{t('hr.remainingToPay')}</p>
+                                <p className="text-lg font-bold text-gray-900 dark:text-white">{unpaidEst.toLocaleString()} {t('hr.dzdCurrency')}</p>
                             </div>
                         </div>
                     </div>
@@ -206,8 +206,8 @@ export default function EmployeeProfile() {
                 {/* 3 & 5. Today Status & Month Quick Stats */}
                 <div className="flex flex-col gap-6">
                     {/* Today Status Card */}
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex-1">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">{t('hr.todaysPulse')}</h3>
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 flex-1">
+                        <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">{t('hr.todaysPulse')}</h3>
 
                         <div className="flex items-center gap-4 mb-6">
                             <div className={clsx(

@@ -270,7 +270,7 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
   // Loading / Error states
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
@@ -278,11 +278,11 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
 
   if (error || !pageData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <div className="text-center">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-700">Page Not Found</h1>
-          <p className="text-gray-500 mt-1">{error || 'This page is no longer available'}</p>
+          <Package className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-gray-700 dark:text-gray-300">Page Not Found</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{error || 'This page is no longer available'}</p>
         </div>
       </div>
     );
@@ -294,25 +294,25 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
     return (
       <div className={clsx(
         'min-h-screen flex items-center justify-center p-4',
-        isArtisan ? 'storefront-artisan-bg' : 'bg-gradient-to-br from-green-50 to-emerald-50'
+        isArtisan ? 'storefront-artisan-bg' : 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-900 dark:to-gray-800'
       )}>
         <div className={clsx(
           'rounded-3xl shadow-xl p-8 max-w-md w-full text-center',
-          isArtisan ? 'bg-[#2a1f0e] border-2 border-[#c9a84c]/30' : 'bg-white'
+          isArtisan ? 'bg-[#2a1f0e] border-2 border-[#c9a84c]/30' : 'bg-white dark:bg-gray-800'
         )}>
           <div className={clsx(
             'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5',
-            isArtisan ? 'bg-[#c9a84c]/20' : 'bg-green-100'
+            isArtisan ? 'bg-[#c9a84c]/20' : 'bg-green-100 dark:bg-green-900/30'
           )}>
             <CheckCircle className={clsx('w-10 h-10', isArtisan ? 'text-[#c9a84c]' : 'text-green-600')} />
           </div>
-          <h2 className={clsx('text-2xl font-bold mb-2', isArtisan ? 'text-[#e8dcc8]' : 'text-gray-900')}>
+          <h2 className={clsx('text-2xl font-bold mb-2', isArtisan ? 'text-[#e8dcc8]' : 'text-gray-900 dark:text-white')}>
             {pageData.page?.formConfig?.successMessage || 'Order Placed Successfully!'}
           </h2>
-          <p className={clsx('mb-4', isArtisan ? 'text-[#c9a84c]' : 'text-gray-500')}>
-            Order ID: <span className={clsx('font-mono font-bold', isArtisan ? 'text-[#d4af37]' : 'text-gray-800')}>{orderSuccess.orderId}</span>
+          <p className={clsx('mb-4', isArtisan ? 'text-[#c9a84c]' : 'text-gray-500 dark:text-gray-400')}>
+            Order ID: <span className={clsx('font-mono font-bold', isArtisan ? 'text-[#d4af37]' : 'text-gray-800 dark:text-gray-200')}>{orderSuccess.orderId}</span>
           </p>
-          <p className={clsx('text-sm', isArtisan ? 'text-[#a89070]' : 'text-gray-500')}>We will contact you shortly to confirm your order.</p>
+          <p className={clsx('text-sm', isArtisan ? 'text-[#a89070]' : 'text-gray-500 dark:text-gray-400')}>We will contact you shortly to confirm your order.</p>
         </div>
       </div>
     );
@@ -642,7 +642,7 @@ function StorefrontBlock({
         <div className="px-4 md:px-8 py-8 max-w-3xl mx-auto">
           {images.length > 0 ? (
             <>
-              <div className="rounded-2xl overflow-hidden bg-gray-50 mb-3">
+              <div className="rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-700/50 mb-3">
                 <img src={images[galleryIndex] || images[0]} alt={product.name} className="w-full aspect-square object-contain" />
               </div>
               {images.length > 1 && (
@@ -650,7 +650,7 @@ function StorefrontBlock({
                   {images.map((img, i) => (
                     <button key={i} onClick={() => setGalleryIndex(i)}
                       className={clsx('w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-colors',
-                        i === galleryIndex ? 'border-blue-500' : 'border-gray-200 hover:border-gray-400'
+                        i === galleryIndex ? 'border-blue-500' : 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                       )}>
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>

@@ -20,4 +20,6 @@ orderItemSchema.pre('save', function (next) {
     next();
 });
 
+orderItemSchema.index({ tenant: 1, orderId: 1 });
+
 module.exports = mongoose.model('OrderItem', orderItemSchema);

@@ -29,7 +29,7 @@ exports.createSupplier = async (req, res) => {
         await sup.save();
         res.status(201).json(created(sup));
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
     }
 };
 
@@ -46,7 +46,7 @@ exports.updateSupplier = async (req, res) => {
         if (!sup) return res.status(404).json({ error: 'Supplier not found' });
         res.json(ok(sup));
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
     }
 };
 
@@ -133,7 +133,7 @@ exports.createPurchaseOrder = async (req, res) => {
 
         res.status(201).json(created(po));
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
     }
 };
 
@@ -237,6 +237,6 @@ exports.receivePurchaseOrder = async (req, res) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
     }
 };

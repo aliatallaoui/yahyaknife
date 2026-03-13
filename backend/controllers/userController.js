@@ -26,6 +26,7 @@ const getUsers = async (req, res) => {
         const users = await User.find({ tenant: req.user.tenant })
             .select('name email role isActive preferences createdAt permissionOverrides phone jobTitle tenant')
             .populate('role')
+            .limit(500)
             .lean();
         res.json(users);
     } catch (error) {

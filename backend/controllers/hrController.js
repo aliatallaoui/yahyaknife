@@ -138,7 +138,8 @@ exports.createEmployee = async (req, res) => {
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'CREATE_EMPLOYEE', module: 'hr', metadata: { employeeId: saved._id, name } });
         res.status(201).json(created(saved));
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        logger.error({ err }, 'Error creating employee');
+        res.status(400).json({ error: 'Invalid employee data' });
     }
 };
 
@@ -160,7 +161,8 @@ exports.updateEmployee = async (req, res) => {
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id } });
         res.json(ok(updated));
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        logger.error({ err }, 'Error updating employee');
+        res.status(400).json({ error: 'Invalid employee data' });
     }
 };
 
@@ -212,7 +214,8 @@ exports.createLeaveRequest = async (req, res) => {
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'CREATE_LEAVE_REQUEST', module: 'hr', metadata: { leaveId: saved._id, employeeId, type, startDate, endDate } });
         res.status(201).json(created(saved));
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        logger.error({ err }, 'Error creating leave request');
+        res.status(400).json({ error: 'Invalid leave request data' });
     }
 };
 
@@ -253,6 +256,7 @@ exports.updateLeaveRequestStatus = async (req, res) => {
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_LEAVE_STATUS', module: 'hr', metadata: { leaveId: req.params.id, employeeId: request.employeeId, newStatus: status } });
         res.json(ok(request));
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        logger.error({ err }, 'Error updating leave request status');
+        res.status(400).json({ error: 'Failed to update leave request' });
     }
 };

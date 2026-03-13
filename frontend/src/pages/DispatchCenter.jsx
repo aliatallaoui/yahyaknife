@@ -142,16 +142,16 @@ export default function DispatchCenter() {
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case 'Created in Courier': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'Validated': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-            case 'In Transit': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'Out for Delivery': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-            case 'Delivered': return 'bg-green-100 text-green-800 border-green-200';
+            case 'Created in Courier': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800';
+            case 'Validated': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800';
+            case 'In Transit': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+            case 'Out for Delivery': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800';
+            case 'Delivered': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
             case 'Return Initiated':
-            case 'Failed Attempt': return 'bg-orange-100 text-orange-800 border-orange-200';
+            case 'Failed Attempt': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800';
             case 'Returned':
-            case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800';
+            default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600';
         }
     };
 
@@ -189,7 +189,7 @@ export default function DispatchCenter() {
                 actions={
                     <div className="flex flex-wrap gap-3">
                         <RequireAction permission="shipments.export">
-                            <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-95">
+                            <button onClick={handleExport} className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-bold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95">
                                 <FileText className="w-4 h-4 mr-2" />
                                 {t('dispatch.exportList', 'Export List')}
                             </button>
@@ -209,55 +209,55 @@ export default function DispatchCenter() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.total', 'Total Shipments')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{shipments.length}</h3>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.total', 'Total Shipments')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter truncate">{shipments.length}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
-                        <Package className="w-8 h-8 text-gray-600" />
+                    <div className="h-16 w-16 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center justify-center border border-gray-100 dark:border-gray-600 shrink-0">
+                        <Package className="w-8 h-8 text-gray-600 dark:text-gray-400" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.active', 'Active & In Transit')}</p>
-                        <h3 className="text-3xl font-black text-blue-700 tracking-tighter truncate">{totalActive}</h3>
+                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.active', 'Active & In Transit')}</p>
+                        <h3 className="text-3xl font-black text-blue-700 dark:text-blue-300 tracking-tighter truncate">{totalActive}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
-                        <Truck className="w-8 h-8 text-blue-600" />
+                    <div className="h-16 w-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center border border-blue-100 dark:border-blue-800 shrink-0">
+                        <Truck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-green-600 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.delivered', 'Successfully Delivered')}</p>
-                        <h3 className="text-3xl font-black text-green-700 tracking-tighter truncate">{totalDelivered}</h3>
+                        <p className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.delivered', 'Successfully Delivered')}</p>
+                        <h3 className="text-3xl font-black text-green-700 dark:text-green-300 tracking-tighter truncate">{totalDelivered}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-green-50 rounded-2xl flex items-center justify-center border border-green-100 shrink-0">
-                        <CheckCircle className="w-8 h-8 text-green-600" />
+                    <div className="h-16 w-16 bg-green-50 dark:bg-green-900/20 rounded-2xl flex items-center justify-center border border-green-100 dark:border-green-800 shrink-0">
+                        <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-orange-600 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.returns', 'Returns & Exceptions')}</p>
-                        <h3 className="text-3xl font-black text-orange-700 tracking-tighter truncate">{totalReturns}</h3>
+                        <p className="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1 truncate">{t('dispatch.kpi.returns', 'Returns & Exceptions')}</p>
+                        <h3 className="text-3xl font-black text-orange-700 dark:text-orange-300 tracking-tighter truncate">{totalReturns}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-orange-50 rounded-2xl flex items-center justify-center border border-orange-100 shrink-0">
-                        <AlertTriangle className="w-8 h-8 text-orange-600" />
+                    <div className="h-16 w-16 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center border border-orange-100 dark:border-orange-800 shrink-0">
+                        <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row gap-4 justify-between items-center">
                 <div className="w-full md:w-96 relative">
-                    <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                     <input
                         ref={searchRef}
                         type="text"
                         placeholder={t('dispatch.search', 'Search tracking ID, customer, order... (Press /)')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                 </div>
                 <div className="w-full md:w-auto flex gap-2 overflow-x-auto pb-2 md:pb-0 custom-scrollbar items-center">
@@ -267,7 +267,7 @@ export default function DispatchCenter() {
                             onClick={() => setStatusFilter(status)}
                             className={clsx(
                                 "whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                statusFilter === status ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                statusFilter === status ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900" : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             )}
                         >
                             {getShipmentStatusLabel(status, t)}
@@ -289,56 +289,56 @@ export default function DispatchCenter() {
             <div className="cf-table-wrap">
                 <div className="overflow-x-auto">
                     <table className="cf-table min-w-full">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.tracking', 'Tracking / Ref')}</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.recipient', 'Recipient')}</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.destination', 'Destination')}</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.status', 'Courier Status')}</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.cod', 'COD Amount')}</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dispatch.table.actions', 'Actions')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.tracking', 'Tracking / Ref')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.recipient', 'Recipient')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.destination', 'Destination')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.status', 'Courier Status')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.cod', 'COD Amount')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.actions', 'Actions')}</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {loading ? (
                                 <tr><td colSpan="6" className="p-0">
                                     <TableSkeleton rows={6} cols={6} showHeader={false} />
                                 </td></tr>
                             ) : filteredShipments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                        <Archive className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                                        <p className="text-lg font-medium text-gray-900">{t('dispatch.empty.title', 'No shipments found')}</p>
+                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                        <Archive className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                                        <p className="text-lg font-medium text-gray-900 dark:text-white">{t('dispatch.empty.title', 'No shipments found')}</p>
                                         <p className="text-sm mt-1">{t('dispatch.empty.subtitle', 'Adjust filters or create a new dispatch order.')}</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredShipments.map((shipment) => (
-                                    <tr key={shipment._id} className="hover:bg-gray-50 transition-colors">
+                                    <tr key={shipment._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900">{shipment.externalTrackingId || t('dispatch.pendingTrackingId', 'Pending...')}</span>
-                                                <span className="text-xs text-gray-500 font-mono mt-0.5">{shipment.internalOrderId}</span>
+                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{shipment.externalTrackingId || t('dispatch.pendingTrackingId', 'Pending...')}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{shipment.internalOrderId}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{shipment.customerName}</div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{shipment.customerName}</div>
                                             <PhoneChip phone={shipment.phone1} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{shipment.wilayaName}</div>
-                                            <div className="text-xs text-gray-500">{shipment.commune}</div>
+                                            <div className="text-sm text-gray-900 dark:text-white">{shipment.wilayaName}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{shipment.commune}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={clsx("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border", getStatusStyle(shipment.shipmentStatus))}>
                                                 {getStatusIcon(shipment.shipmentStatus)}
                                                 {getShipmentStatusLabel(shipment.shipmentStatus, t)}
                                             </span>
-                                            <div className="text-[10px] text-gray-400 mt-1">{fmtShortDateTime(shipment.createdAt)}</div>
+                                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{fmtShortDateTime(shipment.createdAt)}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-bold text-gray-900">{(shipment.codAmount || 0).toLocaleString()} {t('common.dzd', 'DZD')}</div>
-                                            <div className="text-[10px] text-gray-500 border border-gray-200 bg-gray-50 rounded px-1.5 py-0.5 inline-block mt-1">
+                                            <div className="text-sm font-bold text-gray-900 dark:text-white">{(shipment.codAmount || 0).toLocaleString()} {t('common.dzd', 'DZD')}</div>
+                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 rounded px-1.5 py-0.5 inline-block mt-1">
                                                 {shipment.paymentStatus?.replace(/_/g, ' ') || '—'}
                                             </div>
                                         </td>
@@ -347,12 +347,12 @@ export default function DispatchCenter() {
                                             {['Created in Courier', 'Draft'].includes(shipment.shipmentStatus) && (
                                                 <>
                                                     <RequireAction permission="shipments.create">
-                                                        <button onClick={() => handleValidate(shipment._id)} title="Validate & Dispatch" className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-1.5 rounded-lg transition-colors">
+                                                        <button onClick={() => handleValidate(shipment._id)} title="Validate & Dispatch" className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-200 dark:bg-indigo-900/20 p-1.5 rounded-lg transition-colors">
                                                             <CheckSquare className="w-4 h-4" />
                                                         </button>
                                                     </RequireAction>
                                                     <RequireAction permission="shipments.cancel">
-                                                        <button onClick={() => handleDelete(shipment._id)} title="Cancel/Delete" className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-lg transition-colors">
+                                                        <button onClick={() => handleDelete(shipment._id)} title="Cancel/Delete" className="text-red-600 hover:text-red-900 bg-red-50 dark:text-red-400 dark:hover:text-red-200 dark:bg-red-900/20 p-1.5 rounded-lg transition-colors">
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </RequireAction>
@@ -362,13 +362,13 @@ export default function DispatchCenter() {
                                             {/* Post-validation Actions */}
                                             {!['Created in Courier', 'Draft', 'Cancelled'].includes(shipment.shipmentStatus) && (
                                                 <RequireAction permission="shipments.view">
-                                                    <button onClick={() => handlePrintLabel(shipment._id)} title="Print Label" className="text-gray-600 hover:text-gray-900 bg-gray-100 p-1.5 rounded-lg transition-colors">
+                                                    <button onClick={() => handlePrintLabel(shipment._id)} title="Print Label" className="text-gray-600 hover:text-gray-900 bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:bg-gray-700 p-1.5 rounded-lg transition-colors">
                                                         <Printer className="w-4 h-4" />
                                                     </button>
                                                 </RequireAction>
                                             )}
 
-                                            <button onClick={() => navigate(`/dispatch/${shipment._id}`)} className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ml-2">{t('common.details', 'Details')}</button>
+                                            <button onClick={() => navigate(`/dispatch/${shipment._id}`)} className="text-blue-600 hover:text-blue-900 bg-blue-50 dark:text-blue-400 dark:hover:text-blue-200 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors ml-2">{t('common.details', 'Details')}</button>
                                         </td>
                                     </tr>
                                 ))

@@ -279,7 +279,7 @@ const OrderRow = React.memo(({
                                         {(order.tags || []).map(tag_item => (
                                             <div key={tag_item} className="group/tag flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider pl-1.5 pr-0.5 py-0.5 rounded border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 truncate max-w-[90px]" title={tag_item}>
                                                 <span>{tag_item}</span>
-                                                <button onClick={(e) => handleRemoveTag(e, tag_item)} className="opacity-0 group-hover/tag:opacity-100 hover:text-red-500 dark:hover:text-red-400 transition-opacity ml-0.5">
+                                                <button onClick={(e) => handleRemoveTag(e, tag_item)} className="opacity-0 group-hover/tag:opacity-100 hover:text-red-500 dark:hover:text-red-400 transition-opacity ml-0.5" aria-label={`Remove tag ${tag_item}`}>
                                                     <X className="w-2.5 h-2.5" />
                                                 </button>
                                             </div>
@@ -314,16 +314,16 @@ const OrderRow = React.memo(({
                                 <td key={col.id} className="px-4 py-2 text-right" onClick={e => e.stopPropagation()}>
                                     <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                         {hasPermission('orders.edit') && (
-                                            <button onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(order); }} className={ACTION_BTN} title={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })}>
+                                            <button onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(order); }} className={ACTION_BTN} title={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })} aria-label={t('ordersControl.actions.edit', { defaultValue: 'Edit Order' })}>
                                                 <Edit3 className="w-4 h-4" />
                                             </button>
                                         )}
                                         {hasPermission('orders.status.change') && (
-                                            <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className="p-1.5 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
+                                            <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className="p-1.5 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })} aria-label={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
                                                 <PackageOpen className="w-4 h-4" />
                                             </button>
                                         )}
-                                        <button onClick={(e) => { e.stopPropagation(); const phone = order.customer?.phone || order.shipping?.phone1; if (phone) window.open(`tel:${phone}`); }} className={ACTION_BTN} title={t('ordersControl.actions.call', { defaultValue: 'Call' })}>
+                                        <button onClick={(e) => { e.stopPropagation(); const phone = order.customer?.phone || order.shipping?.phone1; if (phone) window.open(`tel:${phone}`); }} className={ACTION_BTN} title={t('ordersControl.actions.call', { defaultValue: 'Call' })} aria-label={t('ordersControl.actions.call', { defaultValue: 'Call' })}>
                                             <PhoneCall className="w-4 h-4" />
                                         </button>
                                         <button onClick={(e) => {
@@ -334,7 +334,7 @@ const OrderRow = React.memo(({
                                                 const waPhone = cleanPhone.startsWith('0') ? '213' + cleanPhone.substring(1) : cleanPhone;
                                                 window.open(`https://wa.me/${waPhone}`, '_blank');
                                             }
-                                        }} className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors" title={t('ordersControl.actions.whatsapp', { defaultValue: 'WhatsApp' })}>
+                                        }} className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors" title={t('ordersControl.actions.whatsapp', { defaultValue: 'WhatsApp' })} aria-label={t('ordersControl.actions.whatsapp', { defaultValue: 'WhatsApp' })}>
                                             <MessageCircle className="w-4 h-4" />
                                         </button>
                                         {activeStage === 'trash' ? (
@@ -344,6 +344,7 @@ const OrderRow = React.memo(({
                                                         onClick={(e) => { e.stopPropagation(); onRestore && onRestore(order._id); }}
                                                         className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors"
                                                         title={t('ordersControl.orderRow.restoreOrder')}
+                                                        aria-label={t('ordersControl.orderRow.restoreOrder')}
                                                     >
                                                         <RotateCcw className="w-4 h-4" />
                                                     </button>
@@ -353,6 +354,7 @@ const OrderRow = React.memo(({
                                                         onClick={(e) => { e.stopPropagation(); onPurge && onPurge(order._id); }}
                                                         className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded bg-white dark:bg-gray-700 border border-red-100 dark:border-red-800 shadow-sm transition-colors"
                                                         title={t('ordersControl.orderRow.deletePermanently')}
+                                                        aria-label={t('ordersControl.orderRow.deletePermanently')}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -366,6 +368,7 @@ const OrderRow = React.memo(({
                                                         onClick={(e) => { e.stopPropagation(); onStatusChange(order._id, 'Ready for Pickup'); }}
                                                         className="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors"
                                                         title={t('ordersControl.orderRow.recallToPreDispatch')}
+                                                        aria-label={t('ordersControl.orderRow.recallToPreDispatch')}
                                                     >
                                                         <Undo2 className="w-4 h-4" />
                                                     </button>
@@ -382,6 +385,7 @@ const OrderRow = React.memo(({
                                                     onClick={(e) => { e.stopPropagation(); onDelete && onDelete(order._id); }}
                                                     className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors"
                                                     title={t('ordersControl.orderRow.moveToTrash')}
+                                                    aria-label={t('ordersControl.orderRow.moveToTrash')}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -462,6 +466,7 @@ const OrderRow = React.memo(({
                                             onClick={copyPhone}
                                             className="p-1 rounded text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                             title={t('ordersControl.orderRow.copyNumber')}
+                                            aria-label={t('ordersControl.orderRow.copyNumber')}
                                         >
                                             {copiedPhone
                                                 ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />

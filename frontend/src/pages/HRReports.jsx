@@ -43,16 +43,16 @@ export default function HRReports() {
         <div
             onClick={() => setActiveReport(id)}
             className={`cursor-pointer p-4 rounded-xl border flex items-start gap-3 transition-all ${activeReport === id
-                ? 'border-blue-500 bg-blue-50/50 shadow-sm ring-1 ring-blue-500/20'
-                : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
+                ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/30 shadow-sm ring-1 ring-blue-500/20'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
         >
-            <div className={`p-2 rounded-lg ${activeReport === id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+            <div className={`p-2 rounded-lg ${activeReport === id ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                 <Icon className="w-5 h-5" />
             </div>
             <div>
-                <h4 className={`font-bold text-sm ${activeReport === id ? 'text-blue-900' : 'text-gray-900'}`}>{title}</h4>
-                <p className="text-xs text-gray-500 mt-1">{desc}</p>
+                <h4 className={`font-bold text-sm ${activeReport === id ? 'text-blue-900 dark:text-blue-300' : 'text-gray-900 dark:text-white'}`}>{title}</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{desc}</p>
             </div>
         </div>
     );
@@ -60,7 +60,7 @@ export default function HRReports() {
     const renderDailyTable = () => {
         if (!data?.records) return null;
         return (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
                     <table className="cf-table min-w-[600px]">
                         <thead>
@@ -73,17 +73,17 @@ export default function HRReports() {
                         </thead>
                         <tbody>
                             {data.records.length === 0 && (
-                                <tr><td colSpan="4" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                                <tr><td colSpan="4" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.records.map((r, i) => (
                                 <tr key={i}>
-                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name} <span className="text-xs text-gray-400 block">{r.employeeId?.role}</span></td>
+                                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employeeId?.name} <span className="text-xs text-gray-400 dark:text-gray-500 block">{r.employeeId?.role}</span></td>
                                     <td className="px-5 py-3 font-mono text-center">{Math.floor(r.workedMinutes / 60)}{t('hr.lblHours')} {r.workedMinutes % 60}{t('hr.lblMinutes')}</td>
                                     <td className="px-5 py-3 text-center">
                                         {r.lateMinutes > 0 ? <span className="text-red-500 font-bold">{r.lateMinutes}{t('hr.lblMinutes')} {t('hr.lblLate')}</span> :
                                             r.overtimeMinutes > 0 ? <span className="text-emerald-500 font-bold">+{r.overtimeMinutes}{t('hr.lblMinutes')} {t('hr.lblOvertime')}</span> : '-'}
                                     </td>
-                                    <td className="px-5 py-3 text-center font-bold text-gray-600">{r.status}</td>
+                                    <td className="px-5 py-3 text-center font-bold text-gray-600 dark:text-gray-300">{r.status}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -96,7 +96,7 @@ export default function HRReports() {
     const renderPayrollTable = () => {
         if (!data?.records) return null;
         return (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
                     <table className="cf-table min-w-[700px]">
                         <thead>
@@ -105,20 +105,20 @@ export default function HRReports() {
                                 <th className="text-end">{t('hr.colBaseSalary')}</th>
                                 <th className="text-end">{t('hr.colDeductionsTotal')}</th>
                                 <th className="text-end">{t('hr.colOvertimeAddition')}</th>
-                                <th className="text-end text-gray-900 ltr:border-l rtl:border-r border-gray-200">{t('hr.colFinalClearedSalary')}</th>
+                                <th className="text-end text-gray-900 dark:text-white ltr:border-l rtl:border-r border-gray-200 dark:border-gray-600">{t('hr.colFinalClearedSalary')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.records.length === 0 && (
-                                <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                                <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.records.map((r, i) => (
                                 <tr key={i}>
-                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
-                                    <td className="px-5 py-3 text-end text-gray-600">{(r.baseSalary || 0).toLocaleString()}</td>
+                                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employeeId?.name}</td>
+                                    <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-300">{(r.baseSalary || 0).toLocaleString()}</td>
                                     <td className="px-5 py-3 text-end text-red-600 font-bold">-{r.missingTimeDeductions + r.absenceDeductions}</td>
                                     <td className="px-5 py-3 text-end text-emerald-600 font-bold">+{r.overtimeAdditions}</td>
-                                    <td className="px-5 py-3 text-end text-lg font-black text-gray-900 ltr:border-l rtl:border-r border-gray-100 bg-gray-50/30">{(r.finalPayableSalary || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
+                                    <td className="px-5 py-3 text-end text-lg font-black text-gray-900 dark:text-white ltr:border-l rtl:border-r border-gray-100 dark:border-gray-600 bg-gray-50/30 dark:bg-gray-700/30">{(r.finalPayableSalary || 0).toLocaleString()} {t('hr.dzdCurrency')}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -131,7 +131,7 @@ export default function HRReports() {
     const renderDeductionsTable = () => {
         if (!data?.records) return null;
         return (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
                     <table className="cf-table min-w-[700px]">
                         <thead>
@@ -140,20 +140,20 @@ export default function HRReports() {
                                 <th className="text-end">{t('hr.colTotalLateMissedMin')}</th>
                                 <th className="text-end">{t('hr.colLossLateness')}</th>
                                 <th className="text-end">{t('hr.colLossAbsence')}</th>
-                                <th className="text-end text-rose-700">{t('hr.colTotalLiabilityDeducted')}</th>
+                                <th className="text-end text-rose-700 dark:text-rose-400">{t('hr.colTotalLiabilityDeducted')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.records.length === 0 && (
-                                <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                                <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.records.map((r, i) => (
                                 <tr key={i}>
-                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employeeId?.name}</td>
-                                    <td className="px-5 py-3 text-end font-mono text-gray-600">{r.metricsTotal?.totalMissingMinutes}{t('hr.lblMinutes')}</td>
+                                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employeeId?.name}</td>
+                                    <td className="px-5 py-3 text-end font-mono text-gray-600 dark:text-gray-300">{r.metricsTotal?.totalMissingMinutes}{t('hr.lblMinutes')}</td>
                                     <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.missingTimeDeductions}</td>
                                     <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.absenceDeductions}</td>
-                                    <td className="px-5 py-3 text-end text-rose-700 font-bold bg-rose-50/30">-{Math.round(r.missingTimeDeductions + r.absenceDeductions)} {t('hr.dzdCurrency')}</td>
+                                    <td className="px-5 py-3 text-end text-rose-700 dark:text-rose-400 font-bold bg-rose-50/30 dark:bg-rose-900/20">-{Math.round(r.missingTimeDeductions + r.absenceDeductions)} {t('hr.dzdCurrency')}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -166,25 +166,25 @@ export default function HRReports() {
     const renderOvertimeTable = () => {
         if (!data?.leaders) return null;
         return (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mt-6">
                 <div className="overflow-x-auto">
                     <table className="cf-table min-w-[500px]">
                         <thead>
                             <tr>
                                 <th>{t('hr.colEmployee')}</th>
                                 <th className="text-center">{t('hr.colDaysWithOvertime')}</th>
-                                <th className="text-end text-emerald-700">{t('hr.colTotalExtraMinutes')}</th>
+                                <th className="text-end text-emerald-700 dark:text-emerald-400">{t('hr.colTotalExtraMinutes')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.leaders.length === 0 && (
-                                <tr><td colSpan="3" className="p-8 text-center text-sm text-gray-400">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
+                                <tr><td colSpan="3" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
                             {data.leaders.map((r, i) => (
                                 <tr key={i}>
-                                    <td className="px-5 py-3 font-medium text-gray-900">{r.employee?.name} <span className="text-xs text-gray-400 block">{r.employee?.role}</span></td>
-                                    <td className="px-5 py-3 text-center text-gray-600 font-bold">{r.daysWithOvertime} {t('hr.daysLabel')}</td>
-                                    <td className="px-5 py-3 text-end text-emerald-600 font-bold bg-emerald-50/30">{r.totalOvertimeMinutes}{t('hr.lblMinutes')}</td>
+                                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employee?.name} <span className="text-xs text-gray-400 dark:text-gray-500 block">{r.employee?.role}</span></td>
+                                    <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-300 font-bold">{r.daysWithOvertime} {t('hr.daysLabel')}</td>
+                                    <td className="px-5 py-3 text-end text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/30 dark:bg-emerald-900/20">{r.totalOvertimeMinutes}{t('hr.lblMinutes')}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -324,9 +324,9 @@ export default function HRReports() {
                 actions={
                     <div className="flex flex-wrap gap-3">
                         {activeReport === 'daily' ? (
-                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all cursor-pointer" />
+                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2 text-gray-700 dark:text-gray-100 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all cursor-pointer" />
                         ) : (
-                            <select value={period} onChange={(e) => setPeriod(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all">
+                            <select value={period} onChange={(e) => setPeriod(e.target.value)} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2 text-gray-700 dark:text-gray-100 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all">
                                 {Array.from({ length: 6 }, (_, i) => {
                                     const m = subtract(new Date(), i, 'months');
                                     return <option key={i} value={toMMYYYY(m)}>{fmtMonthYear(m)}</option>;
@@ -336,7 +336,7 @@ export default function HRReports() {
                         <button onClick={handleExportExcel} disabled={!data} className="flex items-center gap-2 px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 leading-none disabled:opacity-50">
                             <FileSpreadsheet className="w-4 h-4" /> {t('hr.btnExcel', 'Excel')}
                         </button>
-                        <button onClick={handleExportPDF} disabled={!data} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl transition-all hover:bg-gray-50 active:scale-95 leading-none disabled:opacity-50">
+                        <button onClick={handleExportPDF} disabled={!data} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-all hover:bg-gray-50 dark:hover:bg-gray-600 active:scale-95 leading-none disabled:opacity-50">
                             <Download className="w-4 h-4" /> {t('hr.btnPdf', 'PDF')}
                         </button>
                     </div>
@@ -352,22 +352,22 @@ export default function HRReports() {
             </div>
 
             {fetchError && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
-                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300">✕</button>
                 </div>
             )}
             {loading ? (
-                <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div></div>
+                <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-800 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div></div>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 flex justify-between items-center">
+                    <div className="bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-5 flex justify-between items-center">
                         <div>
-                            <h3 className="font-bold text-blue-900 capitalize text-lg">{t('hr.reportExtract')} - {activeReport}</h3>
-                            <p className="text-blue-600 text-sm mt-0.5">{t('hr.lblParameters')} {activeReport === 'daily' ? date : period}</p>
+                            <h3 className="font-bold text-blue-900 dark:text-blue-300 capitalize text-lg">{t('hr.reportExtract')} - {activeReport}</h3>
+                            <p className="text-blue-600 dark:text-blue-400 text-sm mt-0.5">{t('hr.lblParameters')} {activeReport === 'daily' ? date : period}</p>
                         </div>
-                        <div className="px-4 py-1.5 bg-white rounded-full text-xs font-bold text-gray-500 border border-gray-100 shadow-sm">
+                        <div className="px-4 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-700 shadow-sm">
                             {data?.records?.length ?? data?.data?.length ?? data?.leaders?.length ?? 0} {t('hr.resultsGenerated')}
                         </div>
                     </div>
@@ -378,12 +378,12 @@ export default function HRReports() {
                     {activeReport === 'overtime' && renderOvertimeTable()}
 
                     {activeReport === 'monthly' && (
-                        <div className="mt-8 text-center p-10 bg-white border border-gray-200 rounded-xl border-dashed hover:border-blue-300 transition-colors">
+                        <div className="mt-8 text-center p-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl border-dashed hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
                             <Briefcase className="w-10 h-10 text-blue-500 mx-auto mb-3 opacity-60" />
-                            <p className="text-gray-900 font-bold mb-1">{t('hr.monthlyMatrixReady')}</p>
-                            <p className="text-gray-500 font-medium text-sm">{t('hr.monthlyMatrixExcelNotice')}</p>
+                            <p className="text-gray-900 dark:text-white font-bold mb-1">{t('hr.monthlyMatrixReady')}</p>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium text-sm">{t('hr.monthlyMatrixExcelNotice')}</p>
                             <div className="flex justify-center gap-3 mt-6">
-                                <button onClick={handleExportExcel} disabled={!data} className="px-5 py-2.5 bg-green-50 text-green-700 hover:bg-green-100 font-bold rounded-lg transition-colors border border-green-200 shadow-sm flex items-center gap-2">
+                                <button onClick={handleExportExcel} disabled={!data} className="px-5 py-2.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 font-bold rounded-lg transition-colors border border-green-200 dark:border-green-800 shadow-sm flex items-center gap-2">
                                     <FileSpreadsheet className="w-4 h-4" /> {t('hr.btnExportCsvXlsx')}
                                 </button>
                             </div>

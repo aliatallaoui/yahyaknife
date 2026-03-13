@@ -30,7 +30,8 @@ exports.listTenants = async (req, res) => {
         const filter = {};
 
         if (search) {
-            filter.name = { $regex: search, $options: 'i' };
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.name = { $regex: escaped, $options: 'i' };
         }
         if (planTier) {
             filter.planTier = planTier;

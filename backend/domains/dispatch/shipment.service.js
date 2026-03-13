@@ -2,15 +2,16 @@
  * ShipmentService — business logic for shipment lifecycle.
  *
  * Depends on:
- *   - EcotrackAdapter (or any CourierAdapter) for courier API calls
- *   - Order / Shipment models for persistence
+ *   - adapterFactory for resolving the correct CourierAdapter per courier
+ *   - Order / Shipment / Courier models for persistence
  *
  * Controllers call this service and only handle HTTP (req/res).
  */
 
 const Shipment = require('../../models/Shipment');
 const Order = require('../../models/Order');
-const ecotrackAdapter = require('../../integrations/couriers/EcotrackAdapter');
+const Courier = require('../../models/Courier');
+const { getAdapter, getProviderName } = require('../../integrations/couriers/adapterFactory');
 const AppError = require('../../shared/errors/AppError');
 const logger = require('../../shared/logger');
 const { fireAndRetry } = require('../../shared/utils/retryAsync');
@@ -27,10 +28,28 @@ async function resolveOrder(orderId, tenantId) {
     return doc;
 }
 
+/**
+ * Resolve the courier for an order and return the appropriate adapter.
+ * Falls back to Ecotrack global adapter if no courier is assigned.
+ */
+async function resolveAdapter(order, tenantId) {
+    let courier = null;
+    const courierId = order.courier?._id || order.courier;
+    if (courierId) {
+        courier = await Courier.findOne({ _id: courierId, tenant: tenantId, deletedAt: null });
+    }
+    const adapter = getAdapter(courier);
+    const providerName = getProviderName(courier);
+    return { adapter, courier, providerName };
+}
+
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
     const internalOrder = await resolveOrder(orderId, tenantId);
+
+    // Resolve courier adapter
+    const { adapter, providerName } = await resolveAdapter(internalOrder, tenantId);
 
     // Whitelist fields accepted from client — prevent mass-assignment of
     // paymentStatus, lifecycle timestamps, externalTrackingId, etc.
@@ -47,19 +66,20 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
         tenant: tenantId,
         internalOrder: orderId,
         internalOrderId: internalOrder.orderId,
+        courierProvider: providerName,
         shipmentStatus: 'Created in Courier',
-        activityHistory: [{ status: 'Created in system, pending dispatch to ECOTRACK', remarks: 'Initial creation' }]
+        activityHistory: [{ status: `Created in system, pending dispatch to ${providerName}`, remarks: 'Initial creation' }]
     });
 
-    const payload = ecotrackAdapter.toPayload(newShipment);
+    const payload = adapter.toPayload(newShipment);
     let trackingId = null;
     let courierError = null;
 
     try {
-        const result = await ecotrackAdapter.createShipment(payload);
+        const result = await adapter.createShipment(payload);
         trackingId = result.trackingId;
     } catch (err) {
-        logger.error({ err }, 'Failed to dispatch to external courier API');
+        logger.error({ err, provider: providerName }, 'Failed to dispatch to external courier API');
         courierError = err.message || 'Unknown API Error';
     }
 
@@ -77,8 +97,10 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
     // Sync order status through service to trigger inventory + audit trail
     if (tenantId) {
         const updateStatus = trackingId ? 'Dispatched' : 'Dispatch Failed';
-        const trackingInfo = trackingId ? { carrier: 'ECOTRACK', trackingNumber: trackingId } : { carrier: 'ECOTRACK', error: courierError };
-        
+        const trackingInfo = trackingId
+            ? { carrier: providerName, trackingNumber: trackingId }
+            : { carrier: providerName, error: courierError };
+
         await OrderService.updateOrder({
             orderId: orderId.toString(),
             tenantId,
@@ -104,10 +126,14 @@ exports.quickDispatch = async (orderId, tenantId) => {
         throw new AppError('Order has already been dispatched.', 400, 'ALREADY_DISPATCHED');
     }
 
+    // Resolve courier adapter
+    const { adapter, providerName } = await resolveAdapter(order, tenantId);
+
     const newShipment = new Shipment({
         tenant: tenantId,
         internalOrder: order._id,
         internalOrderId: order.orderId,
+        courierProvider: providerName,
         customerName:  order.shipping.recipientName || order.customer?.name || 'Unknown',
         phone1:        order.shipping.phone1,
         phone2:        order.shipping.phone2 || '',
@@ -123,19 +149,19 @@ exports.quickDispatch = async (orderId, tenantId) => {
         fragileFlag:   order.shipping.fragile || false,
         operationType: 1,
         shipmentStatus: 'Created in Courier',
-        activityHistory: [{ status: 'Quick Dispatched from Sales Panel', remarks: `Auto-created from order ${order.orderId}` }]
+        activityHistory: [{ status: `Quick Dispatched via ${providerName}`, remarks: `Auto-created from order ${order.orderId}` }]
     });
 
-    const payload = ecotrackAdapter.toPayload(newShipment);
-    
+    const payload = adapter.toPayload(newShipment);
+
     let trackingId = null;
     let courierError = null;
 
     try {
-        const result = await ecotrackAdapter.createShipment(payload);
+        const result = await adapter.createShipment(payload);
         trackingId = result.trackingId;
     } catch (err) {
-        logger.error({ err }, 'Failed to quick-dispatch to external courier API');
+        logger.error({ err, provider: providerName }, 'Failed to quick-dispatch to external courier API');
         courierError = err.message || 'Unknown API Error';
     }
 
@@ -152,7 +178,9 @@ exports.quickDispatch = async (orderId, tenantId) => {
 
     // Sync order status through service to trigger inventory + audit trail
     const updateStatus = trackingId ? 'Dispatched' : 'Dispatch Failed';
-    const trackingInfo = trackingId ? { carrier: 'ECOTRACK', trackingNumber: trackingId } : { carrier: 'ECOTRACK', error: courierError };
+    const trackingInfo = trackingId
+        ? { carrier: providerName, trackingNumber: trackingId }
+        : { carrier: providerName, error: courierError };
 
     await OrderService.updateOrder({
         orderId: orderId.toString(),
@@ -175,7 +203,8 @@ exports.validateShipment = async (shipmentId, tenantId, { askCollection = 1, use
     }
 
     if (shipment.externalTrackingId) {
-        await ecotrackAdapter.validateShipment(shipment.externalTrackingId, { askCollection });
+        const adapter = await resolveAdapterForShipment(shipment, tenantId);
+        await adapter.validateShipment(shipment.externalTrackingId, { askCollection });
     }
 
     shipment.shipmentStatus = 'Validated';
@@ -201,10 +230,11 @@ exports.deleteShipment = async (shipmentId, tenantId) => {
     let courierCancelled = false;
     if (shipment.externalTrackingId) {
         try {
-            await ecotrackAdapter.cancelShipment(shipment.externalTrackingId);
+            const adapter = await resolveAdapterForShipment(shipment, tenantId);
+            await adapter.cancelShipment(shipment.externalTrackingId);
             courierCancelled = true;
         } catch (err) {
-            logger.warn({ err }, 'Failed to cancel from ECOTRACK (deleting locally anyway)');
+            logger.warn({ err, provider: shipment.courierProvider }, 'Failed to cancel from courier (deleting locally anyway)');
         }
     }
 
@@ -235,16 +265,21 @@ exports.requestReturn = async (shipmentId, tenantId, userId = null) => {
 
     if (shipment.externalTrackingId) {
         try {
-            await ecotrackAdapter.requestReturn(shipment.externalTrackingId);
+            const adapter = await resolveAdapterForShipment(shipment, tenantId);
+            await adapter.requestReturn(shipment.externalTrackingId);
         } catch (err) {
-            logger.warn({ err }, 'Failed to request return via Ecotrack');
+            logger.warn({ err, provider: shipment.courierProvider }, 'Failed to request return via courier API');
             // Proceed to flag internally even if courier API fails
         }
     }
 
     shipment.returnRequestedAt = new Date();
     shipment.shipmentStatus = 'Return Initiated';
-    shipment.activityHistory.push({ status: 'Return Requested', remarks: 'Admin manually requested return from ECOTRACK.', changedBy: userId });
+    shipment.activityHistory.push({
+        status: 'Return Requested',
+        remarks: `Admin manually requested return from ${shipment.courierProvider || 'courier'}.`,
+        changedBy: userId
+    });
 
     const updated = await shipment.save();
 
@@ -270,10 +305,48 @@ exports.getShipmentLabel = async (shipmentId, tenantId) => {
         throw new AppError('No external tracking ID found to generate label.', 400, 'NO_TRACKING_ID');
     }
 
-    const url = await ecotrackAdapter.getLabelUrl(shipment.externalTrackingId);
+    const adapter = await resolveAdapterForShipment(shipment, tenantId);
+    const url = await adapter.getLabelUrl(shipment.externalTrackingId);
 
     shipment.labelUrl = url;
     await shipment.save();
 
     return url;
 };
+
+// ─── Internal Helper ──────────────────────────────────────────────────────────
+
+/**
+ * Resolve the correct adapter for an existing shipment by looking up
+ * the courier from the linked order, or falling back based on courierProvider.
+ */
+async function resolveAdapterForShipment(shipment, tenantId) {
+    // Try to find the courier via the linked order
+    if (shipment.internalOrder) {
+        const order = await Order.findById(shipment.internalOrder).select('courier').lean();
+        if (order?.courier) {
+            const courier = await Courier.findOne({ _id: order.courier, tenant: tenantId, deletedAt: null });
+            if (courier) return getAdapter(courier);
+        }
+    }
+
+    // Fallback: use courierProvider field on shipment itself
+    // For ECOTRACK, the singleton adapter works without a courier doc
+    if (!shipment.courierProvider || shipment.courierProvider === 'ECOTRACK') {
+        return getAdapter(null); // Returns ecotrack singleton
+    }
+
+    // For other providers, we need the courier doc to get credentials
+    // Try to find any courier with matching provider for this tenant
+    const courier = await Courier.findOne({
+        tenant: tenantId,
+        apiProvider: shipment.courierProvider === 'YALIDIN' ? 'Yalidin' : shipment.courierProvider,
+        integrationType: 'API',
+        deletedAt: null
+    });
+    if (courier) return getAdapter(courier);
+
+    // Last resort: Ecotrack fallback
+    logger.warn({ shipmentId: shipment._id, provider: shipment.courierProvider }, 'Could not resolve courier adapter, falling back to Ecotrack');
+    return getAdapter(null);
+}

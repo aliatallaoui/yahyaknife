@@ -65,7 +65,8 @@ exports.createProduct = async (req, res) => {
         const populatedProduct = await Product.findOne({ _id: newProduct._id, tenant: req.user.tenant })
             .populate('supplier', 'name email phone')
             .populate('category', 'name')
-            .populate('variants', 'sku name price cost totalStock reservedStock status');
+            .populate('variants', 'sku name price cost totalStock reservedStock status')
+            .lean();
 
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'CREATE_PRODUCT', module: 'inventory', metadata: { productId: newProduct._id, name: newProduct.name } });
         res.status(201).json(populatedProduct);
@@ -111,7 +112,7 @@ exports.updateProduct = async (req, res) => {
         }
 
         const updated = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, updates, { new: true, runValidators: true })
-            .populate('supplier', 'name email phone').populate('category', 'name').populate('variants', 'sku name price cost totalStock reservedStock status');
+            .populate('supplier', 'name email phone').populate('category', 'name').populate('variants', 'sku name price cost totalStock reservedStock status').lean();
         if (!updated) {
             return res.status(404).json({ message: "Product not found." });
         }
@@ -280,7 +281,8 @@ exports.adjustStock = async (req, res) => {
     try {
         const { variantId, warehouseId, adjustmentQuantity, notes } = req.body;
 
-        if (!adjustmentQuantity) return res.status(400).json({ message: "Adjustment quantity required." });
+        if (!Number.isFinite(Number(adjustmentQuantity)) || Number(adjustmentQuantity) === 0)
+            return res.status(400).json({ message: "Adjustment quantity must be a non-zero number." });
         if (!variantId || !mongoose.Types.ObjectId.isValid(variantId))
             return res.status(400).json({ message: "Valid variantId is required." });
         if (warehouseId && !mongoose.Types.ObjectId.isValid(warehouseId))
@@ -339,8 +341,9 @@ exports.getStockLedger = async (req, res) => {
         const ledger = await StockMovementLedger.find(query)
             .sort({ createdAt: -1 })
             .limit(100)
-            .populate('variantId')
-            .populate('warehouseId');
+            .populate('variantId', 'name sku')
+            .populate('warehouseId', 'name location')
+            .lean();
 
         res.json(ledger);
     } catch (error) {

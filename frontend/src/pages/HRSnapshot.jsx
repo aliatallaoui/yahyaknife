@@ -169,7 +169,7 @@ export default function HRSnapshot() {
                         <button onClick={() => { setSelectedEmployee(null); setIsModalOpen(true); }} className="flex items-center gap-2 px-6 py-2.5 bg-[#5D5DFF] hover:bg-[#4D4DFF] text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 leading-none">
                             <UserPlus className="w-5 h-5" /> {t('hr.btnAddEmployee')}
                         </button>
-                        <button onClick={fetchHRData} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl transition-all hover:bg-gray-50 active:scale-95 leading-none">
+                        <button onClick={fetchHRData} className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-all hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 leading-none">
                             <Clock className="w-4 h-4" /> {t('hr.btnRefresh')}
                         </button>
                     </>
@@ -177,75 +177,75 @@ export default function HRSnapshot() {
             />
 
             {fetchError && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
-                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300">✕</button>
                 </div>
             )}
 
             {/* KPIs */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.totalHeadcount')}</p>
-                        <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{metrics?.totalEmployees || 0}</h3>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 truncate">{t('hr.totalHeadcount')}</p>
+                        <h3 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tighter truncate">{metrics?.totalEmployees || 0}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                    <div className="h-16 w-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-100 dark:border-blue-800 shrink-0">
                         <Users className="w-8 h-8 text-blue-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">{t('hr.presentToday')}</p>
-                        <h3 className="text-3xl font-black text-emerald-700 tracking-tighter truncate">{metrics?.presentToday || 0}</h3>
+                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 truncate">{t('hr.presentToday')}</p>
+                        <h3 className="text-3xl font-black text-emerald-700 dark:text-emerald-300 tracking-tighter truncate">{metrics?.presentToday || 0}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 shrink-0">
+                    <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-800 shrink-0">
                         <UserCheck className="w-8 h-8 text-emerald-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-amber-600 uppercase tracking-wider mb-1 truncate">{t('hr.lateToday')}</p>
-                        <h3 className="text-3xl font-black text-amber-700 tracking-tighter truncate">{metrics?.lateToday || 0}</h3>
+                        <p className="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 truncate">{t('hr.lateToday')}</p>
+                        <h3 className="text-3xl font-black text-amber-700 dark:text-amber-300 tracking-tighter truncate">{metrics?.lateToday || 0}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
+                    <div className="h-16 w-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center border border-amber-100 dark:border-amber-800 shrink-0">
                         <Clock className="w-8 h-8 text-amber-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">{t('hr.absentToday')}</p>
-                        <h3 className="text-3xl font-black text-rose-700 tracking-tighter truncate">{metrics?.absentToday || 0}</h3>
+                        <p className="text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1 truncate">{t('hr.absentToday')}</p>
+                        <h3 className="text-3xl font-black text-rose-700 dark:text-rose-300 tracking-tighter truncate">{metrics?.absentToday || 0}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 shrink-0">
+                    <div className="h-16 w-16 bg-rose-50 dark:bg-rose-900/30 rounded-2xl flex items-center justify-center border border-rose-100 dark:border-rose-800 shrink-0">
                         <XCircle className="w-8 h-8 text-rose-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-1 truncate">{t('hr.pendingLeaves')}</p>
-                        <h3 className="text-3xl font-black text-purple-700 tracking-tighter truncate">{pendingLeavesCount}</h3>
+                        <p className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1 truncate">{t('hr.pendingLeaves')}</p>
+                        <h3 className="text-3xl font-black text-purple-700 dark:text-purple-300 tracking-tighter truncate">{pendingLeavesCount}</h3>
                     </div>
-                    <div className={clsx("h-16 w-16 rounded-2xl flex items-center justify-center border shrink-0", pendingLeavesCount > 0 ? "bg-purple-100 border-purple-200 animate-pulse" : "bg-purple-50 border-purple-100")}>
+                    <div className={clsx("h-16 w-16 rounded-2xl flex items-center justify-center border shrink-0", pendingLeavesCount > 0 ? "bg-purple-100 dark:bg-purple-900/40 border-purple-200 dark:border-purple-700 animate-pulse" : "bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800")}>
                         <CalendarDays className="w-8 h-8 text-purple-600" />
                     </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.estPayroll')}</p>
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter truncate">{`${((metrics?.estimatedPayrollDZD || 0) / 1000).toFixed(0)}k`}</h3>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 truncate">{t('hr.estPayroll')}</p>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter truncate">{`${((metrics?.estimatedPayrollDZD || 0) / 1000).toFixed(0)}k`}</h3>
                     </div>
-                    <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200 shrink-0">
-                        <Banknote className="w-8 h-8 text-gray-800" />
+                    <div className="h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center border border-gray-200 dark:border-gray-600 shrink-0">
+                        <Banknote className="w-8 h-8 text-gray-800 dark:text-gray-200" />
                     </div>
                 </div>
             </div>
 
             {/* Advanced Employee Directory Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 border-b border-gray-100 gap-4">
-                    <h3 className="text-lg font-bold text-gray-900 whitespace-nowrap">{t('hr.employeeDirectory')}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 border-b border-gray-100 dark:border-gray-700 gap-4">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">{t('hr.employeeDirectory')}</h3>
 
                     {/* Advanced Filter Bar */}
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -255,27 +255,27 @@ export default function HRSnapshot() {
                                 ref={searchRef}
                                 type="text"
                                 placeholder={t('hr.searchEmployeePlaceholder', 'Search... (Press /)')}
-                                className="w-full md:w-48 bg-gray-50 border border-gray-200 focus:border-blue-400 outline-none rounded-lg py-2 ltr:pl-9 ltr:pr-4 rtl:pr-9 rtl:pl-4 text-sm transition-all"
+                                className="w-full md:w-48 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus:border-blue-400 outline-none rounded-lg py-2 ltr:pl-9 ltr:pr-4 rtl:pr-9 rtl:pl-4 text-sm dark:text-gray-100 transition-all"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
 
-                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            <Filter className="w-4 h-4 text-gray-400" />
-                            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="bg-transparent text-sm text-gray-700 outline-none font-medium cursor-pointer">
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2">
+                            <Filter className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none font-medium cursor-pointer">
                                 {uniqueDepts.map(d => <option key={d} value={d}>{d === 'All' ? t('hr.allDepts') : d}</option>)}
                             </select>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="bg-transparent text-sm text-gray-700 outline-none font-medium cursor-pointer max-w-[120px]">
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2">
+                            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none font-medium cursor-pointer max-w-[120px]">
                                 {uniqueRoles.map(r => <option key={r} value={r}>{r === 'All' ? t('hr.allRoles') : r}</option>)}
                             </select>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-transparent text-sm text-gray-700 outline-none font-medium cursor-pointer">
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2">
+                            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none font-medium cursor-pointer">
                                 <option value="All">{t('hr.allStatus')}</option>
                                 <option value="Active">{t('hr.statusActive', 'Active')}</option>
                                 <option value="On Leave">{t('hr.statusOnLeave', 'On Leave')}</option>
@@ -302,31 +302,31 @@ export default function HRSnapshot() {
                                 <tr key={emp._id} onClick={() => navigate(`/hr/employees/${emp._id}`)} className="cursor-pointer group">
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
+                                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
                                                 {emp.name?.charAt(0) || '?'}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{emp.name}</div>
-                                                <div className="text-xs text-gray-500 font-medium">{t('hr.idPrefix')} {emp.employeeId || emp._id.slice(-6).toUpperCase()}</div>
+                                                <div className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{emp.name}</div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('hr.idPrefix')} {emp.employeeId || emp._id.slice(-6).toUpperCase()}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="p-4">
-                                        <div className="font-semibold text-gray-800">{emp.role}</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">{emp.department}</div>
+                                        <div className="font-semibold text-gray-800 dark:text-gray-200">{emp.role}</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{emp.department}</div>
                                     </td>
                                     <td className="p-4">
-                                        <div className="font-bold text-gray-900">
-                                            {(emp.contractSettings?.monthlySalary || emp.salary || 0).toLocaleString()} <span className="text-xs font-normal text-gray-400">{t('hr.dzdCurrency')}</span>
+                                        <div className="font-bold text-gray-900 dark:text-white">
+                                            {(emp.contractSettings?.monthlySalary || emp.salary || 0).toLocaleString()} <span className="text-xs font-normal text-gray-400 dark:text-gray-500">{t('hr.dzdCurrency')}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <span className={clsx(
                                             "px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 shadow-sm border",
-                                            emp.todayAttendance === 'Present' || emp.todayAttendance === 'Completed' || emp.todayAttendance === 'Overtime' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                                                emp.todayAttendance === 'Late' || emp.todayAttendance === 'Incomplete' ? "bg-amber-50 text-amber-700 border-amber-100" :
-                                                    emp.todayAttendance === 'Absent' ? "bg-rose-50 text-rose-700 border-rose-100" :
-                                                        "bg-gray-50 text-gray-600 border-gray-200"
+                                            emp.todayAttendance === 'Present' || emp.todayAttendance === 'Completed' || emp.todayAttendance === 'Overtime' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800" :
+                                                emp.todayAttendance === 'Late' || emp.todayAttendance === 'Incomplete' ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-800" :
+                                                    emp.todayAttendance === 'Absent' ? "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-800" :
+                                                        "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
                                         )}>
                                             <span className={clsx("w-1.5 h-1.5 rounded-full",
                                                 emp.todayAttendance === 'Present' || emp.todayAttendance === 'Completed' || emp.todayAttendance === 'Overtime' ? "bg-emerald-500" :
@@ -340,8 +340,8 @@ export default function HRSnapshot() {
                                     <td className="p-4 text-center">
                                         <span className={clsx(
                                             "px-2.5 py-1 rounded-full text-xs font-semibold inline-block w-20",
-                                            emp.status === 'Active' ? "bg-green-100/50 text-green-700" :
-                                                emp.status === 'On Leave' ? "bg-yellow-100/50 text-yellow-700" : "bg-gray-100 text-gray-600"
+                                            emp.status === 'Active' ? "bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
+                                                emp.status === 'On Leave' ? "bg-yellow-100/50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                                         )}>
                                             {emp.status}
                                         </span>
@@ -349,7 +349,7 @@ export default function HRSnapshot() {
                                     <td className="p-4 text-end">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsModalOpen(true); }}
-                                            className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors border border-gray-200"
+                                            className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
                                         >
                                             {t('hr.quickEdit')}
                                         </button>
@@ -359,10 +359,10 @@ export default function HRSnapshot() {
                             {filteredEmployees.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="p-12 text-center">
-                                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 mb-3">
-                                            <Search className="w-6 h-6 text-gray-400" />
+                                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 dark:bg-gray-700 mb-3">
+                                            <Search className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                                         </div>
-                                        <p className="text-gray-500 font-medium">{t('hr.noEmployeesFound')}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 font-medium">{t('hr.noEmployeesFound')}</p>
                                     </td>
                                 </tr>
                             )}
@@ -374,8 +374,8 @@ export default function HRSnapshot() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Department Distribution (Chart) */}
-                <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.departmentDistribution')}</h3>
+                <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">{t('hr.departmentDistribution')}</h3>
                     <div className="flex-1 min-h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={deptData} layout="vertical" margin={{ top: 5, right: isAr ? 70 : 30, left: isAr ? 30 : 20, bottom: 5 }}>
@@ -393,13 +393,13 @@ export default function HRSnapshot() {
                 </div>
 
                 {/* Leave Requests Feed */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[400px]">
-                    <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-                        <h3 className="text-lg font-bold text-gray-900">{t('hr.recentLeaveRequests')}</h3>
-                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{leaves.length} {t('hr.totalLabel')}</span>
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-[400px]">
+                    <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center shrink-0">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('hr.recentLeaveRequests')}</h3>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">{leaves.length} {t('hr.totalLabel')}</span>
                     </div>
                     {leaveError && (
-                        <div className="mx-4 mt-3 flex items-center gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 shrink-0">
+                        <div className="mx-4 mt-3 flex items-center gap-2 text-sm text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-lg px-3 py-2 shrink-0">
                             <AlertTriangle className="w-4 h-4 shrink-0" />
                             <span>{leaveError}</span>
                         </div>
@@ -414,27 +414,27 @@ export default function HRSnapshot() {
                             const StatusIcon = statusConfig.icon;
 
                             return (
-                                <div key={req._id} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-200 transition-colors bg-gray-50/30">
+                                <div key={req._id} className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:border-gray-200 dark:hover:border-gray-600 transition-colors bg-gray-50/30 dark:bg-gray-700/30">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-sm shrink-0">
                                             {req.employeeId?.name?.charAt(0) || '?'}
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-gray-900 text-sm">{req.employeeId?.name || 'Unknown'}</h4>
-                                            <p className="text-xs text-gray-500">{req.type} • {fmtShortDate(req.startDate)} - {fmtMediumDate(req.endDate)}</p>
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm">{req.employeeId?.name || 'Unknown'}</h4>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{req.type} • {fmtShortDate(req.startDate)} - {fmtMediumDate(req.endDate)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="ltr:text-right rtl:text-left hidden sm:block">
-                                            <div className="text-xs font-medium text-gray-900">{diffDays(req.endDate, req.startDate) + 1} {t('hr.daysLabel')}</div>
-                                            <div className="text-[10px] text-gray-400">{t('hr.requestedAgo')} {fromNow(req.requestDate)}</div>
+                                            <div className="text-xs font-medium text-gray-900 dark:text-white">{diffDays(req.endDate, req.startDate) + 1} {t('hr.daysLabel')}</div>
+                                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('hr.requestedAgo')} {fromNow(req.requestDate)}</div>
                                         </div>
                                         {req.status === 'Pending' ? (
                                             <div className="flex gap-1 ltr:ml-2 rtl:mr-2">
-                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Approved')} className="p-1.5 rounded-md hover:bg-green-100 text-green-600 transition-colors" title={t('hr.btnApprove')}>
+                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Approved')} className="p-1.5 rounded-md hover:bg-green-100 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 transition-colors" title={t('hr.btnApprove')}>
                                                     <CheckCircle className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Rejected')} className="p-1.5 rounded-md hover:bg-red-100 text-red-600 transition-colors" title={t('hr.btnReject')}>
+                                                <button onClick={() => handleLeaveStatusUpdate(req._id, 'Rejected')} className="p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-colors" title={t('hr.btnReject')}>
                                                     <XCircle className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -453,8 +453,8 @@ export default function HRSnapshot() {
             </div>
 
             {/* Workforce Analytics Row */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">{t('hr.workforceUtilization')}</h3>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">{t('hr.workforceUtilization')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-auto md:h-[280px]">
                     <div className="h-[250px] md:h-full relative flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
@@ -478,24 +478,24 @@ export default function HRSnapshot() {
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8 sm:pb-5">
-                            <span className="text-2xl sm:text-3xl font-black text-gray-900">{metrics?.activeEmployees || 0}</span>
-                            <span className="text-[10px] sm:text-xs font-bold text-gray-400">{t('hr.activeLabel')}</span>
+                            <span className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">{metrics?.activeEmployees || 0}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-400 dark:text-gray-500">{t('hr.activeLabel')}</span>
                         </div>
                     </div>
 
                     <div>
-                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                            <h4 className="font-bold text-gray-900 mb-2">{t('hr.liveAvailabilityScore')}</h4>
-                            <p className="text-sm text-gray-600 mb-4">{t('hr.liveAvailabilityDesc')}</p>
-                            <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 border border-gray-100 dark:border-gray-600">
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-2">{t('hr.liveAvailabilityScore')}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('hr.liveAvailabilityDesc')}</p>
+                            <div className="w-full bg-gray-200 dark:bg-gray-600 h-3 rounded-full overflow-hidden">
                                 <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${metrics?.totalEmployees > 0 ? ((metrics.activeEmployees / metrics.totalEmployees) * 100).toFixed(1) : 0}%` }}></div>
                             </div>
                             <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs font-bold text-gray-400">0%</span>
-                                <span className="text-sm font-black text-emerald-600">
+                                <span className="text-xs font-bold text-gray-400 dark:text-gray-500">0%</span>
+                                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                                     {metrics?.totalEmployees > 0 ? ((metrics.activeEmployees / metrics.totalEmployees) * 100).toFixed(1) : 0}% {t('hr.operationalText')}
                                 </span>
-                                <span className="text-xs font-bold text-gray-400">100%</span>
+                                <span className="text-xs font-bold text-gray-400 dark:text-gray-500">100%</span>
                             </div>
                         </div>
                     </div>

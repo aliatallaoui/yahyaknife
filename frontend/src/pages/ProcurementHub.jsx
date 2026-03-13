@@ -92,19 +92,19 @@ export default function ProcurementHub() {
     // Helper: Count active pending items versus fully received ones
     const getOrderStatusColor = (status) => {
         const map = {
-            'Draft': 'bg-gray-100 text-gray-800',
-            'Sent': 'bg-blue-100 text-blue-800',
-            'Partial': 'bg-purple-100 text-purple-800',
-            'Received': 'bg-green-100 text-green-800',
-            'Cancelled': 'bg-red-100 text-red-800'
+            'Draft': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            'Sent': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+            'Partial': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+            'Received': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            'Cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
         };
-        return map[status] || 'bg-gray-100 text-gray-800';
+        return map[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     };
 
     const getSupplierScoreColor = (score) => {
-        if (score >= 90) return 'text-green-600 bg-green-50 border-green-200';
-        if (score >= 70) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-        return 'text-red-600 bg-red-50 border-red-200';
+        if (score >= 90) return 'text-green-600 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/30 dark:border-green-700';
+        if (score >= 70) return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-900/30 dark:border-yellow-700';
+        return 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-700';
     };
 
     const term = searchTerm.toLowerCase();
@@ -133,7 +133,7 @@ export default function ProcurementHub() {
                                 placeholder={t('procurement.searchPlaceholder', 'Search... (Press /)')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="ps-9 pe-4 py-2 bg-white border border-purple-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all w-48 sm:w-64 shadow-sm font-bold"
+                                className="ps-9 pe-4 py-2 bg-white border border-purple-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all w-48 sm:w-64 shadow-sm font-bold dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-500"
                             />
                         </div>
                         {hasPermission('procurement.create_po') && (
@@ -147,7 +147,7 @@ export default function ProcurementHub() {
                         {(hasPermission('procurement.create_po') || hasPermission('inventory.adjust')) && (
                             <button
                                 onClick={() => setIsSupplierModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm active:scale-95 leading-none dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                             >
                                 <Users className="w-4 h-4" /> {t('procurement.addSupplier')}
                             </button>
@@ -157,54 +157,54 @@ export default function ProcurementHub() {
             />
 
             {fetchError && (
-                <div className="flex items-center gap-3 px-4 py-3 mb-6 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 mb-6 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
-                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setFetchError(null)} className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300">✕</button>
                 </div>
             )}
 
             {/* KPI Widgets */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 rounded-xl">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4 dark:bg-gray-800 dark:border-gray-700">
+                    <div className="p-3 bg-blue-50 rounded-xl dark:bg-blue-900/30">
                         <PackageSearch className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">{t('procurement.activePos')}</p>
-                        <p className="text-2xl font-black text-gray-900">{orders.filter(o => ['Sent', 'Partial'].includes(o.status)).length}</p>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t('procurement.activePos')}</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">{orders.filter(o => ['Sent', 'Partial'].includes(o.status)).length}</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-green-50 rounded-xl">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4 dark:bg-gray-800 dark:border-gray-700">
+                    <div className="p-3 bg-green-50 rounded-xl dark:bg-green-900/30">
                         <CheckCircle2 className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">{t('procurement.completedMonth')}</p>
-                        <p className="text-2xl font-black text-gray-900">
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t('procurement.completedMonth')}</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">
                             {orders.filter(o => o.status === 'Received' && isSameMonth(o.actualDeliveryDate, new Date())).length}
                         </p>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-indigo-50 rounded-xl">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4 dark:bg-gray-800 dark:border-gray-700">
+                    <div className="p-3 bg-indigo-50 rounded-xl dark:bg-indigo-900/30">
                         <Users className="w-6 h-6 text-indigo-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">{t('procurement.activeSuppliers')}</p>
-                        <p className="text-2xl font-black text-gray-900">{suppliers.filter(s => s.status === 'Active').length}</p>
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t('procurement.activeSuppliers')}</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">{suppliers.filter(s => s.status === 'Active').length}</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-red-50 rounded-xl">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4 dark:bg-gray-800 dark:border-gray-700">
+                    <div className="p-3 bg-red-50 rounded-xl dark:bg-red-900/30">
                         <AlertTriangle className="w-6 h-6 text-red-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-gray-500">{t('procurement.delayedShipments')}</p>
-                        <p className="text-2xl font-black text-gray-900">
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t('procurement.delayedShipments')}</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">
                             {orders.filter(o => ['Sent', 'Partial'].includes(o.status) && isAfter(new Date(), o.expectedDeliveryDate)).length}
                         </p>
                     </div>
@@ -212,24 +212,24 @@ export default function ProcurementHub() {
             </div>
 
             {/* Main Content Tabs */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex border-b border-gray-200 bg-gray-50/50">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+                <div className="flex border-b border-gray-200 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50">
                     <button
                         onClick={() => setActiveTab('orders')}
-                        className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors border-b-2 ${activeTab === 'orders' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors border-b-2 ${activeTab === 'orders' ? 'border-indigo-600 text-indigo-600 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700'}`}
                     >
                         <FileText className="w-4 h-4" /> {t('procurement.tabActivePos')}
                         {filteredOrders.length > 0 && (
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${activeTab === 'orders' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'}`}>{filteredOrders.length}</span>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${activeTab === 'orders' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>{filteredOrders.length}</span>
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('suppliers')}
-                        className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors border-b-2 ${activeTab === 'suppliers' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                        className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors border-b-2 ${activeTab === 'suppliers' ? 'border-indigo-600 text-indigo-600 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700'}`}
                     >
                         <Users className="w-4 h-4" /> {t('procurement.tabVendorDir')}
                         {filteredSuppliers.length > 0 && (
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${activeTab === 'suppliers' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'}`}>{filteredSuppliers.length}</span>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${activeTab === 'suppliers' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>{filteredSuppliers.length}</span>
                         )}
                     </button>
                 </div>
@@ -253,23 +253,23 @@ export default function ProcurementHub() {
                                     </thead>
                                     <tbody>
                                         {filteredOrders.length === 0 ? (
-                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noPosFound')}</td></tr>
+                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500 dark:text-gray-400">{t('procurement.noPosFound')}</td></tr>
                                         ) : filteredOrders.map(order => (
                                             <tr key={order._id}>
-                                                <td className="p-4 font-bold text-gray-900">{order.poNumber}</td>
+                                                <td className="p-4 font-bold text-gray-900 dark:text-white">{order.poNumber}</td>
                                                 <td className="p-4">
-                                                    <div className="font-medium text-gray-900">{order.supplier?.name}</div>
-                                                    <div className="text-xs text-gray-500">{t('procurement.trustScore')}: {order.supplier?.performanceMetrics?.reliabilityScore}%</div>
+                                                    <div className="font-medium text-gray-900 dark:text-white">{order.supplier?.name}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">{t('procurement.trustScore')}: {order.supplier?.performanceMetrics?.reliabilityScore}%</div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-1">
-                                                        <Clock className="w-3 h-3 text-gray-400" />
-                                                        <span className={isAfter(new Date(), order.expectedDeliveryDate) && ['Sent', 'Partial'].includes(order.status) ? 'text-red-600 font-bold' : 'text-gray-600'}>
+                                                        <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                                                        <span className={isAfter(new Date(), order.expectedDeliveryDate) && ['Sent', 'Partial'].includes(order.status) ? 'text-red-600 font-bold dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
                                                             {fmtMediumDate(order.expectedDeliveryDate)}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="p-4 font-bold text-gray-900">{order.totalAmount.toLocaleString()}</td>
+                                                <td className="p-4 font-bold text-gray-900 dark:text-white">{order.totalAmount.toLocaleString()}</td>
                                                 <td className="p-4">
                                                     <span className={`px-2.5 py-1 text-xs font-bold rounded-full border ${getOrderStatusColor(order.status)} border-opacity-20`}>
                                                         {order.status === 'Draft' ? t('procurement.statusDraft') : order.status === 'Sent' ? t('procurement.statusSent') : order.status === 'Partial' ? t('procurement.statusPartial') : order.status === 'Received' ? t('procurement.statusReceived') : t('procurement.statusCancelled')}
@@ -280,7 +280,7 @@ export default function ProcurementHub() {
                                                         <button
                                                             onClick={() => handleReceiveAll(order)}
                                                             disabled={receivingPoId === order._id}
-                                                            className="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                                                            className="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:bg-indigo-900/30"
                                                         >
                                                             {receivingPoId === order._id ? '...' : t('procurement.manageDelivery')}
                                                         </button>
@@ -309,39 +309,39 @@ export default function ProcurementHub() {
                                     </thead>
                                     <tbody>
                                         {filteredSuppliers.length === 0 ? (
-                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('procurement.noSuppliersFound')}</td></tr>
+                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500 dark:text-gray-400">{t('procurement.noSuppliersFound')}</td></tr>
                                         ) : filteredSuppliers.map(sup => (
                                             <tr key={sup._id}>
-                                                <td className="p-4 font-bold text-gray-900">
+                                                <td className="p-4 font-bold text-gray-900 dark:text-white">
                                                     {sup.name}
-                                                    <div className="text-xs text-gray-400 font-normal mt-0.5">{sup.address?.city}, {sup.address?.country}</div>
+                                                    <div className="text-xs text-gray-400 font-normal mt-0.5 dark:text-gray-500">{sup.address?.city}, {sup.address?.country}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm font-bold text-gray-800">{sup.supplierCategory || 'General Hardware'}</div>
+                                                    <div className="text-sm font-bold text-gray-800 dark:text-gray-200">{sup.supplierCategory || 'General Hardware'}</div>
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {(sup.materialsSupplied || []).map(mat => (
-                                                            <span key={mat} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded">{mat}</span>
+                                                            <span key={mat} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded dark:bg-gray-700 dark:text-gray-400">{mat}</span>
                                                         ))}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-gray-900">{sup.contactPerson?.name || '-'}</div>
-                                                    <div className="text-gray-500 text-xs">{sup.contactPerson?.email || '-'}</div>
+                                                    <div className="text-gray-900 dark:text-white">{sup.contactPerson?.name || '-'}</div>
+                                                    <div className="text-gray-500 text-xs dark:text-gray-400">{sup.contactPerson?.email || '-'}</div>
                                                 </td>
-                                                <td className="p-4 text-gray-600">{sup.performanceMetrics?.averageLeadTimeDays} {t('procurement.daysText')}</td>
+                                                <td className="p-4 text-gray-600 dark:text-gray-400">{sup.performanceMetrics?.averageLeadTimeDays} {t('procurement.daysText')}</td>
                                                 <td className="p-4">
                                                     <span className={`px-2.5 py-1 text-xs font-bold rounded border ${getSupplierScoreColor(sup.performanceMetrics?.reliabilityScore)}`}>
                                                         {sup.performanceMetrics?.reliabilityScore}%
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${sup.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${sup.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
                                                         {sup.status === 'Active' ? t('warehouses.statusActive') : t('warehouses.statusInactive')}
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
                                                     {(hasPermission('procurement.create_po') || hasPermission('inventory.adjust')) && (
-                                                        <button className="text-gray-600 hover:text-gray-900 font-bold text-sm">{t('procurement.editProfile')}</button>
+                                                        <button className="text-gray-600 hover:text-gray-900 font-bold text-sm dark:text-gray-400 dark:hover:text-white">{t('procurement.editProfile')}</button>
                                                     )}
                                                 </td>
                                             </tr>

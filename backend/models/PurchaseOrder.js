@@ -51,4 +51,7 @@ purchaseOrderSchema.pre('save', function () {
     }
 });
 
+purchaseOrderSchema.index({ supplier: 1, status: 1 });
+purchaseOrderSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('PurchaseOrder', purchaseOrderSchema);

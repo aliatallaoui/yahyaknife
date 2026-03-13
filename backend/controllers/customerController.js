@@ -67,7 +67,8 @@ const createCustomer = async (req, res) => {
         const customer = await Customer.create({ name, phone, email, acquisitionChannel, status, tenant: req.user.tenant });
         res.status(201).json(customer);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        logger.error({ err: error }, 'Error creating customer');
+        res.status(400).json({ message: 'Invalid customer data' });
     }
 };
 
@@ -90,7 +91,8 @@ const updateCustomer = async (req, res) => {
         const updatedCustomer = await customer.save();
         res.json(updatedCustomer);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        logger.error({ err: error }, 'Error updating customer');
+        res.status(400).json({ message: 'Invalid customer data' });
     }
 };
 
@@ -121,7 +123,7 @@ const getCustomerOrders = async (req, res) => {
         const filter = { customer: req.params.id, tenant: req.user.tenant };
         const [orders, total] = await Promise.all([
             Order.find(filter)
-                .populate('products.variantId')
+                .populate('products.variantId', 'name sku price')
                 .sort({ createdAt: -1 })
                 .skip(req.skip).limit(req.limit).lean(),
             Order.countDocuments(filter)

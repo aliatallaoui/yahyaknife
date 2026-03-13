@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { KeyRound, Mail, User, Building2, ArrowRight, Loader2, Eye, EyeOff, Package, LayoutDashboard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
+import AuthLangToggle from '../components/AuthLangToggle';
 
 export default function Register() {
     const [name, setName] = useState('');
@@ -73,6 +74,8 @@ export default function Register() {
                         </div>
                         <span className="text-lg font-bold text-white tracking-tight">COD Flow</span>
                     </Link>
+                    <div className="flex items-center gap-3">
+                        <AuthLangToggle />
                     {user ? (
                         <Link
                             to="/orders-hub"
@@ -89,6 +92,7 @@ export default function Register() {
                             {t('signIn')}
                         </Link>
                     )}
+                    </div>
                 </div>
             </header>
 

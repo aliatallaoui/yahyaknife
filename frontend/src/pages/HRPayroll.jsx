@@ -166,7 +166,7 @@ export default function HRPayroll() {
                         <select
                             value={period}
                             onChange={(e) => setPeriod(e.target.value)}
-                            className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-700 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all"
+                            className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-bold outline-none focus:ring-2 focus:ring-[#5D5DFF] transition-all"
                         >
                             {PERIOD_OPTIONS.map(o => (
                                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -195,39 +195,39 @@ export default function HRPayroll() {
             />
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
-                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-gray-800 p-3 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 truncate">{t('hr.totalPayrollLoad')}</p>
-                        <h3 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter truncate">{totalLoad.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
+                        <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 truncate">{t('hr.totalPayrollLoad')}</p>
+                        <h3 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tighter truncate">{totalLoad.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{t('hr.dzdCurrency')}</span></h3>
                     </div>
-                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-gray-100 shrink-0">
-                        <Calculator className="w-5 h-5 sm:w-8 sm:h-8 text-gray-600" />
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-gray-50 dark:bg-gray-700/50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-gray-100 dark:border-gray-700 shrink-0">
+                        <Calculator className="w-5 h-5 sm:w-8 sm:h-8 text-gray-600 dark:text-gray-400" />
                     </div>
                 </div>
-                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-gray-800 p-3 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-rose-600 uppercase tracking-wider mb-1 truncate">{t('hr.totalDeductions')}</p>
-                        <h3 className="text-xl sm:text-3xl font-black text-rose-700 tracking-tighter truncate">{totalDeductions.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
+                        <p className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1 truncate">{t('hr.totalDeductions')}</p>
+                        <h3 className="text-xl sm:text-3xl font-black text-rose-700 dark:text-rose-400 tracking-tighter truncate">{totalDeductions.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{t('hr.dzdCurrency')}</span></h3>
                     </div>
-                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-rose-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-rose-100 shrink-0">
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-rose-50 dark:bg-rose-900/30 rounded-xl sm:rounded-2xl flex items-center justify-center border border-rose-100 dark:border-rose-800 shrink-0">
                         <ShieldAlert className="w-5 h-5 sm:w-8 sm:h-8 text-rose-600" />
                     </div>
                 </div>
-                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-gray-800 p-3 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-emerald-600 uppercase tracking-wider mb-1 truncate">{t('hr.totalOtAdditions')}</p>
-                        <h3 className="text-xl sm:text-3xl font-black text-emerald-700 tracking-tighter truncate">{totalOT.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 font-medium">{t('hr.dzdCurrency')}</span></h3>
+                        <p className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 truncate">{t('hr.totalOtAdditions')}</p>
+                        <h3 className="text-xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400 tracking-tighter truncate">{totalOT.toLocaleString()} <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{t('hr.dzdCurrency')}</span></h3>
                     </div>
-                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-emerald-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-emerald-100 shrink-0">
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl sm:rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-800 shrink-0">
                         <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-600" />
                     </div>
                 </div>
-                <div className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-gray-800 p-3 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-amber-600 uppercase tracking-wider mb-1 truncate">{t('hr.clearanceStatus')}</p>
-                        <h3 className="text-lg sm:text-2xl font-black text-amber-700 tracking-tighter truncate">{pendingCount > 0 ? `${pendingCount} ${t('hr.statusPending')}` : t('hr.allCleared')}</h3>
+                        <p className="text-xs sm:text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 truncate">{t('hr.clearanceStatus')}</p>
+                        <h3 className="text-lg sm:text-2xl font-black text-amber-700 dark:text-amber-400 tracking-tighter truncate">{pendingCount > 0 ? `${pendingCount} ${t('hr.statusPending')}` : t('hr.allCleared')}</h3>
                     </div>
-                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-amber-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
+                    <div className="h-10 w-10 sm:h-16 sm:w-16 bg-amber-50 dark:bg-amber-900/30 rounded-xl sm:rounded-2xl flex items-center justify-center border border-amber-100 dark:border-amber-800 shrink-0">
                         {pendingCount > 0 ? <ShieldAlert className="w-5 h-5 sm:w-8 sm:h-8 text-amber-600" /> : <CheckCircle className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-600" />}
                     </div>
                 </div>
@@ -235,10 +235,10 @@ export default function HRPayroll() {
 
             {/* Inline error toast */}
             {errorMsg && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{errorMsg}</span>
-                    <button onClick={() => setErrorMsg(null)} className="p-1 hover:bg-red-100 rounded transition-colors">
+                    <button onClick={() => setErrorMsg(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-800/50 rounded transition-colors">
                         <X className="w-3.5 h-3.5" />
                     </button>
                 </div>
@@ -254,7 +254,7 @@ export default function HRPayroll() {
                         placeholder={t('hr.searchEmployeePlaceholder', 'Search... (Press /)')}
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full ps-9 pe-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all font-bold"
+                        className="w-full ps-9 pe-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all font-bold"
                     />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -263,12 +263,12 @@ export default function HRPayroll() {
                         return (
                             <button key={status} onClick={() => setFilterStatus(status)}
                                 className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors',
-                                    filterStatus === status ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                    filterStatus === status ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                                 )}>
                                 {status === 'All' ? t('hr.allStatus', 'All') : status}
                                 {count > 0 && (
                                     <span className={clsx('text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none',
-                                        filterStatus === status ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                                        filterStatus === status ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                                     )}>{count}</span>
                                 )}
                             </button>
@@ -287,7 +287,7 @@ export default function HRPayroll() {
                                 <th className="text-end">{t('hr.colBaseContract')}</th>
                                 <th className="text-end">{t('hr.colDeductions')}</th>
                                 <th className="text-end">{t('hr.colOtAdditions')}</th>
-                                <th className="text-end !text-gray-900">{t('hr.colFinalPayable')}</th>
+                                <th className="text-end !text-gray-900 dark:!text-white">{t('hr.colFinalPayable')}</th>
                                 <th className="text-center">{t('hr.colStatus')}</th>
                                 <th className="text-center">{t('hr.colActions')}</th>
                             </tr>
@@ -300,60 +300,60 @@ export default function HRPayroll() {
                             )}
                             {records.length === 0 && !loading && (
                                 <tr className="empty-state">
-                                    <td colSpan={7} className="py-16 text-center text-sm text-gray-400 font-medium">
-                                        <Calculator className="w-8 h-8 mx-auto mb-2 text-gray-200" />
+                                    <td colSpan={7} className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 font-medium">
+                                        <Calculator className="w-8 h-8 mx-auto mb-2 text-gray-200 dark:text-gray-600" />
                                         {t('hr.noPayrollRecords', 'No payroll records for this period. Generate a run to get started.')}
                                     </td>
                                 </tr>
                             )}
                             {records.length > 0 && filteredRecords.length === 0 && (
                                 <tr className="empty-state"><td colSpan={7} className="px-6 py-12 text-center">
-                                    <Search className="w-8 h-8 mx-auto text-gray-200 mb-2" />
-                                    <p className="text-sm text-gray-400 font-medium">{t('hr.noEmployeesFound', 'No records match your search or filter.')}</p>
+                                    <Search className="w-8 h-8 mx-auto text-gray-200 dark:text-gray-600 mb-2" />
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">{t('hr.noEmployeesFound', 'No records match your search or filter.')}</p>
                                 </td></tr>
                             )}
                             {filteredRecords.map(record => (
                                 <tr key={record._id}>
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-900">{record.employeeId?.name || t('hr.unknownEmployee')}</div>
-                                        <div className="text-xs text-gray-500 font-medium mt-0.5">{record.employeeId?.role || '-'}</div>
+                                        <div className="font-bold text-gray-900 dark:text-white">{record.employeeId?.name || t('hr.unknownEmployee')}</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">{record.employeeId?.role || '-'}</div>
                                     </td>
 
                                     <td className="px-6 py-4 text-end">
-                                        <span className="text-sm font-medium text-gray-600">{(record.baseSalary || 0).toLocaleString()}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{(record.baseSalary || 0).toLocaleString()}</span>
                                     </td>
 
                                     <td className="px-6 py-4 text-end">
-                                        <div className="text-sm font-bold text-rose-600">
+                                        <div className="text-sm font-bold text-rose-600 dark:text-rose-400">
                                             -{(record.missingTimeDeductions + record.absenceDeductions).toLocaleString()}
                                         </div>
                                         {record.metricsTotal.totalMissingMinutes > 0 && (
-                                            <div className="text-[10px] text-gray-400 mt-1">{record.metricsTotal.totalMissingMinutes}{t('hr.lblMinutes')} {t('hr.lblMissing')}</div>
+                                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{record.metricsTotal.totalMissingMinutes}{t('hr.lblMinutes')} {t('hr.lblMissing')}</div>
                                         )}
                                     </td>
 
                                     <td className="px-6 py-4 text-end">
-                                        <div className="text-sm font-bold text-emerald-600">
+                                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                                             +{record.overtimeAdditions.toLocaleString()}
                                         </div>
                                     </td>
 
-                                    <td className="px-6 py-4 text-right bg-gray-50/50">
-                                        <span className="text-lg font-black text-gray-900">{(record.finalPayableSalary || 0).toLocaleString()}</span> <span className="text-xs text-gray-500">{t('hr.dzdCurrency')}</span>
+                                    <td className="px-6 py-4 text-right bg-gray-50/50 dark:bg-gray-700/30">
+                                        <span className="text-lg font-black text-gray-900 dark:text-white">{(record.finalPayableSalary || 0).toLocaleString()}</span> <span className="text-xs text-gray-500 dark:text-gray-400">{t('hr.dzdCurrency')}</span>
                                         {(record.amountPaid > 0 && record.amountPaid < record.finalPayableSalary) && (
-                                            <div className="text-xs font-bold text-amber-600 mt-1 pb-1 border-b border-amber-200/50">{t('hr.lblPaid')} {(record.amountPaid || 0).toLocaleString()} {t('hr.dzdCurrency')}</div>
+                                            <div className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1 pb-1 border-b border-amber-200/50 dark:border-amber-700/50">{t('hr.lblPaid')} {(record.amountPaid || 0).toLocaleString()} {t('hr.dzdCurrency')}</div>
                                         )}
                                         {record.amountPaid > 0 && (
-                                            <div className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{t('hr.lblRemaining')} {((record.finalPayableSalary || 0) - (record.amountPaid || 0)).toLocaleString()}</div>
+                                            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-wider">{t('hr.lblRemaining')} {((record.finalPayableSalary || 0) - (record.amountPaid || 0)).toLocaleString()}</div>
                                         )}
                                     </td>
 
                                     <td className="px-6 py-4 text-center">
-                                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${record.status === 'Pending Approval' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                            record.status === 'Approved' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                            record.status === 'Partially Paid' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                                record.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                    'bg-gray-50 text-gray-600 border-gray-200'
+                                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${record.status === 'Pending Approval' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' :
+                                            record.status === 'Approved' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' :
+                                            record.status === 'Partially Paid' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800' :
+                                                record.status === 'Paid' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' :
+                                                    'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                                             }`}>
                                             {record.status === 'Pending Approval' ? t('hr.statusPendingApproval') :
                                                 record.status === 'Approved' ? t('hr.statusApproved', 'Approved') :
@@ -363,16 +363,16 @@ export default function HRPayroll() {
                                     </td>
 
                                     <td className="px-6 py-4 flex justify-center gap-2">
-                                        <button onClick={() => window.print()} className="p-1.5 bg-gray-100 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition" title={t('hr.downloadPayslip')}>
+                                        <button onClick={() => window.print()} className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition" title={t('hr.downloadPayslip')}>
                                             <Download className="w-4 h-4" />
                                         </button>
                                         {record.status === 'Pending Approval' && hasPermission('hr.payroll.approve') && (
-                                            <button onClick={() => handleApprove(record._id)} className="p-1.5 bg-gray-100 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition font-bold text-xs px-3" title={t('hr.approvePayroll', 'Approve')}>
+                                            <button onClick={() => handleApprove(record._id)} className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition font-bold text-xs px-3" title={t('hr.approvePayroll', 'Approve')}>
                                                 {t('hr.btnApprove', 'Approve')}
                                             </button>
                                         )}
                                         {(record.status === 'Approved' || record.status === 'Partially Paid') && hasPermission('hr.payroll.approve') && (
-                                            <button onClick={() => setPaymentModal({ id: record._id, maxPayable: record.finalPayableSalary - (record.amountPaid || 0), empName: record.employeeId?.name })} className="p-1.5 bg-gray-100 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition font-bold text-xs px-3" title={t('hr.processPayment')}>
+                                            <button onClick={() => setPaymentModal({ id: record._id, maxPayable: record.finalPayableSalary - (record.amountPaid || 0), empName: record.employeeId?.name })} className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded transition font-bold text-xs px-3" title={t('hr.processPayment')}>
                                                 {t('hr.btnPay')}
                                             </button>
                                         )}
@@ -390,36 +390,36 @@ export default function HRPayroll() {
             {/* Partial / Full Payment Modal */}
             {paymentModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/80">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                                 <Calculator className="w-5 h-5 text-emerald-600" /> {t('hr.modalIssuePaymentTitle')}
                             </h2>
                         </div>
                         <div className="p-6">
-                            <p className="text-sm text-gray-500 mb-4">
-                                {t('hr.issuingPaymentFor')} <strong className="text-gray-900">{paymentModal.empName}</strong>.
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                {t('hr.issuingPaymentFor')} <strong className="text-gray-900 dark:text-white">{paymentModal.empName}</strong>.
                                 <br />{t('hr.remainingDeficit')} <strong className="text-rose-600">{(paymentModal.maxPayable || 0).toLocaleString()} {t('hr.dzdCurrency')}</strong>
                             </p>
 
-                            <label className="block text-sm font-bold text-gray-700 mb-2">{t('hr.lblPaymentAmount')}</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('hr.lblPaymentAmount')}</label>
                             <input
                                 type="number"
                                 value={paymentAmount}
                                 onChange={(e) => setPaymentAmount(e.target.value)}
                                 placeholder={t('hr.placeholderAmount')}
-                                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 text-lg font-mono px-4 py-3 border outline-none ltr:text-left rtl:text-right"
+                                className="w-full border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 text-lg font-mono px-4 py-3 border outline-none ltr:text-left rtl:text-right bg-white dark:bg-gray-700 dark:text-gray-100"
                             />
 
                             <button onClick={setFullPayment} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 mt-2 block ltr:ml-auto rtl:mr-auto">
                                 {t('hr.clearFullBalance')} ({paymentModal.maxPayable})
                             </button>
                         </div>
-                        <div className="px-6 py-4 bg-gray-50 flex gap-3 ltr:flex-row-reverse rtl:flex-row border-t border-gray-100">
-                            <button onClick={submitPayment} disabled={!paymentAmount || isNaN(paymentAmount) || Number(paymentAmount) <= 0 || Number(paymentAmount) > paymentModal.maxPayable} className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors flex-1 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/80 flex gap-3 ltr:flex-row-reverse rtl:flex-row border-t border-gray-100 dark:border-gray-700">
+                            <button onClick={submitPayment} disabled={!paymentAmount || isNaN(paymentAmount) || Number(paymentAmount) <= 0 || Number(paymentAmount) > paymentModal.maxPayable} className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors flex-1 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed">
                                 {t('hr.btnConfirmPayout')}
                             </button>
-                            <button onClick={() => { setPaymentModal(null); setPaymentAmount(''); }} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors">
+                            <button onClick={() => { setPaymentModal(null); setPaymentAmount(''); }} className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                                 {t('hr.btnCancel')}
                             </button>
                         </div>

@@ -128,8 +128,8 @@ export default function CourierDetails() {
     ];
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
-            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-indigo-600 animate-spin" />
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400 dark:text-gray-500">
+            <div className="w-8 h-8 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-indigo-600 animate-spin" />
             <span className="text-sm font-medium">{t('common.loading', 'Loading...')}</span>
         </div>
     );
@@ -143,7 +143,7 @@ export default function CourierDetails() {
                     <div className="flex gap-3">
                         <button
                             onClick={() => navigate('/couriers')}
-                            className="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 flex items-center transition-colors"
+                            className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center transition-colors"
                         >
                             <ArrowLeft className={clsx("w-4 h-4", isRTL ? "ml-2 rotate-180" : "mr-2")} />
                             {t('common.back', 'Back')}
@@ -162,7 +162,7 @@ export default function CourierDetails() {
                             <button
                                 onClick={handleDelete}
                                 disabled={deleting}
-                                className="px-4 py-2 bg-white text-red-600 font-bold rounded-lg shadow-sm border border-red-200 hover:bg-red-50 disabled:opacity-50 flex items-center transition-colors"
+                                className="px-4 py-2 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 font-bold rounded-lg shadow-sm border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 flex items-center transition-colors"
                             >
                                 <Trash2 className={clsx("w-4 h-4", isRTL ? "ml-2" : "mr-2")} />
                                 {deleting ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
@@ -172,8 +172,8 @@ export default function CourierDetails() {
                 }
             />
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="border-b border-gray-200 flex overflow-x-auto hide-scrollbar">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="border-b border-gray-200 dark:border-gray-700 flex overflow-x-auto hide-scrollbar">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
@@ -182,9 +182,9 @@ export default function CourierDetails() {
                             className={clsx(
                                 "flex items-center gap-2 px-6 py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap",
                                 activeTab === tab.id
-                                    ? "border-indigo-600 text-indigo-600 bg-indigo-50/30"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50",
-                                tab.disabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
+                                    ? "border-indigo-600 text-indigo-600 bg-indigo-50/30 dark:bg-indigo-900/20"
+                                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
+                                tab.disabled && "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
                             )}
                         >
                             {tab.icon}
@@ -198,40 +198,40 @@ export default function CourierDetails() {
                         <div className="max-w-3xl space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.name', 'Company Name')}</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('couriers.name', 'Company Name')}</label>
                                     <input
                                         type="text"
                                         value={courier.name}
                                         onChange={e => setCourier({ ...courier, name: e.target.value })}
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border dark:bg-gray-700 dark:text-gray-100"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.phone', 'Contact Dispatch Number')}</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('couriers.phone', 'Contact Dispatch Number')}</label>
                                     <input
                                         type="text"
                                         value={courier.phone}
                                         onChange={e => setCourier({ ...courier, phone: e.target.value })}
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border dark:bg-gray-700 dark:text-gray-100"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.integrationType', 'Integration Mode')}</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('couriers.integrationType', 'Integration Mode')}</label>
                                     <select
                                         value={courier.integrationType}
                                         onChange={e => setCourier({ ...courier, integrationType: e.target.value })}
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border dark:bg-gray-700 dark:text-gray-100"
                                     >
                                         <option value="Manual">{t('couriers.integrationManual', 'Manual Logistics (Internal Riders)')}</option>
                                         <option value="API">{t('couriers.integrationApi', 'Full API Automation')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.status', 'System Status')}</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('couriers.status', 'System Status')}</label>
                                     <select
                                         value={courier.status}
                                         onChange={e => setCourier({ ...courier, status: e.target.value })}
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-gray-50"
+                                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-gray-50 dark:bg-gray-700 dark:text-gray-100"
                                     >
                                         <option value="Active">🟢 {t('couriers.statusActive', 'Active')}</option>
                                         <option value="Inactive">🔴 {t('couriers.statusInactive', 'Disabled')}</option>
@@ -240,12 +240,12 @@ export default function CourierDetails() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('couriers.notes', 'Internal Notes')}</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('couriers.notes', 'Internal Notes')}</label>
                                 <textarea
                                     value={courier.notes}
                                     onChange={e => setCourier({ ...courier, notes: e.target.value })}
                                     rows="3"
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border"
+                                    className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
                         </div>

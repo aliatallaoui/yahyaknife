@@ -194,6 +194,7 @@ exports.getCourierDeliveries = async (req, res) => {
         .select('orderId date customer shipping financials.codAmount status paymentStatus')
         .populate('customer', 'name phone')
         .sort({ 'deliveryStatus.deliveredAt': 1 })
+        .limit(1000)
         .lean();
 
         res.json(ok(deliveries));

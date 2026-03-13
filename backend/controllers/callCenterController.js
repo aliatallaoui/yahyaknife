@@ -256,9 +256,10 @@ exports.logCallAction = async (req, res) => {
                 !['Cancelled', 'Cancelled by Customer', 'Returned', 'Refused'].includes(statusBefore)) {
                 for (const item of order.products) {
                     if (!item.variantId) continue;
-                    fireAndRetry('restoreStock:callCenter', () => ProductVariant.findByIdAndUpdate(item.variantId, {
-                        $inc: { reservedStock: -item.quantity, totalSold: -item.quantity }
-                    }));
+                    fireAndRetry('restoreStock:callCenter', () => ProductVariant.findOneAndUpdate(
+                        { _id: item.variantId, tenant: tenantId },
+                        { $inc: { reservedStock: -item.quantity, totalSold: -item.quantity } }
+                    ));
                 }
             }
             // Update customer metrics on any status change
@@ -332,6 +333,7 @@ exports.getOrderCallHistory = async (req, res) => {
         const calls = await CallNote.find({ order: orderId, tenant: tenantId })
             .populate('agent', 'name email')
             .sort({ createdAt: 1 })
+            .limit(500)
             .lean();
 
         res.json({ orderId, totalAttempts: calls.length, calls });

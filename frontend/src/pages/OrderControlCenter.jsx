@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Search, Filter, SlidersHorizontal, ArrowDownCircle, CheckSquare, X, LayoutTemplate, Settings2, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, User, Activity, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, ArrowDownCircle, X, LayoutTemplate, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import PageHeader from '../components/PageHeader';
 import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
@@ -17,7 +17,6 @@ import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../const
 import { useConfirmDialog } from '../components/ConfirmDialog';
 
 const FILTER_KEYS = ['status', 'courier', 'agent', 'wilaya', 'channel', 'priority', 'tags', 'dateFrom', 'dateTo'];
-const STATUS_STYLES = ORDER_STATUS_COLORS;
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -820,6 +819,25 @@ export default function OrderControlCenter() {
             .filter(Boolean);
     }, [orderedColumnIds, hiddenColumns, columnDefinitions]);
 
+    // Pre-compute filtered status lists for header selects & bulk HUD (avoids re-filtering per render)
+    const stageFilteredStatuses = useMemo(() => {
+        return COD_STATUSES.filter(s => {
+            if (activeStage === 'pre-dispatch') return ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'].includes(s);
+            if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
+            if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
+            return true;
+        });
+    }, [activeStage]);
+
+    const bulkFilteredStatuses = useMemo(() => {
+        return COD_STATUSES.filter(s => {
+            if (activeStage === 'pre-dispatch') return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'].includes(s);
+            if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
+            if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
+            return true;
+        });
+    }, [activeStage]);
+
     // Column Drag and Drop Handlers
     const handleDragStart = (e, id) => {
         setDraggedColumnId(id);
@@ -1362,12 +1380,7 @@ export default function OrderControlCenter() {
                                             {col.id === 'status' && (
                                                 <select value={filters.status} onChange={e => handleFilterChange('status', e.target.value)} onClick={e => e.stopPropagation()} className="max-w-[140px] min-w-[110px] px-1 py-1 rounded border-transparent hover:border-gray-200 dark:hover:border-gray-600 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold bg-transparent focus:bg-white dark:focus:bg-gray-700 cursor-pointer w-full uppercase tracking-wider">
                                                     <option value="">{col.label}</option>
-                                                    {COD_STATUSES.filter(s => {
-                                                        if (activeStage === 'pre-dispatch') return ['New', 'Calling', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'].includes(s);
-                                                        if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
-                                                        if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
-                                                        return true;
-                                                    }).map(s => <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>)}
+                                                    {stageFilteredStatuses.map(s => <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>)}
                                                 </select>
                                             )}
                                             {col.id === 'agent' && (
@@ -1565,12 +1578,7 @@ export default function OrderControlCenter() {
                                 >
                                     <option value="" disabled>{bulkActionType === 'status' ? t('ordersControl.bulk.selectStatus') : bulkActionType === 'agent' ? t('ordersControl.bulk.selectAgent') : t('ordersControl.bulk.selectCourier')}</option>
                                     {bulkActionType === 'status' && (
-                                        COD_STATUSES.filter(s => {
-                                            if (activeStage === 'pre-dispatch') return ['New', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Refused', 'Cancelled'].includes(s);
-                                            if (activeStage === 'post-dispatch') return ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid'].includes(s);
-                                            if (activeStage === 'returns') return ['Returned', 'Refused'].includes(s);
-                                            return true;
-                                        }).map(s => <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>)
+                                        bulkFilteredStatuses.map(s => <option key={s} value={s}>{getOrderStatusLabel(t, s)}</option>)
                                     )}
                                     {bulkActionType === 'agent' && [
                                         <option key="unassigned" value="unassigned">{t('ordersControl.bulk.unassignAgent')}</option>,

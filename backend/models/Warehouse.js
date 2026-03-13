@@ -36,4 +36,7 @@ const warehouseSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+warehouseSchema.index({ status: 1 });
+warehouseSchema.index({ name: 1 });
+
 module.exports = mongoose.model('Warehouse', warehouseSchema);

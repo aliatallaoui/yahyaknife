@@ -36,4 +36,7 @@ const supplierSchema = new mongoose.Schema({
     notes: String
 }, { timestamps: true });
 
+supplierSchema.index({ status: 1 });
+supplierSchema.index({ name: 1 });
+
 module.exports = mongoose.model('Supplier', supplierSchema);

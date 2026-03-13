@@ -37,7 +37,8 @@ exports.createCourier = async (req, res) => {
         delete response.apiToken;
         res.status(201).json(response);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Error creating courier');
+        res.status(400).json({ error: 'Invalid courier data' });
     }
 };
 
@@ -63,7 +64,8 @@ exports.updateCourier = async (req, res) => {
         delete response.apiToken;
         res.json(response);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        logger.error({ err: error }, 'Error updating courier');
+        res.status(400).json({ error: 'Invalid courier data' });
     }
 };
 
@@ -223,7 +225,9 @@ exports.getSettlementHistory = async (req, res) => {
 
         const settlements = await CourierSettlement.find({ courier: id, tenant: tenantId })
             .populate('settledBy', 'name email')
-            .sort({ settledAt: -1 });
+            .sort({ settledAt: -1 })
+            .limit(500)
+            .lean();
 
         const totalSettled = settlements.reduce((sum, s) => sum + s.amountSettled, 0);
 
@@ -255,7 +259,7 @@ exports.assignOrdersToCourier = async (req, res) => {
             tenant: tenantId,
             status: { $in: ['New', 'Confirmed', 'Preparing'] },
             deletedAt: null
-        }).select('_id');
+        }).select('_id').lean();
 
         let modified = 0;
         const errors = [];

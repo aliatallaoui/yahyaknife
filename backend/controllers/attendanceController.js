@@ -65,7 +65,7 @@ exports.recordPointage = async (req, res) => {
 };
 
 exports.calculateDailyMetrics = async (attendanceId) => {
-    const attendance = await Attendance.findById(attendanceId).populate('employeeId');
+    const attendance = await Attendance.findById(attendanceId).populate('employeeId', 'contractSettings');
     if (!attendance || !attendance.employeeId) return null;
 
     const employee = attendance.employeeId;

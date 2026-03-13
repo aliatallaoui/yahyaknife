@@ -50,9 +50,10 @@ exports.createPurchaseOrder = async (req, res) => {
         const populatedPO = await PurchaseOrder.findById(newPO._id)
             .populate('supplier', 'name email phone')
             .populate({
-                path: 'items.itemRef', // Changed from variant to itemRef
+                path: 'items.itemRef',
                 populate: { path: 'productId', select: 'name sku' }
-            });
+            })
+            .lean();
 
         res.status(201).json(populatedPO);
     } catch (error) {
@@ -102,9 +103,10 @@ exports.updatePOStatus = async (req, res) => {
 
                     if (item.itemModel === 'ProductVariant') {
                         // Increment totalStock
-                        await ProductVariant.findByIdAndUpdate(item.itemRef._id, {
-                            $inc: { totalStock: newReceiveQty }
-                        });
+                        await ProductVariant.findOneAndUpdate(
+                            { _id: item.itemRef._id, tenant: req.user.tenant },
+                            { $inc: { totalStock: newReceiveQty } }
+                        );
 
                         // Log movement in InventoryLedger
                         await logStockMovement(
@@ -129,9 +131,10 @@ exports.updatePOStatus = async (req, res) => {
         const updatedPO = await PurchaseOrder.findById(id)
             .populate('supplier', 'name email phone')
             .populate({
-                path: 'items.itemRef', // Changed from variant to itemRef
+                path: 'items.itemRef',
                 populate: { path: 'productId', select: 'name sku' }
-            });
+            })
+            .lean();
 
         res.json(updatedPO);
     } catch (error) {
