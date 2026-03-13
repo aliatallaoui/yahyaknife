@@ -1,9 +1,28 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const crypto = require('crypto');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { PERMS } = require('../shared/constants/permissions');
 const ctrl = require('../controllers/salesChannelController');
 const wrap = require('../shared/middleware/asyncHandler');
+
+// Multer config for page block images
+const pageImageStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, path.join(__dirname, '..', 'uploads', 'pages')),
+    filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+        cb(null, `block-${crypto.randomBytes(8).toString('hex')}${ext}`);
+    }
+});
+const uploadPageImage = multer({
+    storage: pageImageStorage,
+    fileFilter: (_req, file, cb) => {
+        cb(null, /^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.mimetype));
+    },
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
 
 // All routes require authentication
 router.use(protect);
@@ -21,6 +40,13 @@ router.get('/:id/analytics', requirePermission(PERMS.SALES_CHANNELS_ANALYTICS), 
 
 router.get('/ai/themes', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getThemeTemplates));
 router.post('/:channelId/pages/ai-generate', express.json({ limit: '20mb' }), requirePermission(PERMS.SALES_CHANNELS_CREATE), wrap(ctrl.generateAIPage));
+
+// ── Block Image Upload ──────────────────────────────────────────────────────
+
+router.post('/pages/upload-image', requirePermission(PERMS.SALES_CHANNELS_EDIT), uploadPageImage.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'No image file uploaded' });
+    res.json({ url: `/uploads/pages/${req.file.filename}` });
+});
 
 // ── Landing Pages (nested under channel) ────────────────────────────────────
 

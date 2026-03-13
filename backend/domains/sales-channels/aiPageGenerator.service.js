@@ -15,12 +15,15 @@ const { GoogleGenAI } = require('@google/genai');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const Product = require('../../models/Product');
 const ProductVariant = require('../../models/ProductVariant');
 const SalesChannel = require('../../models/SalesChannel');
 const LandingPage = require('../../models/LandingPage');
 const AppError = require('../../shared/errors/AppError');
 const logger = require('../../shared/logger');
+
+const PAGES_UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'pages');
 
 /**
  * Convert a local image URL (e.g. /uploads/products/abc.jpg) to a base64 data-URI.
@@ -45,6 +48,43 @@ function imageToBase64(imgPath) {
         logger.warn({ err, filePath }, 'Failed to read product image from disk');
         return null;
     }
+}
+
+/**
+ * Save a base64 data-URI image to disk and return the public URL path.
+ * @param {string} dataUri - e.g. "data:image/png;base64,iVBORw0KGgo..."
+ * @param {string} prefix - filename prefix (e.g. "hero", "benefits")
+ * @returns {string|null} URL path like "/uploads/pages/hero-abc123.png" or null on failure
+ */
+function saveBase64Image(dataUri, prefix = 'img') {
+    if (!dataUri || !dataUri.startsWith('data:')) return null;
+    try {
+        const match = dataUri.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (!match) return null;
+        const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+        const buffer = Buffer.from(match[2], 'base64');
+        const filename = `${prefix}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+        fs.writeFileSync(path.join(PAGES_UPLOAD_DIR, filename), buffer);
+        return `/uploads/pages/${filename}`;
+    } catch (err) {
+        logger.warn({ err: err.message, prefix }, 'Failed to save generated image to disk');
+        return null;
+    }
+}
+
+/**
+ * Persist all base64 images in a generated image map to disk.
+ * Replaces data-URIs with file paths in-place.
+ * @param {Object} imageMap - { hero: "data:...", benefits: "data:...", ... }
+ * @returns {Object} Same map with data-URIs replaced by /uploads/pages/... paths
+ */
+function persistImageMap(imageMap) {
+    const persisted = {};
+    for (const [key, dataUri] of Object.entries(imageMap)) {
+        const filePath = saveBase64Image(dataUri, key);
+        persisted[key] = filePath || dataUri; // fallback to data-URI if save fails
+    }
+    return persisted;
 }
 
 // ── Shared AI Client ─────────────────────────────────────────────────────────
@@ -659,7 +699,7 @@ exports.generateLandingPage = async ({
     if (generateImages) {
         try {
             const ai = getAIClient();
-            generatedImages = await generateMarketingImages({
+            const rawImages = await generateMarketingImages({
                 ai,
                 productName: productName || aiResult.analysis?.productType || 'product',
                 aiAnalysis: aiResult.analysis,
@@ -667,6 +707,9 @@ exports.generateLandingPage = async ({
                 referenceImage: analysisImages[0],
                 language: language || 'en'
             });
+            // Persist base64 images to disk — replace data-URIs with file paths
+            generatedImages = persistImageMap(rawImages);
+            logger.info({ persisted: Object.keys(generatedImages).length }, 'AI images saved to disk');
         } catch (err) {
             // Image generation is non-critical — log and continue without images
             logger.warn({ err: err.message }, 'Nano Banana image generation failed — continuing without AI images');

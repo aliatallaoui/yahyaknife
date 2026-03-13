@@ -14,8 +14,9 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 function safeMediaUrl(url) {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
-  // Allow only http(s), relative paths, and blob URLs
+  // Allow http(s), relative paths, blob URLs, and base64 image data-URIs
   if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('blob:')) return trimmed;
+  if (/^data:image\/(jpeg|jpg|png|webp|gif|svg\+xml);base64,/i.test(trimmed)) return trimmed;
   return '';
 }
 
@@ -119,6 +120,60 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
     }).catch(() => {});
   }, [storeSlug, storePageSlug, isPreview]);
 
+  // SEO meta tags + document title
+  useEffect(() => {
+    if (!pageData) return;
+    const { page, product, pixels: px } = pageData;
+    const seo = page.seo || {};
+
+    // Document title
+    document.title = seo.title || page.title || product?.name || 'Store';
+
+    // Helper to set/create a meta tag
+    const setMeta = (attr, key, content) => {
+      if (!content) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+
+    setMeta('name', 'description', seo.description);
+    setMeta('property', 'og:title', seo.title || page.title);
+    setMeta('property', 'og:description', seo.description);
+    setMeta('property', 'og:type', 'product');
+    if (seo.ogImage || product?.images?.[0]) {
+      const imgUrl = seo.ogImage || product.images[0];
+      setMeta('property', 'og:image', imgUrl.startsWith('/') ? `${window.location.origin}${imgUrl}` : imgUrl);
+    }
+    setMeta('property', 'og:url', window.location.href);
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', seo.title || page.title);
+    setMeta('name', 'twitter:description', seo.description);
+
+    // GTM container (if configured)
+    const gtmId = px?.googleTagManagerId;
+    if (gtmId && /^GTM-[A-Z0-9]+$/i.test(gtmId) && !document.getElementById('gtm-script')) {
+      const s = document.createElement('script');
+      s.id = 'gtm-script';
+      s.innerHTML = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`;
+      document.head.appendChild(s);
+    }
+
+    return () => { document.title = 'Store'; };
+  }, [pageData]);
+
+  // Fire ViewContent pixel once after pixels are loaded
+  const viewContentFired = useRef(false);
+  useEffect(() => {
+    if (!pageData || isPreview || viewContentFired.current) return;
+    // Small delay to ensure pixel scripts have loaded
+    const timer = setTimeout(() => {
+      firePixelEvent('ViewContent', { content_name: pageData.product?.name, content_type: 'product', currency: 'DZD' });
+      viewContentFired.current = true;
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [pageData, isPreview]);
+
   // Fetch communes when wilaya changes
   useEffect(() => {
     if (!formData.wilayaCode || !pageData || !storeSlug || !storePageSlug) return;
@@ -166,6 +221,7 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
     if (Object.keys(errors).length) { setFormErrors(errors); return; }
 
     trackEvent('form_submit', { variantId: selectedVariant?._id, quantity });
+    firePixelEvent('InitiateCheckout', { value: totalPrice, currency: 'DZD', content_name: product?.name });
     setSubmitting(true);
 
     try {

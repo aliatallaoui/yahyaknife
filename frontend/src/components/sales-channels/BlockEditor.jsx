@@ -1,5 +1,7 @@
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { apiFetch } from '../../utils/apiFetch';
 
 /**
  * Block-specific settings editor.
@@ -74,6 +76,52 @@ export default function BlockEditor({ block, onUpdate }) {
       />
     </div>
   );
+
+  // Image upload for block backgrounds/badges
+  const ImageUpload = ({ label, field }) => {
+    const [uploading, setUploading] = useState(false);
+    const inputRef = useRef();
+    const currentUrl = settings[field] || '';
+
+    const handleUpload = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setUploading(true);
+      try {
+        const form = new FormData();
+        form.append('image', file);
+        const res = await apiFetch('/api/sales-channels/pages/upload-image', { method: 'POST', body: form });
+        const json = await res.json();
+        const url = json.data?.url ?? json.url;
+        if (url) update(field, url);
+      } catch { /* ignore */ }
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    };
+
+    return (
+      <div className="mb-3">
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
+        {currentUrl && (
+          <div className="relative mb-1.5 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+            <img src={currentUrl.startsWith('/') ? `${import.meta.env.VITE_API_URL || ''}${currentUrl}` : currentUrl} alt="" className="w-full h-24 object-cover" />
+            <button onClick={() => update(field, '')} className="absolute top-1 right-1 p-0.5 bg-black/60 rounded-full text-white hover:bg-red-600">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="w-full flex items-center justify-center gap-1.5 p-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:border-blue-400 hover:text-blue-600 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {uploading ? <span className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full" /> : <Upload className="w-3 h-3" />}
+          {uploading ? 'Uploading...' : currentUrl ? 'Replace Image' : 'Upload Image'}
+        </button>
+        <input ref={inputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+      </div>
+    );
+  };
 
   // List editor for items (benefits, FAQ, testimonials, etc.)
   const ListEditor = ({ field, itemFields, addLabel }) => {
@@ -151,7 +199,7 @@ export default function BlockEditor({ block, onUpdate }) {
           <TextInput label="Headline" field="headline" placeholder="Get Yours Today!" />
           <TextInput label="Subheadline" field="subheadline" placeholder="Limited time offer" />
           <TextInput label="CTA Text" field="ctaText" placeholder="Order Now" />
-          <TextInput label="Background Image URL" field="backgroundImage" placeholder="https://..." />
+          <ImageUpload label="Background Image" field="backgroundImage" />
         </>
       );
 
@@ -169,15 +217,18 @@ export default function BlockEditor({ block, onUpdate }) {
 
     case 'benefits':
       return (
-        <ListEditor
-          field="items"
-          addLabel="Add Benefit"
-          itemFields={[
-            { key: 'title', label: 'Title', placeholder: 'Free Shipping' },
-            { key: 'description', label: 'Description', placeholder: 'On all orders', multiline: true },
-            { key: 'icon', label: 'Icon', placeholder: 'check, truck, shield, star' }
-          ]}
-        />
+        <>
+          <ImageUpload label="Section Background" field="backgroundImage" />
+          <ListEditor
+            field="items"
+            addLabel="Add Benefit"
+            itemFields={[
+              { key: 'title', label: 'Title', placeholder: 'Free Shipping' },
+              { key: 'description', label: 'Description', placeholder: 'On all orders', multiline: true },
+              { key: 'icon', label: 'Icon', placeholder: 'check, truck, shield, star' }
+            ]}
+          />
+        </>
       );
 
     case 'text':
@@ -195,7 +246,7 @@ export default function BlockEditor({ block, onUpdate }) {
     case 'image':
       return (
         <>
-          <TextInput label="Image URL" field="url" placeholder="https://..." />
+          <ImageUpload label="Image" field="url" />
           <TextInput label="Alt Text" field="alt" placeholder="Product image" />
           <Toggle label="Full Width" field="fullWidth" />
         </>
@@ -211,16 +262,19 @@ export default function BlockEditor({ block, onUpdate }) {
 
     case 'testimonials':
       return (
-        <ListEditor
-          field="items"
-          addLabel="Add Testimonial"
-          itemFields={[
-            { key: 'name', label: 'Name', placeholder: 'Ahmed M.' },
-            { key: 'text', label: 'Testimonial', placeholder: 'Great product!', multiline: true },
-            { key: 'rating', label: 'Rating (1-5)', type: 'number', min: 1, max: 5, default: 5 },
-            { key: 'avatar', label: 'Avatar URL', placeholder: 'https://...' }
-          ]}
-        />
+        <>
+          <ImageUpload label="Section Background" field="backgroundImage" />
+          <ListEditor
+            field="items"
+            addLabel="Add Testimonial"
+            itemFields={[
+              { key: 'name', label: 'Name', placeholder: 'Ahmed M.' },
+              { key: 'text', label: 'Testimonial', placeholder: 'Great product!', multiline: true },
+              { key: 'rating', label: 'Rating (1-5)', type: 'number', min: 1, max: 5, default: 5 },
+              { key: 'avatar', label: 'Avatar URL', placeholder: 'https://...' }
+            ]}
+          />
+        </>
       );
 
     case 'reviews':
@@ -238,19 +292,23 @@ export default function BlockEditor({ block, onUpdate }) {
 
     case 'faq':
       return (
-        <ListEditor
-          field="items"
-          addLabel="Add FAQ"
-          itemFields={[
-            { key: 'question', label: 'Question', placeholder: 'How long is delivery?' },
-            { key: 'answer', label: 'Answer', placeholder: '2-5 business days', multiline: true }
-          ]}
-        />
+        <>
+          <ImageUpload label="Section Background" field="backgroundImage" />
+          <ListEditor
+            field="items"
+            addLabel="Add FAQ"
+            itemFields={[
+              { key: 'question', label: 'Question', placeholder: 'How long is delivery?' },
+              { key: 'answer', label: 'Answer', placeholder: '2-5 business days', multiline: true }
+            ]}
+          />
+        </>
       );
 
     case 'cta':
       return (
         <>
+          <ImageUpload label="Background Image" field="backgroundImage" />
           <TextInput label="Button Text" field="text" placeholder="Order Now" />
           <SelectInput label="Style" field="style" options={[
             { value: 'primary', label: 'Primary' },
@@ -264,6 +322,7 @@ export default function BlockEditor({ block, onUpdate }) {
     case 'guarantee':
       return (
         <>
+          <ImageUpload label="Badge Image" field="badgeImage" />
           <TextInput label="Title" field="title" placeholder="Money Back Guarantee" />
           <TextInput label="Description" field="description" placeholder="30-day return policy" multiline />
         </>
@@ -272,6 +331,7 @@ export default function BlockEditor({ block, onUpdate }) {
     case 'countdown':
       return (
         <>
+          <ImageUpload label="Background Image" field="backgroundImage" />
           <TextInput label="Label" field="label" placeholder="Offer ends in" />
           <div className="mb-3">
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">End Date</label>
@@ -309,6 +369,7 @@ export default function BlockEditor({ block, onUpdate }) {
     case 'deliveryInfo':
       return (
         <>
+          <ImageUpload label="Background Image" field="backgroundImage" />
           <TextInput label="Title" field="title" placeholder="Delivery Information" />
           <TextInput label="Coverage" field="wilayas" placeholder="All 58 wilayas" />
           <TextInput label="Timeframe" field="timeframe" placeholder="2-5 days" />
@@ -318,6 +379,7 @@ export default function BlockEditor({ block, onUpdate }) {
     case 'stockScarcity':
       return (
         <>
+          <ImageUpload label="Background Image" field="backgroundImage" />
           <TextInput label="Message" field="message" placeholder="Only {count} left in stock!" />
           <NumberInput label="Count" field="count" min={1} max={100} />
           <Toggle label="Show Progress Bar" field="showBar" />
