@@ -29,7 +29,7 @@ exports.getDailyRollups = async (req, res) => {
         res.json(ok({ from, to, count: rollups.length, rollups }));
     } catch (err) {
         logger.error({ err }, 'Error fetching daily rollups');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -53,6 +53,6 @@ exports.triggerDailyRollup = async (req, res) => {
         res.json(ok({ message: `DailyRollup triggered for ${date || 'yesterday'}` }));
     } catch (err) {
         logger.error({ err }, 'Error triggering daily rollup');
-        logger.error({ err }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };

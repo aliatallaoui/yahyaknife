@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 import EcommerceAnalytics from './EcommerceAnalytics';
+import GettingStarted from '../components/GettingStarted';
 import { ShoppingCart, Banknote, UserX, Package, ChevronRight, RefreshCw } from 'lucide-react';
 
 // Briefing chip — each item links to a relevant filtered view
@@ -61,6 +62,9 @@ export default function Overview() {
 
     return (
         <div className="animate-in fade-in duration-300 space-y-4">
+
+            {/* Getting Started checklist for new tenants */}
+            <GettingStarted />
 
             {/* Morning Briefing Strip — only rendered when there are actionable items */}
             {hasAnyAlert && (
