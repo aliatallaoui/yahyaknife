@@ -157,8 +157,6 @@ export default function SettingsRoles() {
 
             // Select the saved role after refresh
             if (savedRole?._id) {
-                // fetchData updates roles state, but we need to wait for it
-                // Use the savedRole directly
                 setSelectedRole(savedRole);
                 setEditForm({ name: savedRole.name, description: savedRole.description || '', permissions: [...savedRole.permissions] });
             }
@@ -230,11 +228,11 @@ export default function SettingsRoles() {
     if (!canManage) {
         return (
             <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-red-50 text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Lock className="w-8 h-8" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">{t('common.accessDenied', 'Access Denied')}</h2>
-                <p className="text-gray-500">{t('common.noPermission', 'You do not have permission to view this page.')}</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('common.accessDenied', 'Access Denied')}</h2>
+                <p className="text-gray-500 dark:text-gray-400">{t('common.noPermission', 'You do not have permission to view this page.')}</p>
             </div>
         );
     }
@@ -245,13 +243,13 @@ export default function SettingsRoles() {
             {/* Page Header */}
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
                             <Shield className="w-5 h-5" />
                         </div>
                         {t('rbac.roles_title', 'Roles & Permissions')}
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1.5">{t('rbac.roles_desc', 'Manage access control profiles across the organization.')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('rbac.roles_desc', 'Manage access control profiles across the organization.')}</p>
                 </div>
                 <button
                     onClick={handleCreateNew}
@@ -263,12 +261,12 @@ export default function SettingsRoles() {
             </div>
 
             {error && (
-                <div className="mb-6 bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-100">
-                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                        <X className="w-4 h-4 text-red-500" />
+                <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 border border-red-100 dark:border-red-800">
+                    <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center shrink-0">
+                        <X className="w-4 h-4 text-red-500 dark:text-red-400" />
                     </div>
                     <p className="text-sm font-medium flex-1">{error}</p>
-                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 p-1"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
@@ -276,8 +274,8 @@ export default function SettingsRoles() {
                 {/* Roles Sidebar */}
                 <div className="lg:col-span-1 flex flex-col gap-1">
                     {/* System Roles */}
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 mb-3">
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3 mb-3">
+                        <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
                             <Lock className="w-3 h-3" />
                             {t('rbac.roles_system', 'System Roles')}
                         </p>
@@ -288,32 +286,32 @@ export default function SettingsRoles() {
                                 className={clsx(
                                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all",
                                     selectedRole?._id === role._id
-                                        ? "bg-indigo-50 border border-indigo-200 shadow-sm"
-                                        : "hover:bg-gray-50 border border-transparent"
+                                        ? "bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 shadow-sm"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent"
                                 )}
                             >
                                 <div className={clsx(
                                     "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold",
-                                    selectedRole?._id === role._id ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-500"
+                                    selectedRole?._id === role._id ? "bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                                 )}>
                                     {role.name.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
-                                    <p className={clsx("font-semibold text-sm truncate", selectedRole?._id === role._id ? "text-indigo-700" : "text-gray-800")}>{role.name}</p>
-                                    <p className="text-[11px] text-gray-400 tabular-nums">{role.permissions.length} {t('rbac.perms', 'perms')}</p>
+                                    <p className={clsx("font-semibold text-sm truncate", selectedRole?._id === role._id ? "text-indigo-700 dark:text-indigo-300" : "text-gray-800 dark:text-gray-200")}>{role.name}</p>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">{role.permissions.length} {t('rbac.perms', 'perms')}</p>
                                 </div>
                             </button>
                         ))}
                     </div>
 
                     {/* Custom Roles */}
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3">
+                        <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
                             <Users className="w-3 h-3" />
                             {t('rbac.roles_custom', 'Custom Roles')}
                         </p>
                         {customRoles.length === 0 ? (
-                            <p className="text-xs text-gray-400 px-2 py-3">{t('rbac.roles_no_custom', 'No custom roles yet.')}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 px-2 py-3">{t('rbac.roles_no_custom', 'No custom roles yet.')}</p>
                         ) : customRoles.map(role => (
                             <button
                                 key={role._id}
@@ -321,19 +319,19 @@ export default function SettingsRoles() {
                                 className={clsx(
                                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all",
                                     selectedRole?._id === role._id
-                                        ? "bg-indigo-50 border border-indigo-200 shadow-sm"
-                                        : "hover:bg-gray-50 border border-transparent"
+                                        ? "bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 shadow-sm"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent"
                                 )}
                             >
                                 <div className={clsx(
                                     "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold",
-                                    selectedRole?._id === role._id ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-500"
+                                    selectedRole?._id === role._id ? "bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                                 )}>
                                     {role.name.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
-                                    <p className={clsx("font-semibold text-sm truncate", selectedRole?._id === role._id ? "text-indigo-700" : "text-gray-800")}>{role.name}</p>
-                                    <p className="text-[11px] text-gray-400 tabular-nums">{role.permissions.length} {t('rbac.perms', 'perms')}</p>
+                                    <p className={clsx("font-semibold text-sm truncate", selectedRole?._id === role._id ? "text-indigo-700 dark:text-indigo-300" : "text-gray-800 dark:text-gray-200")}>{role.name}</p>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">{role.permissions.length} {t('rbac.perms', 'perms')}</p>
                                 </div>
                             </button>
                         ))}
@@ -343,9 +341,9 @@ export default function SettingsRoles() {
                 {/* Role Details Panel */}
                 <div className="lg:col-span-3">
                     {selectedRole || isEditing ? (
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                             {/* Role Header */}
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start gap-4">
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/50 flex flex-col sm:flex-row justify-between items-start gap-4">
                                 {isEditing ? (
                                     <div className="flex-1 max-w-lg space-y-3">
                                         <input
@@ -353,27 +351,27 @@ export default function SettingsRoles() {
                                             value={editForm.name}
                                             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                                             placeholder={t('rbac.roles_name_placeholder', 'Role Name (e.g., Marketing Lead)')}
-                                            className="w-full font-bold text-lg text-gray-900 border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                            className="w-full font-bold text-lg text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700"
                                         />
                                         <textarea
                                             value={editForm.description}
                                             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                                             placeholder={t('rbac.roles_desc_placeholder', 'Description of what this role can do')}
-                                            className="w-full text-sm text-gray-600 border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 h-20 resize-none"
+                                            className="w-full text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 h-20 resize-none bg-white dark:bg-gray-700"
                                         />
                                     </div>
                                 ) : (
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
-                                            <h2 className="text-xl font-bold text-gray-900">{selectedRole.name}</h2>
+                                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedRole.name}</h2>
                                             {selectedRole.isSystemRole && (
-                                                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] uppercase font-bold tracking-wider border border-blue-100">
+                                                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] uppercase font-bold tracking-wider border border-blue-100 dark:border-blue-800">
                                                     {t('rbac.roles_system_default', 'System')}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-gray-500 text-sm mt-1">{selectedRole.description}</p>
-                                        <p className="text-xs text-gray-400 mt-2 tabular-nums">
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{selectedRole.description}</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 tabular-nums">
                                             {(isEditing ? editForm.permissions : selectedRole.permissions).length} {t('rbac.roles_permissions_count', 'permissions enabled')}
                                         </p>
                                     </div>
@@ -382,7 +380,7 @@ export default function SettingsRoles() {
                                 <div className="flex items-center gap-2 shrink-0">
                                     {isEditing ? (
                                         <>
-                                            <button onClick={handleCancel} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">
+                                            <button onClick={handleCancel} className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">
                                                 {t('common.cancel', 'Cancel')}
                                             </button>
                                             <button
@@ -396,16 +394,16 @@ export default function SettingsRoles() {
                                     ) : (
                                         <>
                                             {/* Duplicate (works for all roles including system) */}
-                                            <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" title={t('rbac.duplicate', 'Duplicate')}>
+                                            <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-colors" title={t('rbac.duplicate', 'Duplicate')}>
                                                 <Copy className="w-4 h-4" />
                                             </button>
                                             {(!selectedRole.isSystemRole || userIsSuperAdmin) && (
                                                 <>
-                                                    <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors">
+                                                    <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-semibold transition-colors">
                                                         <Edit2 className="w-4 h-4" /> {t('rbac.roles_edit', 'Edit')}
                                                     </button>
                                                     {!selectedRole.isSystemRole && (
-                                                        <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                        <button onClick={handleDelete} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     )}
@@ -420,13 +418,13 @@ export default function SettingsRoles() {
                             {isEditing && (
                                 <div className="px-6 pt-4">
                                     <div className="relative max-w-sm">
-                                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                                         <input
                                             type="text"
                                             value={permSearch}
                                             onChange={e => setPermSearch(e.target.value)}
                                             placeholder={t('rbac.searchPerms', 'Search permissions...')}
-                                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                                            className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
                                         />
                                     </div>
                                 </div>
@@ -442,32 +440,32 @@ export default function SettingsRoles() {
                                         const allChecked = moduleCheckedCount === permissionsList.length;
 
                                         return (
-                                            <div key={moduleName} className="border border-gray-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                                            <div key={moduleName} className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm">
                                                 {/* Module Header */}
-                                                <div className="flex items-center justify-between px-4 py-3 bg-gray-50/80 border-b border-gray-100">
+                                                <div className="flex items-center justify-between px-4 py-3 bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                                                     <div className="flex items-center gap-2">
                                                         {isEditing && (
                                                             <input
                                                                 type="checkbox"
                                                                 checked={allChecked}
                                                                 onChange={() => handleToggleModule(moduleName, permissionsList)}
-                                                                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                                                className="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500"
                                                             />
                                                         )}
-                                                        <h5 className="font-bold text-gray-800 capitalize text-sm">{t(`modules.${moduleName}`, moduleName)}</h5>
+                                                        <h5 className="font-bold text-gray-800 dark:text-gray-200 capitalize text-sm">{t(`modules.${moduleName}`, moduleName)}</h5>
                                                     </div>
                                                     <span className={clsx(
                                                         "text-[11px] font-bold px-2 py-0.5 rounded-full tabular-nums",
-                                                        moduleCheckedCount === permissionsList.length ? "bg-indigo-100 text-indigo-700" :
-                                                        moduleCheckedCount > 0 ? "bg-amber-50 text-amber-700" :
-                                                        "bg-gray-100 text-gray-400"
+                                                        moduleCheckedCount === permissionsList.length ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300" :
+                                                        moduleCheckedCount > 0 ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" :
+                                                        "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
                                                     )}>
                                                         {moduleCheckedCount}/{permissionsList.length}
                                                     </span>
                                                 </div>
 
                                                 {/* Permissions List */}
-                                                <div className="divide-y divide-gray-50">
+                                                <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                                     {permissionsList.map((permKey) => {
                                                         const hasPerm = activePerms.includes(permKey);
                                                         return (
@@ -475,8 +473,8 @@ export default function SettingsRoles() {
                                                                 key={permKey}
                                                                 className={clsx(
                                                                     "flex items-center gap-3 px-4 py-2.5 transition-colors",
-                                                                    isEditing ? "cursor-pointer hover:bg-gray-50" : "",
-                                                                    hasPerm ? "bg-indigo-50/30" : ""
+                                                                    isEditing ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" : "",
+                                                                    hasPerm ? "bg-indigo-50/30 dark:bg-indigo-900/10" : ""
                                                                 )}
                                                             >
                                                                 <input
@@ -484,13 +482,13 @@ export default function SettingsRoles() {
                                                                     checked={hasPerm}
                                                                     onChange={() => handleTogglePermission(permKey)}
                                                                     disabled={!isEditing}
-                                                                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 disabled:opacity-40 shrink-0"
+                                                                    className="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 disabled:opacity-40 shrink-0"
                                                                 />
                                                                 <div className="min-w-0">
-                                                                    <p className={clsx("text-sm font-medium", hasPerm ? "text-indigo-900" : "text-gray-700")}>
+                                                                    <p className={clsx("text-sm font-medium", hasPerm ? "text-indigo-900 dark:text-indigo-300" : "text-gray-700 dark:text-gray-300")}>
                                                                         {t(`permissions.${permKey.replace(/\./g, '_')}`, formatPermLabel(permKey))}
                                                                     </p>
-                                                                    <p className="text-[11px] text-gray-400 font-mono truncate">{permKey}</p>
+                                                                    <p className="text-[11px] text-gray-400 dark:text-gray-500 font-mono truncate">{permKey}</p>
                                                                 </div>
                                                             </label>
                                                         );
@@ -502,15 +500,15 @@ export default function SettingsRoles() {
                                 </div>
 
                                 {Object.keys(filteredCatalog).length === 0 && permSearch && (
-                                    <p className="text-center text-gray-400 py-8 text-sm">{t('rbac.noPermsMatch', 'No permissions match your search.')}</p>
+                                    <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{t('rbac.noPermsMatch', 'No permissions match your search.')}</p>
                                 )}
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 p-16">
-                            <Shield className="w-14 h-14 mb-4 text-gray-300" />
-                            <p className="text-lg font-medium text-gray-600">{t('rbac.roles_select_prompt', 'Select a role to view permissions')}</p>
-                            <p className="text-sm text-gray-400 mt-1">{t('rbac.roles_or_create', 'Or create a new custom role')}</p>
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-16">
+                            <Shield className="w-14 h-14 mb-4 text-gray-300 dark:text-gray-600" />
+                            <p className="text-lg font-medium text-gray-600 dark:text-gray-400">{t('rbac.roles_select_prompt', 'Select a role to view permissions')}</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('rbac.roles_or_create', 'Or create a new custom role')}</p>
                         </div>
                     )}
                 </div>

@@ -496,13 +496,18 @@ export default function OrderControlCenter() {
     const [postponeOrderId, setPostponeOrderId] = useState(null);
     const [postponeDate, setPostponeDate] = useState('');
 
-    // Escape key to close postpone modal
+    // Escape key to close postpone modal or column settings
     useEffect(() => {
-        if (!postponeOrderId) return;
-        const handler = (e) => { if (e.key === 'Escape') { setPostponeOrderId(null); setPostponeDate(''); } };
+        if (!postponeOrderId && !showColumnSettings) return;
+        const handler = (e) => {
+            if (e.key === 'Escape') {
+                if (postponeOrderId) { setPostponeOrderId(null); setPostponeDate(''); }
+                else if (showColumnSettings) { setShowColumnSettings(false); }
+            }
+        };
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
-    }, [postponeOrderId]);
+    }, [postponeOrderId, showColumnSettings]);
 
     const handlePostponeConfirm = useCallback(async () => {
         if (!postponeOrderId || !postponeDate) return;
@@ -623,15 +628,15 @@ export default function OrderControlCenter() {
         }
     }, [fetchOrders, couriers]);
 
-    const handleBulkConfirm = async () => {
+    const handleBulkConfirm = useCallback(async () => {
         if (!bulkActionType || !bulkActionValue || selectedIds.size === 0) return;
-        
+
         try {
             setLoading(true);
 
             let action = '';
             let payload = {};
-            
+
             if (bulkActionType === 'status') {
                 action = 'update_status';
                 payload = { status: bulkActionValue };
@@ -655,7 +660,7 @@ export default function OrderControlCenter() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [bulkActionType, bulkActionValue, selectedIds, fetchOrders]);
 
 
     const onBulkActionConfirm = useCallback((orderId) => {
@@ -717,6 +722,70 @@ export default function OrderControlCenter() {
     const handleEditClick = useCallback((o) => {
         setEditOrderData(o);
         setIsOrderModalOpen(true);
+    }, []);
+
+    const handleManifestExport = useCallback(async () => {
+        const ids = Array.from(selectedIds).join(',');
+        try {
+            const res = await apiFetch(`/api/shipments/export/manifest?ids=${ids}`);
+            if (!res.ok) throw new Error('Export failed');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const w = window.open(url, '_blank');
+            if (w) w.onload = () => URL.revokeObjectURL(url);
+        } catch { /* toast already handled by apiFetch on 401 */ }
+    }, [selectedIds]);
+
+    const handleEcotrackSync = useCallback(async () => {
+        try {
+            setLoading(true);
+            setSyncMessage(null);
+            const res = await apiFetch(`/api/sales/orders/sync-ecotrack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                const err = new Error(errData.message || errData.error || 'Sync failed');
+                err.status = res.status;
+                err.serverError = errData.error;
+                throw err;
+            }
+            fetchOrders();
+            setSyncMessage({ type: 'success', text: t('ordersControl.messages.syncSuccess', { defaultValue: 'ECOTRACK sequence manually fired and completed.' }) });
+            setTimeout(() => setSyncMessage(null), 5000);
+        } catch (err) {
+            if (err.status === 429 && err.serverError) {
+                const match = err.serverError.match(/wait (\d+) minutes/);
+                if (match && match[1]) {
+                    setSyncMessage({ type: 'error', text: t('ordersControl.messages.syncRateLimit', { minutes: match[1], defaultValue: err.serverError }) });
+                } else {
+                    setSyncMessage({ type: 'error', text: err.serverError });
+                }
+            } else {
+                setSyncMessage({ type: 'error', text: err.serverError || err.message || t('ordersControl.messages.syncFailed', { defaultValue: 'Failed to sync with courier aggregator.' }) });
+            }
+            setTimeout(() => setSyncMessage(null), 8000);
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchOrders, t]);
+
+    const handleClosePostpone = useCallback(() => {
+        setPostponeOrderId(null);
+        setPostponeDate('');
+    }, []);
+
+    const handleCloseOrderModal = useCallback(() => {
+        setIsOrderModalOpen(false);
+        setEditOrderData(null);
+    }, []);
+
+    const handleClearBulkSelection = useCallback(() => {
+        setSelectedIds(new Set());
+        setBulkActionType(null);
+    }, []);
+
+    const handleCancelBulkAction = useCallback(() => {
+        setBulkActionType(null);
+        setBulkActionValue('');
     }, []);
 
     const toggleColumn = (colId) => {
@@ -802,8 +871,8 @@ export default function OrderControlCenter() {
             {/* Postpone Date Picker Modal */}
             {postponeOrderId && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => { setPostponeOrderId(null); setPostponeDate(''); }} />
-                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-6 w-80 animate-in zoom-in-95 fade-in-0 duration-200">
+                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={handleClosePostpone} role="presentation" />
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-6 w-80 animate-in zoom-in-95 fade-in-0 duration-200" role="dialog" aria-modal="true" aria-label="Postpone order">
                         <div className="mb-4">
                             <h3 className="text-sm font-black text-gray-900 dark:text-white mb-1">📅 تأجيل الطلبية</h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400">اختر تاريخ العودة — ستظهر الطلبية في أعلى القائمة عند حلول هذا الموعد</p>
@@ -818,7 +887,7 @@ export default function OrderControlCenter() {
                         />
                         <div className="flex gap-2">
                             <button
-                                onClick={() => { setPostponeOrderId(null); setPostponeDate(''); }}
+                                onClick={handleClosePostpone}
                                 className="flex-1 px-3 py-2 text-xs font-black uppercase rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 إلغاء
@@ -854,7 +923,7 @@ export default function OrderControlCenter() {
                                 title={t('ordersControl.pressToFocus', 'Press / to focus')}
                             />
                             {searchTerm && (
-                                <button onClick={() => setSearchTerm('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <button onClick={() => setSearchTerm('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Clear search">
                                     <X className="w-3.5 h-3.5" />
                                 </button>
                             )}
@@ -894,17 +963,7 @@ export default function OrderControlCenter() {
 
                         {hasPermission('orders.export') && selectedIds.size > 0 && (
                             <button
-                                onClick={async () => {
-                                    const ids = Array.from(selectedIds).join(',');
-                                    try {
-                                        const res = await apiFetch(`/api/shipments/export/manifest?ids=${ids}`);
-                                        if (!res.ok) throw new Error('Export failed');
-                                        const blob = await res.blob();
-                                        const url = URL.createObjectURL(blob);
-                                        const w = window.open(url, '_blank');
-                                        if (w) w.onload = () => URL.revokeObjectURL(url);
-                                    } catch { /* toast already handled by apiFetch on 401 */ }
-                                }}
+                                onClick={handleManifestExport}
                                 className="flex items-center gap-1.5 px-2.5 py-1.5 xl:py-2 text-xs font-bold rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm transition-all whitespace-nowrap h-[32px] xl:h-[36px] shrink-0"
                             >
                                 <PackageOpen className="w-3.5 h-3.5" />
@@ -1021,7 +1080,7 @@ export default function OrderControlCenter() {
                             </button>
                         )}
 
-                        <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors border border-transparent hover:border-indigo-100 dark:hover:border-indigo-800 hidden sm:block shrink-0" title={t('ordersControl.refreshDataCore', 'Refresh Data Core')}>
+                        <button onClick={() => fetchOrders()} className="p-1 px-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors border border-transparent hover:border-indigo-100 dark:hover:border-indigo-800 hidden sm:block shrink-0" title={t('ordersControl.refreshDataCore', 'Refresh Data Core')} aria-label={t('ordersControl.refreshDataCore', 'Refresh Data Core')}>
                             <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin text-indigo-500")} />
                         </button>
                     </div>
@@ -1152,38 +1211,7 @@ export default function OrderControlCenter() {
                                 </div>
                             )}
                             <button
-                                onClick={async () => {
-                                    try {
-                                        setLoading(true);
-                                        setSyncMessage(null);
-                                        const res = await apiFetch(`/api/sales/orders/sync-ecotrack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-                                        if (!res.ok) {
-                                            const errData = await res.json().catch(() => ({}));
-                                            const err = new Error(errData.message || errData.error || 'Sync failed');
-                                            err.status = res.status;
-                                            err.serverError = errData.error;
-                                            throw err;
-                                        }
-                                        fetchOrders();
-                                        setSyncMessage({ type: 'success', text: t('ordersControl.messages.syncSuccess', { defaultValue: 'ECOTRACK sequence manually fired and completed.' }) });
-                                        setTimeout(() => setSyncMessage(null), 5000);
-                                    } catch (err) {
-                                        if (err.status === 429 && err.serverError) {
-                                            // Try to extract minutes left for translation parameters
-                                            const match = err.serverError.match(/wait (\d+) minutes/);
-                                            if (match && match[1]) {
-                                                setSyncMessage({ type: 'error', text: t('ordersControl.messages.syncRateLimit', { minutes: match[1], defaultValue: err.serverError }) });
-                                            } else {
-                                                setSyncMessage({ type: 'error', text: err.serverError });
-                                            }
-                                        } else {
-                                            setSyncMessage({ type: 'error', text: err.serverError || err.message || t('ordersControl.messages.syncFailed', { defaultValue: 'Failed to sync with courier aggregator.' }) });
-                                        }
-                                        setTimeout(() => setSyncMessage(null), 8000);
-                                    } finally {
-                                        setLoading(false);
-                                    }
-                                }}
+                                onClick={handleEcotrackSync}
                                 disabled={loading}
                                 className={clsx(
                                     "flex items-center gap-2 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all shadow-sm rounded-lg border focus:ring-2 focus:ring-offset-1 focus:outline-none",
@@ -1556,7 +1584,7 @@ export default function OrderControlCenter() {
                                 <button onClick={handleBulkConfirm} disabled={!bulkActionValue} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
                                     {t('ordersControl.bulk.applyAll')}
                                 </button>
-                                <button onClick={() => { setBulkActionType(null); setBulkActionValue(''); }} className="text-gray-400 hover:text-white text-xs font-bold px-2 uppercase">{t('ordersControl.bulk.cancel')}</button>
+                                <button onClick={handleCancelBulkAction} className="text-gray-400 hover:text-white text-xs font-bold px-2 uppercase">{t('ordersControl.bulk.cancel')}</button>
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
@@ -1577,7 +1605,7 @@ export default function OrderControlCenter() {
                             </div>
                         )}
 
-                        <button onClick={() => { setSelectedIds(new Set()); setBulkActionType(null); }} className="ml-2 p-1 text-gray-400 hover:text-rose-400 transition-colors"><X className="w-5 h-5" /></button>
+                        <button onClick={handleClearBulkSelection} className="ml-2 p-1 text-gray-400 hover:text-rose-400 transition-colors" aria-label="Close bulk actions"><X className="w-5 h-5" /></button>
                     </div>
                 )
             }
@@ -1594,7 +1622,7 @@ export default function OrderControlCenter() {
             {/* Create Order Modal */}
             <OrderModal
                 isOpen={isOrderModalOpen}
-                onClose={() => { setIsOrderModalOpen(false); setEditOrderData(null); }}
+                onClose={handleCloseOrderModal}
                 onSubmit={editOrderData ? handleUpdateOrder : handleCreateOrder}
                 initialData={editOrderData}
                 inventoryProducts={productsList}
