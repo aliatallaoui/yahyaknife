@@ -11,35 +11,35 @@ export default function SettingsAlerts() {
 
     return (
         <div className="p-8 animate-in fade-in duration-300">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">{t('title')}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('title')}</h3>
 
             <div className="space-y-10 max-w-3xl">
 
                 {/* Permissions Summary Read-Only */}
                 <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-indigo-500" /> {t('currentRole')}
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> {t('currentRole')}
                     </h4>
 
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
                         <div className="flex justify-between items-center mb-4">
                             <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('lblAssignedRole')}</p>
-                                <p className="text-lg font-black text-gray-900 capitalize">{user?.role || t('roleUser')}</p>
+                                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('lblAssignedRole')}</p>
+                                <p className="text-lg font-black text-gray-900 dark:text-white capitalize">{user?.role || t('roleUser')}</p>
                             </div>
                             <div className={clsx(isAr ? "text-left" : "text-right")}>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('lblDepartment')}</p>
-                                <p className="text-sm font-bold text-gray-900 capitalize">{user?.department || t('deptSystem')}</p>
+                                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('lblDepartment')}</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{user?.department || t('deptSystem')}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
-                            <h5 className="text-xs font-bold text-gray-700 mb-3 border-b border-gray-50 pb-2">{t('policyScope')}</h5>
+                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                            <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-50 dark:border-gray-700 pb-2">{t('policyScope')}</h5>
                             <ul className="space-y-2">
-                                <li className="text-xs flex items-center gap-2 text-emerald-700 font-medium bg-emerald-50/50 p-1.5 rounded"><CheckSquare className="w-3.5 h-3.5" /> {t('scopeOps')}</li>
-                                <li className="text-xs flex items-center gap-2 text-emerald-700 font-medium bg-emerald-50/50 p-1.5 rounded"><CheckSquare className="w-3.5 h-3.5" /> {t('scopeProjects')}</li>
+                                <li className="text-xs flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium bg-emerald-50/50 dark:bg-emerald-900/20 p-1.5 rounded"><CheckSquare className="w-3.5 h-3.5" /> {t('scopeOps')}</li>
+                                <li className="text-xs flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium bg-emerald-50/50 dark:bg-emerald-900/20 p-1.5 rounded"><CheckSquare className="w-3.5 h-3.5" /> {t('scopeProjects')}</li>
                                 {(user?.role === 'admin' || user?.role === 'superadmin') && (
-                                    <li className="text-xs flex items-center gap-2 text-indigo-700 font-bold bg-indigo-50/50 p-1.5 rounded"><ShieldCheck className="w-3.5 h-3.5" /> {t('scopeAdmin')}</li>
+                                    <li className="text-xs flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold bg-indigo-50/50 dark:bg-indigo-900/20 p-1.5 rounded"><ShieldCheck className="w-3.5 h-3.5" /> {t('scopeAdmin')}</li>
                                 )}
                             </ul>
                         </div>
@@ -48,12 +48,12 @@ export default function SettingsAlerts() {
 
                 {/* Notifications Engine */}
                 <div className="space-y-4 pt-4">
-                    <h4 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2 text-gray-700">
-                        <BellRing className="w-4 h-4 text-gray-400" /> {t('notificationsTitle')}
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2">
+                        <BellRing className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('notificationsTitle')}
                     </h4>
-                    <p className="text-xs text-gray-500 mb-4">{t('notificationsDesc')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('notificationsDesc')}</p>
 
-                    <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
                             <table className={clsx("cf-table min-w-[500px]", isAr ? "text-right" : "text-left")}>
                                 <thead>
@@ -94,8 +94,8 @@ function ToggleRow({ title, desc, defaultInApp, defaultEmail }) {
     return (
         <tr>
             <td className="px-5 py-4">
-                <p className="text-sm font-bold text-gray-900">{title}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{title}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{desc}</p>
             </td>
             <td className="px-5 py-4 text-center">
                 <input type="checkbox" checked={inApp} onChange={() => setInApp(!inApp)} className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
