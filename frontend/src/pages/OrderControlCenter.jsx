@@ -179,8 +179,34 @@ export default function OrderControlCenter() {
     // Search ref for keyboard focus shortcut
     const searchInputRef = useRef(null);
     const exportPollRef = useRef(null);
+    const [focusedRowIndex, setFocusedRowIndex] = useState(-1);
+
     useHotkey('/', () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); }, { preventDefault: true });
-    useHotkey('escape', () => { if (document.activeElement === searchInputRef.current) { setSearchTerm(''); searchInputRef.current?.blur(); } });
+    useHotkey('escape', () => {
+        if (document.activeElement === searchInputRef.current) { setSearchTerm(''); searchInputRef.current?.blur(); }
+        else if (focusedRowIndex >= 0) { setFocusedRowIndex(-1); }
+    });
+    // j/k for row navigation, Enter to open drawer, x to toggle select
+    useHotkey('j', () => setFocusedRowIndex(prev => {
+        const next = Math.min(prev + 1, orders.length - 1);
+        rowVirtualizer.scrollToIndex(next, { align: 'auto' });
+        return next;
+    }));
+    useHotkey('k', () => setFocusedRowIndex(prev => {
+        const next = Math.max(prev - 1, 0);
+        rowVirtualizer.scrollToIndex(next, { align: 'auto' });
+        return next;
+    }));
+    useHotkey('enter', () => {
+        if (focusedRowIndex >= 0 && focusedRowIndex < orders.length) {
+            setFocusedOrderId(orders[focusedRowIndex]._id);
+        }
+    });
+    useHotkey('x', () => {
+        if (focusedRowIndex >= 0 && focusedRowIndex < orders.length) {
+            toggleSelect(orders[focusedRowIndex]._id);
+        }
+    });
 
     // Virtualization Engine
     const parentRef = React.useRef(null);
@@ -337,13 +363,15 @@ export default function OrderControlCenter() {
     }, [limit, sortField, sortOrder, searchTerm, filters, activeStage, nextCursor]);
 
     // Infinite Scroll Intersection Trigger
+    const virtualItems = rowVirtualizer.getVirtualItems();
+    const lastVirtualIndex = virtualItems.length > 0 ? virtualItems[virtualItems.length - 1].index : -1;
+
     useEffect(() => {
-        const [lastItem] = rowVirtualizer.getVirtualItems().slice(-1);
-        if (!lastItem) return;
+        if (lastVirtualIndex < 0) return;
 
         // If we scrolled near the end of the array and there is a next page
         if (
-            lastItem.index >= orders.length - 25 &&
+            lastVirtualIndex >= orders.length - 25 &&
             hasNextPage &&
             !isFetchingNextPage &&
             !loading
@@ -356,11 +384,12 @@ export default function OrderControlCenter() {
         orders.length,
         isFetchingNextPage,
         loading,
-        rowVirtualizer.getVirtualItems(),
+        lastVirtualIndex,
     ]);
 
-    // Data Fetch Trigger
+    // Data Fetch Trigger — reset keyboard focus when query changes
     useEffect(() => {
+        setFocusedRowIndex(-1);
         const delayDebounceFn = setTimeout(() => {
             fetchOrders();
         }, 300);
@@ -374,7 +403,7 @@ export default function OrderControlCenter() {
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to create order'); }
             setIsOrderModalOpen(false);
             fetchOrders();
-            setSyncMessage(t('ordersControl.orderCreated', { defaultValue: 'Order created successfully!' }));
+            setSyncMessage({ type: 'success', text: t('ordersControl.orderCreated', { defaultValue: 'Order created successfully!' }) });
             setTimeout(() => setSyncMessage(null), 3000);
             return { success: true };
         } catch (err) {
@@ -401,7 +430,7 @@ export default function OrderControlCenter() {
             // Still run fetch in background to sync any total stats/KPIs
             fetchOrders();
             
-            setSyncMessage(t('ordersControl.orderUpdated', { defaultValue: 'Order updated successfully!' }));
+            setSyncMessage({ type: 'success', text: t('ordersControl.orderUpdated', { defaultValue: 'Order updated successfully!' }) });
             setTimeout(() => setSyncMessage(null), 3000);
             return { success: true };
         } catch (err) {
@@ -411,26 +440,27 @@ export default function OrderControlCenter() {
 
 
     // Helpers
-    const handleSort = (field) => {
-        if (sortField === field) {
-            setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
-        } else {
-            setSortField(field);
+    const handleSort = useCallback((field) => {
+        setSortField(prev => {
+            if (prev === field) {
+                setSortOrder(o => o === 'desc' ? 'asc' : 'desc');
+                return prev;
+            }
             setSortOrder('desc');
-        }
-    };
+            return field;
+        });
+    }, []);
 
-    const handleFilterChange = (key, value) => {
+    const handleFilterChange = useCallback((key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-    };
+    }, [setFilters]);
 
-    const toggleSelectAll = () => {
-        if (selectedIds.size === orders.length && orders.length > 0) {
-            setSelectedIds(new Set());
-        } else {
-            setSelectedIds(new Set(orders.map(o => o._id)));
-        }
-    };
+    const toggleSelectAll = useCallback(() => {
+        setSelectedIds(prev => {
+            if (prev.size === orders.length && orders.length > 0) return new Set();
+            return new Set(orders.map(o => o._id));
+        });
+    }, [orders]);
 
     const toggleSelect = useCallback((id) => {
         setSelectedIds(prev => {
@@ -440,24 +470,25 @@ export default function OrderControlCenter() {
         });
     }, []);
 
-    const toggleRowExpansion = (id) => {
-        const next = new Set(expandedRows);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        setExpandedRows(next);
-    };
+    const toggleRowExpansion = useCallback((id) => {
+        setExpandedRows(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
 
     const handleStatusChange = useCallback(async (orderId, newStatus) => {
+        // Optimistic update — instantly reflect in UI without loading overlay
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
         try {
-            setLoading(true);
-
             const res = await apiFetch(`/api/sales/orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update status'); }
-            fetchOrders();
+            fetchOrders(); // Sync full state from server
         } catch (err) {
             showError(err.message);
-        } finally {
-            setLoading(false);
+            fetchOrders(); // Revert optimistic update on error
         }
     }, [fetchOrders]);
 
@@ -488,24 +519,26 @@ export default function OrderControlCenter() {
     }, [postponeOrderId, postponeDate, fetchOrders]);
 
     const handleTagUpdate = useCallback(async (orderId, newTags) => {
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, tags: newTags } : o));
         try {
-
             const res = await apiFetch(`/api/sales/orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: newTags }) });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update tags'); }
             fetchOrders();
         } catch (err) {
             showError(err.message);
+            fetchOrders();
         }
     }, [fetchOrders]);
 
     const handlePriorityChange = useCallback(async (orderId, newPriority) => {
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, priority: newPriority } : o));
         try {
-
             const res = await apiFetch(`/api/sales/orders/${orderId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: newPriority }) });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to update priority'); }
             fetchOrders();
         } catch (err) {
             showError(err.message);
+            fetchOrders();
         }
     }, [fetchOrders]);
 
@@ -563,32 +596,32 @@ export default function OrderControlCenter() {
     }, [selectedIds, fetchOrders]);
 
     const handleAgentChange = useCallback(async (orderId, agentId) => {
+        // Optimistic update
+        const resolvedAgent = agentId === 'unassigned' ? null : agents.find(a => a._id === agentId);
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, assignedAgent: resolvedAgent || null } : o));
         try {
-            setLoading(true);
-
             const res = await apiFetch(`/api/sales/orders/bulk/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId], action: 'assign_agent', payload: { agentId: agentId === 'unassigned' ? null : agentId } }) });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to assign agent'); }
             fetchOrders();
         } catch (err) {
             showError(err.message);
-        } finally {
-            setLoading(false);
+            fetchOrders();
         }
-    }, [fetchOrders]);
+    }, [fetchOrders, agents]);
 
     const handleCourierChange = useCallback(async (orderId, courierId) => {
+        // Optimistic update
+        const resolvedCourier = courierId === 'unassigned' ? null : couriers.find(c => c._id === courierId);
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, courier: resolvedCourier || null } : o));
         try {
-            setLoading(true);
-
             const res = await apiFetch(`/api/sales/orders/bulk/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId], action: 'assign_courier', payload: { courierId: courierId === 'unassigned' ? null : courierId } }) });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Failed to assign courier'); }
             fetchOrders();
         } catch (err) {
             showError(err.message);
-        } finally {
-            setLoading(false);
+            fetchOrders();
         }
-    }, [fetchOrders]);
+    }, [fetchOrders, couriers]);
 
     const handleBulkConfirm = async () => {
         if (!bulkActionType || !bulkActionValue || selectedIds.size === 0) return;
@@ -645,6 +678,46 @@ export default function OrderControlCenter() {
     const onQuickDispatch = useCallback((orderId) => {
         handleStatusChange(orderId, 'Dispatched');
     }, [handleStatusChange]);
+
+    const handleSingleDelete = useCallback(async (orderId) => {
+        try {
+            const res = await apiFetch(`/api/sales/orders/bulk/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Delete failed'); }
+            fetchOrders();
+        } catch (err) {
+            showError(err.message);
+        }
+    }, [fetchOrders]);
+
+    const handleSingleRestore = useCallback(async (orderId) => {
+        try {
+            const res = await apiFetch(`/api/sales/orders/bulk/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Restore failed'); }
+            fetchOrders();
+        } catch (err) {
+            showError(err.message);
+        }
+    }, [fetchOrders]);
+
+    const handleSinglePurge = useCallback(async (orderId) => {
+        try {
+            const res = await apiFetch(`/api/sales/orders/bulk/purge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Purge failed'); }
+            fetchOrders();
+        } catch (err) {
+            showError(err.message);
+        }
+    }, [fetchOrders]);
+
+    const handlePostponeOpen = useCallback((orderId) => {
+        setPostponeOrderId(orderId);
+        setPostponeDate('');
+    }, []);
+
+    const handleEditClick = useCallback((o) => {
+        setEditOrderData(o);
+        setIsOrderModalOpen(true);
+    }, []);
 
     const toggleColumn = (colId) => {
         const next = new Set(hiddenColumns);
@@ -719,9 +792,9 @@ export default function OrderControlCenter() {
     };
 
     // Helper to calculate age string (e.g. "2d 4h ago", "5h ago")
-    const getAge = (dateString) => {
+    const getAge = useCallback((dateString) => {
         return formatDuration(Date.now() - new Date(dateString).getTime());
-    };
+    }, []);
 
     return (
         <div className="flex flex-col h-[calc(100vh-72px)] w-auto overflow-hidden bg-gray-50/50 dark:bg-gray-900 gap-4 -mx-4 sm:-mx-8 lg:-mx-10 xl:-mx-14 2xl:-mx-16 -mt-10 -mb-12">
@@ -1366,6 +1439,7 @@ export default function OrderControlCenter() {
                                             order={order}
                                             isSelected={selectedIds.has(order._id)}
                                             isExpanded={expandedRows.has(order._id)}
+                                            isFocused={focusedRowIndex === virtualRow.index}
                                             visibleColumns={visibleColumns}
                                             hiddenColumns={hiddenColumns}
                                             activeStage={activeStage}
@@ -1384,38 +1458,11 @@ export default function OrderControlCenter() {
                                             onBulkActionCourier={onBulkActionCourier}
                                             onBulkActionCancel={onBulkActionCancel}
                                             onQuickDispatch={onQuickDispatch}
-                                            onEditClick={(o) => { setEditOrderData(o); setIsOrderModalOpen(true); }}
-                                            onDelete={async (orderId) => {
-                                                try {
-                                                    const res = await apiFetch(`/api/sales/orders/bulk/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
-                                                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Delete failed'); }
-                                                    fetchOrders();
-                                                } catch (err) {
-                                                    showError(err.message);
-                                                }
-                                            }}
-                                            onRestore={async (orderId) => {
-                                                try {
-                                                    const res = await apiFetch(`/api/sales/orders/bulk/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
-                                                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Restore failed'); }
-                                                    fetchOrders();
-                                                } catch (err) {
-                                                    showError(err.message);
-                                                }
-                                            }}
-                                            onPurge={async (orderId) => {
-                                                try {
-                                                    const res = await apiFetch(`/api/sales/orders/bulk/purge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
-                                                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Purge failed'); }
-                                                    fetchOrders();
-                                                } catch (err) {
-                                                    showError(err.message);
-                                                }
-                                            }}
-                                            onPostpone={(orderId) => {
-                                                setPostponeOrderId(orderId);
-                                                setPostponeDate('');
-                                            }}
+                                            onEditClick={handleEditClick}
+                                            onDelete={handleSingleDelete}
+                                            onRestore={handleSingleRestore}
+                                            onPurge={handleSinglePurge}
+                                            onPostpone={handlePostponeOpen}
                                             virtualMeasureRef={rowVirtualizer.measureElement}
                                             virtualIndex={virtualRow.index}
                                         />
@@ -1536,12 +1583,13 @@ export default function OrderControlCenter() {
             }
 
             {/* Focused Order Drawer */}
-            <OrderDetailsDrawer
-                orderId={focusedOrderId}
-                isOpen={!!focusedOrderId}
-                onClose={() => setFocusedOrderId(null)}
-                onUpdate={fetchOrders}
-            />
+            {focusedOrderId && (
+                <OrderDetailsDrawer
+                    order={orders.find(o => o._id === focusedOrderId)}
+                    onClose={() => setFocusedOrderId(null)}
+                    onUpdate={fetchOrders}
+                />
+            )}
 
             {/* Create Order Modal */}
             <OrderModal
