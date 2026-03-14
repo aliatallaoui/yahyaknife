@@ -36,68 +36,93 @@ const webhookLimiter = rateLimit({
  *
  * WooCommerce POSTs here after the store owner approves the app:
  *   Body: { user_id, consumer_key, consumer_secret, key_permissions }
- *   user_id = our channelId (set when generating the auth URL)
+ *   user_id = stateToken (maps to pending data in cache)
+ *
+ * Two flows:
+ *   1. New channel: pending data has name/storeUrl → creates channel with credentials
+ *   2. Reconnect: pending data has channelId → updates existing channel credentials
  */
 router.post(
     '/wc-auth/callback',
     webhookLimiter,
     express.json(),
     async (req, res) => {
-        const { user_id, consumer_key, consumer_secret, key_permissions } = req.body;
+        const { user_id: stateToken, consumer_key, consumer_secret, key_permissions } = req.body;
 
         try {
-            if (!user_id || !consumer_key || !consumer_secret) {
+            if (!stateToken || !consumer_key || !consumer_secret) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
-            // user_id is "channelId:token" format
-            const [channelId, token] = user_id.split(':');
-
-            if (!mongoose.Types.ObjectId.isValid(channelId)) {
-                return res.status(400).json({ error: 'Invalid channel reference' });
+            // Look up pending OAuth data from cache
+            const cacheService = require('../services/cacheService');
+            const pending = cacheService.get(`wc-oauth:${stateToken}`);
+            if (!pending) {
+                logger.warn({ stateToken }, 'WooCommerce OAuth callback: token expired or invalid');
+                return res.status(401).json({ error: 'OAuth session expired. Please try again.' });
             }
 
-            const channel = await SalesChannel.findOne({
-                _id: channelId,
-                channelType: 'woocommerce',
-                deletedAt: null,
-            });
+            // Clear the used token
+            cacheService.del(`wc-oauth:${stateToken}`);
 
-            if (!channel) {
-                return res.status(404).json({ error: 'Channel not found' });
-            }
-
-            // Verify the OAuth state token matches
-            const storedToken = channel.config?.get?.('oauthState') || channel.config?.oauthState;
-            if (!storedToken || storedToken !== token) {
-                logger.warn({ channelId }, 'WooCommerce OAuth callback token mismatch');
-                return res.status(401).json({ error: 'Invalid OAuth state' });
-            }
-
-            // Encrypt and store the received credentials
             const { encrypt } = require('../shared/utils/credentialEncryption');
-            const configUpdates = {
-                'config.consumerKey': consumer_key,
-                'config.consumerSecret': encrypt(consumer_secret),
-                'config.oauthState': null, // Clear the used token
-            };
 
-            await SalesChannel.updateOne(
-                { _id: channelId },
-                {
-                    $set: {
-                        ...configUpdates,
-                        'integration.status': 'connected',
-                        'integration.lastError': null,
-                    }
+            if (pending.reconnect && pending.channelId) {
+                // ── Reconnect flow: update existing channel ──
+                const channel = await SalesChannel.findOne({
+                    _id: pending.channelId,
+                    tenant: pending.tenantId,
+                    channelType: 'woocommerce',
+                    deletedAt: null,
+                });
+                if (!channel) {
+                    return res.status(404).json({ error: 'Channel not found' });
                 }
-            );
 
-            logger.info({ channelId, permissions: key_permissions }, 'WooCommerce OAuth credentials received');
+                await SalesChannel.updateOne(
+                    { _id: pending.channelId },
+                    {
+                        $set: {
+                            'config.consumerKey': consumer_key,
+                            'config.consumerSecret': encrypt(consumer_secret),
+                            'integration.status': 'connected',
+                            'integration.lastError': null,
+                        }
+                    }
+                );
+                logger.info({ channelId: pending.channelId, permissions: key_permissions }, 'WooCommerce OAuth reconnected');
+
+            } else {
+                // ── New channel flow: create the channel with credentials ──
+                const slugBase = pending.name.toLowerCase()
+                    .replace(/[^a-z0-9\u0600-\u06FF]+/g, '-')
+                    .replace(/^-|-$/g, '') || 'wc-store';
+                const slug = `${slugBase}-${Date.now().toString(36)}`;
+
+                await SalesChannel.create({
+                    tenant: pending.tenantId,
+                    name: pending.name,
+                    slug,
+                    description: pending.description || '',
+                    channelType: 'woocommerce',
+                    status: 'active',
+                    config: {
+                        storeUrl: pending.storeUrl,
+                        consumerKey: consumer_key,
+                        consumerSecret: encrypt(consumer_secret),
+                    },
+                    integration: {
+                        status: 'connected',
+                        syncEnabled: true,
+                    },
+                });
+                logger.info({ name: pending.name, tenant: pending.tenantId, permissions: key_permissions }, 'WooCommerce channel created via OAuth');
+            }
+
             return res.status(200).json({ success: true });
 
         } catch (error) {
-            logger.error({ err: error, user_id }, 'WooCommerce OAuth callback error');
+            logger.error({ err: error, stateToken }, 'WooCommerce OAuth callback error');
             return res.status(500).json({ error: 'Internal error processing OAuth callback' });
         }
     }

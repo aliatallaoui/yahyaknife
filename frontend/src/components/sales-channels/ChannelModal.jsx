@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Store, Globe, Palette, Activity, Link2, ShoppingBag, KeyRound } from 'lucide-react';
+import { X, Store, Globe, Palette, Activity, Link2, ShoppingBag, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
 import useModalDismiss from '../../hooks/useModalDismiss';
+import { apiFetch } from '../../utils/apiFetch';
+import toast from 'react-hot-toast';
 
 const CHANNEL_TYPES = [
   { value: 'landing_page', label: 'Landing Page', icon: '📄' },
@@ -61,7 +63,8 @@ export default function ChannelModal({ channel, onSave, onClose }) {
 
   // Build tabs based on channel type
   const tabs = ['general'];
-  if (isStore) tabs.push('integration');
+  // For new WooCommerce channels, store URL is on general tab (no integration tab needed)
+  if (isStore && channel) tabs.push('integration');
   if (isLandingPage) tabs.push('domain', 'pixels', 'branding');
 
   const update = (path, value) => {
@@ -77,8 +80,44 @@ export default function ChannelModal({ channel, onSave, onClose }) {
     });
   };
 
+  // WooCommerce OAuth — initiate flow (new channel)
+  const handleWcOAuth = async () => {
+    if (!form.name.trim()) return toast.error(t('salesChannels.nameRequired', 'Channel name is required'));
+    if (!form.config.storeUrl?.trim()) return toast.error(t('salesChannels.storeUrlRequired', 'Store URL is required'));
+    setSaving(true);
+    try {
+      const res = await apiFetch('/api/sales-channels/wc-auth/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          description: form.description,
+          storeUrl: form.config.storeUrl.trim(),
+          returnUrl: `${window.location.origin}/sales-channels`,
+        })
+      });
+      const json = await res.json();
+      if (res.ok && json.data?.authUrl) {
+        // Redirect to WooCommerce for approval
+        window.location.href = json.data.authUrl;
+      } else {
+        toast.error(json.message || 'Failed to start WooCommerce connection');
+        setSaving(false);
+      }
+    } catch {
+      toast.error('Failed to start WooCommerce connection');
+      setSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.name.trim()) return;
+
+    // For NEW WooCommerce channels, use OAuth flow instead of direct create
+    if (!channel && form.channelType === 'woocommerce') {
+      return handleWcOAuth();
+    }
+
     setSaving(true);
 
     // Build submit data — only include relevant config
@@ -223,6 +262,28 @@ export default function ChannelModal({ channel, onSave, onClose }) {
                   <option value="inactive">{t('common.inactive', 'Inactive')}</option>
                 </select>
               </div>
+
+              {/* WooCommerce: Store URL inline on general tab for creation */}
+              {!channel && form.channelType === 'woocommerce' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('salesChannels.storeUrl', 'Store URL')} *
+                    </label>
+                    <input
+                      type="url"
+                      value={form.config.storeUrl}
+                      onChange={e => update('config.storeUrl', e.target.value)}
+                      placeholder="https://mystore.com"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-sm text-purple-700 dark:text-purple-300 flex items-start gap-2">
+                    <ExternalLink className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{t('salesChannels.oauthHintInline', 'You\'ll be redirected to your WooCommerce store to authorize access. The channel is created only after approval.')}</span>
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -248,20 +309,17 @@ export default function ChannelModal({ channel, onSave, onClose }) {
 
               {form.channelType === 'woocommerce' && (
                 <>
-                  {/* OAuth info — shown on create (keys will be fetched via OAuth after save) */}
+                  {/* New channel: OAuth info */}
                   {!channel && (
-                    <div className="px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-sm text-purple-700 dark:text-purple-300">
-                      {t('salesChannels.oauthHint', 'Save the channel first with your Store URL, then use "Connect with WooCommerce OAuth" from the channel detail page to authorize automatically.')}
+                    <div className="px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-sm text-purple-700 dark:text-purple-300 flex items-start gap-2">
+                      <ExternalLink className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{t('salesChannels.oauthHint', 'Click "Connect with WooCommerce" to authorize. You\'ll be redirected to your store to approve access. The channel will be created automatically after approval.')}</span>
                     </div>
                   )}
 
-                  {/* Manual key entry — collapsible for advanced users */}
-                  <details className="group">
-                    <summary className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
-                      <Link2 className="w-4 h-4" />
-                      {t('salesChannels.manualKeys', 'Manual API Keys (Advanced)')}
-                    </summary>
-                    <div className="mt-3 space-y-3 ps-6 border-s-2 border-gray-200 dark:border-gray-600">
+                  {/* Edit mode: show manual key fields */}
+                  {channel && (
+                    <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           {t('salesChannels.consumerKey', 'Consumer Key')}
@@ -300,7 +358,7 @@ export default function ChannelModal({ channel, onSave, onClose }) {
                         />
                       </div>
                     </div>
-                  </details>
+                  )}
                 </>
               )}
             </>
@@ -419,10 +477,21 @@ export default function ChannelModal({ channel, onSave, onClose }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={saving || !form.name.trim()}
-            className="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition-colors"
+            disabled={saving || !form.name.trim() || (!channel && form.channelType === 'woocommerce' && !form.config.storeUrl?.trim())}
+            className={clsx(
+              'inline-flex items-center gap-2 px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors disabled:opacity-50',
+              !channel && form.channelType === 'woocommerce'
+                ? 'bg-purple-600 hover:bg-purple-700'
+                : 'bg-blue-600 hover:bg-blue-700'
+            )}
           >
-            {saving ? t('common.saving', 'Saving...') : channel ? t('common.save', 'Save') : t('salesChannels.createChannel', 'Create Channel')}
+            {saving
+              ? t('common.saving', 'Connecting...')
+              : !channel && form.channelType === 'woocommerce'
+                ? <><ExternalLink className="w-4 h-4" /> {t('salesChannels.connectWooCommerce', 'Connect with WooCommerce')}</>
+                : channel
+                  ? t('common.save', 'Save')
+                  : t('salesChannels.createChannel', 'Create Channel')}
           </button>
         </div>
       </div>

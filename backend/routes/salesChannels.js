@@ -39,6 +39,7 @@ router.get('/:id/analytics', requirePermission(PERMS.SALES_CHANNELS_ANALYTICS), 
 
 // ── Store Integration ───────────────────────────────────────────────────────
 
+router.post('/wc-auth/initiate', requirePermission(PERMS.SALES_CHANNELS_CREATE), wrap(ctrl.initiateWcOAuth));
 router.post('/:id/wc-auth-url', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.generateWcAuthUrl));
 router.post('/:id/test-connection', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.testConnection));
 router.post('/:id/register-webhooks', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.registerWebhooks));

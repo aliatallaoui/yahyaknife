@@ -288,7 +288,22 @@ exports.calculateStorefrontPrice = async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Generate WooCommerce OAuth authorization URL.
+ * Initiate WooCommerce OAuth — creates channel only after approval.
+ * POST /api/sales-channels/wc-auth/initiate
+ */
+exports.initiateWcOAuth = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.initiateWcOAuth({
+            tenantId: req.user.tenant,
+            channelData: req.body,
+            returnUrl: req.body.returnUrl
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
+/**
+ * Generate WooCommerce OAuth URL for existing channel (reconnect).
  * POST /api/sales-channels/:id/wc-auth-url
  */
 exports.generateWcAuthUrl = async (req, res, next) => {

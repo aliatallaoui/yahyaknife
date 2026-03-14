@@ -887,12 +887,56 @@ exports.getChannelAnalytics = async ({ tenantId, channelId, from, to }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Generate WooCommerce OAuth authorization URL.
- * The flow:
- *   1. We generate a unique state token and store it in channel.config.oauthState
- *   2. We build the /wc-auth/v1/authorize URL pointing to the WooCommerce store
- *   3. user_id = "channelId:stateToken" so the callback can verify + match
- *   4. WooCommerce POSTs consumer_key + consumer_secret to our callback_url
+ * Initiate WooCommerce OAuth — called BEFORE channel exists.
+ * Stores pending channel data in cache, returns OAuth URL.
+ * The channel is only created when the callback receives valid credentials.
+ */
+exports.initiateWcOAuth = async ({ tenantId, channelData, returnUrl }) => {
+    const { name, storeUrl, description } = channelData;
+    if (!storeUrl) {
+        throw AppError.validationFailed({ storeUrl: 'Store URL is required' });
+    }
+    if (!name?.trim()) {
+        throw AppError.validationFailed({ name: 'Channel name is required' });
+    }
+
+    // Generate a one-time state token
+    const stateToken = crypto.randomBytes(24).toString('hex');
+
+    // Store pending channel data in cache (10 min TTL)
+    cacheService.set(`wc-oauth:${stateToken}`, {
+        tenantId: String(tenantId),
+        name: name.trim(),
+        description: description || '',
+        storeUrl: storeUrl.replace(/\/+$/, ''),
+        returnUrl: returnUrl || null,
+    }, 600);
+
+    // Build the WooCommerce OAuth URL
+    const appName = process.env.APP_NAME || 'Octomatic';
+    const apiBase = process.env.API_BASE_URL;
+    if (!apiBase) {
+        throw AppError.validationFailed({ config: 'API_BASE_URL environment variable is required for OAuth (must be HTTPS)' });
+    }
+    const callbackUrl = `${apiBase}/api/integrations/webhooks/wc-auth/callback`;
+    const finalReturnUrl = returnUrl || `${process.env.APP_BASE_URL || apiBase}/sales-channels`;
+
+    const normalizedStoreUrl = storeUrl.replace(/\/+$/, '');
+    const params = new URLSearchParams({
+        app_name: appName,
+        scope: 'read_write',
+        user_id: stateToken,
+        return_url: finalReturnUrl,
+        callback_url: callbackUrl,
+    });
+
+    const authUrl = `${normalizedStoreUrl}/wc-auth/v1/authorize?${params.toString()}`;
+
+    return { authUrl, stateToken };
+};
+
+/**
+ * Generate WooCommerce OAuth URL for an EXISTING channel (reconnect flow).
  */
 exports.generateWcAuthUrl = async ({ tenantId, channelId, returnUrl }) => {
     const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
@@ -907,33 +951,35 @@ exports.generateWcAuthUrl = async ({ tenantId, channelId, returnUrl }) => {
         throw AppError.validationFailed({ storeUrl: 'Store URL is required. Set it in channel settings first.' });
     }
 
-    // Generate a one-time state token for CSRF protection
     const stateToken = crypto.randomBytes(24).toString('hex');
 
-    // Store it in channel config
-    channel.config.set('oauthState', stateToken);
-    await channel.save();
+    // Store reconnect data in cache
+    cacheService.set(`wc-oauth:${stateToken}`, {
+        channelId: String(channelId),
+        tenantId: String(tenantId),
+        storeUrl: storeUrl.replace(/\/+$/, ''),
+        reconnect: true,
+        returnUrl: returnUrl || null,
+    }, 600);
 
-    // Build the WooCommerce OAuth URL
     const appName = process.env.APP_NAME || 'Octomatic';
-    const baseUrl = process.env.APP_BASE_URL || returnUrl?.replace(/\/[^/]*$/, '') || 'https://app.octomatic.shop';
-    const callbackUrl = `${process.env.API_BASE_URL || baseUrl}/api/integrations/webhooks/wc-auth/callback`;
-    const finalReturnUrl = returnUrl || `${baseUrl}/sales-channels/${channelId}`;
+    const apiBase = process.env.API_BASE_URL;
+    if (!apiBase) {
+        throw AppError.validationFailed({ config: 'API_BASE_URL environment variable is required for OAuth (must be HTTPS)' });
+    }
+    const callbackUrl = `${apiBase}/api/integrations/webhooks/wc-auth/callback`;
+    const finalReturnUrl = returnUrl || `${process.env.APP_BASE_URL || apiBase}/sales-channels/${channelId}`;
 
-    // Normalize store URL
     const normalizedStoreUrl = storeUrl.replace(/\/+$/, '');
-
     const params = new URLSearchParams({
         app_name: appName,
         scope: 'read_write',
-        user_id: `${channelId}:${stateToken}`,
+        user_id: stateToken,
         return_url: finalReturnUrl,
         callback_url: callbackUrl,
     });
 
-    const authUrl = `${normalizedStoreUrl}/wc-auth/v1/authorize?${params.toString()}`;
-
-    return { authUrl };
+    return { authUrl: `${normalizedStoreUrl}/wc-auth/v1/authorize?${params.toString()}` };
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
