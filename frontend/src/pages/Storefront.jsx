@@ -73,9 +73,10 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
       }
       return;
     }
+    const ac = new AbortController();
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/s/${channelSlug}/${pageSlug}`);
+        const res = await fetch(`${API_BASE}/s/${channelSlug}/${pageSlug}`, { signal: ac.signal });
         if (!res.ok) throw new Error('Page not found');
         const json = await res.json();
         const data = json.data ?? json;
@@ -92,11 +93,12 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
         // Track page view
         trackEvent('page_view');
       } catch (err) {
-        setError(err.message);
+        if (err.name !== 'AbortError') setError(err.message);
       } finally {
-        setLoading(false);
+        if (!ac.signal.aborted) setLoading(false);
       }
     })();
+    return () => ac.abort();
   }, [channelSlug, pageSlug, isPreview]);
 
   // Resolve storefront slug for coverage/price endpoints (works for both public and preview)

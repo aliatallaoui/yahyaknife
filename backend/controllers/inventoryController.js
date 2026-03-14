@@ -384,6 +384,7 @@ exports.processRTO = async (req, res) => {
         // Find the order by internal orderId or tracking number
         const order = await Order.findOne({
             tenant: tenantId,
+            deletedAt: null,
             $or: [{ orderId: searchKey }, { 'trackingInfo.trackingNumber': searchKey }]
         }).session(session);
 

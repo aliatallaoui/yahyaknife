@@ -1,10 +1,11 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
-import EcommerceAnalytics from './EcommerceAnalytics';
 import GettingStarted from '../components/GettingStarted';
+
+const EcommerceAnalytics = lazy(() => import('./EcommerceAnalytics'));
 import { ShoppingCart, Banknote, UserX, Package, ChevronRight, RefreshCw } from 'lucide-react';
 
 // Briefing chip — each item links to a relevant filtered view
@@ -118,7 +119,9 @@ export default function Overview() {
                 </div>
             )}
 
-            <EcommerceAnalytics hideTitle={true} />
+            <Suspense fallback={<div className="h-96 animate-pulse bg-gray-100 dark:bg-gray-800 rounded-2xl" />}>
+                <EcommerceAnalytics hideTitle={true} />
+            </Suspense>
         </div>
     );
 }

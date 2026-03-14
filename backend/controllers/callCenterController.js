@@ -915,6 +915,7 @@ exports.lockOrder = async (req, res) => {
         const order = await Order.findOneAndUpdate({
             _id: id,
             tenant: tenantId,
+            deletedAt: null,
             $or: [
                 { lockedBy: null },
                 { lockedBy: agentId },
@@ -928,7 +929,7 @@ exports.lockOrder = async (req, res) => {
         }, { new: true });
 
         if (!order) {
-            const exists = await Order.findOne({ _id: id, tenant: tenantId });
+            const exists = await Order.findOne({ _id: id, tenant: tenantId, deletedAt: null });
             if (!exists) return res.status(404).json({ message: 'Order not found' });
             return res.status(409).json({ message: 'Order is currently locked by another user' });
         }
@@ -1516,7 +1517,7 @@ exports.getAssignmentRules = async (req, res) => {
         }
 
         const [products, channels] = await Promise.all([
-            productIds.length ? Product.find({ _id: { $in: productIds } }).select('name').lean() : [],
+            productIds.length ? Product.find({ _id: { $in: productIds }, tenant: tenantId }).select('name').lean() : [],
             channelIds.length ? SalesChannel.find({ _id: { $in: channelIds }, tenant: tenantId }).select('name').lean() : [],
         ]);
 

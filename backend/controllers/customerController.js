@@ -120,7 +120,7 @@ const deleteCustomer = async (req, res) => {
 const getCustomerOrders = async (req, res) => {
     try {
         if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid customer ID' });
-        const filter = { customer: req.params.id, tenant: req.user.tenant };
+        const filter = { customer: req.params.id, tenant: req.user.tenant, deletedAt: null };
         const [orders, total] = await Promise.all([
             Order.find(filter)
                 .populate('products.variantId', 'name sku price')
