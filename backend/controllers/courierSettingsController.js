@@ -36,18 +36,16 @@ exports.updateSettings = async (req, res) => {
             settings = new CourierSetting({ tenant: tenantId, providerName: 'ECOTRACK' });
         }
 
-        // Update settings object
-        if (apiUrl !== undefined) settings.apiUrl = apiUrl;
-        if (apiToken !== undefined) settings.apiToken = apiToken;
+        // Update settings object — normalize URL (strip trailing slashes, whitespace)
+        if (apiUrl !== undefined) settings.apiUrl = apiUrl.trim().replace(/\/+$/, '');
+        if (apiToken !== undefined) settings.apiToken = apiToken.trim();
 
         // Try to validate the token with ECOTRACK
         let connectionStatus = 'Invalid Token';
         if (settings.apiToken && settings.apiUrl) {
             try {
                 // Use Ecotrack's dedicated token validation endpoint
-                const pingUrl = settings.apiUrl.endsWith('/')
-                    ? `${settings.apiUrl}api/v1/validate/token`
-                    : `${settings.apiUrl}/api/v1/validate/token`;
+                const pingUrl = `${settings.apiUrl}/api/v1/validate/token`;
 
                 logger.info('[CourierSettings] Validating EcoTrack token');
 

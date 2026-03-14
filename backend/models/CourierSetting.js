@@ -37,6 +37,13 @@ const courierSettingSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+// Normalize apiUrl — strip trailing slashes on save
+courierSettingSchema.pre('save', function () {
+    if (this.isModified('apiUrl') && this.apiUrl) {
+        this.apiUrl = this.apiUrl.trim().replace(/\/+$/, '');
+    }
+});
+
 // One setting per provider per tenant
 courierSettingSchema.index({ tenant: 1, providerName: 1 }, { unique: true });
 

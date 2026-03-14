@@ -56,9 +56,12 @@ const courierSchema = new mongoose.Schema({
 
 courierSchema.index({ tenant: 1, status: 1 });
 
-// Pre-save hook to calculate pending remittance
+// Pre-save hook to calculate pending remittance + normalize URL
 courierSchema.pre('save', function () {
     this.pendingRemittance = this.cashCollected - this.cashSettled;
+    if (this.isModified('apiBaseUrl') && this.apiBaseUrl) {
+        this.apiBaseUrl = this.apiBaseUrl.trim().replace(/\/+$/, '');
+    }
 });
 
 module.exports = mongoose.model('Courier', courierSchema);

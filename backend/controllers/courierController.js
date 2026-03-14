@@ -45,7 +45,8 @@ exports.createCourier = async (req, res) => {
         } = req.body;
         if (!name) return res.status(400).json({ message: 'Courier name is required.' });
         const newCourier = await Courier.create({
-            name, phone, logo, status, integrationType, apiProvider, apiBaseUrl,
+            name, phone, logo, status, integrationType, apiProvider,
+            apiBaseUrl: apiBaseUrl ? apiBaseUrl.trim().replace(/\/+$/, '') : apiBaseUrl,
             authType, apiId, apiToken, accountReference, notes, vehicleType,
             coverageZones, deliverySLAs,
             tenant: req.user.tenant
@@ -77,6 +78,10 @@ exports.updateCourier = async (req, res) => {
         // Don't overwrite real token with empty/placeholder values
         if (!safe.apiToken) {
             delete safe.apiToken;
+        }
+        // Normalize URL — strip trailing slashes and whitespace
+        if (safe.apiBaseUrl) {
+            safe.apiBaseUrl = safe.apiBaseUrl.trim().replace(/\/+$/, '');
         }
         const updated = await Courier.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant, deletedAt: null },
