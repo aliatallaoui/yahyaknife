@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import {
     Calendar, TrendingUp, TrendingDown, Package, ShoppingCart,
     CreditCard, Users, Truck, AlertCircle, RefreshCw, Download,
-    MapPin, Megaphone, CheckCircle2, BarChart3, Activity
+    MapPin, Megaphone, CheckCircle2, BarChart3, Activity, PackageCheck, Store,
+    Clock, UserPlus, RotateCcw, ArrowRight, Timer
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -73,8 +74,25 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
     const fetchTrendData = async (signal) => {
         setTrendLoading(true);
         try {
-            const to = new Date().toISOString().slice(0, 10);
-            const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            // Use selected date range instead of hardcoded 30 days
+            let from, to;
+            if (dateRange === 'custom' && customStart && customEnd) {
+                from = customStart;
+                to = customEnd;
+            } else {
+                to = new Date().toISOString().slice(0, 10);
+                const daysMap = { today: 0, yesterday: 1, '7d': 7, '30d': 30, '90d': 90 };
+                const days = daysMap[dateRange] ?? 30;
+                if (dateRange === 'ytd') {
+                    from = `${new Date().getFullYear()}-01-01`;
+                } else if (dateRange === 'yesterday') {
+                    const d = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                    from = d.toISOString().slice(0, 10);
+                    to = from;
+                } else {
+                    from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                }
+            }
             const res = await apiFetch(`/api/analytics/daily?from=${from}&to=${to}`, { signal });
             if (res.ok) {
                 const json = await res.json();
@@ -99,16 +117,10 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
     useEffect(() => {
         const controller = new AbortController();
         fetchAnalytics(controller.signal);
-        return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateRange]);
-
-    useEffect(() => {
-        const controller = new AbortController();
         fetchTrendData(controller.signal);
         return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [dateRange]);
 
     // --- KPI Card ---
     const KPICard = ({ title, value, prefix = '', suffix = '', trend, trendValue, icon, gradient }) => {
@@ -164,8 +176,8 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
         return (
             <div className="max-w-[1600px] mx-auto pb-12 space-y-6 animate-pulse">
                 <div className="h-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700" />
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-                    {[...Array(6)].map((_, i) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
+                    {[...Array(7)].map((_, i) => (
                         <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5">
                             <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl mb-3" />
                             <div className="h-3 w-16 bg-gray-100 dark:bg-gray-700 rounded mb-2" />
@@ -235,7 +247,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                         />
                     </div>
                     <button
-                        onClick={fetchAnalytics}
+                        onClick={() => { fetchAnalytics(); fetchTrendData(); }}
                         className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200/50 dark:border-gray-600 bg-white dark:bg-gray-800"
                         title={t('analytics.refresh', 'Refresh Data')}
                     >
@@ -266,44 +278,53 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
             <InsightFeed />
 
             {/* 2. Top KPI Layer */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
                 <KPICard
                     title={t('analytics.kpi.revenue', 'Total Revenue')}
-                    value={dashData?.kpis?.revenue || 0} suffix={` ${t('common.dzd', 'DZD')}`}
+                    value={dashData?.kpis?.revenue ?? 0} suffix={` ${t('common.dzd', 'DZD')}`}
                     icon={CreditCard} gradient="bg-gradient-to-br from-blue-500 to-blue-600"
                     trend={dashData?.trends?.revenue?.direction}
                     trendValue={dashData?.trends?.revenue?.label}
                 />
                 <KPICard
                     title={t('analytics.kpi.orders', 'Total Orders')}
-                    value={dashData?.kpis?.orders || 0}
+                    value={dashData?.kpis?.orders ?? 0}
                     icon={ShoppingCart} gradient="bg-gradient-to-br from-indigo-500 to-indigo-600"
                     trend={dashData?.trends?.orders?.direction}
                     trendValue={dashData?.trends?.orders?.label}
                 />
                 <KPICard
                     title={t('analytics.kpi.aov', 'Avg Order Value')}
-                    value={dashData?.kpis?.aov || 0} suffix={` ${t('common.dzd', 'DZD')}`}
+                    value={dashData?.kpis?.aov ?? 0} suffix={` ${t('common.dzd', 'DZD')}`}
                     icon={Truck} gradient="bg-gradient-to-br from-emerald-500 to-emerald-600"
+                    trend={dashData?.trends?.aov?.direction}
+                    trendValue={dashData?.trends?.aov?.label}
                 />
                 <KPICard
                     title={t('analytics.kpi.profit', 'Net Profit')}
-                    value={dashData?.kpis?.profit || 0} suffix={` ${t('common.dzd', 'DZD')}`}
+                    value={dashData?.kpis?.profit ?? 0} suffix={` ${t('common.dzd', 'DZD')}`}
                     icon={TrendingUp} gradient="bg-gradient-to-br from-amber-500 to-orange-500"
                     trend={dashData?.trends?.profit?.direction}
                     trendValue={dashData?.trends?.profit?.label}
                 />
                 <KPICard
                     title={t('analytics.kpi.margin', 'Profit Margin')}
-                    value={dashData?.kpis?.margin || 0} suffix="%"
+                    value={dashData?.kpis?.margin ?? 0} suffix="%"
                     icon={Activity} gradient="bg-gradient-to-br from-purple-500 to-purple-600"
                 />
                 <KPICard
                     title={t('analytics.kpi.confirmationRate', 'Confirmation Rate')}
-                    value={dashData?.kpis?.confirmationRate || 0} suffix="%"
+                    value={dashData?.kpis?.confirmationRate ?? 0} suffix="%"
                     icon={CheckCircle2} gradient="bg-gradient-to-br from-teal-500 to-teal-600"
                     trend={dashData?.trends?.confirmationRate?.direction}
                     trendValue={dashData?.trends?.confirmationRate?.label}
+                />
+                <KPICard
+                    title={t('analytics.kpi.deliveryRate', 'Delivery Rate')}
+                    value={dashData?.kpis?.deliveryRate ?? 0} suffix="%"
+                    icon={PackageCheck} gradient="bg-gradient-to-br from-green-500 to-emerald-600"
+                    trend={dashData?.trends?.deliveryRate?.direction}
+                    trendValue={dashData?.trends?.deliveryRate?.label}
                 />
             </div>
 
@@ -325,7 +346,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                             <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: tickColor }} dy={10} />
                             <YAxis tickFormatter={(val) => `${val / 1000}k`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: tickColor }} dx={-10} />
-                            <RechartsTooltip contentStyle={tooltipStyle} cursor={cursorStyle} />
+                            <RechartsTooltip contentStyle={tooltipStyle} cursor={cursorStyle} formatter={(val) => [`${val.toLocaleString()} ${t('common.dzd', 'DZD')}`, t('analytics.table.revenue', 'Revenue')]} />
                             <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRev)" />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -461,6 +482,55 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 </ChartCard>
             </div>
 
+            {/* 4c. Sales Channel Sources */}
+            {dashData?.channelSourceData?.length > 0 && (
+                <ChartCard
+                    title={t('analytics.charts.salesChannels', 'Sales Channels')}
+                    subtitle={t('analytics.charts.salesChannels_sub', 'Orders & revenue by sales channel')}
+                    icon={Store}
+                >
+                    <div className="overflow-x-auto max-h-[300px] overflow-y-auto -mx-2">
+                        <table className="cf-table">
+                            <thead>
+                                <tr>
+                                    <th><Store className="w-3.5 h-3.5 inline mr-1" />{t('analytics.table.channel', 'Channel')}</th>
+                                    <th>{t('analytics.table.type', 'Type')}</th>
+                                    <th>{t('analytics.table.orders', 'Orders')}</th>
+                                    <th>{t('analytics.table.revenue', 'Revenue')}</th>
+                                    <th>{t('analytics.table.share', 'Share')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dashData.channelSourceData.map((ch) => {
+                                    const totalChOrders = dashData.channelSourceData.reduce((s, c) => s + c.orders, 0);
+                                    const share = totalChOrders > 0 ? ((ch.orders / totalChOrders) * 100).toFixed(1) : 0;
+                                    return (
+                                        <tr key={ch.id}>
+                                            <td className="font-medium text-gray-900 dark:text-white">{ch.name}</td>
+                                            <td>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 uppercase">
+                                                    {ch.channelType}
+                                                </span>
+                                            </td>
+                                            <td className="text-gray-600 dark:text-gray-300 tabular-nums">{ch.orders}</td>
+                                            <td className="text-gray-900 dark:text-white font-medium tabular-nums">{(ch.revenue ?? 0).toLocaleString()} {t('common.dzd', 'DZD')}</td>
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 flex-1 max-w-[60px]">
+                                                        <div className="h-1.5 rounded-full bg-indigo-500 transition-all" style={{ width: `${share}%` }} />
+                                                    </div>
+                                                    <span className="text-gray-600 dark:text-gray-300 font-bold text-xs tabular-nums">{share}%</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </ChartCard>
+            )}
+
             {/* 5. Courier Analytics & Inventory Health */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <ChartCard title={t('analytics.charts.couriers', 'Courier Performance')} icon={Truck} className="lg:col-span-2">
@@ -469,10 +539,11 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                             <thead>
                                 <tr>
                                     <th>{t('analytics.table.courier', 'Courier')}</th>
-                                    <th>{t('analytics.table.orders', 'Orders')}</th>
+                                    <th>{t('analytics.table.dispatched', 'Dispatched')}</th>
                                     <th>{t('analytics.table.delivered', 'Delivered')}</th>
                                     <th>{t('analytics.table.returned', 'Returned')}</th>
-                                    <th>{t('analytics.table.success_rate', 'Success Rate')}</th>
+                                    <th>{t('analytics.table.inTransit', 'In Transit')}</th>
+                                    <th>{t('analytics.table.success_rate', 'Success')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -482,17 +553,18 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                                         <td className="text-gray-600 dark:text-gray-300 tabular-nums">{c.orders}</td>
                                         <td className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">{c.delivered}</td>
                                         <td className="text-red-600 dark:text-red-400 font-medium tabular-nums">{c.returned}</td>
+                                        <td className="text-blue-600 dark:text-blue-400 tabular-nums">{c.inTransit ?? 0}</td>
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 flex-1 max-w-[60px]">
-                                                    <div className={clsx("h-1.5 rounded-full transition-all", c.success >= 90 ? 'bg-emerald-500' : 'bg-amber-500')} style={{ width: `${c.success}%` }} />
+                                                    <div className={clsx("h-1.5 rounded-full transition-all", c.success >= 80 ? 'bg-emerald-500' : c.success >= 50 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${c.success}%` }} />
                                                 </div>
                                                 <span className="text-gray-600 dark:text-gray-300 font-bold text-xs tabular-nums">{c.success}%</span>
                                             </div>
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr className="empty-state"><td colSpan={5}>{t('analytics.noCourierData', 'No courier data for this period')}</td></tr>
+                                    <tr className="empty-state"><td colSpan={6}>{t('analytics.noCourierData', 'No courier data for this period')}</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -535,19 +607,28 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                                     <th>{t('analytics.table.product', 'Product')}</th>
                                     <th>{t('analytics.table.units', 'Units')}</th>
                                     <th>{t('analytics.table.revenue', 'Revenue')}</th>
-                                    <th>{t('analytics.table.conv', 'Conv. Rate')}</th>
+                                    <th>{t('analytics.table.deliveryRate', 'Delivery Rate')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {dashData?.topProductsData?.length > 0 ? dashData.topProductsData.map((p) => (
                                     <tr key={p.id}>
                                         <td className="font-medium text-gray-900 dark:text-white">{p.name || 'Unknown'}</td>
-                                        <td className="text-gray-600 dark:text-gray-300 tabular-nums">{p.units || 0}</td>
-                                        <td className="text-gray-900 dark:text-white font-medium tabular-nums">{(p.revenue || 0).toLocaleString()} {t('common.dzd', 'DZD')}</td>
+                                        <td className="text-gray-600 dark:text-gray-300 tabular-nums">{p.units ?? 0}</td>
+                                        <td className="text-gray-900 dark:text-white font-medium tabular-nums">{(p.revenue ?? 0).toLocaleString()} {t('common.dzd', 'DZD')}</td>
                                         <td>
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
-                                                {p.conv || 0}%
-                                            </span>
+                                            {p.deliveryRate != null ? (
+                                                <span className={clsx(
+                                                    "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border",
+                                                    p.deliveryRate >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800'
+                                                        : p.deliveryRate >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800'
+                                                        : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800'
+                                                )}>
+                                                    {p.deliveryRate}%
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                                            )}
                                         </td>
                                     </tr>
                                 )) : (
@@ -558,14 +639,14 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     </div>
                 </ChartCard>
 
-                <ChartCard title={t('analytics.tables.top_customers', 'Top Customers (LTV)')} icon={Users}>
+                <ChartCard title={t('analytics.tables.top_customers', 'Top Customers')} icon={Users}>
                     <div className="overflow-x-auto max-h-[300px] overflow-y-auto -mx-2">
                         <table className="cf-table">
                             <thead>
                                 <tr>
                                     <th>{t('analytics.table.customer', 'Customer')}</th>
                                     <th>{t('analytics.table.orders', 'Orders')}</th>
-                                    <th>{t('analytics.table.revenue', 'LTV Revenue')}</th>
+                                    <th>{t('analytics.table.revenue', 'Revenue')}</th>
                                     <th>{t('analytics.table.aov', 'AOV')}</th>
                                 </tr>
                             </thead>
@@ -596,8 +677,8 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
             {/* 7. 30-Day Historical Trends (DailyRollup) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ChartCard
-                    title={t('analytics.charts.revenue_30d', '30-Day Revenue & Profit')}
-                    subtitle={t('analytics.charts.revenue_30d_sub', 'Gross revenue vs. net profit — last 30 days')}
+                    title={t('analytics.charts.revenue_trend_daily', 'Revenue & Profit Trend')}
+                    subtitle={t('analytics.charts.revenue_trend_daily_sub', 'Gross revenue vs. net profit over selected period')}
                     icon={TrendingUp}
                 >
                     {trendLoading ? (
@@ -640,8 +721,8 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 </ChartCard>
 
                 <ChartCard
-                    title={t('analytics.charts.orders_30d', '30-Day Order Flow')}
-                    subtitle={t('analytics.charts.orders_30d_sub', 'Created vs. delivered vs. returned — last 30 days')}
+                    title={t('analytics.charts.orders_flow', 'Order Flow')}
+                    subtitle={t('analytics.charts.orders_flow_sub', 'Created vs. delivered vs. returned over selected period')}
                     icon={Activity}
                 >
                     {trendLoading ? (
@@ -674,6 +755,138 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     )}
                 </ChartCard>
             </div>
+
+            {/* 8. Funnel Conversion Rates + Avg Delivery Time + Profit Per Order */}
+            {dashData?.funnelRates && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {[
+                        { label: t('analytics.funnel.confirmation', 'Confirmation'), value: dashData.funnelRates.confirmationRate, desc: t('analytics.funnel.newToConfirmed', 'New → Confirmed'), color: 'text-blue-600 dark:text-blue-400' },
+                        { label: t('analytics.funnel.dispatch', 'Dispatch'), value: dashData.funnelRates.dispatchRate, desc: t('analytics.funnel.confirmedToDispatched', 'Confirmed → Dispatched'), color: 'text-indigo-600 dark:text-indigo-400' },
+                        { label: t('analytics.funnel.delivery', 'Delivery Success'), value: dashData.funnelRates.deliverySuccessRate, desc: t('analytics.funnel.dispatchedToDelivered', 'Dispatched → Delivered'), color: 'text-emerald-600 dark:text-emerald-400' },
+                        { label: t('analytics.funnel.refusal', 'Refusal Rate'), value: dashData.funnelRates.refusalRate, desc: t('analytics.funnel.dispatchedToReturned', 'Dispatched → Returned/Refused'), color: 'text-red-600 dark:text-red-400' },
+                        { label: t('analytics.funnel.overall', 'Overall Conversion'), value: dashData.funnelRates.overallConversion, desc: t('analytics.funnel.newToDelivered', 'New → Delivered'), color: 'text-amber-600 dark:text-amber-400' },
+                    ].map((f) => (
+                        <div key={f.label} className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+                            <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{f.label}</p>
+                            <p className={clsx("text-2xl font-black tabular-nums", f.color)}>{f.value ?? 0}%</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 flex items-center justify-center gap-1">
+                                <ArrowRight className="w-2.5 h-2.5" /> {f.desc}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* 8b. Extra KPI chips: Avg Delivery Time + Profit Per Order */}
+            {(dashData?.kpis?.avgDeliveryDays != null || dashData?.kpis?.profitPerOrder != null) && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {dashData.kpis.avgDeliveryDays != null && (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center">
+                                <Timer className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('analytics.kpi.avgDelivery', 'Avg Delivery')}</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{dashData.kpis.avgDeliveryDays} {t('analytics.days', 'days')}</p>
+                            </div>
+                        </div>
+                    )}
+                    {dashData.kpis.profitPerOrder != null && (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                                <CreditCard className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('analytics.kpi.profitPerOrder', 'Profit / Order')}</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{(dashData.kpis.profitPerOrder ?? 0).toLocaleString()} {t('common.dzd', 'DZD')}</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* 9. Peak Hours + New vs Returning Customers */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <ChartCard
+                    title={t('analytics.charts.peakHours', 'Peak Order Hours')}
+                    subtitle={t('analytics.charts.peakHours_sub', 'When your customers place orders')}
+                    icon={Clock}
+                    className="lg:col-span-2"
+                >
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <BarChart data={dashData?.peakHoursData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                            <XAxis dataKey="hour" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: tickColor }} interval={1} angle={-45} textAnchor="end" height={40} />
+                            <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: tickColor }} allowDecimals={false} />
+                            <RechartsTooltip contentStyle={tooltipStyle} formatter={(val) => [val, t('analytics.table.orders', 'Orders')]} />
+                            <Bar dataKey="orders" radius={[4, 4, 0, 0]} barSize={16}>
+                                {(dashData?.peakHoursData || []).map((entry, index) => (
+                                    <Cell key={`ph-${index}`} fill={entry.orders > 0 ? (entry.orders >= (Math.max(...(dashData?.peakHoursData || []).map(h => h.orders)) * 0.7) ? '#6366f1' : '#a5b4fc') : (isDark ? '#374151' : '#e5e7eb')} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard
+                    title={t('analytics.charts.customerSplit', 'Customer Mix')}
+                    subtitle={t('analytics.charts.customerSplit_sub', 'New vs returning buyers')}
+                    icon={UserPlus}
+                >
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                            <Pie
+                                data={dashData?.customerSplitData || []}
+                                cx="50%"
+                                cy="45%"
+                                innerRadius={60}
+                                outerRadius={90}
+                                paddingAngle={4}
+                                dataKey="value"
+                                strokeWidth={0}
+                            >
+                                {(dashData?.customerSplitData || []).map((entry, index) => (
+                                    <Cell key={`cs-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip contentStyle={tooltipStyle} />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8}
+                                formatter={(value) => <span style={{ color: isDark ? '#94a3b8' : '#6b7280', fontSize: 12 }}>{value}</span>}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </ChartCard>
+            </div>
+
+            {/* 10. Top Returned Products */}
+            {dashData?.returnedProductsData?.length > 0 && (
+                <ChartCard
+                    title={t('analytics.charts.returnedProducts', 'Most Returned Products')}
+                    subtitle={t('analytics.charts.returnedProducts_sub', 'Products with highest return/refusal rates — potential quality or listing issues')}
+                    icon={RotateCcw}
+                >
+                    <div className="overflow-x-auto max-h-[300px] overflow-y-auto -mx-2">
+                        <table className="cf-table">
+                            <thead>
+                                <tr>
+                                    <th>{t('analytics.table.product', 'Product')}</th>
+                                    <th>{t('analytics.table.returns', 'Returns')}</th>
+                                    <th>{t('analytics.table.lostRevenue', 'Lost Revenue')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dashData.returnedProductsData.map((p) => (
+                                    <tr key={p.id}>
+                                        <td className="font-medium text-gray-900 dark:text-white">{p.name}</td>
+                                        <td className="text-red-600 dark:text-red-400 font-bold tabular-nums">{p.returns}</td>
+                                        <td className="text-gray-900 dark:text-white font-medium tabular-nums">{(p.lostRevenue ?? 0).toLocaleString()} {t('common.dzd', 'DZD')}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </ChartCard>
+            )}
         </div>
     );
 }

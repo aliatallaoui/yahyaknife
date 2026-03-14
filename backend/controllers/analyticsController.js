@@ -251,7 +251,9 @@ exports.getEcommerceAnalytics = async (req, res) => {
                             totalOrders: { $sum: 1 },
                             revenue:     { $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$totalAmount", 0] } },
                             profit:      { $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, { $subtract: [{ $subtract: [{ $subtract: ["$totalAmount", "$financials.cogs"] }, "$financials.courierFee"] }, { $add: ["$financials.gatewayFees", "$financials.marketplaceFees"] }] }, 0] } },
-                            confirmed:   { $sum: { $cond: [{ $in: ["$status", ['Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused']] }, 1, 0] } }
+                            confirmed:   { $sum: { $cond: [{ $in: ["$status", ['Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused']] }, 1, 0] } },
+                            dispatched:  { $sum: { $cond: [{ $in: ["$status", ['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused']] }, 1, 0] } },
+                            delivered:   { $sum: { $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, 1, 0] } }
                         }
                     }
                 ])
@@ -260,8 +262,9 @@ exports.getEcommerceAnalytics = async (req, res) => {
             let totalOrders = 0;
             let totalRevenue = 0;
             let netProfit = 0;
-            let pending = 0, confirmed = 0, shipped = 0, delivered = 0, returned = 0;
+            let pending = 0, confirmed = 0, dispatched = 0, shipped = 0, delivered = 0, returned = 0, cancelled = 0;
             let totalConfirmed = 0; // all orders that passed confirmation (not just in Confirmed status now)
+            let totalDispatched = 0; // all orders that went through dispatch
 
             orderAgg.forEach(status => {
                 totalOrders += status.count;
@@ -272,39 +275,54 @@ exports.getEcommerceAnalytics = async (req, res) => {
 
                 if (status._id === 'New') pending += status.count;
                 if (['Confirmed', 'Preparing', 'Ready for Pickup'].includes(status._id)) confirmed += status.count;
-                if (['Shipped', 'Out for Delivery', 'Dispatched'].includes(status._id)) shipped += status.count;
+                if (status._id === 'Dispatched') dispatched += status.count;
+                if (['Shipped', 'Out for Delivery'].includes(status._id)) shipped += status.count;
                 if (['Delivered', 'Paid'].includes(status._id)) delivered += status.count;
                 if (['Returned', 'Refused'].includes(status._id)) returned += status.count;
+                if (status._id === 'Cancelled') cancelled += status.count;
                 // Everything past "New" call statuses counts as confirmed
                 if (['Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'].includes(status._id)) {
                     totalConfirmed += status.count;
                 }
+                // Everything that was dispatched or beyond
+                if (['Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid', 'Returned', 'Refused'].includes(status._id)) {
+                    totalDispatched += status.count;
+                }
             });
 
-            const aov = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+            // AOV based on delivered orders only — revenue comes from delivered, so denominator must match
+            const aov = delivered > 0 ? Math.round(totalRevenue / delivered) : 0;
             const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
             const confirmationRate = totalOrders > 0 ? ((totalConfirmed / totalOrders) * 100).toFixed(1) : 0;
+            const deliveryRate = totalDispatched > 0 ? ((delivered / totalDispatched) * 100).toFixed(1) : 0;
 
             // Period-over-period comparison
-            const prev = prevOrderAgg[0] || { totalOrders: 0, revenue: 0, profit: 0, confirmed: 0 };
+            const prev = prevOrderAgg[0] || { totalOrders: 0, revenue: 0, profit: 0, confirmed: 0, dispatched: 0, delivered: 0 };
             const pctChange = (curr, prevVal) => prevVal > 0 ? parseFloat((((curr - prevVal) / prevVal) * 100).toFixed(1)) : (curr > 0 ? 100 : 0);
             const trendObj = (pct) => ({ direction: pct >= 0 ? 'up' : 'down', pct, label: `${pct >= 0 ? '+' : ''}${pct}%` });
             const confRateDelta = prev.totalOrders > 0
                 ? parseFloat((((totalConfirmed / totalOrders) - (prev.confirmed / prev.totalOrders)) * 100).toFixed(1))
                 : 0;
+            const prevDeliveryRate = prev.dispatched > 0 ? (prev.delivered / prev.dispatched) * 100 : 0;
+            const deliveryRateDelta = parseFloat((parseFloat(deliveryRate) - prevDeliveryRate).toFixed(1));
+            const prevAov = prev.delivered > 0 ? prev.revenue / prev.delivered : 0;
             const trends = {
                 revenue: trendObj(pctChange(totalRevenue, prev.revenue)),
                 orders: trendObj(pctChange(totalOrders, prev.totalOrders)),
+                aov: trendObj(pctChange(aov, prevAov)),
                 profit: trendObj(pctChange(netProfit, prev.profit)),
-                confirmationRate: trendObj(confRateDelta)
+                confirmationRate: trendObj(confRateDelta),
+                deliveryRate: trendObj(deliveryRateDelta)
             };
 
             const orderStatusData = [
                 { status: 'Pending', count: pending, color: '#f59e0b' },
                 { status: 'Confirmed', count: confirmed, color: '#3b82f6' },
+                { status: 'Dispatched', count: dispatched, color: '#6366f1' },
                 { status: 'Shipped', count: shipped, color: '#8b5cf6' },
                 { status: 'Delivered', count: delivered, color: '#10b981' },
-                { status: 'Returned', count: returned, color: '#ef4444' }
+                { status: 'Returned', count: returned, color: '#ef4444' },
+                { status: 'Cancelled', count: cancelled, color: '#6b7280' }
             ];
 
             // 2. Sales Trend (Time Series based on range days)
@@ -368,9 +386,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 { $sort: { value: -1 } },
                 { $limit: 8 }
             ]);
-            const categoryData = categoryAgg.length > 0
-                ? categoryAgg.map(c => ({ name: c._id || 'Uncategorized', value: c.value }))
-                : [{ name: 'General', value: totalRevenue > 0 ? totalRevenue : 1 }];
+            const categoryData = categoryAgg.map(c => ({ name: c._id || 'Uncategorized', value: c.value }));
 
             // 3b. Wilaya/Region breakdown — top 10 wilayas by order count + revenue
             const wilayaAgg = await Order.aggregate([
@@ -440,7 +456,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 revenue: c.revenue
             }));
 
-            // 4. Products Table (Top by sales volume logic)
+            // 4. Products Table — top by revenue, with delivery rate per product
             const topProductsAgg = await Order.aggregate([
                 { $match: dateQuery },
                 { $unwind: "$products" },
@@ -452,6 +468,17 @@ exports.getEcommerceAnalytics = async (req, res) => {
                             $sum: {
                                 $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, { $multiply: ["$products.unitPrice", "$products.quantity"] }, 0]
                             }
+                        },
+                        totalOrdered: { $sum: "$products.quantity" },
+                        deliveredUnits: {
+                            $sum: {
+                                $cond: [{ $in: ["$status", ['Delivered', 'Paid']] }, "$products.quantity", 0]
+                            }
+                        },
+                        returnedUnits: {
+                            $sum: {
+                                $cond: [{ $in: ["$status", ['Returned', 'Refused']] }, "$products.quantity", 0]
+                            }
                         }
                     }
                 },
@@ -459,13 +486,16 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 { $limit: 10 }
             ]);
 
-            const topProductsData = topProductsAgg.map((p, idx) => ({
-                id: p._id || idx,
-                name: p._id || 'Unknown Custom Item',
-                units: p.units,
-                revenue: p.revenue,
-                conv: totalOrders > 0 ? ((p.units / totalOrders) * 100).toFixed(1) : 0 // Rough conversion substitute
-            }));
+            const topProductsData = topProductsAgg.map((p, idx) => {
+                const completed = p.deliveredUnits + p.returnedUnits;
+                return {
+                    id: p._id || idx,
+                    name: p._id || 'Unknown Custom Item',
+                    units: p.units,
+                    revenue: p.revenue,
+                    deliveryRate: completed > 0 ? parseFloat(((p.deliveredUnits / completed) * 100).toFixed(1)) : null
+                };
+            });
 
             // 5. Courier Analytics
             const couriers = await Courier.find({ tenant: tenantId, deletedAt: null }).select('_id name').lean();
@@ -485,22 +515,40 @@ exports.getEcommerceAnalytics = async (req, res) => {
             courierAgg.forEach(r => { courierStatsMap[r._id.toString()] = r; });
             const courierData = couriers.map(c => {
                 const s = courierStatsMap[c._id.toString()] || { dispatched: 0, delivered: 0, returned: 0 };
-                const succ = s.dispatched > 0 ? ((s.delivered / s.dispatched) * 100).toFixed(1) : 0;
-                return { id: c._id, name: c.name, orders: s.dispatched, delivered: s.delivered, returned: s.returned, success: parseFloat(succ) };
+                // Success rate based on completed orders only (delivered + returned), not in-transit
+                const completed = s.delivered + s.returned;
+                const succ = completed > 0 ? ((s.delivered / completed) * 100).toFixed(1) : 0;
+                return { id: c._id, name: c.name, orders: s.dispatched, delivered: s.delivered, returned: s.returned, inTransit: s.dispatched - completed, success: parseFloat(succ) };
             });
 
-            // 6. Top Customers
-            const topCustomersAgg = await Customer.find({ tenant: tenantId, deletedAt: null })
-                .sort({ lifetimeValue: -1 })
-                .limit(10)
-                .select('name totalOrders lifetimeValue averageOrderValue')
-                .lean();
+            // 6. Top Customers — based on actual orders in this period, not lifetime
+            const topCustomersAgg = await Order.aggregate([
+                { $match: { ...dateQuery, customer: { $ne: null } } },
+                {
+                    $group: {
+                        _id: '$customer',
+                        orders: { $sum: 1 },
+                        revenue: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, '$totalAmount', 0] } },
+                        delivered: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, 1, 0] } }
+                    }
+                },
+                { $sort: { revenue: -1 } },
+                { $limit: 10 },
+                {
+                    $lookup: {
+                        from: 'customers', localField: '_id', foreignField: '_id',
+                        as: 'cust', pipeline: [{ $project: { name: 1, tenant: 1 } }]
+                    }
+                },
+                { $unwind: { path: '$cust', preserveNullAndEmptyArrays: true } },
+                { $match: { $or: [{ 'cust.tenant': new mongoose.Types.ObjectId(tenantId) }, { cust: { $exists: false } }] } }
+            ]);
 
             const customerData = topCustomersAgg.map(c => ({
-                id: c._id, name: c.name || 'Unknown',
-                orders: c.totalOrders ?? 0,
-                revenue: c.lifetimeValue ?? 0,
-                aov: c.averageOrderValue ?? 0
+                id: c._id, name: c.cust?.name || 'Unknown',
+                orders: c.orders,
+                revenue: c.revenue,
+                aov: c.delivered > 0 ? Math.round(c.revenue / c.delivered) : 0
             }));
 
             // 7. Stock Health
@@ -517,10 +565,92 @@ exports.getEcommerceAnalytics = async (req, res) => {
             ]);
             const sh = stockHealthAgg[0] || { healthy: 0, low: 0, out: 0 };
             const stockHealthData = [
-                { name: 'Healthy', value: sh.healthy || 1, color: '#10b981' },
+                { name: 'Healthy', value: sh.healthy, color: '#10b981' },
                 { name: 'Low Stock', value: sh.low, color: '#f59e0b' },
                 { name: 'Out of Stock', value: sh.out, color: '#ef4444' }
             ];
+
+            // 8. Peak Hours — hourly order distribution
+            const peakHoursAgg = await Order.aggregate([
+                { $match: dateQuery },
+                { $group: { _id: { $hour: '$createdAt' }, count: { $sum: 1 } } },
+                { $sort: { _id: 1 } }
+            ]);
+            const peakHoursMap = {};
+            peakHoursAgg.forEach(h => { peakHoursMap[h._id] = h.count; });
+            const peakHoursData = Array.from({ length: 24 }, (_, i) => ({
+                hour: `${i.toString().padStart(2, '0')}:00`,
+                orders: peakHoursMap[i] ?? 0
+            }));
+
+            // 9. New vs Returning — a customer is "new" if they had NO orders before this period
+            const customerSplitAgg = await Order.aggregate([
+                { $match: { ...dateQuery, customer: { $ne: null } } },
+                // Get unique customers in this period
+                { $group: { _id: '$customer' } },
+                // Check if they had any order before the period start
+                {
+                    $lookup: {
+                        from: 'orders', localField: '_id', foreignField: 'customer',
+                        as: 'priorOrders',
+                        pipeline: [
+                            { $match: { tenant: new mongoose.Types.ObjectId(tenantId), deletedAt: null, createdAt: { $lt: startDate.toDate() } } },
+                            { $limit: 1 },
+                            { $project: { _id: 1 } }
+                        ]
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        newCustomers: { $sum: { $cond: [{ $eq: [{ $size: '$priorOrders' }, 0] }, 1, 0] } },
+                        returningCustomers: { $sum: { $cond: [{ $gt: [{ $size: '$priorOrders' }, 0] }, 1, 0] } }
+                    }
+                }
+            ]);
+            const cs = customerSplitAgg[0] || { newCustomers: 0, returningCustomers: 0 };
+            const customerSplitData = [
+                { name: 'New', value: cs.newCustomers, color: '#6366f1' },
+                { name: 'Returning', value: cs.returningCustomers, color: '#10b981' }
+            ];
+
+            // 10. Average delivery time (in days)
+            const deliveryTimeAgg = await Order.aggregate([
+                { $match: { ...dateQuery, status: { $in: ['Delivered', 'Paid'] }, 'deliveryStatus.deliveryTimeMinutes': { $gt: 0 } } },
+                { $group: { _id: null, avgMinutes: { $avg: '$deliveryStatus.deliveryTimeMinutes' }, count: { $sum: 1 } } }
+            ]);
+            const avgDeliveryMinutes = deliveryTimeAgg[0]?.avgMinutes ?? null;
+            const avgDeliveryDays = avgDeliveryMinutes != null ? parseFloat((avgDeliveryMinutes / 1440).toFixed(1)) : null;
+
+            // 11. Top returned/refused products
+            const returnedProductsAgg = await Order.aggregate([
+                { $match: { ...dateQuery, status: { $in: ['Returned', 'Refused'] } } },
+                { $unwind: '$products' },
+                {
+                    $group: {
+                        _id: '$products.name',
+                        returns: { $sum: '$products.quantity' },
+                        lostRevenue: { $sum: { $multiply: ['$products.unitPrice', '$products.quantity'] } }
+                    }
+                },
+                { $sort: { returns: -1 } },
+                { $limit: 10 }
+            ]);
+            const returnedProductsData = returnedProductsAgg.map((p, idx) => ({
+                id: p._id || idx,
+                name: p._id || 'Unknown',
+                returns: p.returns,
+                lostRevenue: p.lostRevenue
+            }));
+
+            // 12. Funnel conversion rates
+            const funnelRates = {
+                confirmationRate: totalOrders > 0 ? parseFloat(((totalConfirmed / totalOrders) * 100).toFixed(1)) : 0,
+                dispatchRate: totalConfirmed > 0 ? parseFloat(((totalDispatched / totalConfirmed) * 100).toFixed(1)) : 0,
+                deliverySuccessRate: totalDispatched > 0 ? parseFloat(((delivered / totalDispatched) * 100).toFixed(1)) : 0,
+                refusalRate: totalDispatched > 0 ? parseFloat((((returned) / totalDispatched) * 100).toFixed(1)) : 0,
+                overallConversion: totalOrders > 0 ? parseFloat(((delivered / totalOrders) * 100).toFixed(1)) : 0
+            };
 
             return {
                 kpis: {
@@ -529,9 +659,13 @@ exports.getEcommerceAnalytics = async (req, res) => {
                     aov,
                     profit: netProfit,
                     margin: profitMargin,
-                    confirmationRate: parseFloat(confirmationRate)
+                    confirmationRate: parseFloat(confirmationRate),
+                    deliveryRate: parseFloat(deliveryRate),
+                    avgDeliveryDays,
+                    profitPerOrder: delivered > 0 ? Math.round(netProfit / delivered) : 0
                 },
                 trends,
+                funnelRates,
                 salesData,
                 orderStatusData,
                 categoryData,
@@ -540,8 +674,11 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 channelSourceData,
                 courierData,
                 customerData,
+                customerSplitData,
                 stockHealthData,
-                topProductsData
+                topProductsData,
+                returnedProductsData,
+                peakHoursData
             };
         }, ttl);
 
