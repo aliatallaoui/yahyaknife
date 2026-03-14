@@ -103,7 +103,11 @@ class CircuitBreaker {
             this._onSuccess();
             return result;
         } catch (error) {
-            this._onFailure();
+            // Allow callers to mark errors that shouldn't trip the breaker
+            // (e.g. 4xx client errors vs 5xx server errors)
+            if (!error._skipBreakerFailure) {
+                this._onFailure();
+            }
             throw error;
         }
     }

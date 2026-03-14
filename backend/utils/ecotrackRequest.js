@@ -12,43 +12,56 @@ const ecotrackBreaker = new CircuitBreaker({
 
 /**
  * Validates current rate limits before allowing an API call.
- * If limits are exceeded, throws an Error.
+ * Uses atomic $inc to prevent race conditions on concurrent requests.
  */
 const checkRateLimits = async (settings) => {
     const now = new Date();
-    const limits = settings.rateLimits;
-    const usage = settings.currentUsage;
+    const usage = settings.currentUsage || {};
+    const limits = settings.rateLimits || {};
 
-    // Reset counters if time windows have passed
+    // Determine which counters need resetting based on time window changes
+    const resetFields = {};
     if (!usage.lastRequestAt || now.getDate() !== usage.lastRequestAt.getDate()) {
-        usage.dayCount = 0;
-        usage.hourCount = 0;
-        usage.minuteCount = 0;
+        resetFields['currentUsage.dayCount'] = 0;
+        resetFields['currentUsage.hourCount'] = 0;
+        resetFields['currentUsage.minuteCount'] = 0;
     } else if (now.getHours() !== usage.lastRequestAt.getHours()) {
-        usage.hourCount = 0;
-        usage.minuteCount = 0;
+        resetFields['currentUsage.hourCount'] = 0;
+        resetFields['currentUsage.minuteCount'] = 0;
     } else if (now.getMinutes() !== usage.lastRequestAt.getMinutes()) {
-        usage.minuteCount = 0;
+        resetFields['currentUsage.minuteCount'] = 0;
     }
 
-    // Check limits
-    if (usage.minuteCount >= limits.requestsPerMinute) {
+    // Check limits before incrementing (use current values after potential reset)
+    const currentMinute = resetFields['currentUsage.minuteCount'] !== undefined ? 0 : (usage.minuteCount || 0);
+    const currentHour = resetFields['currentUsage.hourCount'] !== undefined ? 0 : (usage.hourCount || 0);
+    const currentDay = resetFields['currentUsage.dayCount'] !== undefined ? 0 : (usage.dayCount || 0);
+
+    if (currentMinute >= (limits.requestsPerMinute || 50)) {
         throw new Error('ECOTRACK Rate Limit Exceeded: Max 50 requests per minute.');
     }
-    if (usage.hourCount >= limits.requestsPerHour) {
+    if (currentHour >= (limits.requestsPerHour || 1500)) {
         throw new Error('ECOTRACK Rate Limit Exceeded: Max 1500 requests per hour.');
     }
-    if (usage.dayCount >= limits.requestsPerDay) {
+    if (currentDay >= (limits.requestsPerDay || 15000)) {
         throw new Error('ECOTRACK Rate Limit Exceeded: Max 15000 requests per day.');
     }
 
-    // Increment usage
-    usage.minuteCount += 1;
-    usage.hourCount += 1;
-    usage.dayCount += 1;
-    usage.lastRequestAt = now;
-
-    await settings.save();
+    // Atomic increment + reset in a single operation (no race condition)
+    await CourierSetting.updateOne(
+        { _id: settings._id },
+        {
+            $inc: {
+                'currentUsage.minuteCount': 1,
+                'currentUsage.hourCount': 1,
+                'currentUsage.dayCount': 1,
+            },
+            $set: {
+                ...resetFields,
+                'currentUsage.lastRequestAt': now,
+            },
+        }
+    );
 };
 
 /**
@@ -91,12 +104,18 @@ const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) =
     };
 
     // Route through circuit breaker
+    // Only count 5xx and network errors as breaker failures (not 4xx client errors)
     return ecotrackBreaker.fire(async () => {
         try {
             const response = await axios(config);
             return response.data;
         } catch (error) {
             logger.error({ method, endpoint, responseData: error.response?.data }, 'ECOTRACK API Error');
+            // 4xx = client error (bad payload, auth issue) — don't trip the breaker
+            const status = error.response?.status;
+            if (status && status >= 400 && status < 500) {
+                error._skipBreakerFailure = true;
+            }
             throw error;
         }
     });
