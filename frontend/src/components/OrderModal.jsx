@@ -268,7 +268,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         setFormError('');
 
         // Validations
-        const validProducts = store.products.filter(p => (p.variantId || p.name.trim() !== '') && Number(p.quantity) > 0 && Number(p.unitPrice) >= 0);
+        const validProducts = store.products.filter(p => (p.isCustom ? p.name.trim() !== '' : p.variantId) && Number(p.quantity) > 0 && Number(p.unitPrice) >= 0);
         if (validProducts.length === 0) {
             setFormError(t('orderModal.errorNoProducts'));
             return;
@@ -514,30 +514,65 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                     <div className="p-3 space-y-2.5 overflow-y-auto max-h-[280px] custom-scrollbar">
                                         {store.products.map((product, index) => (
                                             <div key={index} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600 relative group">
-                                                <select
-                                                    required
-                                                    className="w-full bg-white dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-sm dark:text-gray-100 font-semibold appearance-none cursor-pointer transition-colors"
-                                                    value={product.variantId || ''}
-                                                    onChange={e => {
-                                                        const selectedId = e.target.value;
-                                                        const selectedVariant = availableVariants.find(v => v.variantId === selectedId);
-                                                        if (selectedVariant) {
-                                                            store.updateProductMulti(index, {
-                                                                variantId: selectedVariant.variantId,
-                                                                name: selectedVariant.displayName,
-                                                                unitPrice: selectedVariant.price,
-                                                                sku: selectedVariant.sku,
-                                                                availableStock: selectedVariant.availableStock
-                                                            });
-                                                        }
-                                                    }}
-                                                >
-                                                    <option value="" disabled>{t('orderModal.selectVariant')}</option>
-                                                    {filteredVariants.map(v => (
-                                                        <option key={v.variantId} value={v.variantId}>{v.displayName}</option>
-                                                    ))}
-                                                </select>
-                                                {product.availableStock !== null && (
+                                                {/* Toggle: inventory vs custom */}
+                                                <div className="flex items-center gap-2">
+                                                    {product.isCustom ? (
+                                                        /* Custom product: free-text name input */
+                                                        <input
+                                                            type="text"
+                                                            required
+                                                            placeholder={t('orderModal.customProductName', 'Product name...')}
+                                                            className="flex-1 bg-white dark:bg-gray-700 outline-none border border-amber-300 dark:border-amber-600 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-sm dark:text-gray-100 font-semibold transition-colors"
+                                                            value={product.name}
+                                                            onChange={e => store.updateProduct(index, 'name', e.target.value)}
+                                                        />
+                                                    ) : (
+                                                        /* Inventory product: dropdown */
+                                                        <select
+                                                            required
+                                                            className="flex-1 bg-white dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-sm dark:text-gray-100 font-semibold appearance-none cursor-pointer transition-colors"
+                                                            value={product.variantId || ''}
+                                                            onChange={e => {
+                                                                const selectedVariant = availableVariants.find(v => v.variantId === e.target.value);
+                                                                if (selectedVariant) {
+                                                                    store.updateProductMulti(index, {
+                                                                        variantId: selectedVariant.variantId,
+                                                                        name: selectedVariant.displayName,
+                                                                        unitPrice: selectedVariant.price,
+                                                                        sku: selectedVariant.sku,
+                                                                        availableStock: selectedVariant.availableStock
+                                                                    });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="" disabled>{t('orderModal.selectVariant')}</option>
+                                                            {filteredVariants.map(v => (
+                                                                <option key={v.variantId} value={v.variantId}>{v.displayName}</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                    {/* Custom toggle button */}
+                                                    <button
+                                                        type="button"
+                                                        title={product.isCustom ? t('orderModal.switchToInventory', 'Switch to inventory') : t('orderModal.switchToCustom', 'Custom item')}
+                                                        onClick={() => store.updateProductMulti(index, {
+                                                            isCustom: !product.isCustom,
+                                                            variantId: '',
+                                                            name: '',
+                                                            unitPrice: product.isCustom ? 0 : product.unitPrice,
+                                                            sku: '',
+                                                            availableStock: null
+                                                        })}
+                                                        className={clsx("shrink-0 px-1.5 py-1.5 rounded-lg text-[10px] font-bold border transition-colors",
+                                                            product.isCustom
+                                                                ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                                                                : "bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-200 dark:hover:border-amber-600"
+                                                        )}
+                                                    >
+                                                        {product.isCustom ? '📦' : '✏️'}
+                                                    </button>
+                                                </div>
+                                                {!product.isCustom && product.availableStock !== null && (
                                                     <div className="flex items-center justify-between px-1">
                                                         <span className={clsx("text-[10px] font-medium", product.availableStock <= 5 ? "text-red-500" : "text-green-600")}>
                                                             {t('orderModal.inStock', { count: product.availableStock })}
@@ -549,7 +584,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                     <div className="w-20">
                                                         <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-white dark:bg-gray-700">
                                                             <button type="button" onClick={() => store.updateProduct(index, 'quantity', Math.max(1, product.quantity - 1))} className="px-2 bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 font-medium">-</button>
-                                                            <input required type="number" min="1" max={product.availableStock || undefined} className="w-full bg-white dark:bg-gray-700 dark:text-gray-100 outline-none py-1 text-center text-sm font-bold appearance-none" value={product.quantity} onChange={e => store.updateProduct(index, 'quantity', Number(e.target.value))} />
+                                                            <input required type="number" min="1" max={(!product.isCustom && product.availableStock) || undefined} className="w-full bg-white dark:bg-gray-700 dark:text-gray-100 outline-none py-1 text-center text-sm font-bold appearance-none" value={product.quantity} onChange={e => store.updateProduct(index, 'quantity', Number(e.target.value))} />
                                                             <button type="button" onClick={() => store.updateProduct(index, 'quantity', product.quantity + 1)} className="px-2 bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 font-medium">+</button>
                                                         </div>
                                                     </div>

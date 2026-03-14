@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const initialProductLine = { variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null, sku: '' };
+const initialProductLine = { variantId: '', name: '', quantity: 1, unitPrice: 0, availableStock: null, sku: '', isCustom: false };
 
 export const useOrderFormStore = create((set, get) => ({
     // Order Header
