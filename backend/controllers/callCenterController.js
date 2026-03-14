@@ -927,7 +927,7 @@ exports.lockOrder = async (req, res) => {
                 lockedBy: agentId,
                 lockedAt: new Date()
             }
-        }, { new: true });
+        }, { returnDocument: 'after' });
 
         if (!order) {
             const exists = await Order.findOne({ _id: id, tenant: tenantId, deletedAt: null });
@@ -1562,7 +1562,7 @@ exports.createAssignmentRule = async (req, res) => {
         const rule = await AssignmentRule.findOneAndUpdate(
             { tenant: tenantId, type, sourceId },
             { agent: agentId, isActive: true, createdBy: req.user._id },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         res.status(201).json(ok(rule));
@@ -1595,7 +1595,7 @@ exports.updateAssignmentRule = async (req, res) => {
         const rule = await AssignmentRule.findOneAndUpdate(
             { _id: req.params.id, tenant: tenantId },
             updates,
-            { new: true }
+            { returnDocument: 'after' }
         ).populate('agent', 'name email');
 
         if (!rule) return res.status(404).json({ message: 'Rule not found' });

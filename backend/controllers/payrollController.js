@@ -95,7 +95,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
             const savedDoc = await Payroll.findOneAndUpdate(
                 { tenant, employeeId: emp._id, period },
                 { $set: payrollData },
-                { new: true, upsert: true }
+                { returnDocument: 'after', upsert: true }
             );
 
             if (savedDoc) payrollResults.push(savedDoc);
@@ -144,7 +144,7 @@ exports.approvePayroll = async (req, res) => {
         const payroll = await Payroll.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant, status: 'Pending Approval' },
             { $set: { status: 'Approved', approvedBy: req.user._id, approvedAt: new Date() } },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!payroll) {
@@ -193,7 +193,7 @@ exports.recordPayment = async (req, res) => {
                 { $set: { amountPaid: { $add: ['$amountPaid', paymentAmount] } } },
                 { $set: { status: { $cond: [{ $gte: ['$amountPaid', '$finalPayableSalary'] }, 'Paid', 'Partially Paid'] } } }
             ],
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!payroll) {

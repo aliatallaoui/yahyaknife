@@ -71,7 +71,7 @@ exports.updateSettings = async (req, res) => {
         const tenant = await Tenant.findByIdAndUpdate(
             tenantId,
             { $set: updateObj },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         ).lean();
 
         // Invalidate tenant caches
@@ -431,7 +431,7 @@ exports.changePlan = async (req, res) => {
                 'subscription.status': 'active',
                 'subscription.currentPeriodEnd': periodEnd,
             }
-        }, { new: true }).lean();
+        }, { returnDocument: 'after' }).lean();
 
         // Flush all caches for this tenant
         cacheService.del(`tenant:sub:${tenantId}`);

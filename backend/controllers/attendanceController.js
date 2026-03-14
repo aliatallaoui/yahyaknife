@@ -193,7 +193,7 @@ exports.updateAttendanceRecord = async (req, res) => {
         const updated = await Attendance.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
             { morningIn, morningOut, eveningIn, eveningOut, status },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!updated) return res.status(404).json({ error: 'Attendance record not found' });

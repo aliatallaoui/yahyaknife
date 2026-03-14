@@ -152,7 +152,7 @@ exports.updateTicketStatus = async (req, res) => {
         const ticket = await SupportTicket.findOneAndUpdate(
             { _id: req.params.id, tenant: tenantId },
             updateData,
-            { new: true }
+            { returnDocument: 'after' }
         )
             .populate('customerId', 'name email phone')
             .populate('orderId', 'orderId totalAmount status items')

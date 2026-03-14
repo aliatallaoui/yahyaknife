@@ -40,7 +40,7 @@ exports.upsertCoverage = async (req, res) => {
         const updated = await CourierCoverage.findOneAndUpdate(
             { courierId: id, wilayaCode, commune, tenant: req.user.tenant },
             { homeSupported, officeSupported, tenant: req.user.tenant },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
         
         res.status(200).json(updated);

@@ -94,7 +94,7 @@ router.put('/reorder-alerts/:id/dismiss', requirePermission(PERMS.INVENTORY_REOR
     const updated = await ReorderAlert.findByIdAndUpdate(
         req.params.id,
         { status: 'Dismissed' },
-        { new: true }
+        { returnDocument: 'after' }
     );
     res.json(updated);
 }));

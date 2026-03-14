@@ -472,7 +472,7 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
 
     // Strip immutable / protected fields before persisting
     const { _id, tenant, createdAt, updatedAt, deletedAt, orderId: _oid, ...safeUpdate } = updateData;
-    const updatedOrder = await Order.findOneAndUpdate({ _id: orderId, tenant: tenantId }, safeUpdate, { new: true, runValidators: true })
+    const updatedOrder = await Order.findOneAndUpdate({ _id: orderId, tenant: tenantId }, safeUpdate, { returnDocument: 'after', runValidators: true })
         .populate('customer', 'name phone email fraudProbability refusalRate totalOrders deliveredOrders totalRefusals trustScore')
         .populate('courier', 'name')
         .populate('assignedAgent', 'name')

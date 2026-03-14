@@ -57,7 +57,7 @@ exports.updateCourier = async (req, res) => {
         const updated = await Courier.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant, deletedAt: null },
             { $set: safe },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
         if (!updated) return res.status(404).json({ message: 'Courier not found' });
         const response = updated.toObject();
@@ -100,7 +100,7 @@ exports.deleteCourier = async (req, res) => {
         const courier = await Courier.findOneAndUpdate(
             { _id: id, tenant: tenantId, deletedAt: null },
             { deletedAt: new Date() },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!courier) return res.status(404).json({ error: 'Courier not found' });
 
@@ -369,7 +369,7 @@ exports.syncCourierCash = async (courierId, amountDelta, tenantId) => {
                 { $set: { cashCollected: { $max: [0, { $add: ['$cashCollected', amountDelta] }] } } },
                 { $set: { pendingRemittance: { $subtract: ['$cashCollected', '$cashSettled'] } } }
             ],
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!updated) return;
     } catch (error) {

@@ -25,7 +25,7 @@ mongoose.connect(process.env.MONGO_URI).then(async () => {
     const user = await User.findOneAndUpdate(
         { email: 'admin@yahya.com' },
         { $set: { name: 'Yahya Admin', password: hash, role: role._id, tenant: tenant._id, isActive: true } },
-        { new: true, upsert: true }
+        { returnDocument: 'after', upsert: true }
     );
     console.log('Admin user ready:', user.email, '| tenant:', user.tenant, '| role:', role.name);
     console.log('\nLogin: admin@yahya.com / password123');

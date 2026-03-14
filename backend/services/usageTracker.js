@@ -34,7 +34,7 @@ const usageTracker = {
             await UsageRecord.findOneAndUpdate(
                 { tenant: tenantId, period },
                 { $inc: { [`counters.${counter}`]: amount } },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
         } catch (err) {
             // Non-blocking — usage tracking should never break the request

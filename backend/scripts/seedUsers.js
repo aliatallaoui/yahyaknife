@@ -49,7 +49,7 @@ const seedUsers = async () => {
                         isActive: true
                     }
                 },
-                { new: true, upsert: true }
+                { returnDocument: 'after', upsert: true }
             );
 
             console.log(`Seeded User: ${user.name} (${user.email}) -> Role: ${userData.roleName}`);

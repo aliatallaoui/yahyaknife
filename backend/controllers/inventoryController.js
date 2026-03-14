@@ -111,7 +111,7 @@ exports.updateProduct = async (req, res) => {
             }
         }
 
-        const updated = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, updates, { new: true, runValidators: true })
+        const updated = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, updates, { returnDocument: 'after', runValidators: true })
             .populate('supplier', 'name email phone').populate('category', 'name').populate('variants', 'sku name price cost totalStock reservedStock status').lean();
         if (!updated) {
             return res.status(404).json({ message: "Product not found." });
@@ -130,7 +130,7 @@ exports.deleteProduct = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid product ID' });
 
         // Soft delete
-        const product = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { isActive: false }, { new: true });
+        const product = await Product.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { isActive: false }, { returnDocument: 'after' });
 
         // Also archive associated variants
         await ProductVariant.updateMany({ productId: id, tenant: req.user.tenant }, { status: 'Archived' });
@@ -216,7 +216,7 @@ exports.updateCategory = async (req, res) => {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid category ID' });
         const { name, description, isActive } = req.body;
-        const category = await Category.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { name, description, isActive }, { new: true, runValidators: true });
+        const category = await Category.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { name, description, isActive }, { returnDocument: 'after', runValidators: true });
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json(category);
     } catch (error) {
@@ -229,7 +229,7 @@ exports.deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid category ID' });
-        const category = await Category.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { isActive: false }, { new: true });
+        const category = await Category.findOneAndUpdate({ _id: id, tenant: req.user.tenant }, { isActive: false }, { returnDocument: 'after' });
         if (!category) return res.status(404).json({ message: "Category not found." });
         res.json({ message: "Category archived." });
     } catch (error) {
@@ -267,7 +267,7 @@ exports.updateWarehouse = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
         const { name, code, location, manager, capacity, status } = req.body;
-        const w = await Warehouse.findOneAndUpdate({ _id: req.params.id, tenant: req.user.tenant }, { name, code, location, manager, capacity, status }, { new: true });
+        const w = await Warehouse.findOneAndUpdate({ _id: req.params.id, tenant: req.user.tenant }, { name, code, location, manager, capacity, status }, { returnDocument: 'after' });
         res.json(w);
     } catch (error) {
         logger.error({ err: error }, 'Error updating warehouse');
@@ -297,7 +297,7 @@ exports.adjustStock = async (req, res) => {
             let variant = await ProductVariant.findOneAndUpdate(
                 { _id: variantId, tenant: req.user.tenant, 'warehouseLocations.warehouseId': warehouseId },
                 { $inc: { totalStock: adjQty, 'warehouseLocations.$.stock': adjQty } },
-                { new: true }
+                { returnDocument: 'after' }
             );
 
             if (!variant) {
@@ -305,7 +305,7 @@ exports.adjustStock = async (req, res) => {
                 variant = await ProductVariant.findOneAndUpdate(
                     { _id: variantId, tenant: req.user.tenant },
                     { $inc: { totalStock: adjQty }, $push: { warehouseLocations: { warehouseId, stock: adjQty } } },
-                    { new: true }
+                    { returnDocument: 'after' }
                 );
             }
 
@@ -315,7 +315,7 @@ exports.adjustStock = async (req, res) => {
             const variant = await ProductVariant.findOneAndUpdate(
                 { _id: variantId, tenant: req.user.tenant },
                 updateOps,
-                { new: true }
+                { returnDocument: 'after' }
             );
             if (!variant) return res.status(404).json({ message: "Variant not found." });
             var updatedVariant = variant;

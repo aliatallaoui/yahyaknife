@@ -132,7 +132,7 @@ const runDailyRollup = async (targetDate) => {
                 await DailyRollup.findOneAndUpdate(
                     { tenant: tenantId, date: dateStr },
                     { $set: rollupData },
-                    { upsert: true, new: true }
+                    { upsert: true, returnDocument: 'after' }
                 );
 
             } catch (tenantErr) {
@@ -223,7 +223,7 @@ const runWeeklyReport = async () => {
                             generatedAt: new Date()
                         }
                     },
-                    { upsert: true, new: true }
+                    { upsert: true, returnDocument: 'after' }
                 );
 
             } catch (tenantErr) {
@@ -367,7 +367,7 @@ const runMonthlyReport = async (targetMonth) => {
                             generatedAt: new Date()
                         }
                     },
-                    { upsert: true, new: true }
+                    { upsert: true, returnDocument: 'after' }
                 );
 
             } catch (tenantErr) {

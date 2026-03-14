@@ -155,7 +155,7 @@ async function deliverWithRetry(webhook, tenantId, event, payload, attempt) {
         const updated = await Webhook.findByIdAndUpdate(webhook._id, {
             $inc: { 'stats.totalDeliveries': 1, 'stats.failureCount': 1, 'stats.consecutiveFailures': 1 },
             'stats.lastFailedAt': new Date(),
-        }, { new: true });
+        }, { returnDocument: 'after' });
 
         // Auto-disable if too many consecutive failures
         if (updated && updated.stats.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {

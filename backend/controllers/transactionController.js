@@ -103,7 +103,7 @@ exports.updateTransaction = async (req, res) => {
             const updated = await Revenue.findOneAndUpdate(
                 { _id: id, tenant: tenantId },
                 { amount, date, description, source: category },
-                { new: true, runValidators: true }
+                { returnDocument: 'after', runValidators: true }
             );
             if (!updated) return res.status(404).json({ message: 'Revenue not found' });
             audit({ tenant: tenantId, actorUserId: req.user._id, action: 'UPDATE_REVENUE', module: 'finance', metadata: { id, amount, category } });
@@ -112,7 +112,7 @@ exports.updateTransaction = async (req, res) => {
             const updated = await Expense.findOneAndUpdate(
                 { _id: id, tenant: tenantId },
                 { amount, date, description, category },
-                { new: true, runValidators: true }
+                { returnDocument: 'after', runValidators: true }
             );
             if (!updated) return res.status(404).json({ message: 'Expense not found' });
             audit({ tenant: tenantId, actorUserId: req.user._id, action: 'UPDATE_EXPENSE', module: 'finance', metadata: { id, amount, category } });

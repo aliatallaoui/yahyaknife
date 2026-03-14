@@ -106,7 +106,7 @@ exports.updateWebhook = async (req, res) => {
         const webhook = await Webhook.findOneAndUpdate(
             { _id: id, tenant: tenantId },
             { $set: update },
-            { new: true }
+            { returnDocument: 'after' }
         ).lean();
 
         if (!webhook) return res.status(404).json({ message: 'Webhook not found' });

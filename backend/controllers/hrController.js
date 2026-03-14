@@ -155,7 +155,7 @@ exports.updateEmployee = async (req, res) => {
             { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
             { name, email, phone, role, department, salary, performanceScore, leaveBalance,
               joinDate, status, managerId, contractSettings },
-            { new: true }
+            { returnDocument: 'after' }
         ).lean();
         if (!updated) return res.status(404).json({ error: 'Employee not found' });
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id } });
@@ -173,7 +173,7 @@ exports.deleteEmployee = async (req, res) => {
         const deleted = await Employee.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
             { deletedAt: new Date() },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!deleted) return res.status(404).json({ error: 'Employee not found' });
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'DELETE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id, name: deleted.name } });

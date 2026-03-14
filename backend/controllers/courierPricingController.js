@@ -98,7 +98,7 @@ exports.updatePricingRule = async (req, res) => {
         const updatedRule = await CourierPricing.findOneAndUpdate(
             { _id: ruleId, courierId: id, tenant: req.user.tenant },
             { $set: updateFields },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
 
         if (!updatedRule) return res.status(404).json({ message: 'Pricing rule not found' });

@@ -58,7 +58,7 @@ const generateKPISnapshots = async () => {
                 await KPISnapshot.findOneAndUpdate(
                     { tenant: tenantId, type: 'operations' },
                     { $set: { metrics, lastUpdated: new Date() } },
-                    { upsert: true, new: true }
+                    { upsert: true, returnDocument: 'after' }
                 );
 
             } catch (tenantErr) {

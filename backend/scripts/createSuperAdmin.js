@@ -53,7 +53,7 @@ const createSuperAdmin = async () => {
                     isActive: true
                 }
             },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
 
         console.log(`\nSuper Admin created successfully!`);

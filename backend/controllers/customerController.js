@@ -105,7 +105,7 @@ const deleteCustomer = async (req, res) => {
         const customer = await Customer.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
             { deletedAt: new Date() },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!customer) return res.status(404).json({ message: 'Customer not found' });
         res.json({ message: 'Customer removed' });

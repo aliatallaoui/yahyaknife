@@ -464,7 +464,7 @@ exports.deleteOrder = async (req, res) => {
         const order = await Order.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant, deletedAt: null },
             { $set: { deletedAt: new Date(), deletedBy: req.user._id } },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!order) {

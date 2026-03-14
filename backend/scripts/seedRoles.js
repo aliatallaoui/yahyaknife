@@ -195,7 +195,7 @@ const seedRoles = async () => {
                         permissions: uniquePerms
                     }
                 },
-                { new: true, upsert: true }
+                { returnDocument: 'after', upsert: true }
             );
             console.log(`Seeded Role: ${role.name} (${role.permissions.length} permissions)`);
         }

@@ -101,7 +101,7 @@ exports.updateChannel = async ({ tenantId, channelId, body }) => {
     const channel = await SalesChannel.findOneAndUpdate(
         { _id: channelId, tenant: tenantId, deletedAt: null },
         { $set: update },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
     if (!channel) throw AppError.notFound('Sales Channel');
     return channel;
@@ -111,7 +111,7 @@ exports.deleteChannel = async ({ tenantId, channelId }) => {
     const channel = await SalesChannel.findOneAndUpdate(
         { _id: channelId, tenant: tenantId, deletedAt: null },
         { $set: { deletedAt: new Date() } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!channel) throw AppError.notFound('Sales Channel');
 
@@ -196,7 +196,7 @@ exports.updatePage = async ({ tenantId, pageId, body }) => {
     const page = await LandingPage.findOneAndUpdate(
         { _id: pageId, tenant: tenantId, deletedAt: null },
         { $set: update },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
     if (!page) throw AppError.notFound('Landing Page');
     return page;
@@ -206,7 +206,7 @@ exports.publishPage = async ({ tenantId, pageId }) => {
     const page = await LandingPage.findOneAndUpdate(
         { _id: pageId, tenant: tenantId, deletedAt: null },
         { $set: { status: 'published', publishedAt: new Date() } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!page) throw AppError.notFound('Landing Page');
     return page;
@@ -216,7 +216,7 @@ exports.unpublishPage = async ({ tenantId, pageId }) => {
     const page = await LandingPage.findOneAndUpdate(
         { _id: pageId, tenant: tenantId, deletedAt: null },
         { $set: { status: 'draft', publishedAt: null } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!page) throw AppError.notFound('Landing Page');
     return page;
@@ -226,7 +226,7 @@ exports.deletePage = async ({ tenantId, pageId }) => {
     const page = await LandingPage.findOneAndUpdate(
         { _id: pageId, tenant: tenantId, deletedAt: null },
         { $set: { deletedAt: new Date() } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!page) throw AppError.notFound('Landing Page');
 

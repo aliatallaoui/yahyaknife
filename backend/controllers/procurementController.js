@@ -42,7 +42,7 @@ exports.updateSupplier = async (req, res) => {
         const sup = await Supplier.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
             { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
         if (!sup) return res.status(404).json({ error: 'Supplier not found' });
         res.json(ok(sup));
@@ -58,7 +58,7 @@ exports.deleteSupplier = async (req, res) => {
         const sup = await Supplier.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
             { status: 'Inactive' },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!sup) return res.status(404).json({ error: 'Supplier not found' });
         res.json(message('Supplier archived'));
