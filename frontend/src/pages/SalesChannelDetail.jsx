@@ -64,14 +64,14 @@ export default function SalesChannelDetail() {
     try {
       const res = await apiFetch(`/api/sales-channels/${channelId}/sync-logs`);
       if (res.ok) { const j = await res.json(); const d = j.data ?? j; setSyncLogs(Array.isArray(d) ? d : d.logs ?? []); }
-    } catch {}
+    } catch { /* network errors are non-critical */ }
   }, [channelId]);
 
   const fetchMappings = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/sales-channels/${channelId}/product-mappings`);
       if (res.ok) { const j = await res.json(); setMappings(j.data ?? j); }
-    } catch {}
+    } catch { /* network errors are non-critical */ }
   }, [channelId]);
 
   useEffect(() => {
@@ -79,6 +79,7 @@ export default function SalesChannelDetail() {
       fetchSyncLogs();
       fetchMappings();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel?.channelType, fetchSyncLogs, fetchMappings]);
 
   // WooCommerce OAuth handler

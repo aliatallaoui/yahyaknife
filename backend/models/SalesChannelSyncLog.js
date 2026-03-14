@@ -17,7 +17,7 @@ const syncLogSchema = new mongoose.Schema({
 
     ordersImported: { type: Number, default: 0 },
     ordersSkipped: { type: Number, default: 0 },
-    errors: [{
+    syncErrors: [{
         message: { type: String },
         externalOrderId: { type: String }
     }],

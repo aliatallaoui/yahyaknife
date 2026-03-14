@@ -32,7 +32,6 @@ export default function OrderControlCenter() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [totalOrders, setTotalOrders] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
     const [kpis, setKpis] = useState(null);
     const [stageCounts, setStageCounts] = useState({ preDispatch: 0, postDispatch: 0, returns: 0, all: 0 });
 
@@ -43,7 +42,7 @@ export default function OrderControlCenter() {
     const [salesChannelsList, setSalesChannelsList] = useState([]);
 
     // Query State
-    const [error, setError] = useState(null);
+    const [_error, setError] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [expandedRows, setExpandedRows] = useState(new Set());
 
@@ -74,13 +73,13 @@ export default function OrderControlCenter() {
     useEffect(() => {
         try {
             localStorage.setItem('orderControlHiddenColumns', JSON.stringify(Array.from(hiddenColumns)));
-        } catch (e) { /* localStorage may be full or blocked */ }
+        } catch { /* localStorage may be full or blocked */ }
     }, [hiddenColumns]);
 
     useEffect(() => {
         try {
             localStorage.setItem('orderControlOrderedColumns', JSON.stringify(orderedColumnIds));
-        } catch (e) { /* localStorage may be full or blocked */ }
+        } catch { /* localStorage may be full or blocked */ }
     }, [orderedColumnIds]);
     
     const [showColumnSettings, setShowColumnSettings] = useState(false);
@@ -97,14 +96,14 @@ export default function OrderControlCenter() {
     useEffect(() => {
         try {
             localStorage.setItem('orderControlShowKPIs', JSON.stringify(showKPIs));
-        } catch (e) { /* localStorage may be full or blocked */ }
+        } catch { /* localStorage may be full or blocked */ }
     }, [showKPIs]);
 
     // Filters and Pagination
     const [nextCursor, setNextCursor] = useState(null);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
-    const [limit, setLimit] = useState(50);
+    const [limit] = useState(50);
     const [sortField, setSortField] = useState('date');
     const [sortOrder, setSortOrder] = useState('desc');
 
@@ -156,6 +155,7 @@ export default function OrderControlCenter() {
             n.delete('newOrder'); n.delete('phone'); n.delete('name');
             return n;
         }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // run once on mount
 
     // Bulk Actions
@@ -303,6 +303,7 @@ export default function OrderControlCenter() {
         safeFetch('/api/sales-channels', setSalesChannelsList, j => (j.data ?? j) || [], null);
 
         return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Main Fetch
@@ -361,6 +362,7 @@ export default function OrderControlCenter() {
             setLoading(false);
             setIsFetchingNextPage(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [limit, sortField, sortOrder, searchTerm, filters, activeStage, nextCursor]);
 
     // Infinite Scroll Intersection Trigger
@@ -395,6 +397,7 @@ export default function OrderControlCenter() {
             fetchOrders();
         }, 300);
         return () => clearTimeout(delayDebounceFn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [limit, sortField, sortOrder, searchTerm, filters, activeStage]);
 
     // Handle create order from modal
@@ -566,6 +569,7 @@ export default function OrderControlCenter() {
                 }
             },
         });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedIds, fetchOrders]);
 
     const handleBulkRestore = useCallback(async () => {
@@ -599,6 +603,7 @@ export default function OrderControlCenter() {
                 }
             },
         });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedIds, fetchOrders]);
 
     const handleAgentChange = useCallback(async (orderId, agentId) => {
@@ -706,6 +711,7 @@ export default function OrderControlCenter() {
                 }
             }
         });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchOrders]);
 
     const handleBulkDispatch = useCallback(() => {

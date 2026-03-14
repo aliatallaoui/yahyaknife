@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/apiFetch';
 import { FileText, Download, Calendar, User, Clock, AlertTriangle, Briefcase, FileSpreadsheet } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
@@ -8,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 
 export default function HRReports() {
     const { t } = useTranslation();
-    const { token } = useContext(AuthContext);
     const [activeReport, setActiveReport] = useState('monthly');
     const [period, setPeriod] = useState(toMMYYYY());
     const [date, setDate] = useState(toISODate());
@@ -19,6 +17,7 @@ export default function HRReports() {
 
     useEffect(() => {
         fetchReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeReport, period, date]);
 
     const fetchReport = async () => {
@@ -39,7 +38,9 @@ export default function HRReports() {
         }
     };
 
-    const ReportCard = ({ id, title, icon: Icon, desc }) => (
+    const ReportCard = ({ id, title, icon, desc }) => {
+        const Icon = icon;
+        return (
         <div
             onClick={() => setActiveReport(id)}
             className={`cursor-pointer p-4 rounded-xl border flex items-start gap-3 transition-all ${activeReport === id
@@ -55,7 +56,8 @@ export default function HRReports() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{desc}</p>
             </div>
         </div>
-    );
+        );
+    };
 
     const renderDailyTable = () => {
         if (!data?.records) return null;

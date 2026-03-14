@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
 const API = import.meta.env.VITE_API_URL || '';
@@ -10,6 +11,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('token') || null);
     const [loading, setLoading] = useState(true);
     const refreshTimerRef = useRef(null);
+    const scheduleRefreshRef = useRef(null);
 
     // ─── Refresh token helper ────────────────────────────────────────────────
     const tryRefresh = useCallback(async () => {
@@ -33,6 +35,14 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const logout = () => {
+        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+    };
+
     // Schedule silent refresh 5 minutes before access token expires (1d token → refresh at ~23h 55m)
     const scheduleRefresh = useCallback(() => {
         if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
@@ -40,9 +50,13 @@ export const AuthProvider = ({ children }) => {
         const ms = 23 * 60 * 60 * 1000;
         refreshTimerRef.current = setTimeout(async () => {
             const newToken = await tryRefresh();
-            if (newToken) scheduleRefresh();
+            if (newToken) scheduleRefreshRef.current?.();
         }, ms);
     }, [tryRefresh]);
+
+    useEffect(() => {
+        scheduleRefreshRef.current = scheduleRefresh;
+    });
 
     useEffect(() => {
         let cancelled = false;
@@ -94,7 +108,7 @@ export const AuthProvider = ({ children }) => {
                     } else {
                         if (!cancelled) logout();
                     }
-                } catch (error) {
+                } catch {
                     if (!cancelled) logout();
                 }
             }
@@ -255,14 +269,6 @@ export const AuthProvider = ({ children }) => {
         // Force full page reload to re-fetch all tenant-scoped data
         window.location.reload();
     }, [scheduleRefresh]);
-
-    const logout = () => {
-        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-    };
 
     const updateContextPreferences = (newPreferences) => {
         if (user) {

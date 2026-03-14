@@ -63,7 +63,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 const data = await res.json();
                 setDashData(data);
             }
-        } catch (error) {
+        } catch {
             setFetchError(t('analytics.errorLoadData', 'Failed to load analytics data.'));
         } finally {
             setIsRefreshing(false);
@@ -89,7 +89,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     absent: d.hr.absent,
                 })));
             }
-        } catch (e) {
+        } catch {
             setFetchError(t('analytics.errorLoadTrend', 'Failed to load trend data.'));
         } finally {
             setTrendLoading(false);
@@ -100,16 +100,20 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
         const controller = new AbortController();
         fetchAnalytics(controller.signal);
         return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateRange]);
 
     useEffect(() => {
         const controller = new AbortController();
         fetchTrendData(controller.signal);
         return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // --- KPI Card ---
-    const KPICard = ({ title, value, prefix = '', suffix = '', trend, trendValue, icon: Icon, gradient }) => (
+    const KPICard = ({ title, value, prefix = '', suffix = '', trend, trendValue, icon, gradient }) => {
+        const Icon = icon;
+        return (
         <div className="group bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between relative overflow-hidden">
             {/* Subtle gradient accent */}
             <div className={clsx("absolute top-0 inset-x-0 h-1 rounded-t-2xl", gradient)} />
@@ -134,7 +138,8 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 </h3>
             </div>
         </div>
-    );
+        );
+    };
 
     // --- Chart Card ---
     const ChartCard = ({ title, subtitle, icon: ChartIcon, children, className = "" }) => (

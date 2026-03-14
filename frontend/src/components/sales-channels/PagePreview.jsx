@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import {
   Star, Shield, Truck, Clock, Check, Package, ShoppingCart,
   ChevronDown, AlertTriangle, Play, HelpCircle, MessageSquare
@@ -9,7 +8,7 @@ import clsx from 'clsx';
  * Live preview of the landing page inside the builder.
  * Renders blocks in order with placeholder styling.
  */
-export default function PagePreview({ page, blocks, previewMode }) {
+export default function PagePreview({ page, blocks }) {
   const theme = page?.theme || {};
   const primaryColor = theme.primaryColor || '#2563eb';
   const accentColor = theme.accentColor || '#f59e0b';
@@ -29,7 +28,7 @@ export default function PagePreview({ page, blocks, previewMode }) {
             </span>
           </div>
           <div className="group-hover:ring-2 group-hover:ring-blue-400 group-hover:ring-inset transition-all">
-            <BlockRenderer block={block} theme={{ primaryColor, accentColor, bgColor, textColor }} previewMode={previewMode} />
+            <BlockRenderer block={block} theme={{ primaryColor, accentColor, bgColor, textColor }} />
           </div>
         </div>
       ))}
@@ -47,7 +46,7 @@ export default function PagePreview({ page, blocks, previewMode }) {
   );
 }
 
-function BlockRenderer({ block, theme, previewMode }) {
+function BlockRenderer({ block, theme }) {
   const type = block.type;
   const settings = block.settings || {};
   const s = settings || {};

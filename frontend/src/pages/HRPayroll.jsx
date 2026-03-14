@@ -22,7 +22,7 @@ const PERIOD_OPTIONS = buildPeriodOptions();
 
 export default function HRPayroll() {
     const { t } = useTranslation();
-    const { hasPermission, token } = React.useContext(AuthContext);
+    const { hasPermission } = React.useContext(AuthContext);
     const defaultPeriod = toMMYYYY();
     const [period, setPeriod] = useState(defaultPeriod);
     const [records, setRecords] = useState([]);
@@ -49,7 +49,7 @@ export default function HRPayroll() {
             const json = await res.json();
             const data = json.data ?? (Array.isArray(json) ? json : []);
             setRecords(data);
-        } catch (error) {
+        } catch {
             setErrorMsg(t('hr.alertFailedLoad', 'Failed to load payroll data.'));
         } finally {
             setLoading(false);
@@ -58,7 +58,7 @@ export default function HRPayroll() {
 
     useEffect(() => {
         fetchPayroll(period);
-    }, [period]);
+    }, [period]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleGenerateRun = async () => {
         try {
@@ -69,7 +69,7 @@ export default function HRPayroll() {
             });
             if (res.ok) fetchPayroll(period);
             else { const d = await res.json(); setErrorMsg(d.error || t('hr.alertFailedGenerate', 'Failed to generate payroll run.')); }
-        } catch (error) {
+        } catch {
             setErrorMsg(t('hr.alertFailedGenerate', 'Failed to generate payroll run.'));
         }
     };
@@ -85,7 +85,7 @@ export default function HRPayroll() {
                 const data = await res.json();
                 setErrorMsg(data.error || t('hr.alertFailedApprove', 'Approval failed'));
             }
-        } catch (error) {
+        } catch {
             setErrorMsg(t('hr.alertFailedApprove', 'Approval failed'));
         }
     };
@@ -126,7 +126,7 @@ export default function HRPayroll() {
                 const data = await res.json();
                 setErrorMsg(data.error || t('hr.alertFailedPayment'));
             }
-        } catch (error) {
+        } catch {
             setErrorMsg(t('hr.alertFailedPayment'));
         }
     };

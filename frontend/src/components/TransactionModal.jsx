@@ -45,6 +45,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                 .catch(() => setPayrollRecords([]))
                 .finally(() => setPayrollLoading(false));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isHR]);
 
     // When a worker is selected, auto-fill amount and description
@@ -58,6 +59,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                 setDescription(`Salary payment — ${empName} (${record.period})`);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedPayrollId]);
 
     // Reset or populate form when modal opens/closes or initialData changes
@@ -80,6 +82,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
             setPayrollRecords([]);
             setError(null);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, initialData]);
 
     // Handle type change

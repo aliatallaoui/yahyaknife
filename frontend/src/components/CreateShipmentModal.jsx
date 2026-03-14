@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../utils/apiFetch';
 import { X, Search, MapPin, DollarSign, Package, AlertTriangle, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
 import useModalDismiss from '../hooks/useModalDismiss';
 import { getWilayaList, getWilayaByCode, getCommunesForWilaya } from '../constants/algeria_communes_wilayas';
 
@@ -50,6 +49,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
             });
             setError('');
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
     const fetchPendingOrders = async () => {
@@ -70,7 +70,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
             }));
 
             setOrders(pendingOrders.sort((a, b) => b.displayId.localeCompare(a.displayId)));
-        } catch (error) {
+        } catch {
             setError(t('dispatch.errorLoadPending', 'Could not load pending orders.'));
         } finally {
             setLoadingOrders(false);
@@ -136,12 +136,12 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
         }
     };
 
-    if (!isOpen) return null;
-
-    const filteredOrders = orders.filter(o =>
+    const filteredOrders = useMemo(() => orders.filter(o =>
         (o.displayId && o.displayId.toLowerCase().includes(searchOrder.toLowerCase())) ||
         (o.customer && o.customer.toLowerCase().includes(searchOrder.toLowerCase()))
-    );
+    ), [orders, searchOrder]);
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>

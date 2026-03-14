@@ -11,7 +11,9 @@ import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
 import TenantSwitcher from './TenantSwitcher';
 
-function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite, isFavorite, itemIcon: ItemIcon }) {
+function SidebarItem({ icon, label, path, isCollapsed, onClick, onFavorite, isFavorite, itemIcon }) {
+    const Icon = icon;
+    const ItemIcon = itemIcon;
     const { t } = useTranslation();
     const location = useLocation();
     const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
@@ -74,7 +76,7 @@ function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite
     );
 }
 
-function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onClick, onFavorite, favorites, isOpen, onToggle }) {
+function SidebarDomain({ title, icon: _icon, items, isCollapsed, searchTerm, onClick, onFavorite, favorites, isOpen, onToggle }) { // eslint-disable-line no-unused-vars
     const location = useLocation();
 
     // Check if domain is active based on children paths
@@ -224,7 +226,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     const location = useLocation();
     const { user, logout, hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, _setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
     const [openDomain, setOpenDomain] = useState(null);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -330,6 +332,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     ], [t]);
 
     // Filter domains & their internal children securely
+     
     const accessibleDomains = useMemo(() => {
         return DOMAINS
             .filter(d => hasAnyPermission(d.permissions))
@@ -338,6 +341,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 items: domain.items.filter(item => hasPermission(item.permission))
             }))
             .filter(domain => domain.items.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [DOMAINS, user, hasPermission]);
 
     // Initialize Favorites
@@ -345,14 +349,16 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         try {
             const storedFavs = localStorage.getItem('favorite_pages');
             if (storedFavs) {
+                 
                 setFavorites(JSON.parse(storedFavs));
             } else {
+                 
                 setFavorites([
                     { path: '/inventory', label: t('sidebar.inventory', 'Inventory Tracking') },
                     { path: '/customers', label: t('sidebar.crm_acquisition', 'Customer Insights') }
                 ]);
             }
-        } catch (e) {
+        } catch {
             // localStorage parse failure; use defaults
         }
     }, [t]);
@@ -365,6 +371,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             )
         );
         if (activeDomain && !searchTerm) {
+             
             setOpenDomain(activeDomain.title);
         }
     }, [location.pathname, accessibleDomains, searchTerm]);
@@ -381,7 +388,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         if (setMobileOpen) setMobileOpen(false);
     };
 
-    const handleSignOut = () => setShowLogoutConfirm(true);
+    const _handleSignOut = () => setShowLogoutConfirm(true);
 
     return (
         <>

@@ -12,7 +12,8 @@ import { apiFetch } from '../utils/apiFetch';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 
 // ─── Stat Card ─────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
+function StatCard({ icon, label, value, sub, color = 'blue' }) {
+    const Icon = icon;
     const colors = {
         blue: 'from-blue-500 to-blue-600',
         green: 'from-emerald-500 to-emerald-600',
@@ -277,6 +278,7 @@ export default function PlatformAdmin() {
         if (detailTab === 'members' && members.length === 0) fetchMembers(selectedTenant._id);
         if (detailTab === 'usage' && !usage) fetchUsage(selectedTenant._id);
         if (detailTab === 'activity' && auditLogs.length === 0) fetchAudit(selectedTenant._id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [detailTab, selectedTenant?._id]);
 
     // Reset tab state when tenant changes

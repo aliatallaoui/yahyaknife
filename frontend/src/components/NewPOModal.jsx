@@ -39,7 +39,7 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                 }))
             );
             setVariants(allVariants);
-        } catch (err) {
+        } catch {
             // non-blocking
         }
     };

@@ -84,6 +84,18 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
         }
     }, [isOpen, isEdit, initialData, suppliers, categories]);
 
+    // Variant count preview
+    const previewCount = useMemo(() => {
+        const parsed = attributes.filter(a => a.key.trim() && a.values.trim());
+        return parsed.reduce((n, a) => n * a.values.split(',').filter(v => v.trim()).length, parsed.length ? 1 : 0);
+    }, [attributes]);
+
+    // Attribute keys from generated variants (for table headers)
+    const attrKeys = useMemo(() => {
+        if (!variants.length) return [];
+        return Object.keys(variants[0].attributes || {});
+    }, [variants]);
+
     if (!isOpen) return null;
 
     // ── Image handling ──────────────────────────────────────────────────────────
@@ -198,18 +210,6 @@ export default function ProductModal({ isOpen, onClose, onSubmit, initialData, s
             ...(bulkReorder !== '' ? { reorderLevel: Number(bulkReorder) || 10 } : {})
         })));
     };
-
-    // Variant count preview
-    const previewCount = useMemo(() => {
-        const parsed = attributes.filter(a => a.key.trim() && a.values.trim());
-        return parsed.reduce((n, a) => n * a.values.split(',').filter(v => v.trim()).length, parsed.length ? 1 : 0);
-    }, [attributes]);
-
-    // Attribute keys from generated variants (for table headers)
-    const attrKeys = useMemo(() => {
-        if (!variants.length) return [];
-        return Object.keys(variants[0].attributes || {});
-    }, [variants]);
 
     // ── Submit ──────────────────────────────────────────────────────────────────
 

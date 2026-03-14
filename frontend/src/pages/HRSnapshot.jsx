@@ -1,5 +1,4 @@
-import { useEffect, useState, useContext, useRef, useMemo } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, UserCheck, CalendarDays, Search, CheckCircle, XCircle, Clock, Banknote, Filter, UserPlus, AlertTriangle } from 'lucide-react';
 import { useHotkey } from '../hooks/useHotkey';
@@ -17,7 +16,6 @@ const COLORS = ['#1A73E8', '#C58AF9', '#EE6C4D', '#3D5A80', '#98C1D9', '#E0FBFC'
 
 export default function HRSnapshot() {
     const navigate = useNavigate();
-    const { token } = useContext(AuthContext);
     const { t, i18n } = useTranslation();
     const isAr = i18n.language === 'ar';
     const [metrics, setMetrics] = useState(null);
@@ -80,7 +78,7 @@ export default function HRSnapshot() {
             setMetrics(metricsJson.data ?? metricsJson);
             setEmployees(empsWithAtt);
             setLeaves(Array.isArray(leaveData) ? leaveData : []);
-        } catch (error) {
+        } catch {
             setFetchError(t('hr.errorLoadData', 'Failed to load HR data.'));
         } finally {
             setLoading(false);
@@ -89,9 +87,10 @@ export default function HRSnapshot() {
 
     useEffect(() => {
         fetchHRData();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Format Department Data — hooks must be called before any early return
+     
     const deptData = useMemo(() => metrics?.departmentDistribution ? Object.keys(metrics.departmentDistribution).map((key) => ({
         name: key,
         Headcount: metrics.departmentDistribution[key]
@@ -148,7 +147,7 @@ export default function HRSnapshot() {
                 toast.error(errMsg);
                 setTimeout(() => setLeaveError(null), 4000);
             }
-        } catch (error) {
+        } catch {
             const errMsg = t('hr.leaveUpdateError', 'Failed to update leave status.');
             setLeaveError(errMsg);
             toast.error(errMsg);

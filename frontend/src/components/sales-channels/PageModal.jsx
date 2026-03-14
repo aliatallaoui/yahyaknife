@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Search, Package } from 'lucide-react';
 import useModalDismiss from '../../hooks/useModalDismiss';

@@ -21,6 +21,7 @@ export default function CustomerModal({ isOpen, onClose, onSubmit, initialData }
     useEffect(() => {
         if (isOpen) {
             if (isEdit && initialData) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setName(initialData.name);
                 setEmail(initialData.email);
                 setPhone(initialData.phone || '');

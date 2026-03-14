@@ -40,6 +40,7 @@ export default function ChannelModal({ channel, onSave, onClose }) {
       const configObj = channel.config instanceof Map
         ? Object.fromEntries(channel.config)
         : (channel.config || {});
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         name: channel.name || '',
         description: channel.description || '',

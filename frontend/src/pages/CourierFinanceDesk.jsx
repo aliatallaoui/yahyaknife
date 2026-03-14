@@ -8,8 +8,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function CourierFinanceDesk() {
-    const { t, i18n } = useTranslation();
-    const isAr = i18n.language === 'ar';
+    const { t } = useTranslation();
     const { hasPermission } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -39,6 +38,7 @@ export default function CourierFinanceDesk() {
             navigate('/dashboard');
         }
         fetchCouriers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasPermission, navigate]);
 
     const fetchCouriers = async () => {
@@ -49,7 +49,7 @@ export default function CourierFinanceDesk() {
                 const data = await res.json();
                 setCouriers(data.data ?? data);
             }
-        } catch (err) {
+        } catch {
             setError(t('finance.loadCouriersError', 'Failed to load courier balances.'));
         } finally {
             setLoadingCouriers(false);
@@ -68,7 +68,7 @@ export default function CourierFinanceDesk() {
                 const data = await res.json();
                 setDeliveries(data.data ?? data);
             }
-        } catch (err) {
+        } catch {
             setError(t('finance.loadError', 'Failed to load deliveries'));
         } finally {
             setLoadingDeliveries(false);
@@ -126,7 +126,7 @@ export default function CourierFinanceDesk() {
                 const data = await res.json();
                 setError(data.message || t('finance.errGeneral'));
             }
-        } catch (err) {
+        } catch {
             setError(t('finance.errGeneral', 'An error occurred during settlement.'));
         } finally {
             setProcessingSettlement(false);

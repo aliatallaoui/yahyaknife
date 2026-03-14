@@ -92,7 +92,7 @@ export default function Inventory() {
             body: t('inventory.confirmArchiveProductBody', 'This will remove it from active stock.'),
             onConfirm: async () => {
                 try { await deleteProduct(id); }
-                catch (error) { notify.error(t('inventory.archiveFailed', 'Failed to archive product.')); }
+                catch { notify.error(t('inventory.archiveFailed', 'Failed to archive product.')); }
             },
         });
     };

@@ -20,7 +20,8 @@ import OrderEditPanel from './OrderEditPanel';
 const RISK_COLORS = { Low: 'bg-emerald-100 text-emerald-700', Medium: 'bg-amber-100 text-amber-700', High: 'bg-red-100 text-red-700' };
 const TRUST_COLOR = (s) => s >= 70 ? 'text-emerald-600' : s >= 40 ? 'text-amber-600' : 'text-red-600';
 
-function StatPill({ label, value, icon: Icon, className = '' }) {
+function StatPill({ label, value, icon, className = '' }) {
+    const Icon = icon;
     return (
         <div className={`flex flex-col items-center p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${className}`}>
             {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mb-0.5" />}
@@ -58,9 +59,6 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const [postponeDate, setPostponeDate] = useState(tomorrow.toISOString().slice(0, 10));
 
-    // Best time to call hint
-    const [bestTimes, setBestTimes] = useState(null);
-
     // New panels state
     const [showTracking, setShowTracking] = useState(false);
     const [showMessaging, setShowMessaging] = useState(false);
@@ -86,16 +84,6 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
             apiFetch(`/api/call-center/order/${order._id}/unlock`, { method: 'POST', keepalive: true }).catch(() => {});
         };
     }, [order?._id]);
-
-    // Fetch best time to call (cached on backend for 1h)
-    useEffect(() => {
-        apiFetch('/api/call-center/best-time-to-call')
-            .then(res => res.json())
-            .then(data => setBestTimes(data.data ?? data))
-            .catch(() => setBestTimes(null));
-    }, []);
-
-    if (!order) return null;
 
     const handleAction = useCallback(async (actionType, extra = {}) => {
         setLoadingAction(actionType);
@@ -180,6 +168,8 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
     useHotkey('o', () => safeAction('Out of Coverage'));
     useHotkey('ArrowLeft', () => { if (onNavigate && orderIndex > 0) onNavigate(-1); }, { preventDefault: true });
     useHotkey('ArrowRight', () => { if (onNavigate && orderIndex < totalOrders - 1) onNavigate(1); }, { preventDefault: true });
+
+    if (!order) return null;
 
     // Customer display
     const customerName  = order.customer?.name || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || t('common.unknown', 'Unknown');

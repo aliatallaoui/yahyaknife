@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, User, Briefcase, Calendar, MapPin, Phone, Mail,
@@ -15,7 +14,6 @@ import PageHeader from '../components/PageHeader';
 
 export default function EmployeeProfile() {
     const { t } = useTranslation();
-    const { token } = useContext(AuthContext);
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -61,6 +59,7 @@ export default function EmployeeProfile() {
             }
         };
         fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     if (loading) return (
@@ -116,13 +115,6 @@ export default function EmployeeProfile() {
 
     const formatHHMM = (dateStr) => dateStr ? fmtTime(dateStr) : '--:--';
     const formatHours = (mins) => `${Math.floor(mins / 60)}${t('hr.lblHours', 'h')} ${mins % 60}${t('hr.lblMinutes', 'm')}`;
-
-    // Chart Data (Last 14 days work time)
-    const chartData = [...attendance].slice(0, 14).reverse().map(a => ({
-        date: fmtShortDate(a.date),
-        worked: parseFloat((a.workedMinutes / 60).toFixed(1)),
-        required: parseFloat((a.requiredMinutes / 60).toFixed(1))
-    }));
 
     return (
         <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-10">
@@ -439,7 +431,8 @@ function LayersIcon({ className }) {
     return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>;
 }
 
-function ProfileRow({ icon: Icon, label, value, highlight }) {
+function ProfileRow({ icon, label, value, highlight }) {
+    const Icon = icon;
     return (
         <div className="flex items-center justify-between border-b border-gray-50 dark:border-gray-700/50 pb-2">
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -474,7 +467,8 @@ function TimeBlock({ label, time }) {
     );
 }
 
-function StatSquare({ label, value, icon: Icon, color }) {
+function StatSquare({ label, value, icon, color }) {
+    const Icon = icon;
     return (
         <div className="border border-gray-100 dark:border-gray-700 rounded-2xl p-4 flex flex-col bg-white dark:bg-gray-800">
             <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center mb-3", color)}>
@@ -486,7 +480,8 @@ function StatSquare({ label, value, icon: Icon, color }) {
     );
 }
 
-function TabButton({ active, onClick, icon: Icon, label, count }) {
+function TabButton({ active, onClick, icon, label, count }) {
+    const Icon = icon;
     return (
         <button
             onClick={onClick}

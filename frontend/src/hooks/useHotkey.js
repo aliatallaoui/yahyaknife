@@ -11,6 +11,7 @@ import { useEffect, useCallback } from 'react';
  */
 export function useHotkey(keys, handler, { skipInputs = true, preventDefault = false } = {}) {
     const combos = (Array.isArray(keys) ? keys : [keys]).map(k => k.toLowerCase());
+    const combosKey = combos.join('|');
 
     const listener = useCallback((e) => {
         if (skipInputs) {
@@ -41,7 +42,8 @@ export function useHotkey(keys, handler, { skipInputs = true, preventDefault = f
             if (preventDefault) e.preventDefault();
             handler(e);
         }
-    }, [handler, combos.join('|'), skipInputs, preventDefault]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [handler, combosKey, skipInputs, preventDefault]);
 
     useEffect(() => {
         window.addEventListener('keydown', listener);

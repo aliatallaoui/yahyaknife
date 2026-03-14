@@ -70,7 +70,7 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
                 const usrRes = await apiFetch('/api/call-center/agents', { signal: controller.signal });
                 const usrData = await usrRes.json();
                 setAgents((usrData.data ?? usrData) || []);
-            } catch (err) { /* agent list fetch is best-effort */ }
+            } catch { /* agent list fetch is best-effort */ }
         };
         fetchDeps();
         return () => controller.abort();

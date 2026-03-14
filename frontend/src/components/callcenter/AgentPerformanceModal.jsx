@@ -5,31 +5,9 @@ import { apiFetch } from '../../utils/apiFetch';
 import useModalDismiss from '../../hooks/useModalDismiss';
 import { fmtShortDateTime } from '../../utils/dateUtils';
 
-export default function AgentPerformanceModal({ agentId, onClose }) {
-    const { t } = useTranslation();
-    const { backdropProps, panelProps } = useModalDismiss(onClose);
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        if (!agentId) return;
-        const controller = new AbortController();
-        setLoading(true);
-        apiFetch(`/api/call-center/agent-performance/${agentId}?period=30d`, { signal: controller.signal })
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to load agent performance');
-                return res.json();
-            })
-            .then(json => { if (!controller.signal.aborted) setData(json.data ?? json); })
-            .catch(err => { if (!controller.signal.aborted) setError(err.message); })
-            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-        return () => controller.abort();
-    }, [agentId]);
-
-    if (!agentId) return null;
-
-    const StatCard = ({ label, value, icon: Icon, color }) => (
+function StatCard({ label, value, icon, color }) {
+    const Icon = icon;
+    return (
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
                 <Icon className="w-5 h-5" />
@@ -40,6 +18,36 @@ export default function AgentPerformanceModal({ agentId, onClose }) {
             </div>
         </div>
     );
+}
+
+export default function AgentPerformanceModal({ agentId, onClose }) {
+    const { t } = useTranslation();
+    const { backdropProps, panelProps } = useModalDismiss(onClose);
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!agentId) return;
+        const controller = new AbortController();
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const res = await apiFetch(`/api/call-center/agent-performance/${agentId}?period=30d`, { signal: controller.signal });
+                if (!res.ok) throw new Error('Failed to load agent performance');
+                const json = await res.json();
+                if (!controller.signal.aborted) setData(json.data ?? json);
+            } catch (err) {
+                if (!controller.signal.aborted) setError(err.message);
+            } finally {
+                if (!controller.signal.aborted) setLoading(false);
+            }
+        };
+        fetchData();
+        return () => controller.abort();
+    }, [agentId]);
+
+    if (!agentId) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in" {...backdropProps}>

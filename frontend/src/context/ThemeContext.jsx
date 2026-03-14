@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext();
 
 const STORAGE_KEY = 'theme-preference';
@@ -16,6 +17,7 @@ export function ThemeProvider({ children }) {
     // Sync from user preferences when they load/change
     useEffect(() => {
         if (user?.preferences?.theme) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setThemeState(user.preferences.theme);
         }
     }, [user?.preferences?.theme]);
@@ -33,6 +35,7 @@ export function ThemeProvider({ children }) {
     // Apply dark class to <html> and update effective mode
     useEffect(() => {
         const mode = getEffectiveMode(theme);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEffectiveMode(mode);
         const root = document.documentElement;
         if (mode === 'dark') {

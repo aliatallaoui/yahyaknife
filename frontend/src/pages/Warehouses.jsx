@@ -53,7 +53,7 @@ export default function Warehouses() {
             setWarehouses(await wRes.json());
             setLedger(await lRes.json());
             setSuppliers(await sRes.json());
-        } catch (error) {
+        } catch {
             setFetchError(t('warehouses.fetchError', 'Failed to load warehouse data. Check your connection and refresh.'));
         } finally {
             setLoading(false);
@@ -84,7 +84,7 @@ export default function Warehouses() {
                 const data = await res.json().catch(() => ({}));
                 setWarehouseError(data.message || t('warehouses.saveError', 'Failed to save warehouse. Please try again.'));
             }
-        } catch (error) {
+        } catch {
             setWarehouseError(t('warehouses.saveError', 'Failed to save warehouse. Please try again.'));
         }
     };

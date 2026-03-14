@@ -54,6 +54,7 @@ export default function DispatchCenter() {
         const controller = new AbortController();
         fetchShipments(controller.signal);
         return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchShipments = async (signal) => {

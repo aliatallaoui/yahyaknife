@@ -23,7 +23,7 @@ export default function InsightFeed() {
                 const data = await res.json();
                 setInsights(data);
             }
-        } catch (error) {
+        } catch {
             // silently swallowed — non-fatal
         } finally {
             setLoading(false);

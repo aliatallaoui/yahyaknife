@@ -42,6 +42,7 @@ export default function CourierDetails() {
         if (!isNew) {
             fetchCourier();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const fetchCourier = async () => {

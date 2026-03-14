@@ -1,6 +1,5 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AuthContext } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiFetch';
 import { XCircle, Banknote, AlertTriangle } from 'lucide-react';
 import useModalDismiss from '../../hooks/useModalDismiss';
@@ -11,8 +10,6 @@ const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday
 export default function EmployeeModal({ employee, onClose, onSave }) {
     const { t } = useTranslation();
     const { backdropProps, panelProps } = useModalDismiss(onClose);
-    const { token } = useContext(AuthContext);
-
     const [formData, setFormData] = useState({
         name: employee?.name || '',
         email: employee?.email || '',
@@ -74,7 +71,7 @@ export default function EmployeeModal({ employee, onClose, onSave }) {
                 const data = await res.json().catch(() => ({}));
                 setSaveError(data.message || t('hr.saveEmployeeError', 'Failed to save employee. Please try again.'));
             }
-        } catch (err) {
+        } catch {
             setSaveError(t('hr.saveEmployeeError', 'Failed to save employee. Please try again.'));
         } finally {
             setIsSaving(false);

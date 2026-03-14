@@ -73,8 +73,6 @@ export default function Financial() {
     const [batchDeleting, setBatchDeleting] = useState(false);
 
     // Memoized derived data — prevents re-filtering 500+ transactions on every render
-    const expenses = useMemo(() => transactions.filter(t => t.type === 'expense'), [transactions]);
-    const revenues = useMemo(() => transactions.filter(t => t.type === 'revenue'), [transactions]);
     const allCategories = useMemo(() => [...new Set(transactions.map(t => t.category).filter(Boolean))].sort(), [transactions]);
 
     const filteredTransactions = useMemo(() => transactions.filter(tx => {
@@ -184,12 +182,12 @@ export default function Financial() {
                     orders: d.orders.created || 0,
                 })));
             }
-        } catch (error) {
+        } catch {
             setOverviewError(t('finance.errorLoadOverview', 'Failed to load financial overview.'));
         } finally {
             setLoadingOverview(false);
         }
-    }, [token, period]);
+    }, [token, period]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Re-fetch when period changes or after a transaction is mutated (tracked via length)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,7 +220,7 @@ export default function Financial() {
     // Dynamic KPIs from the backend
     const pipeline = overview?.pipeline || { expectedRevenue: 0, transitRevenue: 0, deliveredRevenue: 0, settledRevenue: 0 };
     const {
-        cogs = 0, operatingExpenses = 0, manualRevenue = 0, manualExpenses = 0,
+        cogs = 0, operatingExpenses = 0, manualExpenses = 0,
         totalRecognizedRevenue = 0, totalExpenses = 0, netProfit = 0, profitMargin = 0
     } = overview || {};
 
@@ -296,7 +294,9 @@ export default function Financial() {
                       badge: overview?.totalPendingSettlements > 0 ? overview.totalPendingSettlements.toLocaleString() : null },
                     { key: 'ledger',       label: t('finance.tab.ledger', 'Ledger'),          icon: BookOpen,
                       badge: transactions.length > 0 ? transactions.length : null },
-                ].map(({ key, label, icon: Icon, badge }) => (
+                ].map(({ key, label, icon, badge }) => {
+                    const Icon = icon;
+                    return (
                     <button
                         key={key}
                         onClick={() => { setActiveTab(key); setCurrentPage(1); }}
@@ -316,7 +316,8 @@ export default function Financial() {
                             )}>{badge}</span>
                         )}
                     </button>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Profitability Overview */}
@@ -631,7 +632,6 @@ export default function Financial() {
                         <tbody>
                             {paginatedTransactions.map((tx) => {
                                 const isEditing = (field) => editingTx?.id === tx._id && editingTx?.field === field;
-                                const editVal = (field) => isEditing(field) ? editingTx.value : undefined;
                                 return (
                                     <tr key={tx._id} className={clsx("group", selectedIds.has(tx._id) && "row-selected")}>
                                         {/* Checkbox */}
@@ -851,7 +851,8 @@ export default function Financial() {
     );
 }
 
-function PipelineNode({ label, value, color, bg, icon: Icon }) {
+function PipelineNode({ label, value, color, bg, icon }) {
+    const Icon = icon;
     return (
         <div className={clsx("p-3 sm:p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-2 sm:gap-3", bg)}>
             <div className="flex items-center gap-1.5 sm:gap-2">

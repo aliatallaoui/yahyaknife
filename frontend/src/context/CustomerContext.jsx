@@ -5,6 +5,7 @@ import { apiFetch } from '../utils/apiFetch';
 
 const CustomerContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCustomer = () => useContext(CustomerContext);
 
 export const CustomerProvider = ({ children }) => {
@@ -32,6 +33,7 @@ export const CustomerProvider = ({ children }) => {
 
     useEffect(() => {
         fetchCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     const createCustomer = async (customerData) => {

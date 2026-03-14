@@ -53,7 +53,7 @@ export default function SyncLogTable({ logs = [] }) {
             {logs.map(log => {
               const style = STATUS_STYLES[log.status] || STATUS_STYLES.failed;
               const StatusIcon = style.icon;
-              const hasErrors = log.errors && log.errors.length > 0;
+              const hasErrors = log.syncErrors && log.syncErrors.length > 0;
               const isExpanded = expandedId === log._id;
 
               return (
@@ -89,7 +89,7 @@ export default function SyncLogTable({ logs = [] }) {
                     <tr>
                       <td colSpan={7} className="px-4 py-3 bg-red-50/50 dark:bg-red-900/10">
                         <div className="space-y-1">
-                          {log.errors.map((err, i) => (
+                          {log.syncErrors.map((err, i) => (
                             <p key={i} className="text-xs text-red-600 dark:text-red-400 font-mono">
                               {typeof err === 'string' ? err : JSON.stringify(err)}
                             </p>

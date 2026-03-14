@@ -19,7 +19,7 @@ const LTV_COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#94a3b8'];
 export default function CustomerInsight() {
     const { token, hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
-    const { customers, loading: contextLoading, createCustomer, updateCustomer, deleteCustomer } = useCustomer();
+    const { customers, loading: contextLoading, createCustomer, updateCustomer } = useCustomer();
     const [metrics, setMetrics] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -41,13 +41,14 @@ export default function CustomerInsight() {
 
                 const data = await metricsRes.json();
                 setMetrics(Array.isArray(data) ? data : (data.error ? null : data));
-            } catch (error) {
+            } catch {
                 setMetricsError(t('crm.failedLoadMetrics', 'Failed to load customer metrics.'));
             } finally {
                 setLoading(false);
             }
         };
         fetchCustomerData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     if (loading || contextLoading) {
@@ -343,7 +344,8 @@ export default function CustomerInsight() {
     );
 }
 
-function MacroCard({ title, value, icon: Icon, sub, color, bg }) {
+function MacroCard({ title, value, icon, sub, color, bg }) {
+    const Icon = icon;
     return (
         <div className="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">

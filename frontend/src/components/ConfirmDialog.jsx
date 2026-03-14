@@ -50,6 +50,7 @@ export default function ConfirmDialog({ open, title, body, danger = false, onCon
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useConfirmDialog() {
     const [state, setState] = useState(null);
 

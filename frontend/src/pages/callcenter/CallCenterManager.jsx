@@ -33,7 +33,6 @@ export default function CallCenterManager() {
     const [period, setPeriod] = useState('today');
     const [assignError, setAssignError] = useState(null);
     const [assignSuccess, setAssignSuccess] = useState(null);
-    const [bulkLoading, setBulkLoading] = useState(false);
     const [stats, setStats] = useState({
         totalCalls: 0,
         averageConfirmRate: 0,
@@ -98,7 +97,7 @@ export default function CallCenterManager() {
                 totalCommissions: comm
             });
             setLeaderboard(data);
-        } catch (error) {
+        } catch {
             setLeaderboard([]);
             setStats({ totalCalls: 0, averageConfirmRate: 0, averageDeliveryRate: 0, totalCommissions: 0 });
         } finally {
@@ -119,11 +118,13 @@ export default function CallCenterManager() {
     useEffect(() => {
         fetchAnalytics();
         fetchOperations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [period]);
 
     useEffect(() => {
         if (activeTab === 'analytics') fetchDeepAnalytics(analyticsDays);
         if (activeTab === 'supervisor') fetchSupervisorQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, analyticsDays]);
 
     const triggerAutoAssignment = async () => {
@@ -156,29 +157,11 @@ export default function CallCenterManager() {
         if (activeTab === 'supervisor') fetchSupervisorQueue();
     };
 
-    const handleBulkAction = async (action, targetAgentId) => {
-        setBulkLoading(true);
-        setAssignError(null);
-        setAssignSuccess(null);
-        try {
-            // First get unassigned orders
-            const res = await apiFetch('/api/call-center/bulk-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderIds: [], action, targetAgentId })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Bulk action failed');
-            setAssignSuccess(`Bulk ${action}: ${data.data?.modifiedCount || 0} orders updated.`);
-            refresh();
-        } catch (err) {
-            setAssignError(err.message);
-        } finally {
-            setBulkLoading(false);
-        }
-    };
+    // handleBulkAction removed — currently unused
 
-    const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
+    const KPICard = ({ title, value, icon, colorClass, suffix = '' }) => {
+        const Icon = icon;
+        return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
                 <div className={`p-2 rounded-lg ${colorClass} bg-opacity-10`}>
@@ -190,7 +173,8 @@ export default function CallCenterManager() {
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white">{value}{suffix}</h3>
             </div>
         </div>
-    );
+        );
+    };
 
     const maxWorkload = ops?.agentWorkload?.length ? Math.max(...ops.agentWorkload.map(a => a.count)) : 1;
 
@@ -228,7 +212,9 @@ export default function CallCenterManager() {
                     canManage && { key: 'supervisor', label: t('callcenter.tab.supervisor', 'Review Queue'), icon: ShieldAlert, badge: supervisorQueue?.counts?.total },
                     canViewReports && { key: 'analytics', label: t('callcenter.tab.analytics', 'Analytics'), icon: BarChart3 },
                     canManageRules && { key: 'rules', label: t('callcenter.tab.rules', 'Assignment Rules'), icon: Settings }
-                ].filter(Boolean).map(({ key, label, icon: Icon, badge }) => (
+                ].filter(Boolean).map(({ key, label, icon, badge }) => {
+                    const Icon = icon;
+                    return (
                     <button
                         key={key}
                         onClick={() => setActiveTab(key)}
@@ -240,7 +226,8 @@ export default function CallCenterManager() {
                             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">{badge}</span>
                         )}
                     </button>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Auto-assign feedback banners */}
@@ -498,7 +485,7 @@ export default function CallCenterManager() {
 }
 
 // ─── Supervisor Queue View ─────────────────────────────────────────
-function SupervisorQueueView({ data, loading, t, onRefresh }) {
+function SupervisorQueueView({ data, loading, t }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
@@ -613,11 +600,12 @@ function FunnelBar({ label, value, total, color }) {
 // ─── Analytics View Component ──────────────────────────────────────
 function AnalyticsView({ data, loading, days, setDays, t }) {
     const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const heatmapData = data?.heatmap;
 
     const heatmapMax = useMemo(() => {
-        if (!data?.heatmap) return 1;
-        return Math.max(1, ...data.heatmap.flat());
-    }, [data?.heatmap]);
+        if (!heatmapData) return 1;
+        return Math.max(1, ...heatmapData.flat());
+    }, [heatmapData]);
 
     if (loading) {
         return (

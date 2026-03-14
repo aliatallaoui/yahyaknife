@@ -11,6 +11,7 @@ exports.listWebhooks = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const webhooks = await Webhook.find({ tenant: tenantId })
+            .select('-secret')
             .sort({ createdAt: -1 })
             .lean();
         res.json(webhooks);
@@ -61,6 +62,7 @@ exports.createWebhook = async (req, res) => {
             description: description || '',
         });
 
+        // Secret is shown ONCE at creation — stripped from all subsequent reads
         res.status(201).json(webhook);
     } catch (err) {
         logger.error({ err }, 'webhookController.createWebhook');
@@ -107,7 +109,7 @@ exports.updateWebhook = async (req, res) => {
             { _id: id, tenant: tenantId },
             { $set: update },
             { returnDocument: 'after' }
-        ).lean();
+        ).select('-secret').lean();
 
         if (!webhook) return res.status(404).json({ message: 'Webhook not found' });
 
@@ -155,7 +157,7 @@ exports.getDeliveries = async (req, res) => {
         const webhook = await Webhook.findOne({ _id: id, tenant: tenantId }).lean();
         if (!webhook) return res.status(404).json({ message: 'Webhook not found' });
 
-        const deliveries = await WebhookDelivery.find({ webhook: id })
+        const deliveries = await WebhookDelivery.find({ webhook: id, tenant: tenantId })
             .sort({ createdAt: -1 })
             .limit(50)
             .lean();

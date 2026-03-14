@@ -12,7 +12,7 @@ import { useHotkey } from '../hooks/useHotkey';
 
 export default function SupportDesk() {
     const { t } = useTranslation();
-    const { hasPermission, token } = useContext(AuthContext);
+    const { hasPermission } = useContext(AuthContext);
     const [tickets, setTickets] = useState([]);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -27,6 +27,7 @@ export default function SupportDesk() {
 
     useEffect(() => {
         fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchTickets = async () => {
@@ -37,7 +38,7 @@ export default function SupportDesk() {
             const json = await res.json();
             const data = Array.isArray(json) ? json : (json.data ?? []);
             setTickets(data);
-        } catch (error) {
+        } catch {
             setFetchError(t('support.fetchError', 'Failed to load support tickets. Please refresh.'));
         } finally {
             setLoading(false);
@@ -51,7 +52,7 @@ export default function SupportDesk() {
             if (!res.ok) throw new Error('fetch failed');
             const json = await res.json();
             setSelectedTicket(json.data ?? json);
-        } catch (error) {
+        } catch {
             setReplyError(t('support.ticketLoadError', 'Failed to load ticket details.'));
         }
     };
@@ -83,7 +84,7 @@ export default function SupportDesk() {
                 setReplyError(errMsg);
                 toast.error(errMsg);
             }
-        } catch (error) {
+        } catch {
             const errMsg = t('support.replyError', 'Failed to send reply.');
             setReplyError(errMsg);
             toast.error(errMsg);
@@ -111,7 +112,7 @@ export default function SupportDesk() {
                 setReplyError(errMsg);
                 toast.error(errMsg);
             }
-        } catch (error) {
+        } catch {
             const errMsg = t('support.statusError', 'Failed to update ticket status.');
             setReplyError(errMsg);
             toast.error(errMsg);

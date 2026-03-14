@@ -14,8 +14,8 @@ export default function CustomerProfile() {
     const { id } = useParams();
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { customers, deleteCustomer, updateCustomer } = useCustomer();
-    const { hasPermission, token } = useContext(AuthContext);
+    const { customers, updateCustomer } = useCustomer();
+    const { hasPermission } = useContext(AuthContext);
     const [customer, setCustomer] = useState(null);
     const [orders, setOrders] = useState([]);
     const [tickets, setTickets] = useState([]);
@@ -60,7 +60,7 @@ export default function CustomerProfile() {
                     else if (existingCustomer) setCustomer(existingCustomer);
                 }
 
-            } catch (error) {
+            } catch {
                 if (controller.signal.aborted) return;
                 setFetchError(t('crm.errorLoadProfile', 'Failed to load profile data.'));
                 if (existingCustomer) setCustomer(existingCustomer);
@@ -71,6 +71,7 @@ export default function CustomerProfile() {
 
         if (id) loadCustomerData();
         return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, customers]);
 
     const handleToggleBlacklist = () => {
@@ -83,7 +84,7 @@ export default function CustomerProfile() {
         try {
             await updateCustomer(id, { blacklisted: !customer.blacklisted });
             setCustomer({ ...customer, blacklisted: !customer.blacklisted });
-        } catch (error) {
+        } catch {
             setBlacklistError(t('crm.errorBlacklist', 'Failed to update blacklist status.'));
         }
     };

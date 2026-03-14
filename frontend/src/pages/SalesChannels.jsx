@@ -44,7 +44,7 @@ export default function SalesChannels() {
         const json = await res.json();
         setChannels(json.data ?? json);
       }
-    } catch (err) {
+    } catch {
       toast.error(t('salesChannels.errorFetch', 'Failed to load sales channels'));
     } finally {
       setLoading(false);

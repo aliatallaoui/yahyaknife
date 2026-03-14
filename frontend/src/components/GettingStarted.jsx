@@ -1,13 +1,11 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Package, Truck, ShoppingCart, Check, X, ChevronRight, Rocket } from 'lucide-react';
 import clsx from 'clsx';
-import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 
 export default function GettingStarted() {
-    const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'gettingStarted' });
     const isAr = i18n.language === 'ar';
@@ -19,6 +17,7 @@ export default function GettingStarted() {
     useEffect(() => {
         // Don't show if user dismissed it this session
         if (sessionStorage.getItem('gs_dismissed')) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setDismissed(true);
             setLoading(false);
             return;

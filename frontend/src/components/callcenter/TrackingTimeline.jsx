@@ -97,6 +97,7 @@ export default function TrackingTimeline({ orderId, isOpen }) {
 
     useEffect(() => {
         if (isOpen && orderId) fetchTracking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orderId, isOpen]);
 
     if (!isOpen) return null;

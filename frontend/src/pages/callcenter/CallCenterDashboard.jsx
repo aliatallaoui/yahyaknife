@@ -25,7 +25,9 @@ const AssignmentBadge = ({ mode }) => {
     );
 };
 
-const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
+const KPICard = ({ title, value, icon, colorClass, suffix = '' }) => {
+    const Icon = icon;
+    return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
         <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${colorClass} bg-opacity-10 flex items-center justify-center mb-2 sm:mb-4`}>
             <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colorClass.replace('bg-', 'text-')}`} />
@@ -35,7 +37,8 @@ const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
             <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{value}{suffix}</h3>
         </div>
     </div>
-);
+    );
+};
 
 const QUEUE_TABS = [
     { key: 'All', icon: null },
@@ -123,6 +126,7 @@ export default function CallCenterDashboard() {
         } finally {
             setLoading(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [canViewUnassigned]);
 
     const handleClaimOrder = useCallback(async (orderId) => {
@@ -149,6 +153,7 @@ export default function CallCenterDashboard() {
     }, [fetchDashboard]);
 
     // Tab filtering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const now = useMemo(() => new Date(), [allOrders]);
     const tabOrders = useMemo(() => {
         switch (queueTab) {

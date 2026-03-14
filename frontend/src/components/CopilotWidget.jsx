@@ -1,14 +1,10 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, User, Sparkles, Loader2 } from 'lucide-react';
 import { apiFetch } from '../utils/apiFetch';
-import { AuthContext } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function CopilotWidget() {
-    const { t } = useTranslation();
-    const { auth } = useContext(AuthContext);
 
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([

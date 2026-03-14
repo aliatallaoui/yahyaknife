@@ -132,7 +132,8 @@ export default function SettingsWorkspace() {
     }
 
     // ── Usage bar helper ────────────────────────────────────────────────────
-    function UsageBar({ label, current, limit, icon: Icon }) {
+    function UsageBar({ label, current, limit, icon }) {
+        const Icon = icon;
         const pct = limit > 0 ? Math.min(100, Math.round((current / limit) * 100)) : 0;
         const isWarning = pct >= 80;
         const isFull = pct >= 100;

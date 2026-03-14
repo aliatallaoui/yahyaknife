@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Package, Trash2, ArrowRight, Link2 } from 'lucide-react';
-import clsx from 'clsx';
 import { apiFetch } from '../../utils/apiFetch';
 import toast from 'react-hot-toast';
 

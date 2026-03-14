@@ -231,7 +231,7 @@ async function importOrderBatch({ tenantId, salesChannelId, normalizedOrders, im
         status: errors.length === 0 ? 'success' : (imported > 0 ? 'partial' : 'failed'),
         ordersImported: imported,
         ordersSkipped: skipped,
-        errors: errors.slice(0, 50), // Cap error log
+        syncErrors: errors.slice(0, 50), // Cap error log
         duration,
     });
 

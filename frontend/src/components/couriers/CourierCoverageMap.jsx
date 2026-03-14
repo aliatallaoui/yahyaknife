@@ -6,8 +6,7 @@ import clsx from 'clsx';
 import { useConfirmDialog } from '../ConfirmDialog';
 
 export default function CourierCoverageMap({ courierId }) {
-    const { t, i18n } = useTranslation();
-    const isRTL = i18n.language === 'ar';
+    const { t } = useTranslation();
 
     const [coverage, setCoverage] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,6 +31,7 @@ export default function CourierCoverageMap({ courierId }) {
         } else {
             setLoading(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courierId]);
 
     const fetchCoverage = async () => {
@@ -79,7 +79,7 @@ export default function CourierCoverageMap({ courierId }) {
                     const res = await apiFetch(`/api/couriers/${courierId}/coverage/${coverageId}`, { method: 'DELETE' });
                     if (!res.ok) throw new Error();
                     fetchCoverage();
-                } catch (error) {
+                } catch {
                     setErrorMsg(t('couriers.deleteCoverageFailed', 'Failed to delete coverage region.'));
                 }
             },

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const TransactionContext = createContext();
 
 export const TransactionProvider = ({ children }) => {
@@ -22,7 +23,7 @@ export const TransactionProvider = ({ children }) => {
                 const json = await res.json();
                 setTransactions(json.data ?? json);
             }
-        } catch (error) {
+        } catch {
             setFetchError(t('finance.errorLoadTransactions', 'Failed to load transactions.'));
         } finally {
             setLoading(false);
@@ -35,6 +36,7 @@ export const TransactionProvider = ({ children }) => {
         } else {
             setTransactions([]);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     const addTransaction = async (transaction) => {

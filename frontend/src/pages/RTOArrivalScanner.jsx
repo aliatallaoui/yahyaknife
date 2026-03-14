@@ -61,7 +61,7 @@ export default function RTOArrivalScanner() {
                 const audio = new Audio('/error-beep.mp3');
                 audio.play().catch(() => {});
             }
-        } catch (err) {
+        } catch {
             setError(t('operations.rtoNetworkError', 'Network error processing RTO.'));
         } finally {
             setScanInput('');

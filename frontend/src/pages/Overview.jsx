@@ -9,7 +9,8 @@ const EcommerceAnalytics = lazy(() => import('./EcommerceAnalytics'));
 import { ShoppingCart, Banknote, UserX, Package, ChevronRight, RefreshCw } from 'lucide-react';
 
 // Briefing chip — each item links to a relevant filtered view
-function BriefingChip({ icon: Icon, label, count, to, color, loading }) {
+function BriefingChip({ icon, label, count, to, color, loading }) {
+    const Icon = icon;
     const navigate = useNavigate();
     if (loading) {
         return <div className="h-8 w-40 bg-gray-100 dark:bg-gray-700 rounded-full animate-pulse" />;
@@ -53,6 +54,7 @@ export default function Overview() {
         const controller = new AbortController();
         fetchBriefing(controller.signal);
         return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     // Derive actionable counts from the dedicated briefing sub-object

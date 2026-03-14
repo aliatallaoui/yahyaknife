@@ -99,6 +99,7 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
       }
     })();
     return () => ac.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelSlug, pageSlug, isPreview]);
 
   // Resolve storefront slug for coverage/price endpoints (works for both public and preview)
@@ -120,6 +121,7 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
         data
       })
     }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeSlug, storePageSlug, isPreview]);
 
   // SEO meta tags + document title
@@ -384,6 +386,7 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
             updateForm={updateForm}
             formErrors={formErrors}
             communes={communes}
+            setCommunes={setCommunes}
             deliveryPrice={deliveryPrice}
             unitPrice={unitPrice}
             subtotal={subtotal}
@@ -543,7 +546,7 @@ function ArtisanStyles({ primaryColor, accentColor }) {
 
 function StorefrontBlock({
   block, theme, isArtisan, product, images, variants, selectedVariant, setSelectedVariant,
-  quantity, setQuantity, formData, updateForm, formErrors, communes,
+  quantity, setQuantity, formData, updateForm, formErrors, communes, setCommunes,
   deliveryPrice, unitPrice, subtotal, totalPrice, originalPrice, hasDiscount,
   submitting, handleSubmit, formRef, variantDisplay, formConfig,
   openFaq, setOpenFaq, galleryIndex, setGalleryIndex, trackEvent
@@ -669,7 +672,7 @@ function StorefrontBlock({
       );
 
     // ── VARIANT SELECTOR ─────────────────────────────────────────────────
-    case 'variantSelector':
+    case 'variantSelector': {
       if (!variants.length) return null;
       const vStyle = variantDisplay?.style || 'buttons';
       if (isArtisan) {
@@ -752,6 +755,7 @@ function StorefrontBlock({
           )}
         </div>
       );
+    }
 
     // ── COD FORM ─────────────────────────────────────────────────────────
     case 'codForm':
@@ -1503,7 +1507,8 @@ function ArtisanFormField({ label, value, onChange, placeholder, error, type = '
 
 // ── Form Field (standard) ───────────────────────────────────────────────────
 
-function FormField({ icon: Icon, label, value, onChange, placeholder, error, type = 'text', multiline }) {
+function FormField({ icon, label, value, onChange, placeholder, error, type = 'text', multiline }) {
+  const Icon = icon;
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>

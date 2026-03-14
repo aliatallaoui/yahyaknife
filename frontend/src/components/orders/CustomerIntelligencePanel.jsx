@@ -2,6 +2,29 @@ import { AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { fromNow } from '../../utils/dateUtils';
 
+function RiskBadge({ riskIndicator }) {
+    const { t } = useTranslation();
+    if (riskIndicator === 'High') {
+        return (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-800">
+                <AlertTriangle className="w-3.5 h-3.5" /> {t('customerIntel.highRisk')}
+            </div>
+        );
+    }
+    if (riskIndicator === 'Medium') {
+        return (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 text-xs font-bold border border-orange-200 dark:border-orange-800">
+                <AlertTriangle className="w-3.5 h-3.5" /> {t('customerIntel.mediumRisk')}
+            </div>
+        );
+    }
+    return (
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
+            <CheckCircle className="w-3.5 h-3.5" /> {t('customerIntel.trusted')}
+        </div>
+    );
+}
+
 export default function CustomerIntelligencePanel({ data, isSearching }) {
     const { t } = useTranslation();
 
@@ -26,28 +49,6 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
 
     const { exists, customer, activeDuplicateOrders, riskIndicator, warning } = data;
 
-    const RiskBadge = () => {
-        if (riskIndicator === 'High') {
-            return (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-800">
-                    <AlertTriangle className="w-3.5 h-3.5" /> {t('customerIntel.highRisk')}
-                </div>
-            );
-        }
-        if (riskIndicator === 'Medium') {
-            return (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 text-xs font-bold border border-orange-200 dark:border-orange-800">
-                    <AlertTriangle className="w-3.5 h-3.5" /> {t('customerIntel.mediumRisk')}
-                </div>
-            );
-        }
-        return (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
-                <CheckCircle className="w-3.5 h-3.5" /> {t('customerIntel.trusted')}
-            </div>
-        );
-    };
-
     return (
         <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm rounded-xl p-4 space-y-4">
             <div className="flex items-center justify-between border-b dark:border-gray-700 pb-3">
@@ -60,7 +61,7 @@ export default function CustomerIntelligencePanel({ data, isSearching }) {
                         {exists ? t('customerIntel.joined', { time: fromNow(customer.joinDate) }) : t('customerIntel.noRecords')}
                     </p>
                 </div>
-                <RiskBadge />
+                <RiskBadge riskIndicator={riskIndicator} />
             </div>
 
             {warning && (

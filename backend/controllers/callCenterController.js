@@ -315,7 +315,7 @@ exports.assignOrders = async (req, res) => {
             return res.json(ok({ message: `${count} orders auto-distributed using priority rules.`, count }));
         }
 
-        res.status(400).json({ message: 'Invalid assignment mode. Use: Manual, Region, Auto_Distribute' });
+        return res.status(400).json({ message: 'Invalid assignment mode. Use: Manual, Region, Auto_Distribute' });
     } catch (error) {
         logger.error({ err: error }, 'Assignment Error');
         res.status(500).json({ message: 'Server Error assigning orders' });
@@ -895,7 +895,7 @@ exports.bulkUpdateOrders = async (req, res) => {
             return res.json(ok({ modifiedCount: result.modifiedCount, action: 'unassign' }));
         }
 
-        res.status(400).json({ message: 'Invalid action. Supported: reassign, cancel, unassign' });
+        return res.status(400).json({ message: 'Invalid action. Supported: reassign, cancel, unassign' });
     } catch (error) {
         logger.error({ err: error }, 'Bulk Update Error');
         res.status(500).json({ message: 'Server Error performing bulk update' });

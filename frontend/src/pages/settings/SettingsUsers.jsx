@@ -11,7 +11,7 @@ import { apiFetch } from '../../utils/apiFetch';
 export default function SettingsUsers() {
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsUsers' });
     const isAr = i18n.language === 'ar';
-    const { user: currentUser, hasPermission } = useContext(AuthContext);
+    const { user: currentUser } = useContext(AuthContext);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -52,14 +52,14 @@ export default function SettingsUsers() {
             } else {
                 setError(t('loadError', 'Failed to load users or roles. You may not have permission.'));
             }
-        } catch (err) {
+        } catch {
             setError(t('networkError', 'Network error loading data.'));
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleOpenEdit = (user) => {
         setModalError('');
@@ -145,7 +145,7 @@ export default function SettingsUsers() {
                     setModalError(errorData.message || t('errCreate', 'Failed to create user'));
                 }
             }
-        } catch (err) {
+        } catch {
             setModalError(t('networkError', 'A network error occurred.'));
         } finally {
             setModalSaving(false);

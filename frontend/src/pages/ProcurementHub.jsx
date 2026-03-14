@@ -14,7 +14,7 @@ import TableSkeleton from '../components/TableSkeleton';
 
 export default function ProcurementHub() {
     const { t } = useTranslation();
-    const { hasPermission, token } = useContext(AuthContext);
+    const { hasPermission } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'suppliers'
     const [orders, setOrders] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
@@ -87,6 +87,7 @@ export default function ProcurementHub() {
 
     useEffect(() => {
         fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Helper: Count active pending items versus fully received ones

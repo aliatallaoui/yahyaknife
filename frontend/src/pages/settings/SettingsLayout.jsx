@@ -11,21 +11,19 @@ export default function SettingsLayout() {
     const isAr = i18n.language === 'ar';
     const navigate = useNavigate();
 
-    const tabs = [
-        { name: t('tabProfile', 'My Profile'), path: '/settings/profile', icon: User },
-        { name: t('tabGeneral', 'General Preferences'), path: '/settings/general', icon: Settings },
-        { name: t('tabSecurity', 'Security & Access'), path: '/settings/security', icon: Shield },
-        { name: t('tabAlerts', 'Alert Notifications'), path: '/settings/alerts', icon: Bell },
-        { name: t('tabCouriers', 'Courier Integration'), path: '/settings/couriers', icon: Truck, permission: 'couriers.api.connect' },
-        { name: t('tabWorkspace', 'Workspace'), path: '/settings/workspace', icon: Building2, permission: 'tenant.view' },
-        { name: t('tabUsers', 'Users & Roles'), path: '/settings/users', icon: Users, permission: 'system.users' },
-        { name: t('tabRoles', 'Roles & Permissions'), path: '/settings/roles', icon: Shield, permission: 'system.roles' },
-    ];
-
-    const visibleTabs = useMemo(() =>
-        tabs.filter(tab => !tab.permission || hasPermission(tab.permission)),
-        [tabs, hasPermission]
-    );
+    const visibleTabs = useMemo(() => {
+        const tabs = [
+            { name: t('tabProfile', 'My Profile'), path: '/settings/profile', icon: User },
+            { name: t('tabGeneral', 'General Preferences'), path: '/settings/general', icon: Settings },
+            { name: t('tabSecurity', 'Security & Access'), path: '/settings/security', icon: Shield },
+            { name: t('tabAlerts', 'Alert Notifications'), path: '/settings/alerts', icon: Bell },
+            { name: t('tabCouriers', 'Courier Integration'), path: '/settings/couriers', icon: Truck, permission: 'couriers.api.connect' },
+            { name: t('tabWorkspace', 'Workspace'), path: '/settings/workspace', icon: Building2, permission: 'tenant.view' },
+            { name: t('tabUsers', 'Users & Roles'), path: '/settings/users', icon: Users, permission: 'system.users' },
+            { name: t('tabRoles', 'Roles & Permissions'), path: '/settings/roles', icon: Shield, permission: 'system.roles' },
+        ];
+        return tabs.filter(tab => !tab.permission || hasPermission(tab.permission));
+    }, [t, hasPermission]);
 
     return (
         <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">

@@ -29,7 +29,7 @@ const MOCK_NOTIFICATIONS = [
 
 export default function Header({ setMobileMenuOpen }) {
     const { user, logout, updateContextPreferences, hasPermission } = useContext(AuthContext);
-    const { theme, toggleTheme, effectiveMode } = useContext(ThemeContext);
+    const { theme, toggleTheme } = useContext(ThemeContext);
     const { t, i18n } = useTranslation();
     const [profileOpen, setProfileOpen] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
@@ -379,7 +379,8 @@ export default function Header({ setMobileMenuOpen }) {
     );
 }
 
-function ProfileMenuItem({ icon: Icon, label, subtitle, hoverColor, iconHoverBg, onClick, compact }) {
+function ProfileMenuItem({ icon, label, subtitle, hoverColor, iconHoverBg, onClick, compact }) {
+    const Icon = icon;
     return (
         <button
             onClick={onClick}

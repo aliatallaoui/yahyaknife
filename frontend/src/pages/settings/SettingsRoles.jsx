@@ -26,8 +26,6 @@ export default function SettingsRoles() {
     const [saving, setSaving] = useState(false);
     const [permSearch, setPermSearch] = useState('');
 
-    useEffect(() => { fetchData(); }, []);
-
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -40,12 +38,14 @@ export default function SettingsRoles() {
             const catalogJson = await catalogRes.json();
             setRoles(rolesJson.data ?? rolesJson);
             setCatalog(catalogJson.data ?? catalogJson);
-        } catch (err) {
+        } catch {
             setError(t('rbac.loadError', 'Failed to load roles data'));
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => { fetchData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSelectRole = (role) => {
         setSelectedRole(role);

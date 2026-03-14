@@ -10,6 +10,26 @@ import { apiFetch } from '../../utils/apiFetch';
 import toast from 'react-hot-toast';
 import { COD_STATUSES, getOrderStatusLabel } from '../../constants/statusColors';
 
+function Section({ id, icon, title, children, openSection, onToggle }) {
+    const Icon = icon;
+    const open = openSection === id;
+    return (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <button
+                onClick={() => onToggle(id)}
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors text-sm font-bold text-gray-800 dark:text-gray-200"
+            >
+                <span className="flex items-center gap-2">
+                    <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                    {title}
+                </span>
+                {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
+            </button>
+            {open && <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 space-y-3">{children}</div>}
+        </div>
+    );
+}
+
 const PRIORITIES = ['Normal', 'High Priority', 'Urgent', 'VIP'];
 const PRIORITY_COLORS = {
     Normal: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600',
@@ -63,6 +83,7 @@ export default function OrderEditPanel({ order, onSaved }) {
             setProducts((order.products || []).map(p => ({ ...p })));
             setDiscount(order.discount || order.financials?.discount || 0);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [order?._id]);
 
     if (!order) return null;
@@ -167,24 +188,6 @@ export default function OrderEditPanel({ order, onSaved }) {
         }
     };
 
-    const Section = ({ id, icon: Icon, title, children }) => {
-        const open = openSection === id;
-        return (
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <button
-                    onClick={() => toggle(id)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors text-sm font-bold text-gray-800 dark:text-gray-200"
-                >
-                    <span className="flex items-center gap-2">
-                        <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                        {title}
-                    </span>
-                    {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
-                </button>
-                {open && <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 space-y-3">{children}</div>}
-            </div>
-        );
-    };
 
     return (
         <div className="space-y-3">
@@ -201,7 +204,7 @@ export default function OrderEditPanel({ order, onSaved }) {
             )}
 
             {/* Status & Priority */}
-            <Section id="status" icon={Shield} title={t('callcenter.statusPriority', 'Status & Priority')}>
+            <Section id="status" icon={Shield} title={t('callcenter.statusPriority', 'Status & Priority')} openSection={openSection} onToggle={toggle}>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className={LABEL_CLS}>{t('datagrid.colStatus', 'Status')}</label>
@@ -271,7 +274,7 @@ export default function OrderEditPanel({ order, onSaved }) {
             </Section>
 
             {/* Shipping & Contact */}
-            <Section id="shipping" icon={MapPin} title={t('callcenter.shippingContact', 'Shipping & Contact')}>
+            <Section id="shipping" icon={MapPin} title={t('callcenter.shippingContact', 'Shipping & Contact')} openSection={openSection} onToggle={toggle}>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className={LABEL_CLS + ' flex items-center gap-1'}><Phone className="w-2.5 h-2.5" /> {t('callcenter.phone1', 'Phone 1')}</label>
@@ -299,7 +302,7 @@ export default function OrderEditPanel({ order, onSaved }) {
             </Section>
 
             {/* Products & Pricing */}
-            <Section id="products" icon={Package} title={t('callcenter.productsPricing', 'Products & Pricing')}>
+            <Section id="products" icon={Package} title={t('callcenter.productsPricing', 'Products & Pricing')} openSection={openSection} onToggle={toggle}>
                 <div className="space-y-2">
                     {products.map((p, idx) => (
                         <div key={idx} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
@@ -367,7 +370,7 @@ export default function OrderEditPanel({ order, onSaved }) {
             </Section>
 
             {/* Notes & Courier */}
-            <Section id="notes" icon={FileText} title={t('callcenter.notesCourier', 'Notes & Courier')}>
+            <Section id="notes" icon={FileText} title={t('callcenter.notesCourier', 'Notes & Courier')} openSection={openSection} onToggle={toggle}>
                 <div>
                     <label className={LABEL_CLS}>{t('callcenter.internalNotes', 'Internal Notes')}</label>
                     <textarea

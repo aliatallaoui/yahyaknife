@@ -11,10 +11,9 @@ import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Couriers() {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const { hasPermission } = React.useContext(AuthContext);
     const navigate = useNavigate();
-    const isRTL = i18n.language === 'ar';
 
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
@@ -34,6 +33,7 @@ export default function Couriers() {
 
     useEffect(() => {
         fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchData = async () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Trash2, AlertCircle, AlertTriangle, Truck, Save, RefreshCw, CheckCircle, ChevronDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
@@ -61,6 +61,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 }
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, isEdit, initialData]);
 
     // Flatten inventory products
@@ -113,7 +114,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         if (!store.customerName) store.updateField('customerName', data.customer.name);
                         store.updateField('customerId', data.customer._id);
                     }
-                } catch (err) {
+                } catch {
                     // Phone lookup is best-effort; silently ignore failures
                 } finally {
                     setIsLookingUpPhone(false);
@@ -123,6 +124,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         } else {
             setIntelligenceData(null);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [store.customerPhone, isEdit]);
 
     // 2. Courier coverage cache — fetch once per courier, filter locally
@@ -199,6 +201,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         if (store.shippingCommune && !allCommunes.find(c => c.name === store.shippingCommune)) {
             store.updateField('shippingCommune', '');
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [store.shippingWilayaCode, store.shippingDeliveryType, isCourierApiConnected, courierCoverageCache, isOpen]);
 
     // 3. Auto Pricing Calculation — fires when commune/courier/deliveryType changes
@@ -259,6 +262,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         };
         calculate();
         return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [store.shippingWilayaCode, store.shippingCommune, store.courierId, store.shippingDeliveryType, store.manualPricing]);
 
 

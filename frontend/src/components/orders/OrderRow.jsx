@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef, useEffect } from 'react';
+import React, { useState, useContext, useRef, useEffect, useMemo } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { fmtShortDateTime, fmtFullDateTime, diffHours } from '../../utils/dateUtils';
@@ -43,9 +43,6 @@ const OrderRow = React.memo(({
     agents,
     couriers,
     setFocusedOrderId,
-    onBulkActionConfirm,
-    onBulkActionCourier,
-    onBulkActionCancel,
     onQuickDispatch,
     onRecall,
     onEditClick,
@@ -95,7 +92,9 @@ const OrderRow = React.memo(({
         onTagUpdate(order._id, (order.tags || []).filter(t => t !== tagToRemove));
     };
 
-    const ageHours = order.createdAt ? (Date.now() - new Date(order.createdAt).getTime()) / 3600000 : 0;
+    // eslint-disable-next-line react-hooks/purity
+    const now = useMemo(() => Date.now(), []);
+    const ageHours = useMemo(() => order.createdAt ? (now - new Date(order.createdAt).getTime()) / 3600000 : 0, [order.createdAt, now]);
     const isStaleNew = order.status === 'New' && ageHours > 24;
     const isHighRisk = order.customer?.blacklisted || (order.customer?.riskScore ?? 0) > 70;
 
@@ -252,7 +251,7 @@ const OrderRow = React.memo(({
                             );
                         case 'tags': {
                             const priorities = ['Normal', 'High Priority', 'Urgent'];
-                            const currentPriIdx = priorities.indexOf(order.priority || 'Normal');
+                            const _currentPriIdx = priorities.indexOf(order.priority || 'Normal');
                             return (
                                 <td key={col.id} className="px-3 py-2" onClick={e => e.stopPropagation()}>
                                     <div className="flex flex-wrap items-center gap-1 min-w-[110px]">

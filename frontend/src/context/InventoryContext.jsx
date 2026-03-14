@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthContext } from './AuthContext';
 import { apiFetch } from '../utils/apiFetch';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const InventoryContext = createContext();
 
 export const InventoryProvider = ({ children }) => {
@@ -38,7 +39,7 @@ export const InventoryProvider = ({ children }) => {
             if (catRes.ok) { const catJson = await catRes.json(); setCategories(catJson.data ?? (Array.isArray(catJson) ? catJson : [])); }
             if (poRes.ok) { const poJson = await poRes.json(); setPurchaseOrders(poJson.data ?? (Array.isArray(poJson) ? poJson : [])); }
             if (ledgerRes.ok) { const ledgerJson = await ledgerRes.json(); setGlobalLedger(ledgerJson.data ?? (Array.isArray(ledgerJson) ? ledgerJson : [])); }
-        } catch (error) {
+        } catch {
             setFetchError(t('inventory.errorLoadData', 'Failed to load inventory data.'));
         } finally {
             setLoading(false);

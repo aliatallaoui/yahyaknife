@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, GripVertical, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { apiFetch } from '../../utils/apiFetch';
 
@@ -8,7 +7,6 @@ import { apiFetch } from '../../utils/apiFetch';
  * Renders form fields based on block.type.
  */
 export default function BlockEditor({ block, onUpdate }) {
-  const { t } = useTranslation();
   const type = block.type;
   const settings = block.settings || {};
 

@@ -6,8 +6,7 @@ import clsx from 'clsx';
 import { useConfirmDialog } from '../ConfirmDialog';
 
 export default function CourierPricingEngine({ courierId, courier }) {
-    const { t, i18n } = useTranslation();
-    const isRTL = i18n.language === 'ar';
+    const { t } = useTranslation();
 
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -36,6 +35,7 @@ export default function CourierPricingEngine({ courierId, courier }) {
         } else {
             setLoading(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courierId]);
 
     const fetchRules = async () => {
@@ -88,7 +88,7 @@ export default function CourierPricingEngine({ courierId, courier }) {
                     const res = await apiFetch(`/api/couriers/${courierId}/pricing/${ruleId}`, { method: 'DELETE' });
                     if (!res.ok) throw new Error();
                     fetchRules();
-                } catch (error) {
+                } catch {
                     setErrorMsg(t('couriers.deleteRuleFailed', 'Failed to delete pricing rule.'));
                 }
             },

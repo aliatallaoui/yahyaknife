@@ -52,7 +52,7 @@ export default function HRAttendance() {
 
     useEffect(() => {
         fetchAttendance();
-    }, [date]);
+    }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const getStatusStyle = getAttendanceStatusColor;
 

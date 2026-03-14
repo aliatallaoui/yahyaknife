@@ -145,6 +145,7 @@ export default function AIGeneratorWizard({ channelId, onComplete, onClose }) {
       }
       setEnabledBlocks(initial);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTheme, currentTheme?.blockOrder?.join(',')]);
 
   const toggleBlock = (blockType) => {

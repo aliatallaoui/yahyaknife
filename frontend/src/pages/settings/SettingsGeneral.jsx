@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function SettingsGeneral() {
     const { user, updateContextPreferences } = useContext(AuthContext);
-    const { theme: currentTheme, setTheme: applyTheme } = useContext(ThemeContext);
+    const { setTheme: applyTheme } = useContext(ThemeContext);
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'settingsGeneral' });
     const isAr = i18n.language === 'ar';
 
@@ -76,7 +76,7 @@ export default function SettingsGeneral() {
                 setSaveError(data.message || t('saveError', 'Failed to save preferences.'));
                 setTimeout(() => setSaveError(null), 4000);
             }
-        } catch (error) {
+        } catch {
             setSaveError(t('saveError', 'Failed to save preferences.'));
             setTimeout(() => setSaveError(null), 4000);
         } finally {
@@ -191,8 +191,9 @@ export default function SettingsGeneral() {
     );
 }
 
-function ThemeOption({ icon: Icon, label, desc, value, current, onClick }) {
+function ThemeOption({ icon, label, desc, value, current, onClick }) {
     const isActive = value === current;
+    const IconComp = icon;
     return (
         <div
             onClick={onClick}
@@ -207,7 +208,7 @@ function ThemeOption({ icon: Icon, label, desc, value, current, onClick }) {
                 "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
                 isActive ? "bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300" : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
             )}>
-                <Icon className="w-5 h-5" />
+                <IconComp className="w-5 h-5" />
             </div>
             <span className={clsx("text-xs font-bold", isActive ? "text-indigo-800 dark:text-indigo-300" : "text-gray-600 dark:text-gray-400")}>{label}</span>
             {desc && <span className={clsx("text-[10px]", isActive ? "text-indigo-500 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500")}>{desc}</span>}
