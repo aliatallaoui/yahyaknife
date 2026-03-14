@@ -304,7 +304,7 @@ async function run() {
       'procurement.read', 'procurement.create_po', 'procurement.update_po', 'procurement.receive_goods',
       'support.view', 'support.edit',
       'saleschannels.view', 'saleschannels.create', 'saleschannels.edit', 'saleschannels.delete',
-      'saleschannels.publish', 'saleschannels.analytics',
+      'saleschannels.publish', 'saleschannels.analytics', 'saleschannels.integrate', 'saleschannels.map',
       'tenant.view', 'tenant.settings', 'tenant.invite', 'tenant.billing', 'tenant.delete',
       'webhooks.view', 'webhooks.manage',
       'system.roles', 'system.settings', 'system.users',
