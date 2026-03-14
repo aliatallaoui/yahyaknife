@@ -7,7 +7,7 @@ exports.getCourierKPIs = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const { dateRange = 30 } = req.query;
-        const days = Math.min(Math.max(1, parseInt(dateRange) || 30), 365);
+        const days = Math.min(Math.max(1, parseInt(dateRange, 10) || 30), 365);
         const cacheKey = `tenant:${tenantId}:courier:kpis:days:${days}`;
 
         const cachedKPIs = await cacheService.getOrSet(cacheKey, async () => {
@@ -125,7 +125,7 @@ exports.getRegionalPerformance = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         const { dateRange = 30 } = req.query;
-        const days = Math.min(Math.max(1, parseInt(dateRange) || 30), 365);
+        const days = Math.min(Math.max(1, parseInt(dateRange, 10) || 30), 365);
         const cacheKey = `tenant:${tenantId}:courier:regional:days:${days}`;
 
         const cachedRegions = await cacheService.getOrSet(cacheKey, async () => {

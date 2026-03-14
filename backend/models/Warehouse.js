@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const warehouseSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     name: {
         type: String,
         required: true,
@@ -9,7 +10,6 @@ const warehouseSchema = new mongoose.Schema({
     code: {
         type: String,
         required: true,
-        unique: true,
         uppercase: true,
         trim: true
     },
@@ -36,7 +36,8 @@ const warehouseSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-warehouseSchema.index({ status: 1 });
-warehouseSchema.index({ name: 1 });
+warehouseSchema.index({ tenant: 1, code: 1 }, { unique: true });
+warehouseSchema.index({ tenant: 1, status: 1 });
+warehouseSchema.index({ tenant: 1, name: 1 });
 
 module.exports = mongoose.model('Warehouse', warehouseSchema);

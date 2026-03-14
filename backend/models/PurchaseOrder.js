@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const purchaseOrderSchema = new mongoose.Schema({
-    poNumber: { type: String, required: true, unique: true },
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+    poNumber: { type: String, required: true },
     supplier: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Supplier',
@@ -51,7 +52,8 @@ purchaseOrderSchema.pre('save', function () {
     }
 });
 
-purchaseOrderSchema.index({ supplier: 1, status: 1 });
-purchaseOrderSchema.index({ status: 1, createdAt: -1 });
+purchaseOrderSchema.index({ tenant: 1, poNumber: 1 }, { unique: true });
+purchaseOrderSchema.index({ tenant: 1, supplier: 1, status: 1 });
+purchaseOrderSchema.index({ tenant: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('PurchaseOrder', purchaseOrderSchema);

@@ -242,7 +242,7 @@ exports.deleteCategory = async (req, res) => {
 
 exports.getWarehouses = async (req, res) => {
     try {
-        const warehouses = await Warehouse.find({ status: { $ne: 'Closed' } }).lean();
+        const warehouses = await Warehouse.find({ tenant: req.user.tenant, status: { $ne: 'Closed' } }).lean();
         res.json(warehouses);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching warehouses');
@@ -254,7 +254,7 @@ exports.createWarehouse = async (req, res) => {
     try {
         const { name, code, location, manager, capacity, status } = req.body;
         if (!name || !code) return res.status(400).json({ message: 'Warehouse name and code are required.' });
-        const w = await Warehouse.create({ name, code, location, manager, capacity, status });
+        const w = await Warehouse.create({ tenant: req.user.tenant, name, code, location, manager, capacity, status });
         res.status(201).json(w);
     } catch (error) {
         logger.error({ err: error }, 'Error creating warehouse');
@@ -267,7 +267,7 @@ exports.updateWarehouse = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
             return res.status(400).json({ error: 'Invalid ID' });
         const { name, code, location, manager, capacity, status } = req.body;
-        const w = await Warehouse.findByIdAndUpdate(req.params.id, { name, code, location, manager, capacity, status }, { new: true });
+        const w = await Warehouse.findOneAndUpdate({ _id: req.params.id, tenant: req.user.tenant }, { name, code, location, manager, capacity, status }, { new: true });
         res.json(w);
     } catch (error) {
         logger.error({ err: error }, 'Error updating warehouse');

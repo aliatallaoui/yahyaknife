@@ -32,6 +32,7 @@ async function runReorderCheck() {
             // Get existing open alerts to avoid duplicates
             const variantIds = lowStockVariants.map(v => v._id);
             const existingAlerts = await ReorderAlert.find({
+                tenant: tenantId,
                 variantId: { $in: variantIds },
                 status: 'Open'
             }).select('variantId').lean();

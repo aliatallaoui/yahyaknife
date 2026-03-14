@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const supplierSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     name: {
         type: String,
         required: true,
@@ -36,7 +37,7 @@ const supplierSchema = new mongoose.Schema({
     notes: String
 }, { timestamps: true });
 
-supplierSchema.index({ status: 1 });
-supplierSchema.index({ name: 1 });
+supplierSchema.index({ tenant: 1, status: 1 });
+supplierSchema.index({ tenant: 1, name: 1 });
 
 module.exports = mongoose.model('Supplier', supplierSchema);

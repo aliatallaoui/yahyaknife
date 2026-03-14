@@ -708,7 +708,7 @@ exports.getBestTimeToCall = async (req, res) => {
 exports.getCallCenterAnalytics = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        const range = parseInt(req.query.days) || 7;
+        const range = parseInt(req.query.days, 10) || 7;
         const days = Math.min(Math.max(range, 1), 90);
 
         const since = new Date();
@@ -972,7 +972,7 @@ exports.getAgentPerformanceDetail = async (req, res) => {
         const tenantId = req.user.tenant;
         const { period = '30d' } = req.query;
 
-        let days = parseInt(period) || 30;
+        let days = parseInt(period, 10) || 30;
         const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
         const agent = await User.findOne({ _id: agentId, tenant: tenantId }).select('name email role isActive');

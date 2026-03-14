@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { useConfirmDialog } from '../../components/ConfirmDialog';
 import useModalDismiss from '../../hooks/useModalDismiss';
+import { useHotkey } from '../../hooks/useHotkey';
 import { apiFetch } from '../../utils/apiFetch';
 
 export default function SettingsUsers() {
@@ -35,6 +36,8 @@ export default function SettingsUsers() {
     const [pageError, setPageError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const searchRef = useRef(null);
+    useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
+    useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     const fetchData = async () => {
         try {

@@ -91,10 +91,11 @@ exports.getSkuIntelligence = async (req, res) => {
 exports.getSupplierIntelligence = async (req, res) => {
     try {
         // Single aggregation replaces N per-supplier PurchaseOrder.find calls
+        const tenantId = req.user.tenant;
         const [suppliers, poStats] = await Promise.all([
-            Supplier.find({ status: 'Active' }).lean(),
+            Supplier.find({ tenant: tenantId, status: 'Active' }).lean(),
             PurchaseOrder.aggregate([
-                { $match: { status: { $ne: 'Draft' } } },
+                { $match: { tenant: tenantId, status: { $ne: 'Draft' } } },
                 {
                     $group: {
                         _id: '$supplier',

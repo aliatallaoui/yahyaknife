@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const reorderAlertSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     variantId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ProductVariant',
@@ -29,8 +30,8 @@ const reorderAlertSchema = new mongoose.Schema({
     detectedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-// One open alert per variant at a time
-reorderAlertSchema.index({ variantId: 1, status: 1 });
-reorderAlertSchema.index({ status: 1, detectedAt: -1 });
+// One open alert per variant per tenant at a time
+reorderAlertSchema.index({ tenant: 1, variantId: 1, status: 1 });
+reorderAlertSchema.index({ tenant: 1, status: 1, detectedAt: -1 });
 
 module.exports = mongoose.model('ReorderAlert', reorderAlertSchema);

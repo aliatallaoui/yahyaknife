@@ -194,12 +194,13 @@ async function executeTool(call, tenantId) {
 
             // Find or create category
             const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            let category = await Category.findOne({ name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') } });
+            let category = await Category.findOne({ tenant: tenantId, name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') } });
             if (!category) {
-                category = await Category.create({ name: categoryName, description: 'Created via AI Copilot' });
+                category = await Category.create({ tenant: tenantId, name: categoryName, description: 'Created via AI Copilot' });
             }
 
             const newProduct = await Product.create({
+                tenant: tenantId,
                 name,
                 category: category._id,
                 brand: brand || '',
@@ -208,6 +209,7 @@ async function executeTool(call, tenantId) {
 
             // Always create a default variant if adding a product
             await ProductVariant.create({
+                tenant: tenantId,
                 productId: newProduct._id,
                 sku: `SKU-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
                 price: Number(price) || 0,
