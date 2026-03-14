@@ -91,11 +91,7 @@ export default function HRSnapshot() {
         fetchHRData();
     }, []);
 
-    if (loading) {
-        return <TableSkeleton showKpis kpiCount={6} rows={8} cols={6} />;
-    }
-
-    // Format Department Data
+    // Format Department Data — hooks must be called before any early return
     const deptData = useMemo(() => metrics?.departmentDistribution ? Object.keys(metrics.departmentDistribution).map((key) => ({
         name: key,
         Headcount: metrics.departmentDistribution[key]
@@ -116,6 +112,10 @@ export default function HRSnapshot() {
     }), [employees, searchTerm, filterDept, filterRole, filterStatus]);
 
     const pendingLeavesCount = useMemo(() => leaves.filter(l => l.status === 'Pending').length, [leaves]);
+
+    if (loading) {
+        return <TableSkeleton showKpis kpiCount={6} rows={8} cols={6} />;
+    }
 
     const utilizationData = [
         { name: t('hr.activeWorking'), value: metrics?.activeEmployees || 0 },

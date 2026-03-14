@@ -12,7 +12,7 @@ const SHORT_DATETIME = { month: 'short', day: '2-digit', hour: '2-digit', minute
 const TIME_HM = { hour: '2-digit', minute: '2-digit', hour12: false };
 const WEEKDAY_SHORT_DATE = { weekday: 'long', month: 'short', day: 'numeric' };
 
-const fmt = (d, opts) => new Intl.DateTimeFormat('en-US', opts).format(new Date(d));
+const fmt = (d = new Date(), opts) => new Intl.DateTimeFormat('en-US', opts).format(new Date(d));
 
 /** "Mar 05" */
 export const fmtShortDate = (d) => fmt(d, SHORT_MONTH_DAY);
