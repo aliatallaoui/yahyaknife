@@ -27,6 +27,7 @@ const { encryptSensitiveKeys, decryptSensitiveKeys } = require('../../shared/uti
 const { getStoreAdapter, isStoreChannel } = require('../../integrations/stores/storeAdapterFactory');
 const { importOrderBatch } = require('./orderImport.service');
 const { eventBus, EVENTS } = require('../../shared/events/eventBus');
+const shipmentService = require('../dispatch/shipment.service');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -813,7 +814,24 @@ exports.submitStorefrontOrder = async ({ channelSlug, pageSlug, body, ip }) => {
     // Invalidate storefront cache
     cacheService.del(`storefront:${channelSlug}:${pageSlug}`);
 
-    return { orderId: order.orderId, message: page.formConfig?.successMessage || 'Order placed successfully!' };
+    // ── Auto-Dispatch ────────────────────────────────────────────────────────
+    let trackingNumber = null;
+    if (channel.autoDispatch && channel.defaultCourier) {
+        try {
+            const shipment = await shipmentService.quickDispatch(order._id, channel.tenant);
+            trackingNumber = shipment.externalTrackingId || null;
+            logger.info({ orderId: order.orderId, trackingNumber }, 'Auto-dispatched storefront order');
+        } catch (err) {
+            // Auto-dispatch failure is non-fatal — order is created, dispatch can be retried manually
+            logger.warn({ err, orderId: order.orderId }, 'Auto-dispatch failed for storefront order');
+        }
+    }
+
+    return {
+        orderId: order.orderId,
+        trackingNumber,
+        message: page.formConfig?.successMessage || 'Order placed successfully!'
+    };
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

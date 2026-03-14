@@ -11,12 +11,12 @@
 const Shipment = require('../../models/Shipment');
 const Order = require('../../models/Order');
 const Courier = require('../../models/Courier');
-const CourierCoverage = require('../../models/CourierCoverage');
 const { getAdapter, getProviderName } = require('../../integrations/couriers/adapterFactory');
 const AppError = require('../../shared/errors/AppError');
 const logger = require('../../shared/logger');
 const { fireAndRetry } = require('../../shared/utils/retryAsync');
 const OrderService = require('../orders/order.service');
+const { normalizeForCourier } = require('../../shared/utils/communeNormalizer');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,41 +68,7 @@ async function resolveAdapter(order, tenantId) {
     return { adapter, courier, courierId, providerName };
 }
 
-/**
- * Check if the courier covers the given wilaya/commune using the synced
- * CourierCoverage collection. Throws a clear AppError if not covered.
- * Silently passes if no coverage data exists (courier may not have synced yet).
- */
-async function checkCoverage(courierId, tenantId, { wilayaCode, commune, wilayaName, deliveryType }) {
-    if (!courierId) return; // Ecotrack global — no local coverage data
-
-    // Check if this courier has ANY coverage records (i.e. they synced)
-    const hasCoverage = await CourierCoverage.exists({ courierId, tenant: tenantId });
-    if (!hasCoverage) return; // No synced data — skip local check, let courier API decide
-
-    // Check if the specific wilaya + commune is covered
-    const coverage = await CourierCoverage.findOne({
-        courierId, tenant: tenantId, wilayaCode: String(wilayaCode), commune
-    }).lean();
-
-    if (!coverage) {
-        const location = commune && wilayaName ? `${commune}, ${wilayaName}` : wilayaName || `wilaya ${wilayaCode}`;
-        throw new AppError(
-            `Courier does not cover ${location}. Please choose a different courier or update the delivery address.`,
-            400,
-            'AREA_NOT_COVERED'
-        );
-    }
-
-    // Check delivery type support (0 = home, 1 = stop desk)
-    if (deliveryType === 1 && !coverage.officeSupported) {
-        throw new AppError(
-            `Stop desk delivery is not available in ${commune}. Please switch to home delivery or choose a different commune.`,
-            400,
-            'STOP_DESK_NOT_AVAILABLE'
-        );
-    }
-}
+// Coverage check + commune normalization now handled by communeNormalizer.js
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
@@ -210,11 +176,13 @@ exports.quickDispatch = async (orderId, tenantId) => {
     // Resolve courier adapter
     const { adapter, courierId, providerName } = await resolveAdapter(order, tenantId);
 
-    // Check coverage before hitting the courier API — instant clear feedback
-    await checkCoverage(courierId, tenantId, {
+    // Normalize commune/wilaya to match courier's naming + validate coverage
+    const normalized = await normalizeForCourier({
+        courierId,
+        tenantId,
         wilayaCode: order.shipping.wilayaCode,
-        commune: order.shipping.commune,
         wilayaName: order.shipping.wilayaName,
+        commune: order.shipping.commune,
         deliveryType: order.shipping.deliveryType || 0
     });
 
@@ -227,8 +195,8 @@ exports.quickDispatch = async (orderId, tenantId) => {
         phone1:        order.shipping.phone1,
         phone2:        order.shipping.phone2 || '',
         wilayaCode:    order.shipping.wilayaCode,
-        wilayaName:    order.shipping.wilayaName,
-        commune:       order.shipping.commune,
+        wilayaName:    normalized.wilayaName,
+        commune:       normalized.commune,
         address:       order.shipping.address || '',
         productName:   order.products?.map(p => p.name).join(', ') || 'Mixed Items',
         quantity:      order.products?.reduce((sum, p) => sum + (p.quantity || 1), 0) || 1,

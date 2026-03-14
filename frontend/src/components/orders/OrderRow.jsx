@@ -480,13 +480,25 @@ const OrderRow = React.memo(({
                                     </div>
                                 </td>
                             );
-                        case 'location':
+                        case 'location': {
+                            const logStatus = order.logistics?.resolutionStatus;
+                            const hasLogisticsIssue = logStatus && logStatus !== 'resolved' && logStatus !== 'pending';
                             return (
                                 <td key={col.id} className="px-4 py-2 text-xs">
-                                    <p className="font-bold text-gray-700 dark:text-gray-300 truncate max-w-[130px]" title={order.wilaya || order.shipping?.wilayaName || ''}>{order.wilaya || order.shipping?.wilayaName || t('ordersControl.grid.unspecifiedZone', { defaultValue: 'Unspecified Zone' })}</p>
-                                    <p className="text-gray-400 dark:text-gray-500 truncate max-w-[130px]">{order.commune || order.shipping?.commune || ''}</p>
+                                    <div className="flex items-center gap-1">
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-gray-700 dark:text-gray-300 truncate max-w-[130px]" title={order.wilaya || order.shipping?.wilayaName || ''}>{order.wilaya || order.shipping?.wilayaName || t('ordersControl.grid.unspecifiedZone', { defaultValue: 'Unspecified Zone' })}</p>
+                                            <p className="text-gray-400 dark:text-gray-500 truncate max-w-[130px]">{order.commune || order.shipping?.commune || ''}</p>
+                                        </div>
+                                        {hasLogisticsIssue && (
+                                            <span title={order.logistics?.warningMessage || logStatus} className="shrink-0">
+                                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                             );
+                        }
                         case 'products':
                             return (
                                 <td key={col.id} className="px-4 py-2 text-xs">
@@ -683,6 +695,8 @@ const OrderRow = React.memo(({
     if (prevProps.order.shipping?.phone1 !== nextProps.order.shipping?.phone1) return false;
     if (prevProps.order.shipping?.phone2 !== nextProps.order.shipping?.phone2) return false;
     if (prevProps.order.shipping?.address !== nextProps.order.shipping?.address) return false;
+    // Check logistics resolution
+    if (prevProps.order.logistics?.resolutionStatus !== nextProps.order.logistics?.resolutionStatus) return false;
     // Check regional data
     if (prevProps.order.wilaya !== nextProps.order.wilaya) return false;
     if (prevProps.order.commune !== nextProps.order.commune) return false;

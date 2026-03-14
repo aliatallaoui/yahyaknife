@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Layers } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function LandingFooter() {
@@ -13,11 +13,11 @@ export default function LandingFooter() {
                     {/* Brand */}
                     <div className="md:col-span-2">
                         <div className="flex items-center gap-2.5 mb-4">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md">
-                                <Layers className="w-4 h-4 text-white" />
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+                                <Package className="w-4 h-4 text-white" />
                             </div>
                             <span className="text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 uppercase tracking-tighter">
-                                COD <span className="text-blue-600">Flow</span>
+                                COD <span className="text-indigo-600">Flow</span>
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 font-medium max-w-sm leading-relaxed">

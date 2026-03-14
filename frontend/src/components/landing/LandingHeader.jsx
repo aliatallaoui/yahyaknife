@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Layers, Globe, Menu, X, LayoutDashboard } from 'lucide-react';
+import { Package, Globe, Menu, X, LayoutDashboard } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 
 export default function LandingHeader() {
@@ -26,11 +26,11 @@ export default function LandingHeader() {
 
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-                            <Layers className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
+                            <Package className="w-5 h-5 text-white" />
                         </div>
                         <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 uppercase tracking-tighter">
-                            COD <span className="text-blue-600">Flow</span>
+                            COD <span className="text-indigo-600">Flow</span>
                         </span>
                     </Link>
 

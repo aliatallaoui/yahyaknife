@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, FileText, BarChart3, Eye, EyeOff, Trash2, Edit3,
   ExternalLink, MoreVertical, Globe, ShoppingCart, TrendingUp, Copy,
   Rocket, Pause, Search, Sparkles, CopyPlus, Link, Check, X,
-  Wifi, WifiOff, RefreshCw, PlayCircle, AlertCircle, Clock, Package, Loader2, Link2
+  Wifi, WifiOff, RefreshCw, PlayCircle, AlertCircle, Clock, Package, Loader2, Link2, Truck, Zap
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -42,6 +42,9 @@ export default function SalesChannelDetail() {
   const [mappings, setMappings] = useState([]);
   const [activeTab, setActiveTab] = useState('sync-logs'); // sync-logs | product-mappings
 
+  // Courier list for auto-dispatch
+  const [couriers, setCouriers] = useState([]);
+
   const isStoreChannel = channel && channel.channelType !== 'landing_page';
 
   const fetchData = useCallback(async () => {
@@ -58,6 +61,14 @@ export default function SalesChannelDetail() {
   }, [channelId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Fetch couriers for auto-dispatch selector
+  useEffect(() => {
+    apiFetch('/api/couriers?status=active&limit=50')
+      .then(res => res.ok ? res.json() : null)
+      .then(json => { if (json) setCouriers((json.data?.docs ?? json.data ?? json.docs ?? []).filter(c => c.integrationType === 'API')); })
+      .catch(() => {});
+  }, []);
 
   // Fetch store integration data when channel is a store type
   const fetchSyncLogs = useCallback(async () => {
@@ -143,6 +154,28 @@ export default function SalesChannelDetail() {
         toast.error(json.message || 'Failed to register webhooks. Please try again.');
       }
     } catch { toast.error('Failed to register webhooks. Please try again.'); }
+  };
+
+  // Auto-dispatch toggle handler
+  const handleAutoDispatchChange = async (field, value) => {
+    try {
+      const body = { [field]: value };
+      const res = await apiFetch(`/api/sales-channels/${channelId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setChannel(json.data ?? json);
+        toast.success(field === 'autoDispatch'
+          ? (value ? t('salesChannels.autoDispatchEnabled', 'Auto-dispatch enabled') : t('salesChannels.autoDispatchDisabled', 'Auto-dispatch disabled'))
+          : t('salesChannels.defaultCourierUpdated', 'Default courier updated'));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || 'Update failed');
+      }
+    } catch { toast.error('Update failed'); }
   };
 
   // Landing page handlers
@@ -367,6 +400,98 @@ export default function SalesChannelDetail() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Logistics & Courier Settings ─────────────────────────────────── */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <Zap className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+              {t('salesChannels.logisticsSettings', 'Logistics & Courier')}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {t('salesChannels.logisticsDesc', 'Courier assignment, validation, and auto-dispatch settings')}
+            </p>
+          </div>
+        </div>
+
+        {/* Courier Selection */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              <Truck className="w-3.5 h-3.5 inline mr-1" />
+              {t('salesChannels.defaultCourier', 'Default Courier')}
+            </label>
+            <select
+              value={channel.defaultCourier || ''}
+              onChange={e => handleAutoDispatchChange('defaultCourier', e.target.value || null)}
+              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">{t('salesChannels.selectCourier', '— Select courier —')}</option>
+              {couriers.map(c => (
+                <option key={c._id} value={c._id}>{c.name} ({c.apiProvider})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              <Truck className="w-3.5 h-3.5 inline mr-1 opacity-60" />
+              {t('salesChannels.fallbackCourier', 'Fallback Courier')}
+            </label>
+            <select
+              value={channel.fallbackCourier || ''}
+              onChange={e => handleAutoDispatchChange('fallbackCourier', e.target.value || null)}
+              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">{t('salesChannels.noFallback', '— No fallback —')}</option>
+              {couriers.filter(c => c._id !== channel.defaultCourier).map(c => (
+                <option key={c._id} value={c._id}>{c.name} ({c.apiProvider})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Toggle Switches */}
+        <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+          {[
+            { key: 'autoAssignCourier', label: t('salesChannels.autoAssignCourier', 'Auto-assign default courier to new orders'), desc: t('salesChannels.autoAssignDesc', 'When enabled, incoming orders are automatically linked to the default courier') },
+            { key: 'autoRunLogisticsValidation', label: t('salesChannels.autoValidate', 'Auto-validate logistics on import'), desc: t('salesChannels.autoValidateDesc', 'Normalize location, validate coverage, and calculate delivery fee automatically') },
+            { key: 'autoDispatch', label: t('salesChannels.autoDispatch', 'Auto-dispatch after order creation'), desc: t('salesChannels.autoDispatchDesc', 'Send order to courier API immediately when created from storefront') },
+            { key: 'autoDispatchAfterConfirmation', label: t('salesChannels.autoDispatchConfirm', 'Auto-dispatch after confirmation'), desc: t('salesChannels.autoDispatchConfirmDesc', 'Send order to courier after call center confirms it') }
+          ].map(toggle => (
+            <div key={toggle.key} className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{toggle.label}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{toggle.desc}</p>
+              </div>
+              <button
+                onClick={() => handleAutoDispatchChange(toggle.key, !channel[toggle.key])}
+                className={clsx(
+                  'relative w-10 h-5.5 rounded-full transition-colors shrink-0',
+                  channel[toggle.key] ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                )}
+              >
+                <span className={clsx(
+                  'absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform',
+                  channel[toggle.key] && 'translate-x-4.5'
+                )} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Warning */}
+        {(channel.autoDispatch || channel.autoAssignCourier) && !channel.defaultCourier && (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              {t('salesChannels.selectCourierWarning', 'Select a default courier to enable automation features')}
+            </p>
+          </div>
+        )}
       </div>
 
       {isStoreChannel ? (

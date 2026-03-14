@@ -16,6 +16,7 @@ import { useHotkey } from '../../hooks/useHotkey';
 import TrackingTimeline from './TrackingTimeline';
 import MessagePanel from './MessagePanel';
 import OrderEditPanel from './OrderEditPanel';
+import LogisticsPanel from '../orders/LogisticsPanel';
 
 const RISK_COLORS = { Low: 'bg-emerald-100 text-emerald-700', Medium: 'bg-amber-100 text-amber-700', High: 'bg-red-100 text-red-700' };
 const TRUST_COLOR = (s) => s >= 70 ? 'text-emerald-600' : s >= 40 ? 'text-amber-600' : 'text-red-600';
@@ -282,6 +283,9 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                             </div>
                         </div>
                     </div>
+
+                    {/* Logistics Resolution Panel */}
+                    <LogisticsPanel order={order} onRefresh={onSuccess} />
 
                     {/* Customer Intelligence Card */}
                     {intelLoading ? (

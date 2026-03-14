@@ -37,6 +37,7 @@ const platformAdminRoutes = require('./routes/platformAdmin');
 const webhookRoutes = require('./routes/webhooks');
 const storefrontRoutes = require('./routes/storefront');
 const storeWebhookRoutes = require('./routes/storeWebhooks');
+const logisticsRoutes = require('./routes/logistics');
 const path = require('path');
 const { initJobs } = require('./cron/scheduler');
 const errorHandler = require('./shared/errors/errorHandler');
@@ -205,6 +206,7 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/platform', platformAdminRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/s', storefrontRoutes);  // Public storefront — no auth
+app.use('/api/logistics', logisticsRoutes);
 app.use('/api/integrations/webhooks', storeWebhookRoutes);  // Inbound store webhooks — no auth, HMAC verified
 app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

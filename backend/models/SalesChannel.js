@@ -54,8 +54,13 @@ const salesChannelSchema = new mongoose.Schema({
         fontFamily: { type: String, default: 'Inter' }
     },
 
-    // ── Defaults ────────────────────────────────────────────────────────────
-    defaultCourier: { type: mongoose.Schema.Types.ObjectId, ref: 'Courier' },
+    // ── Logistics & Courier Defaults ─────────────────────────────────────────
+    defaultCourier:   { type: mongoose.Schema.Types.ObjectId, ref: 'Courier' },
+    fallbackCourier:  { type: mongoose.Schema.Types.ObjectId, ref: 'Courier', default: null },
+    autoAssignCourier:            { type: Boolean, default: false },
+    autoRunLogisticsValidation:   { type: Boolean, default: false },
+    autoDispatch:                 { type: Boolean, default: false },
+    autoDispatchAfterConfirmation: { type: Boolean, default: false },
 
     // ── Denormalized Stats ──────────────────────────────────────────────────
     stats: {

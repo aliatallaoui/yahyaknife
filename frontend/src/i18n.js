@@ -4800,7 +4800,7 @@ const resources = {
             roles: {
                 superAdmin: "Super Admin"
             },
-            app_name: "TechCorp OS"
+            app_name: "COD Flow"
         }
     }
 };

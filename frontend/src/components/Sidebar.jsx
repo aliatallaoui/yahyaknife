@@ -399,11 +399,11 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                     isCollapsed ? "justify-center px-0" : "px-5"
                 )}>
                     <Link to="/dashboard" onClick={handleLinkClick} className={clsx("flex items-center gap-3", isCollapsed ? "" : "w-full")}>
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0">
-                            <Layers className="w-4 h-4" />
+                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0">
+                            <Package className="w-4 h-4" />
                         </div>
                         {!isCollapsed && (
-                            <span className="font-bold text-gray-900 dark:text-white tracking-tight text-[15px] truncate">{t('app_name', 'TechCorp OS')}</span>
+                            <span className="font-bold text-gray-900 dark:text-white tracking-tight text-[15px] truncate">COD Flow</span>
                         )}
                     </Link>
                     {/* Mobile Close Button */}

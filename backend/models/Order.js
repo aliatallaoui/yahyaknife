@@ -142,6 +142,57 @@ const orderSchema = new mongoose.Schema({
         fragile: { type: Boolean, default: false },
         deliveryType: { type: Number, default: 0 } // 0=home, 1=stop desk
     },
+
+    // ── Raw Source Location (never overwritten) ───────────────────────────────
+    rawSource: {
+        wilaya:  { type: String, default: '' },
+        commune: { type: String, default: '' },
+        address: { type: String, default: '' }
+    },
+
+    // ── Internal Canonical Geography ──────────────────────────────────────────
+    internalGeography: {
+        wilayaId:  { type: mongoose.Schema.Types.ObjectId, ref: 'InternalWilaya', default: null },
+        communeId: { type: mongoose.Schema.Types.ObjectId, ref: 'InternalCommune', default: null },
+        normalizationStatus: {
+            type: String,
+            enum: ['exact_match', 'alias_match', 'fuzzy_match', 'unresolved', null],
+            default: null
+        },
+        confidenceScore: { type: Number, default: null, min: 0, max: 1 }
+    },
+
+    // ── Courier-Specific Geography ────────────────────────────────────────────
+    courierGeography: {
+        courierWilayaName:  { type: String, default: '' },
+        courierWilayaCode:  { type: String, default: '' },
+        courierCommuneName: { type: String, default: '' },
+        courierCommuneCode: { type: String, default: '' },
+        stopDeskAvailable:  { type: Boolean, default: null },
+        nearestOfficeCommuneId: { type: mongoose.Schema.Types.ObjectId, ref: 'InternalCommune', default: null },
+        nearestOfficeCommuneName: { type: String, default: '' }
+    },
+
+    // ── Logistics Resolution ──────────────────────────────────────────────────
+    logistics: {
+        resolutionStatus: {
+            type: String,
+            enum: [
+                'resolved', 'needs_review', 'pending',
+                'unsupported_wilaya', 'unsupported_commune',
+                'unsupported_delivery_type', 'stop_desk_not_available',
+                'nearest_office_suggested', 'fallback_courier_suggested',
+                'low_confidence_location_match', 'no_courier_assigned', 'no_pricing_rule',
+                null
+            ],
+            default: null
+        },
+        warningMessage:      { type: String, default: '' },
+        fallbackCourierUsed: { type: Boolean, default: false },
+        fallbackCourierId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Courier', default: null },
+        resolvedAt:          { type: Date, default: null }
+    },
+
     notes: { type: String }
 }, { timestamps: true });
 
@@ -164,6 +215,7 @@ orderSchema.index({ tenant: 1, createdAt: -1 }); // Date-range analytics & daily
 orderSchema.index({ tenant: 1, status: 1, createdAt: -1 }); // Status-filtered date-sorted queries
 orderSchema.index({ tenant: 1, customer: 1 }); // Customer order history
 orderSchema.index({ deletedAt: 1, tenant: 1, status: 1 }); // Soft-delete filtering (most queries add deletedAt: null)
+orderSchema.index({ tenant: 1, 'logistics.resolutionStatus': 1, deletedAt: 1 }); // Logistics review queue
 
 // Text Search Index (Replaces slow Regex collection scans)
 // Weighted so Order ID matches rank higher than random tracking numbers

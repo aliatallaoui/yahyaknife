@@ -24,6 +24,8 @@ const { syncCourierCash, recalculateCourierKPIs } = require('../../controllers/c
 const cacheService = require('../../services/cacheService');
 const { fireAndRetry } = require('../../shared/utils/retryAsync');
 const { autoAssignOrder } = require('../call-center/assignment.service');
+const { normalizeForCourier } = require('../../shared/utils/communeNormalizer');
+const { resolveLogistics, reResolveForCourierChange } = require('../logistics/logistics.resolver');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -160,6 +162,41 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     const netProfit = finalTotal - totalCOGS - courierFee - gatewayFees - marketplaceFees;
     const mainStatus = status || 'New';
 
+    // 3.5 Logistics Resolution — normalize geography + validate courier coverage
+    let logisticsResult = null;
+    const rawWilaya  = shipping?.wilayaName || shipping?.wilayaCode || '';
+    const rawCommune = shipping?.commune || '';
+    const rawAddress = shipping?.address || '';
+
+    try {
+        logisticsResult = await resolveLogistics({
+            tenantId,
+            rawWilaya,
+            rawCommune,
+            rawAddress,
+            courierId: courier || null,
+            deliveryType: shipping?.deliveryType ?? 0
+        });
+
+        // Apply shipping updates from logistics resolution (normalized names)
+        if (logisticsResult.shippingUpdates && shipping) {
+            if (logisticsResult.shippingUpdates.wilayaName) shipping.wilayaName = logisticsResult.shippingUpdates.wilayaName;
+            if (logisticsResult.shippingUpdates.commune) shipping.commune = logisticsResult.shippingUpdates.commune;
+            if (logisticsResult.shippingUpdates.wilayaCode) shipping.wilayaCode = logisticsResult.shippingUpdates.wilayaCode;
+        }
+
+        // If logistics resolved a delivery fee and we didn't have one, use it
+        if (logisticsResult.deliveryFee !== null && courierFee === 0) {
+            courierFee = logisticsResult.deliveryFee;
+        }
+    } catch (err) {
+        logger.warn({ err }, 'Logistics resolution failed during order creation — proceeding without');
+    }
+
+    // Recompute totals if courier fee changed from logistics
+    const computedFinalTotal = subtotalAmt + courierFee - discount;
+    const computedNetProfit = computedFinalTotal - totalCOGS - courierFee - gatewayFees - marketplaceFees;
+
     // 4. Sequential write (Transactions disabled for local standalone MongoDB compatibility)
     let savedOrder;
     try {
@@ -171,10 +208,10 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             products: processedProducts,
             subtotal: subtotalAmt,
             discount,
-            totalAmount: finalTotal,
-            finalTotal,
-            amountToCollect: codAmount || finalTotal,
-            financials: { ...financials, cogs: totalCOGS, codAmount: codAmount || finalTotal, courierFee, netProfit },
+            totalAmount: computedFinalTotal,
+            finalTotal: computedFinalTotal,
+            amountToCollect: codAmount || computedFinalTotal,
+            financials: { ...financials, cogs: totalCOGS, codAmount: codAmount || computedFinalTotal, courierFee, netProfit: computedNetProfit },
             status: mainStatus,
             paymentStatus: paymentStatus || 'Unpaid',
             fulfillmentStatus: fulfillmentStatus || 'Unfulfilled',
@@ -182,7 +219,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             verificationStatus: verificationStatus || 'Pending',
             priority: priority,
             tags: tags,
-            courier: courier || null,
+            courier: logisticsResult?.selectedCourierId || courier || null,
             shipping: shipping || {},
             wilaya: shipping?.wilayaCode ? `${shipping.wilayaCode} - ${shipping.wilayaName}` : 'Unknown',
             commune: shipping?.commune || 'Unknown',
@@ -190,6 +227,18 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             salesChannelSource: salesChannelSource || undefined,
             ...(externalOrderId ? { externalOrderId } : {}),
             ...(importMethod ? { importMethod } : {}),
+
+            // ── Logistics Resolution Fields ──────────────────────────────────
+            rawSource: {
+                wilaya:  rawWilaya,
+                commune: rawCommune,
+                address: rawAddress
+            },
+            ...(logisticsResult ? {
+                internalGeography: logisticsResult.internalGeography,
+                courierGeography:  logisticsResult.courierGeography,
+                logistics:         logisticsResult.logistics
+            } : {})
         });
 
         savedOrder = created;
@@ -306,6 +355,61 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         let totalAmount = 0;
         updateData.products.forEach(item => { totalAmount += item.quantity * item.unitPrice; });
         updateData.totalAmount = totalAmount;
+    }
+
+    // ── Courier / Shipping Change → Re-resolve logistics ────────────────────
+    const courierChanged = updateData.courier && String(updateData.courier) !== String(existingOrder.courier);
+    const shippingChanged = updateData.shipping && (
+        updateData.shipping.commune !== existingOrder.shipping?.commune ||
+        updateData.shipping.wilayaCode !== existingOrder.shipping?.wilayaCode
+    );
+
+    if ((courierChanged || shippingChanged) && !bypassStateMachine) {
+        const targetCourier = updateData.courier || existingOrder.courier;
+        const rawWilaya  = existingOrder.rawSource?.wilaya || updateData.shipping?.wilayaName || existingOrder.shipping?.wilayaName;
+        const rawCommune = existingOrder.rawSource?.commune || updateData.shipping?.commune || existingOrder.shipping?.commune;
+        const rawAddress = existingOrder.rawSource?.address || existingOrder.shipping?.address;
+        const targetDelivery = updateData.shipping?.deliveryType ?? existingOrder.shipping?.deliveryType ?? 0;
+
+        try {
+            const logisticsResult = await reResolveForCourierChange({
+                tenantId,
+                internalWilayaId:  existingOrder.internalGeography?.wilayaId,
+                internalCommuneId: existingOrder.internalGeography?.communeId,
+                rawWilaya,
+                rawCommune,
+                rawAddress,
+                newCourierId: targetCourier,
+                deliveryType: targetDelivery
+            });
+
+            // Apply logistics results
+            if (!updateData.shipping) updateData.shipping = {};
+            if (logisticsResult.shippingUpdates.commune) updateData.shipping.commune = logisticsResult.shippingUpdates.commune;
+            if (logisticsResult.shippingUpdates.wilayaName) updateData.shipping.wilayaName = logisticsResult.shippingUpdates.wilayaName;
+            if (logisticsResult.shippingUpdates.wilayaCode) updateData.shipping.wilayaCode = logisticsResult.shippingUpdates.wilayaCode;
+
+            // Update logistics resolution fields
+            updateData.internalGeography = logisticsResult.internalGeography;
+            updateData.courierGeography  = logisticsResult.courierGeography;
+            updateData.logistics         = logisticsResult.logistics;
+
+            // Use logistics-resolved courier if fallback was applied
+            if (logisticsResult.selectedCourierId) {
+                updateData.courier = logisticsResult.selectedCourierId;
+            }
+
+            // Use logistics-resolved delivery fee if available
+            if (logisticsResult.deliveryFee !== null) {
+                if (!updateData.financials) updateData.financials = {};
+                updateData.financials.courierFee = logisticsResult.deliveryFee;
+            }
+        } catch (err) {
+            if (err.errorCode === 'AREA_NOT_COVERED' || err.errorCode === 'STOP_DESK_NOT_AVAILABLE') {
+                throw err;
+            }
+            logger.warn({ err, orderId }, 'Logistics re-resolution failed during order update');
+        }
     }
 
     // Server-Side Courier Pricing Override Update
