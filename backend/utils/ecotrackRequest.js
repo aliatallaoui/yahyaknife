@@ -76,7 +76,7 @@ const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) =
     // Enforce rate limiting
     await checkRateLimits(settings);
 
-    const url = `${settings.apiUrl}${endpoint}`;
+    const url = `${settings.apiUrl.replace(/\/+$/, '')}${endpoint}`;
 
     const config = {
         method: method,
