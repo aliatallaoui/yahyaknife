@@ -52,6 +52,7 @@ const OrderRow = React.memo(({
     onRestore,
     onPurge,
     onPostpone,
+    duplicatePhones,
     virtualMeasureRef,
     virtualIndex
 }) => {
@@ -62,6 +63,9 @@ const OrderRow = React.memo(({
     const [copiedPhone, setCopiedPhone] = useState(false);
     const copyTimerRef = useRef(null);
     useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current); }, []);
+
+    const customerPhone = order.customer?.phone || order.shipping?.phone1;
+    const dupCount = customerPhone && duplicatePhones ? (duplicatePhones[customerPhone] || 0) : 0;
 
     const copyPhone = (e) => {
         e.preventDefault();
@@ -404,6 +408,15 @@ const OrderRow = React.memo(({
                                             )}
                                             {order.customer?.refusalRate > 25 && (
                                                 <span className="flex w-2 h-2 rounded-full bg-orange-500" title={t('ordersControl.orderRow.highReturnTitle')}></span>
+                                            )}
+                                            {dupCount >= 2 && (
+                                                <span
+                                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700/50"
+                                                    title={t('ordersControl.orderRow.duplicateTitle', { count: dupCount, defaultValue: '{{count}} orders with same phone' })}
+                                                >
+                                                    <Copy className="w-2.5 h-2.5" />
+                                                    {dupCount}x
+                                                </span>
                                             )}
                                         </div>
 

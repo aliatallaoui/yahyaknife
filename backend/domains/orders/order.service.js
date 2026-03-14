@@ -97,7 +97,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         channel, products, status, paymentStatus,
         fulfillmentStatus, fulfillmentPipeline, notes,
         shipping, financials, courier, priority, tags, verificationStatus,
-        salesChannelSource
+        salesChannelSource, externalOrderId, importMethod
     } = body;
 
     if (!orderId || !channel || !products || products.length === 0) {
@@ -187,7 +187,9 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
             wilaya: shipping?.wilayaCode ? `${shipping.wilayaCode} - ${shipping.wilayaName}` : 'Unknown',
             commune: shipping?.commune || 'Unknown',
             notes: notes || '',
-            salesChannelSource: salesChannelSource || undefined
+            salesChannelSource: salesChannelSource || undefined,
+            ...(externalOrderId ? { externalOrderId } : {}),
+            ...(importMethod ? { importMethod } : {}),
         });
 
         savedOrder = created;

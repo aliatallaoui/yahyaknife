@@ -963,6 +963,20 @@ export default function OrderControlCenter() {
         }
     };
 
+    // Duplicate detection: count how many active orders share the same phone
+    const duplicatePhones = useMemo(() => {
+        const phoneCounts = {};
+        for (const o of orders) {
+            const phone = o.customer?.phone || o.shipping?.phone1;
+            if (phone) phoneCounts[phone] = (phoneCounts[phone] || 0) + 1;
+        }
+        // Only keep phones that appear more than once
+        for (const p of Object.keys(phoneCounts)) {
+            if (phoneCounts[p] < 2) delete phoneCounts[p];
+        }
+        return phoneCounts;
+    }, [orders]);
+
     // Helper to calculate age string (e.g. "2d 4h ago", "5h ago")
     const getAge = useCallback((dateString) => {
         return formatDuration(Date.now() - new Date(dateString).getTime());
@@ -1599,6 +1613,7 @@ export default function OrderControlCenter() {
                                             onRestore={handleSingleRestore}
                                             onPurge={handleSinglePurge}
                                             onPostpone={handlePostponeOpen}
+                                            duplicatePhones={duplicatePhones}
                                             virtualMeasureRef={rowVirtualizer.measureElement}
                                             virtualIndex={virtualRow.index}
                                         />

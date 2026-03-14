@@ -10,11 +10,13 @@
  * Mounted at: /api/integrations/webhooks
  */
 
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const SalesChannel = require('../models/SalesChannel');
+const WooCommerceAdapter = require('../integrations/stores/WooCommerceAdapter');
 const { getStoreAdapter } = require('../integrations/stores/storeAdapterFactory');
 const { decryptSensitiveKeys } = require('../shared/utils/credentialEncryption');
 const { importOrder } = require('../domains/sales-channels/orderImport.service');
@@ -67,6 +69,33 @@ router.post(
 
             const { encrypt } = require('../shared/utils/credentialEncryption');
 
+            // Helper: register webhooks on the WooCommerce store (fire-and-forget)
+            const autoRegisterWebhooks = async (channelId, storeUrl, rawKey, rawSecret) => {
+                try {
+                    const webhookSecret = crypto.randomBytes(32).toString('hex');
+                    const adapter = new WooCommerceAdapter(
+                        { storeUrl, consumerKey: rawKey, consumerSecret: rawSecret, webhookSecret },
+                        channelId.toString()
+                    );
+                    const baseUrl = process.env.API_BASE_URL || 'http://localhost:5000';
+                    const callbackUrl = `${baseUrl}/api/integrations/webhooks/${channelId}/woocommerce`;
+                    const result = await adapter.registerWebhook(callbackUrl);
+
+                    await SalesChannel.updateOne(
+                        { _id: channelId },
+                        {
+                            $set: {
+                                'integration.webhookId': result.webhookId,
+                                'config.webhookSecret': encrypt(webhookSecret),
+                            }
+                        }
+                    );
+                    logger.info({ channelId, webhookId: result.webhookId }, 'Auto-registered WooCommerce webhooks');
+                } catch (err) {
+                    logger.warn({ err, channelId }, 'Failed to auto-register WooCommerce webhooks — user can register manually');
+                }
+            };
+
             if (pending.reconnect && pending.channelId) {
                 // ── Reconnect flow: update existing channel ──
                 const channel = await SalesChannel.findOne({
@@ -92,6 +121,9 @@ router.post(
                 );
                 logger.info({ channelId: pending.channelId, permissions: key_permissions }, 'WooCommerce OAuth reconnected');
 
+                // Re-register webhooks with new credentials (don't await — respond fast)
+                autoRegisterWebhooks(pending.channelId, pending.storeUrl, consumer_key, consumer_secret);
+
             } else {
                 // ── New channel flow: create the channel with credentials ──
                 const slugBase = pending.name.toLowerCase()
@@ -99,7 +131,7 @@ router.post(
                     .replace(/^-|-$/g, '') || 'wc-store';
                 const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-                await SalesChannel.create({
+                const newChannel = await SalesChannel.create({
                     tenant: pending.tenantId,
                     name: pending.name,
                     slug,
@@ -117,6 +149,9 @@ router.post(
                     },
                 });
                 logger.info({ name: pending.name, tenant: pending.tenantId, permissions: key_permissions }, 'WooCommerce channel created via OAuth');
+
+                // Auto-register webhooks so orders flow in immediately (don't await)
+                autoRegisterWebhooks(newChannel._id, pending.storeUrl, consumer_key, consumer_secret);
             }
 
             return res.status(200).json({ success: true });

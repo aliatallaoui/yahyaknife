@@ -9,7 +9,6 @@
  *   - Bulk import
  */
 
-const mongoose = require('mongoose');
 const SalesChannel = require('../../models/SalesChannel');
 const SalesChannelProductMapping = require('../../models/SalesChannelProductMapping');
 const SalesChannelSyncLog = require('../../models/SalesChannelSyncLog');
@@ -117,18 +116,22 @@ async function importOrder({ tenantId, salesChannelId, normalizedOrder, importMe
     const orderChannel = CHANNEL_TYPE_TO_ORDER_CHANNEL[salesChannel.channelType] || 'Other';
 
     // 4. Build order body for OrderService.createOrder()
+    // WooCommerce orders may lack a phone — use placeholder so createOrder doesn't reject
+    const customerPhone = normalizedOrder.customerPhone || `import-${Date.now()}`;
+    const customerName = normalizedOrder.customerName || 'Client';
+
     const orderBody = {
         orderId: generateImportOrderId(salesChannel.channelType),
         channel: orderChannel,
-        customerPhone: normalizedOrder.customerPhone,
-        customerName: normalizedOrder.customerName,
+        customerPhone,
+        customerName,
         products: resolvedProducts,
         status: 'New',
         notes: normalizedOrder.notes || '',
         tags: [salesChannel.name],
         shipping: {
-            recipientName: normalizedOrder.shipping?.recipientName || normalizedOrder.customerName,
-            phone1: normalizedOrder.shipping?.phone1 || normalizedOrder.customerPhone,
+            recipientName: normalizedOrder.shipping?.recipientName || customerName,
+            phone1: normalizedOrder.shipping?.phone1 || customerPhone,
             wilayaName: normalizedOrder.shipping?.wilayaName || '',
             commune: normalizedOrder.shipping?.commune || '',
             address: normalizedOrder.shipping?.address || '',
@@ -141,29 +144,30 @@ async function importOrder({ tenantId, salesChannelId, normalizedOrder, importMe
         salesChannelSource: {
             salesChannel: salesChannelId,
         },
+        // Set atomically with the order to leverage the unique index for dedup
+        externalOrderId: normalizedOrder.externalOrderId || undefined,
+        importMethod: importMethod || undefined,
     };
 
-    // 5. Create the order
-    const order = await createOrder({
-        tenantId,
-        userId: null, // System import, no user
-        body: orderBody,
-    });
-
-    // 6. Set external tracking fields (directly, since createOrder doesn't know about them)
-    if (normalizedOrder.externalOrderId || importMethod) {
-        await Order.updateOne(
-            { _id: order._id, tenant: tenantId },
-            {
-                $set: {
-                    ...(normalizedOrder.externalOrderId ? { externalOrderId: normalizedOrder.externalOrderId } : {}),
-                    ...(importMethod ? { importMethod } : {}),
-                }
-            }
-        );
+    // 5. Create the order (catch duplicate key error from concurrent webhooks)
+    let order;
+    try {
+        order = await createOrder({
+            tenantId,
+            userId: null, // System import, no user
+            body: orderBody,
+        });
+    } catch (err) {
+        // MongoDB duplicate key error (E11000) — concurrent webhook for same order
+        if (err.code === 11000 || err?.cause?.code === 11000 ||
+            (err.message && err.message.includes('E11000'))) {
+            logger.debug({ externalOrderId: normalizedOrder.externalOrderId, channelId }, 'Duplicate order caught by unique index, skipping');
+            return { order: null, skipped: true };
+        }
+        throw err;
     }
 
-    // 7. Emit event
+    // 6. Emit event
     eventBus.emit(EVENTS.STORE_ORDER_IMPORTED, {
         tenantId,
         orderId: order._id,

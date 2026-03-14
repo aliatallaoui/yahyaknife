@@ -157,8 +157,8 @@ orderSchema.index({ tenant: 1, courier: 1, status: 1 }); // Courier settlement q
 orderSchema.index({ tenant: 1, 'salesChannelSource.salesChannel': 1, createdAt: -1 }); // Channel-filtered queries
 orderSchema.index(
     { tenant: 1, 'salesChannelSource.salesChannel': 1, externalOrderId: 1 },
-    { unique: true, sparse: true, partialFilterExpression: { externalOrderId: { $type: 'string' } } }
-); // Deduplication for imported orders
+    { unique: true, sparse: true, partialFilterExpression: { externalOrderId: { $type: 'string' }, deletedAt: null } }
+); // Deduplication for imported orders (excludes soft-deleted so reimport works)
 
 orderSchema.index({ tenant: 1, createdAt: -1 }); // Date-range analytics & daily rollup
 orderSchema.index({ tenant: 1, status: 1, createdAt: -1 }); // Status-filtered date-sorted queries
