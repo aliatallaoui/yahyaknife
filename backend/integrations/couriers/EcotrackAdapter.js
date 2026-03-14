@@ -1,9 +1,11 @@
 /**
  * EcotrackAdapter — concrete CourierAdapter for the ECOTRACK logistics API.
  *
- * All ECOTRACK-specific payload mapping and API calls are isolated here.
- * Replace this file (or add a new adapter) to support another courier without
- * touching any business logic.
+ * Supports two modes:
+ *   1. Per-courier (new EcotrackAdapter(courier)) — uses Courier model credentials directly.
+ *      Used by dispatch flow where each courier has its own apiBaseUrl + apiToken.
+ *   2. Singleton (require('./EcotrackAdapter')) — uses CourierSetting via ecotrackRequest.
+ *      Used by tracker sync and other background operations.
  *
  * Ecotrack API reference:
  *   Base: {apiUrl}/api/v1/...
@@ -11,10 +13,59 @@
  *   Most endpoints use query parameters (not JSON body), except create/batch.
  */
 
+const axios = require('axios');
 const CourierAdapter = require('./CourierAdapter');
 const { ecotrackRequest } = require('../../utils/ecotrackRequest');
+const logger = require('../../shared/logger');
 
 class EcotrackAdapter extends CourierAdapter {
+    /**
+     * @param {object} [courier] - Optional Courier document with apiBaseUrl, apiToken, authType.
+     *                             When provided, uses courier credentials directly.
+     *                             When omitted, falls back to ecotrackRequest (CourierSetting).
+     */
+    constructor(courier) {
+        super();
+        this.courier = courier || null;
+    }
+
+    /**
+     * Make a direct API call using the Courier model's credentials.
+     * Bypasses CourierSetting/ecotrackRequest entirely.
+     */
+    async _directRequest(method, endpoint, data = null) {
+        const courier = this.courier;
+        if (!courier || !courier.apiBaseUrl || !courier.apiToken) {
+            throw new Error('Ecotrack API credentials are not configured on this courier.');
+        }
+
+        const baseUrl = courier.apiBaseUrl.replace(/\/+$/, '');
+        const headers = courier.authType === 'API Key'
+            ? { 'x-api-key': courier.apiToken, 'Content-Type': 'application/json', Accept: 'application/json' }
+            : { Authorization: `Bearer ${courier.apiToken}`, 'Content-Type': 'application/json', Accept: 'application/json' };
+
+        const config = { method, url: `${baseUrl}${endpoint}`, headers, timeout: 15000 };
+        if (data) config.data = data;
+
+        try {
+            const response = await axios(config);
+            return response.data;
+        } catch (error) {
+            logger.error({ method, endpoint, responseData: error.response?.data }, 'ECOTRACK Direct API Error');
+            throw error;
+        }
+    }
+
+    /**
+     * Route to direct or CourierSetting-based request depending on adapter mode.
+     */
+    async _request(method, endpoint, data = null, tenantId = null) {
+        if (this.courier) {
+            return this._directRequest(method, endpoint, data);
+        }
+        return ecotrackRequest(method, endpoint, data, tenantId);
+    }
+
     /**
      * Maps internal shipment fields to ECOTRACK's required payload format.
      */
@@ -44,13 +95,12 @@ class EcotrackAdapter extends CourierAdapter {
     /**
      * Create a shipment on ECOTRACK.
      * POST /api/v1/create/order (JSON body)
-     * Response: { success: true, tracking: "ECXXXXXX" }
      * @param {object} payload
      * @param {string|ObjectId} [tenantId]
      * @returns {{ trackingId: string }}
      */
     async createShipment(payload, tenantId) {
-        const response = await ecotrackRequest('POST', '/api/v1/create/order', payload, tenantId);
+        const response = await this._request('POST', '/api/v1/create/order', payload, tenantId);
         const trackingId = response?.tracking || response?.tracking_id;
         if (!trackingId) {
             throw new Error('ECOTRACK did not return a tracking ID');
@@ -61,44 +111,36 @@ class EcotrackAdapter extends CourierAdapter {
     /**
      * Validate / request pickup.
      * POST /api/v1/valid/order?tracking=X&ask_collection=Y
-     * @param {string} trackingId
-     * @param {{ askCollection?: number, tenantId?: string }} [options]
      */
     async validateShipment(trackingId, { askCollection = 1, tenantId } = {}) {
-        await ecotrackRequest('POST', `/api/v1/valid/order?tracking=${trackingId}&ask_collection=${askCollection}`, null, tenantId);
+        await this._request('POST', `/api/v1/valid/order?tracking=${trackingId}&ask_collection=${askCollection}`, null, tenantId);
     }
 
     /**
      * Cancel/delete a shipment.
      * DELETE /api/v1/delete/order?tracking=X
-     * @param {string} trackingId
-     * @param {string|ObjectId} [tenantId]
      */
     async cancelShipment(trackingId, tenantId) {
-        await ecotrackRequest('DELETE', `/api/v1/delete/order?tracking=${encodeURIComponent(trackingId)}`, null, tenantId);
+        await this._request('DELETE', `/api/v1/delete/order?tracking=${encodeURIComponent(trackingId)}`, null, tenantId);
     }
 
     /**
      * Request a return for an in-transit shipment.
      * POST /api/v1/ask/for/order/return?tracking=X
-     * @param {string} trackingId
-     * @param {string|ObjectId} [tenantId]
      */
     async requestReturn(trackingId, tenantId) {
-        await ecotrackRequest('POST', `/api/v1/ask/for/order/return?tracking=${encodeURIComponent(trackingId)}`, null, tenantId);
+        await this._request('POST', `/api/v1/ask/for/order/return?tracking=${encodeURIComponent(trackingId)}`, null, tenantId);
     }
 
     /**
      * Get the label URL for a shipment.
      * GET /api/v1/get/order/label?tracking=X (returns PDF directly with Bearer auth)
-     *
-     * Since the Ecotrack label endpoint returns a PDF binary (requires auth),
-     * we construct the full URL. The dispatch controller proxies the download.
-     * @param {string} trackingId
-     * @param {string|ObjectId} [tenantId]
-     * @returns {string} Full URL to the label PDF
      */
     async getLabelUrl(trackingId, tenantId) {
+        if (this.courier) {
+            const baseUrl = this.courier.apiBaseUrl.replace(/\/+$/, '');
+            return `${baseUrl}/api/v1/get/order/label?tracking=${encodeURIComponent(trackingId)}`;
+        }
         const CourierSetting = require('../../models/CourierSetting');
         const query = { providerName: 'ECOTRACK' };
         if (tenantId) query.tenant = tenantId;
@@ -110,25 +152,17 @@ class EcotrackAdapter extends CourierAdapter {
     /**
      * Fetch delivery fees for all wilayas from ECOTRACK.
      * GET /api/v1/get/fees
-     * Response: { livraison: [...], pickup: [...], echange: [...], recouvrement: [...], retours: [...] }
-     * Each entry: { wilaya_id, tarif, tarif_stopdesk }
-     * @param {string|ObjectId} [tenantId]
-     * @returns {object} Raw fees response with service type arrays
      */
     async fetchFees(tenantId) {
-        const response = await ecotrackRequest('GET', '/api/v1/get/fees', null, tenantId);
-        return response;
+        return this._request('GET', '/api/v1/get/fees', null, tenantId);
     }
 
     /**
      * Fetch current tracking status from ECOTRACK (single tracking).
      * GET /api/v1/get/tracking/info?tracking=X
-     * @param {string} trackingId
-     * @param {string|ObjectId} [tenantId]
-     * @returns {{ status: string, rawData: object }}
      */
     async getTrackingStatus(trackingId, tenantId) {
-        const response = await ecotrackRequest('GET', `/api/v1/get/tracking/info?tracking=${encodeURIComponent(trackingId)}`, null, tenantId);
+        const response = await this._request('GET', `/api/v1/get/tracking/info?tracking=${encodeURIComponent(trackingId)}`, null, tenantId);
         return {
             status: response?.status || response?.current_status || null,
             rawData: response,
@@ -138,14 +172,10 @@ class EcotrackAdapter extends CourierAdapter {
     /**
      * Fetch statuses for multiple trackings in bulk (up to 100).
      * GET /api/v1/get/orders/status?trackings=X,Y,Z&status=all
-     * Response: { data: { "TRACKING": { status, order_id, activity: [...] } } }
-     * @param {string[]} trackingIds
-     * @param {string|ObjectId} [tenantId]
-     * @returns {object} Map of trackingId → { status, order_id, activity }
      */
     async getBulkStatus(trackingIds, tenantId) {
         const trackingsParam = trackingIds.join(',');
-        const response = await ecotrackRequest('GET', `/api/v1/get/orders/status?trackings=${encodeURIComponent(trackingsParam)}&status=all`, null, tenantId);
+        const response = await this._request('GET', `/api/v1/get/orders/status?trackings=${encodeURIComponent(trackingsParam)}&status=all`, null, tenantId);
         return response?.data || {};
     }
 }
@@ -223,9 +253,9 @@ EcotrackAdapter.mapStatusToInternal = (courierStatus, currentShipment) => {
     return { newShipmentStatus, newPaymentStatus, activityLog };
 };
 
+// Default singleton (no courier) — for tracker sync and backward compatibility
 const ecotrackSingleton = new EcotrackAdapter();
-
-// Expose mapStatusToInternal on the singleton for convenience
 ecotrackSingleton.mapStatusToInternal = EcotrackAdapter.mapStatusToInternal;
 
 module.exports = ecotrackSingleton;
+module.exports.EcotrackAdapter = EcotrackAdapter;

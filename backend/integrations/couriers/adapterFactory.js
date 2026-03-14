@@ -15,7 +15,8 @@
  *   3. Add the mapping below
  */
 
-const ecotrackAdapter = require('./EcotrackAdapter'); // Singleton
+const ecotrackSingleton = require('./EcotrackAdapter'); // Singleton (no courier)
+const { EcotrackAdapter } = require('./EcotrackAdapter');
 const YalidineAdapter = require('./YalidineAdapter');
 
 /**
@@ -26,23 +27,20 @@ const YalidineAdapter = require('./YalidineAdapter');
  * @throws {Error} if courier has no API integration or unknown provider
  */
 function getAdapter(courier) {
-    // No courier assigned or manual integration → fall back to Ecotrack global
+    // No courier assigned or manual integration → fall back to Ecotrack singleton
     if (!courier || courier.integrationType === 'Manual' || !courier.apiProvider) {
-        return ecotrackAdapter;
+        return ecotrackSingleton;
     }
 
     const provider = courier.apiProvider;
 
     switch (provider) {
         case 'Ecotrack':
-            return ecotrackAdapter;
+            // Per-courier instance — uses Courier model credentials directly
+            return new EcotrackAdapter(courier);
 
         case 'Yalidin':
             return new YalidineAdapter(courier);
-
-        // Future providers go here:
-        // case 'ZR Express':
-        //     return new ZRExpressAdapter(courier);
 
         default:
             throw new Error(`Unknown courier provider: "${provider}". Supported: Ecotrack, Yalidin.`);
@@ -68,7 +66,7 @@ function getStatusMapper(providerName) {
     const upper = (providerName || '').toUpperCase();
     switch (upper) {
         case 'ECOTRACK':
-            return ecotrackAdapter.mapStatusToInternal;
+            return ecotrackSingleton.mapStatusToInternal;
         case 'YALIDIN':
             return YalidineAdapter.mapStatusToInternal;
         default:
