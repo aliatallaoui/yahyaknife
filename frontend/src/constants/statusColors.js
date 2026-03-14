@@ -54,6 +54,30 @@ export const COD_STATUSES = [
 ];
 
 /**
+ * Valid status transitions — mirrors backend order.statemachine.js.
+ * Used to filter dropdown options so users can only select valid next statuses.
+ */
+export const VALID_TRANSITIONS = {
+    'New':                  ['Call 1', 'Call 2', 'Call 3', 'No Answer', 'Wrong Number', 'Postponed', 'Out of Coverage', 'Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Call 1':               ['Call 2', 'No Answer', 'Wrong Number', 'Postponed', 'Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Call 2':               ['Call 3', 'No Answer', 'Wrong Number', 'Postponed', 'Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Call 3':               ['No Answer', 'Wrong Number', 'Postponed', 'Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'No Answer':            ['Call 1', 'Call 2', 'Call 3', 'Postponed', 'Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Postponed':            ['Call 1', 'Call 2', 'Call 3', 'Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Wrong Number':         ['Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Out of Coverage':      ['Confirmed', 'Cancelled', 'Cancelled by Customer'],
+    'Cancelled by Customer':['Confirmed'],
+    'Confirmed':            ['Preparing', 'Cancelled'],
+    'Preparing':            ['Ready for Pickup', 'Cancelled'],
+    'Ready for Pickup':     ['Cancelled'],
+};
+
+/** Returns valid next statuses for the given current status. */
+export function getAllowedTransitions(currentStatus) {
+    return VALID_TRANSITIONS[currentStatus] || [];
+}
+
+/**
  * Translates an order status string using i18n.
  * Usage: getOrderStatusLabel(t, 'Confirmed') → 'مؤكد' (AR) or 'Confirmed' (EN)
  */

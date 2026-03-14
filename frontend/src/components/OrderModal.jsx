@@ -17,10 +17,16 @@ const getSafeCommunesForWilaya = (wilayaCode) => {
     if (!wilayaCode) return [];
     const w = leblad.getWilayaByCode(Number(wilayaCode));
     if (!w || !w.dairats) return [];
+    const seen = new Set();
     const communes = [];
     w.dairats.forEach(d => {
         if (d.baladyiats && Array.isArray(d.baladyiats)) {
-            communes.push(...d.baladyiats);
+            d.baladyiats.forEach(b => {
+                if (!seen.has(b.code)) {
+                    seen.add(b.code);
+                    communes.push(b);
+                }
+            });
         }
     });
     return communes.sort((a, b) => a.name.localeCompare(b.name));

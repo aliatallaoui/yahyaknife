@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { fmtShortDateTime, fmtFullDateTime, diffHours } from '../../utils/dateUtils';
 import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2, Copy } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
-import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../../constants/statusColors';
+import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel, getAllowedTransitions } from '../../constants/statusColors';
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -224,15 +224,11 @@ const OrderRow = React.memo(({
                                                 )}
                                                 style={SELECT_ARROW_STYLE}
                                             >
-                                                {COD_STATUSES.filter(s => {
-                                                    if (activeStage === 'pre-dispatch') {
-                                                        return ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Cancelled by Customer', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Cancelled'].includes(s);
-                                                    }
-                                                    if (activeStage === 'returns') {
-                                                        return ['Refused', 'Returned', 'New', 'Confirmed'].includes(s);
-                                                    }
-                                                    return true; // 'all' stage shows everything
-                                                }).map(s => (
+                                                {(() => {
+                                                    const allowed = getAllowedTransitions(order.status);
+                                                    // Include current status + valid transitions only
+                                                    return [order.status, ...allowed];
+                                                })().map(s => (
                                                     <option key={s} value={s} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-bold">
                                                         {getOrderStatusLabel(t, s)}
                                                     </option>

@@ -255,7 +255,7 @@ export default function CourierDetails() {
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                             {activeTab === 'api' && <CourierApiSettings courier={courier} setCourier={setCourier} onSave={handleSave} saving={saving} />}
                             {activeTab === 'coverage' && <CourierCoverageMap courierId={courier._id} />}
-                            {activeTab === 'pricing' && <CourierPricingEngine courierId={courier._id} />}
+                            {activeTab === 'pricing' && <CourierPricingEngine courierId={courier._id} courier={courier} />}
                             {activeTab === 'mapping' && <CourierStatusMapping courier={courier} setCourier={setCourier} />}
                         </div>
                     )}

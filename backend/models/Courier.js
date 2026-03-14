@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const courierSchema = new mongoose.Schema({
     tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
     name: { type: String, required: true },
-    phone: { type: String, required: true },
+    phone: { type: String, default: '' },
     logo: { type: String }, // URL or path
     status: { type: String, enum: ['Active', 'Inactive', 'On Leave'], default: 'Active' },
     

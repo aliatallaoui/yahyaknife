@@ -38,7 +38,10 @@ exports.createCourier = async (req, res) => {
         res.status(201).json(response);
     } catch (error) {
         logger.error({ err: error }, 'Error creating courier');
-        res.status(400).json({ error: 'Invalid courier data' });
+        const msg = error.name === 'ValidationError'
+            ? Object.values(error.errors).map(e => e.message).join(', ')
+            : 'Invalid courier data';
+        res.status(400).json({ message: msg });
     }
 };
 

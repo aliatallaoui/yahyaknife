@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Edit3, ShieldAlert, ArrowDownUp, AlertTriangle, Save } from 'lucide-react';
+import { Plus, Trash2, Edit3, ShieldAlert, ArrowDownUp, AlertTriangle, Save, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 import { useConfirmDialog } from '../ConfirmDialog';
 
-export default function CourierPricingEngine({ courierId }) {
+export default function CourierPricingEngine({ courierId, courier }) {
     const { t, i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
 
@@ -13,6 +13,8 @@ export default function CourierPricingEngine({ courierId }) {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [syncing, setSyncing] = useState(false);
+    const [syncResult, setSyncResult] = useState('');
     const { dialog: confirmDialogEl, confirm: showConfirm } = useConfirmDialog();
     
     // Form state
@@ -123,6 +125,29 @@ export default function CourierPricingEngine({ courierId }) {
         setIsEditing(false);
     };
 
+    const isYalidine = courier && courier.apiProvider && courier.apiProvider.toLowerCase() === 'yalidin';
+
+    const handleSyncPricing = async () => {
+        setSyncing(true);
+        setSyncResult('');
+        setErrorMsg('');
+        try {
+            const res = await apiFetch(`/api/couriers/${courierId}/pricing/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || 'Sync failed');
+            setSyncResult(json.message || `Synced ${json.count} rules.`);
+            fetchRules();
+        } catch (error) {
+            setErrorMsg(error.message || 'Failed to sync pricing from Yalidine.');
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     if (loading) return <div className="p-8 text-center text-gray-500 dark:text-gray-400">{t('common.loading', 'Loading...')}</div>;
 
     return (
@@ -135,6 +160,12 @@ export default function CourierPricingEngine({ courierId }) {
                     <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
                 </div>
             )}
+            {syncResult && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-sm font-semibold text-green-700 dark:text-green-400">
+                    <span className="flex-1">{syncResult}</span>
+                    <button onClick={() => setSyncResult('')} className="text-green-400 hover:text-green-600">&#10005;</button>
+                </div>
+            )}
             {confirmDialogEl}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4 flex gap-3 text-start">
                 <ShieldAlert className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
@@ -145,6 +176,24 @@ export default function CourierPricingEngine({ courierId }) {
                     </p>
                 </div>
             </div>
+
+            {isYalidine && (
+                <button
+                    onClick={handleSyncPricing}
+                    disabled={syncing}
+                    className={clsx(
+                        "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors",
+                        syncing
+                            ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    )}
+                >
+                    <RefreshCw className={clsx("w-4 h-4", syncing && "animate-spin")} />
+                    {syncing
+                        ? t('couriers.syncingPricing', 'Syncing prices from Yalidine...')
+                        : t('couriers.syncPricing', 'Sync Pricing from Yalidine API')}
+                </button>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
