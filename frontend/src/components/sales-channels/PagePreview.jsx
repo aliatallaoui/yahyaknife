@@ -36,9 +36,10 @@ export default function PagePreview({ page, blocks, previewMode }) {
 
       {visibleBlocks.length === 0 && (
         <div className="flex items-center justify-center h-96 text-gray-400">
-          <div className="text-center">
-            <Package className="w-16 h-16 mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-medium">Add blocks to build your page</p>
+          <div className="text-center px-6">
+            <Package className="w-16 h-16 mx-auto mb-3 opacity-20" />
+            <p className="text-sm font-semibold text-gray-500">Your page is empty</p>
+            <p className="text-xs text-gray-400 mt-1">Click "Add Block" in the left panel to start building your landing page</p>
           </div>
         </div>
       )}

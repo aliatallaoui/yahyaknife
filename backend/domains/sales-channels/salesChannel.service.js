@@ -16,23 +16,32 @@ const CourierPricing = require('../../models/CourierPricing');
 const Courier = require('../../models/Courier');
 const Customer = require('../../models/Customer');
 const Order = require('../../models/Order');
+const SalesChannelProductMapping = require('../../models/SalesChannelProductMapping');
+const SalesChannelSyncLog = require('../../models/SalesChannelSyncLog');
 const AppError = require('../../shared/errors/AppError');
 const logger = require('../../shared/logger');
 const { createOrder } = require('../orders/order.service');
 const cacheService = require('../../services/cacheService');
+const { getCommunesForWilaya } = require('../../shared/constants/algeriaCommunes');
+const { encryptSensitiveKeys, decryptSensitiveKeys } = require('../../shared/utils/credentialEncryption');
+const { getStoreAdapter, isStoreChannel } = require('../../integrations/stores/storeAdapterFactory');
+const { importOrderBatch } = require('./orderImport.service');
+const { eventBus, EVENTS } = require('../../shared/events/eventBus');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function slugify(text) {
-    return text
+    let slug = text
         .toString()
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
+        .replace(/[^\p{L}\p{N}_-]+/gu, '')
         .replace(/--+/g, '-')
         .replace(/^-+|-+$/g, '')
         .substring(0, 80);
+    if (!slug) slug = crypto.randomBytes(4).toString('hex');
+    return slug;
 }
 
 function generateOrderId(tenantId) {
@@ -50,7 +59,7 @@ function hashIp(ip) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 exports.createChannel = async ({ tenantId, body }) => {
-    const { name, description, domain, pixels, branding, defaultCourier } = body;
+    const { name, description, channelType, config, domain, pixels, branding, defaultCourier } = body;
 
     if (!name) throw AppError.validationFailed({ name: 'Channel name is required' });
 
@@ -58,17 +67,34 @@ exports.createChannel = async ({ tenantId, body }) => {
     const existing = await SalesChannel.findOne({ tenant: tenantId, slug, deletedAt: null });
     if (existing) throw AppError.conflict('A channel with this name already exists', 'DUPLICATE_CHANNEL');
 
-    // Validate subdomain uniqueness globally
-    const subdomain = domain?.subdomain || slug;
-    const subdomainTaken = await SalesChannel.findOne({ 'domain.subdomain': subdomain, deletedAt: null });
-    if (subdomainTaken) throw AppError.conflict('This subdomain is already taken', 'SUBDOMAIN_TAKEN');
+    const type = channelType || 'landing_page';
+    const isStore = isStoreChannel(type);
+
+    // For landing pages, validate subdomain uniqueness
+    let subdomain;
+    if (type === 'landing_page') {
+        subdomain = domain?.subdomain || slug;
+        const subdomainTaken = await SalesChannel.findOne({ 'domain.subdomain': subdomain, deletedAt: null });
+        if (subdomainTaken) throw AppError.conflict('This subdomain is already taken', 'SUBDOMAIN_TAKEN');
+    }
+
+    // Encrypt sensitive config keys for store channels
+    const encryptedConfig = config ? encryptSensitiveKeys(config) : new Map();
 
     const channel = await SalesChannel.create({
         tenant: tenantId,
         name,
         slug,
         description,
-        domain: { type: domain?.type || 'subdomain', subdomain, customDomain: domain?.customDomain },
+        channelType: type,
+        config: encryptedConfig,
+        integration: {
+            status: isStore ? 'pending_setup' : 'connected',
+            syncEnabled: isStore,
+        },
+        domain: type === 'landing_page'
+            ? { type: domain?.type || 'subdomain', subdomain, customDomain: domain?.customDomain }
+            : undefined,
         pixels: pixels || {},
         branding: branding || {},
         defaultCourier: defaultCourier || null
@@ -77,9 +103,13 @@ exports.createChannel = async ({ tenantId, body }) => {
     return channel;
 };
 
-exports.listChannels = async ({ tenantId }) => {
-    return SalesChannel.find({ tenant: tenantId, deletedAt: null })
+exports.listChannels = async ({ tenantId, channelType }) => {
+    const filter = { tenant: tenantId, deletedAt: null };
+    if (channelType) filter.channelType = channelType;
+
+    return SalesChannel.find(filter)
         .sort({ createdAt: -1 })
+        .limit(200)
         .lean();
 };
 
@@ -97,6 +127,21 @@ exports.updateChannel = async ({ tenantId, channelId, body }) => {
     }
 
     if (update.name) update.slug = slugify(update.name);
+
+    // Handle config updates (encrypt sensitive keys)
+    if (body.config) {
+        update.config = encryptSensitiveKeys(body.config);
+    }
+
+    // Handle integration settings
+    if (body.integration) {
+        const allowed = ['syncEnabled'];
+        for (const key of allowed) {
+            if (body.integration[key] !== undefined) {
+                update[`integration.${key}`] = body.integration[key];
+            }
+        }
+    }
 
     const channel = await SalesChannel.findOneAndUpdate(
         { _id: channelId, tenant: tenantId, deletedAt: null },
@@ -171,6 +216,7 @@ exports.listPages = async ({ tenantId, channelId, status }) => {
     return LandingPage.find(filter)
         .populate('product', 'name images')
         .sort({ createdAt: -1 })
+        .limit(500)
         .lean();
 };
 
@@ -184,14 +230,18 @@ exports.getPage = async ({ tenantId, pageId }) => {
 
 exports.updatePage = async ({ tenantId, pageId, body }) => {
     const ALLOWED = [
-        'title', 'seo', 'blocks', 'productOverrides', 'variantDisplay',
+        'title', 'slug', 'seo', 'blocks', 'productOverrides', 'variantDisplay',
         'formConfig', 'theme', 'pixels', 'status'
     ];
     const update = {};
     for (const key of ALLOWED) {
         if (body[key] !== undefined) update[key] = body[key];
     }
-    if (update.title) update.slug = slugify(update.title);
+    if (update.slug) {
+        update.slug = slugify(update.slug);
+    } else if (update.title) {
+        update.slug = slugify(update.title);
+    }
 
     const page = await LandingPage.findOneAndUpdate(
         { _id: pageId, tenant: tenantId, deletedAt: null },
@@ -429,30 +479,41 @@ exports.previewPage = async ({ tenantId, channelId, pageId }) => {
 exports.getStorefrontCoverage = async ({ tenantId, wilayaCode }) => {
     // Find active couriers for tenant
     const couriers = await Courier.find({ tenant: tenantId, status: 'Active' }).select('_id name').lean();
-    if (!couriers.length) return [];
 
-    const courierIds = couriers.map(c => c._id);
-    const coverage = await CourierCoverage.find({
-        courierId: { $in: courierIds },
-        wilayaCode: String(wilayaCode),
-        tenant: tenantId
-    }).lean();
-
-    // Group by commune
-    const communeMap = {};
-    for (const cov of coverage) {
-        if (!communeMap[cov.commune]) {
-            communeMap[cov.commune] = {
-                commune: cov.commune,
-                homeSupported: false,
-                officeSupported: false
-            };
-        }
-        if (cov.homeSupported) communeMap[cov.commune].homeSupported = true;
-        if (cov.officeSupported) communeMap[cov.commune].officeSupported = true;
+    let coverage = [];
+    if (couriers.length) {
+        const courierIds = couriers.map(c => c._id);
+        coverage = await CourierCoverage.find({
+            courierId: { $in: courierIds },
+            wilayaCode: String(wilayaCode),
+            tenant: tenantId
+        }).lean();
     }
 
-    return Object.values(communeMap);
+    if (coverage.length) {
+        // Group by commune from CourierCoverage records
+        const communeMap = {};
+        for (const cov of coverage) {
+            if (!communeMap[cov.commune]) {
+                communeMap[cov.commune] = {
+                    commune: cov.commune,
+                    homeSupported: false,
+                    officeSupported: false
+                };
+            }
+            if (cov.homeSupported) communeMap[cov.commune].homeSupported = true;
+            if (cov.officeSupported) communeMap[cov.commune].officeSupported = true;
+        }
+        return Object.values(communeMap);
+    }
+
+    // Fallback: no CourierCoverage records — return all communes from local data
+    const communes = getCommunesForWilaya(wilayaCode);
+    return communes.map(name => ({
+        commune: name,
+        homeSupported: true,
+        officeSupported: false
+    }));
 };
 
 /**
@@ -470,7 +531,7 @@ exports.calculateStorefrontDeliveryPrice = async ({ tenantId, channelId, wilayaC
 
     if (!courierId) return { price: null, courier: null };
 
-    const rules = await CourierPricing.find({ courierId, tenant: tenantId }).sort({ priority: -1 }).lean();
+    const rules = await CourierPricing.find({ courierId, tenant: tenantId }).sort({ priority: -1 }).limit(500).lean();
     let matched = null;
 
     for (const rule of rules) {
@@ -743,6 +804,7 @@ exports.getChannelAnalytics = async ({ tenantId, channelId, from, to }) => {
         LandingPage.find({ salesChannel: channel._id, deletedAt: null })
             .select('title slug stats status')
             .sort({ 'stats.orders': -1 })
+            .limit(200)
             .lean()
     ]);
 
@@ -757,4 +819,285 @@ exports.getChannelAnalytics = async ({ tenantId, channelId, from, to }) => {
         events,
         pages: pagePerformance
     };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  STORE INTEGRATION METHODS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Test connection to an external store.
+ */
+exports.testConnection = async ({ tenantId, channelId }) => {
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+    if (!isStoreChannel(channel.channelType)) {
+        throw AppError.validationFailed({ channelType: 'This channel type does not support connection testing' });
+    }
+
+    const decryptedConfig = decryptSensitiveKeys(channel.config);
+    const adapter = getStoreAdapter(channel, decryptedConfig);
+    const result = await adapter.testConnection();
+
+    // Update integration status
+    await SalesChannel.updateOne(
+        { _id: channelId, tenant: tenantId },
+        {
+            $set: {
+                'integration.status': result.success ? 'connected' : 'error',
+                'integration.lastError': result.success ? null : result.message,
+            }
+        }
+    );
+
+    // Log the test
+    await SalesChannelSyncLog.create({
+        tenant: tenantId,
+        salesChannel: channelId,
+        syncType: 'test_connection',
+        status: result.success ? 'success' : 'failed',
+        errors: result.success ? [] : [{ message: result.message }],
+    });
+
+    if (!result.success) {
+        eventBus.emit(EVENTS.STORE_CONNECTION_ERROR, { tenantId, salesChannelId: channelId, error: result.message });
+    }
+
+    return result;
+};
+
+/**
+ * Register webhooks on the external store.
+ */
+exports.registerWebhooks = async ({ tenantId, channelId }) => {
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+    if (!isStoreChannel(channel.channelType)) {
+        throw AppError.validationFailed({ channelType: 'This channel type does not support webhooks' });
+    }
+
+    const decryptedConfig = decryptSensitiveKeys(channel.config);
+    const adapter = getStoreAdapter(channel, decryptedConfig);
+
+    // Build callback URL
+    const baseUrl = process.env.API_BASE_URL || `${process.env.BASE_URL || 'http://localhost:5000'}`;
+    const callbackUrl = `${baseUrl}/api/integrations/webhooks/${channelId}/${channel.channelType}`;
+
+    // Remove existing webhooks first
+    if (channel.integration?.webhookId) {
+        try {
+            await adapter.removeWebhook(channel.integration.webhookId);
+        } catch (err) {
+            logger.warn({ err, channelId }, 'Failed to remove existing webhooks');
+        }
+    }
+
+    const result = await adapter.registerWebhook(callbackUrl);
+
+    await SalesChannel.updateOne(
+        { _id: channelId, tenant: tenantId },
+        {
+            $set: {
+                'integration.webhookId': result.webhookId,
+                'integration.status': 'connected',
+            }
+        }
+    );
+
+    // If webhook returned a secret, store it encrypted
+    if (result.secret) {
+        const configUpdate = encryptSensitiveKeys({ webhookSecret: result.secret });
+        await SalesChannel.updateOne(
+            { _id: channelId, tenant: tenantId },
+            { $set: { 'config.webhookSecret': configUpdate.get('webhookSecret') } }
+        );
+    }
+
+    return { message: 'Webhooks registered successfully', webhookId: result.webhookId };
+};
+
+/**
+ * Manually sync orders from an external store (polling).
+ */
+exports.syncOrders = async ({ tenantId, channelId, since }) => {
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+    if (!isStoreChannel(channel.channelType)) {
+        throw AppError.validationFailed({ channelType: 'This channel type does not support order sync' });
+    }
+
+    const decryptedConfig = decryptSensitiveKeys(channel.config);
+    const adapter = getStoreAdapter(channel, decryptedConfig);
+
+    // Default: sync orders from last 24h or last sync time
+    const syncSince = since
+        ? new Date(since)
+        : (channel.integration?.lastSyncAt || new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+    // Fetch orders page by page
+    const allOrders = [];
+    let page = 1;
+    let hasMore = true;
+    const maxPages = 20; // Safety limit
+
+    while (hasMore && page <= maxPages) {
+        const result = await adapter.fetchOrders({ since: syncSince, page, perPage: 50 });
+        const normalized = result.orders.map(o => adapter.normalizeOrder(o));
+        allOrders.push(...normalized);
+        hasMore = result.hasMore;
+        page++;
+    }
+
+    if (allOrders.length === 0) {
+        // Update sync time even if no orders
+        await SalesChannel.updateOne(
+            { _id: channelId, tenant: tenantId },
+            { $set: { 'integration.lastSyncAt': new Date() } }
+        );
+        return { imported: 0, skipped: 0, errors: [], total: 0 };
+    }
+
+    // Import through the batch pipeline
+    const result = await importOrderBatch({
+        tenantId,
+        salesChannelId: channelId,
+        normalizedOrders: allOrders,
+        importMethod: 'sync',
+        syncType: 'poll_sync',
+    });
+
+    return { ...result, total: allOrders.length };
+};
+
+/**
+ * Get sync logs for a channel.
+ */
+exports.getSyncLogs = async ({ tenantId, channelId, page = 1, limit = 20 }) => {
+    const skip = (page - 1) * Math.min(limit, 100);
+    const [logs, total] = await Promise.all([
+        SalesChannelSyncLog.find({ tenant: tenantId, salesChannel: channelId })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Math.min(limit, 100))
+            .lean(),
+        SalesChannelSyncLog.countDocuments({ tenant: tenantId, salesChannel: channelId }),
+    ]);
+    return { logs, total, page, limit };
+};
+
+/**
+ * Get channel health summary for the integration dashboard.
+ */
+exports.getChannelHealthSummary = async ({ tenantId }) => {
+    const channels = await SalesChannel.find({ tenant: tenantId, deletedAt: null })
+        .select('name slug channelType status integration stats defaultCourier branding.primaryColor')
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .lean();
+
+    // Get today's import counts per channel
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayImports = await SalesChannelSyncLog.aggregate([
+        {
+            $match: {
+                tenant: tenantId,
+                createdAt: { $gte: todayStart },
+            }
+        },
+        {
+            $group: {
+                _id: '$salesChannel',
+                ordersToday: { $sum: '$ordersImported' },
+                errorsToday: { $sum: { $size: '$errors' } },
+            }
+        }
+    ]);
+
+    const importMap = {};
+    for (const row of todayImports) {
+        importMap[row._id.toString()] = row;
+    }
+
+    return channels.map(ch => ({
+        ...ch,
+        ordersToday: importMap[ch._id.toString()]?.ordersToday || 0,
+        errorsToday: importMap[ch._id.toString()]?.errorsToday || 0,
+    }));
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PRODUCT MAPPING CRUD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+exports.getProductMappings = async ({ tenantId, channelId }) => {
+    return SalesChannelProductMapping.find({
+        tenant: tenantId,
+        salesChannel: channelId,
+        deletedAt: null,
+    })
+        .populate('internalVariant', 'sku attributes price')
+        .populate('internalProduct', 'name')
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .lean();
+};
+
+exports.createProductMapping = async ({ tenantId, channelId, body }) => {
+    const { externalProductId, externalVariantId, externalProductName, externalSku, internalVariant, internalProduct } = body;
+
+    if (!externalProductId || !internalVariant) {
+        throw AppError.validationFailed({ fields: 'externalProductId and internalVariant are required' });
+    }
+
+    // Verify channel exists
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+
+    // Verify variant belongs to tenant
+    const variant = await ProductVariant.findOne({ _id: internalVariant, tenant: tenantId });
+    if (!variant) throw AppError.notFound('Product Variant');
+
+    const mapping = await SalesChannelProductMapping.create({
+        tenant: tenantId,
+        salesChannel: channelId,
+        externalProductId,
+        externalVariantId: externalVariantId || null,
+        externalProductName: externalProductName || null,
+        externalSku: externalSku || null,
+        internalVariant,
+        internalProduct: internalProduct || variant.productId,
+    });
+
+    return mapping;
+};
+
+exports.deleteProductMapping = async ({ tenantId, channelId, mappingId }) => {
+    const mapping = await SalesChannelProductMapping.findOneAndUpdate(
+        { _id: mappingId, tenant: tenantId, salesChannel: channelId, deletedAt: null },
+        { $set: { deletedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+    if (!mapping) throw AppError.notFound('Product Mapping');
+    return mapping;
+};
+
+/**
+ * Fetch products from the external store (for mapping).
+ */
+exports.fetchExternalProducts = async ({ tenantId, channelId, page = 1 }) => {
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+    if (!isStoreChannel(channel.channelType)) {
+        throw AppError.validationFailed({ channelType: 'This channel type does not support product fetching' });
+    }
+
+    const decryptedConfig = decryptSensitiveKeys(channel.config);
+    const adapter = getStoreAdapter(channel, decryptedConfig);
+    const result = await adapter.fetchProducts({ page, perPage: 50 });
+
+    // Normalize products for display
+    const products = result.products.map(p => adapter.normalizeProduct(p));
+    return { products, hasMore: result.hasMore };
 };
