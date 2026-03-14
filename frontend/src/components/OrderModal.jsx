@@ -188,9 +188,9 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 String(c.wilayaCode) === wCode
             );
 
-            // For Stop Desk: only communes with has_stop_desk / officeDelivery
+            // For Stop Desk: only communes where officeSupported is true
             if (store.shippingDeliveryType === 1) {
-                wilayaCoverage = wilayaCoverage.filter(c => c.officeDelivery || c.has_stop_desk);
+                wilayaCoverage = wilayaCoverage.filter(c => c.officeSupported);
             }
 
             if (wilayaCoverage.length > 0) {

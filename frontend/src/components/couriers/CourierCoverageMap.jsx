@@ -102,7 +102,7 @@ export default function CourierCoverageMap({ courierId }) {
                     if (!res.ok) throw new Error(json.message || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
                     const data = json.data ?? json;
                     setSuccessMsg(data.message || 'Sync successful');
-                    fetchCoverage();
+                    await fetchCoverage();
                 } catch (error) {
                     setErrorMsg(error.message || t('couriers.syncCoverageFailed', 'Error syncing coverage. Check API credentials.'));
                 } finally {

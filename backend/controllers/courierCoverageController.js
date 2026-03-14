@@ -18,7 +18,7 @@ exports.getCoverage = async (req, res) => {
         const coverage = await CourierCoverage.find({ courierId: id, tenant: req.user.tenant })
             .sort({ wilayaCode: 1, commune: 1 })
             .lean();
-        res.json(coverage);
+        res.json({ data: coverage });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching courier coverage');
         res.status(500).json({ error: 'Server Error' });
@@ -97,49 +97,39 @@ exports.syncEcotrackCoverage = async (req, res) => {
             
             const baseUrl = 'https://api.yalidine.app/v1';
             
-            let currentUrl = `${baseUrl}/communes`;
-            let hasMore = true;
-            
             const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
             let currentPage = 1;
+            let lastPage = 1;
 
-            while (hasMore) {
-                logger.info({ page: currentPage, url: currentUrl }, '[Yalidin Sync] Fetching page');
-                const requestHeaders = {
-                    'X-API-ID': courier.apiId,
-                    'X-API-TOKEN': courier.apiToken,
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                };
-                
-                const communesRes = await axios.get(`${currentUrl}?page=${currentPage}`, {
-                    headers: requestHeaders
+            do {
+                logger.info({ page: currentPage }, '[Yalidin Sync] Fetching communes page');
+                const communesRes = await axios.get(`${baseUrl}/communes/?page=${currentPage}`, {
+                    headers: {
+                        'X-API-ID': courier.apiId,
+                        'X-API-TOKEN': courier.apiToken,
+                        'Accept': 'application/json'
+                    }
                 });
 
                 const pageData = communesRes.data;
+                // Yalidine uses Laravel pagination: { data: [...], current_page, last_page }
                 const communes = pageData?.data;
-                
-                if (Array.isArray(communes)) {
-                    if (communes.length === 0) {
-                        hasMore = false;
-                        break;
-                    }
-                    
+                if (pageData?.last_page) lastPage = pageData.last_page;
+
+                if (Array.isArray(communes) && communes.length > 0) {
                     for (const c of communes) {
-                        const wilayaId = c.wilaya_id;
-                        const communeName = c.name;
-                        
-                        let homeSupported = true;
-                        let officeSupported = (c.has_stop_desk == 1 || c.has_stop_desk === true) ? true : false;
-    
                         operations.push({
                             updateOne: {
-                                filter: { courierId: id, wilayaCode: wilayaId.toString(), commune: communeName, tenant: req.user.tenant },
+                                filter: {
+                                    courierId: id,
+                                    wilayaCode: String(c.wilaya_id),
+                                    commune: c.name,
+                                    tenant: req.user.tenant
+                                },
                                 update: {
                                     $set: {
-                                        homeSupported,
-                                        officeSupported,
+                                        homeSupported: true,
+                                        officeSupported: !!(c.has_stop_desk == 1 || c.has_stop_desk === true),
                                         tenant: req.user.tenant
                                     }
                                 },
@@ -148,17 +138,13 @@ exports.syncEcotrackCoverage = async (req, res) => {
                         });
                         totalAddedOrUpdated++;
                     }
-                } else {
-                     return res.status(400).json({ message: 'Invalid response from Yalidin API for communes.' });
+                } else if (!Array.isArray(communes)) {
+                    return res.status(400).json({ message: 'Invalid response from Yalidin API for communes.' });
                 }
-                
-                hasMore = pageData?.has_more === true;
-                if (hasMore) {
-                    currentPage++;
-                    // Rate Limit Protection: 5 req / sec = 200ms min delay
-                    await delay(250);
-                }
-            }
+
+                currentPage++;
+                if (currentPage <= lastPage) await delay(250);
+            } while (currentPage <= lastPage);
 
         } else {
             // Ecotrack logic
