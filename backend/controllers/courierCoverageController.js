@@ -21,7 +21,7 @@ exports.getCoverage = async (req, res) => {
         res.json({ data: coverage });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching courier coverage');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load coverage areas. Please try again.' });
     }
 };
 
@@ -46,7 +46,7 @@ exports.upsertCoverage = async (req, res) => {
         res.status(200).json(updated);
     } catch (error) {
         logger.error({ err: error }, 'Error upserting courier coverage');
-        res.status(400).json({ error: 'Invalid coverage data' });
+        res.status(400).json({ message: 'Invalid coverage data. Please check the form.' });
     }
 };
 
@@ -67,7 +67,7 @@ exports.deleteCoverage = async (req, res) => {
         res.json({ message: 'Coverage area deleted successfully' });
     } catch (error) {
         logger.error({ err: error }, 'Error deleting courier coverage');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load coverage details. Please try again.' });
     }
 };
 
@@ -214,13 +214,11 @@ exports.syncEcotrackCoverage = async (req, res) => {
         }
 
         // Update last sync time
-        courier.lastSyncAt = new Date();
-        await courier.save();
+        await Courier.updateOne({ _id: id, tenant: req.user.tenant }, { $set: { lastSyncAt: new Date() } });
 
         res.json({ message: `Successfully synced ${totalAddedOrUpdated} coverage combinations.`, count: totalAddedOrUpdated });
     } catch (error) {
         logger.error({ err: error, responseData: error.response?.data, failedUrl: error.config?.url }, 'Coverage Sync Error');
-        const msg = error.response?.data?.message || error.message || 'Server Error';
-        res.status(500).json({ error: `Coverage sync failed: ${msg}` });
+        res.status(500).json({ message: 'Coverage sync failed. Please try again.' });
     }
 };

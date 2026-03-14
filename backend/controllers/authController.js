@@ -164,7 +164,7 @@ exports.registerUser = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Registration error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Registration failed. Please try again.' });
     }
 };
 
@@ -238,7 +238,7 @@ exports.loginUser = async (req, res) => {
         }
     } catch (error) {
         logger.error({ err: error }, 'Auth error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Login failed. Please try again.' });
     }
 };
 
@@ -299,7 +299,7 @@ exports.getMe = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Auth error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load profile. Please try again.' });
     }
 };
 
@@ -313,7 +313,7 @@ exports.forgotPassword = async (req, res) => {
             return res.status(400).json({ message: 'Email is required' });
         }
 
-        const user = await User.findOne({ email: email.trim().toLowerCase() });
+        const user = await User.findOne({ email: email.trim().toLowerCase() }).lean();
 
         // Always return success to prevent email enumeration
         if (!user) {
@@ -340,7 +340,7 @@ exports.forgotPassword = async (req, res) => {
         res.json(response);
     } catch (error) {
         logger.error({ err: error }, 'Forgot password error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Password reset request failed. Please try again.' });
     }
 };
 
@@ -380,7 +380,7 @@ exports.resetPassword = async (req, res) => {
         res.json({ message: 'Password has been reset successfully. You can now log in.' });
     } catch (error) {
         logger.error({ err: error }, 'Reset password error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Password reset failed. Please try again.' });
     }
 };
 
@@ -410,7 +410,7 @@ exports.refreshAccessToken = async (req, res) => {
         res.json({ token: newAccessToken, refreshToken: newRefreshToken });
     } catch (error) {
         logger.error({ err: error }, 'Auth error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Session refresh failed. Please log in again.' });
     }
 };
 
@@ -440,7 +440,7 @@ exports.listUserTenants = async (req, res) => {
         res.json(tenants);
     } catch (error) {
         logger.error({ err: error }, 'Auth error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load workspaces. Please try again.' });
     }
 };
 
@@ -512,7 +512,7 @@ exports.switchTenant = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Auth error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to switch workspace. Please try again.' });
     }
 };
 
@@ -545,6 +545,6 @@ exports.completeOnboarding = async (req, res) => {
         res.json({ message: 'Onboarding completed' });
     } catch (error) {
         logger.error({ err: error }, 'Onboarding error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to complete onboarding. Please try again.' });
     }
 };
