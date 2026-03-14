@@ -69,6 +69,10 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 }
             } else {
                 store.resetForm();
+                // Auto-select first courier
+                if (couriers.length > 0) {
+                    store.updateField('courierId', couriers[0]._id);
+                }
                 // Pre-fill from CustomerProfile deep-link
                 if (initialData?._prefill) {
                     if (initialData.customerPhone) store.updateField('customerPhone', initialData.customerPhone);
@@ -141,6 +145,9 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     }, [store.customerPhone, isEdit]);
 
     // 2. Dynamic Commune & Courier Coverage Logic
+    const selectedCourier = couriers.find(c => c._id === store.courierId);
+    const isCourierApiConnected = selectedCourier?.integrationType === 'API';
+
     useEffect(() => {
         const updateCoverage = async () => {
             if (!store.shippingWilayaCode) {
@@ -150,14 +157,15 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
             let allCommunes = getSafeCommunesForWilaya(store.shippingWilayaCode);
 
-            // If a courier is selected OR delivery type is Stop Desk, we need to verify coverage
-            if (store.courierId || store.shippingDeliveryType === 1) {
+            // Only filter by coverage if courier is API-connected
+            // Manual couriers → show all communes (no coverage data to filter by)
+            if (isCourierApiConnected) {
                 try {
                     const query = new URLSearchParams({
                         wilayaCode: store.shippingWilayaCode,
                         deliveryType: String(store.shippingDeliveryType)
                     });
-                    if (store.courierId) query.append('courierId', store.courierId);
+                    query.append('courierId', store.courierId);
 
                     const covRes = await apiFetch(`/api/couriers/engine/coverage?${query.toString()}`);
                     if (!covRes.ok) throw new Error('coverage failed');
@@ -165,7 +173,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                     const data = covJson.data ?? covJson;
 
                     if (data && data.length > 0) {
-                        // Filter standard communes to only those covered by returned rules
+                        // Filter communes to only those covered
                         const coveredCommunes = data.map(c => c.commune.toLowerCase());
 
                         // If there is a catch-all wilaya rule without specific commune limits
@@ -175,7 +183,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                             allCommunes = allCommunes.filter(c => coveredCommunes.includes(c.name.toLowerCase()));
                         }
                     } else if (store.shippingDeliveryType === 1) {
-                        // If Stop Desk and no coverage rules returned, typically assume none supported unless defined
+                        // Stop Desk + API courier + no coverage rules = no supported communes
                         allCommunes = [];
                     }
                 } catch (err) {
@@ -192,7 +200,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         };
 
         if (isOpen) updateCoverage();
-    }, [store.shippingWilayaCode, store.courierId, store.shippingDeliveryType, isOpen]);
+    }, [store.shippingWilayaCode, store.courierId, store.shippingDeliveryType, isCourierApiConnected, isOpen]);
 
     // 3. Dynamic Courier Recommendation & Pricing Engine
     useEffect(() => {
