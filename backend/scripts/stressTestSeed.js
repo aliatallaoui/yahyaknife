@@ -310,10 +310,10 @@ async function run() {
       'system.roles', 'system.settings', 'system.users',
     ];
     const roleData = [
-      { name: 'Owner', description: 'Full admin access', isSystemRole: true, permissions: ALL_PERMS, tenant: tenant._id },
-      { name: 'Manager', description: 'Manage operations', isSystemRole: true, permissions: ['overview.read', 'orders.view', 'orders.create', 'orders.edit', 'orders.status.change', 'customers.view', 'customers.edit', 'inventory.view', 'hr.employees.view', 'shipments.view', 'couriers.view', 'finance.view', 'support.view', 'analytics.view'], tenant: tenant._id },
-      { name: 'Agent', description: 'Call center agent', isSystemRole: true, permissions: ['orders.view', 'orders.edit', 'orders.status.change', 'customers.view', 'callcenter.process_orders', 'callcenter.claim_orders'], tenant: tenant._id },
-      { name: 'Viewer', description: 'Read-only access', isSystemRole: true, permissions: ['overview.read', 'orders.view', 'customers.view', 'inventory.view', 'analytics.view'], tenant: tenant._id },
+      { name: 'Owner', description: 'Full admin access', isSystemRole: false, permissions: ALL_PERMS, tenant: tenant._id },
+      { name: 'Manager', description: 'Manage operations', isSystemRole: false, permissions: ['overview.read', 'orders.view', 'orders.create', 'orders.edit', 'orders.status.change', 'customers.view', 'customers.edit', 'inventory.view', 'hr.employees.view', 'shipments.view', 'couriers.view', 'finance.view', 'support.view', 'analytics.view'], tenant: tenant._id },
+      { name: 'Agent', description: 'Call center agent', isSystemRole: false, permissions: ['orders.view', 'orders.edit', 'orders.status.change', 'customers.view', 'callcenter.process_orders', 'callcenter.claim_orders'], tenant: tenant._id },
+      { name: 'Viewer', description: 'Read-only access', isSystemRole: false, permissions: ['overview.read', 'orders.view', 'customers.view', 'inventory.view', 'analytics.view'], tenant: tenant._id },
     ];
     const roles = await Role.insertMany(roleData);
     allRoles.push(...roles);

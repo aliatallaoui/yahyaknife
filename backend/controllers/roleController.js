@@ -7,7 +7,7 @@ const { PERMISSIONS, ALL_PERMISSIONS_FLAT } = require('../config/permissions');
 // Helper: returns roles visible to the current tenant (system roles + tenant-owned)
 const tenantRoleFilter = (req) => ({
     $or: [
-        { isSystemRole: true },
+        { isSystemRole: true, tenant: null },
         { tenant: req.user.tenant }
     ]
 });

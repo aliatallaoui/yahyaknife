@@ -132,57 +132,94 @@ async function syncEcotrackShipments(ecotrackShipments) {
 }
 
 /**
- * Sync YALIDINE shipments grouped by courier (each has different credentials).
+ * Sync YALIDINE shipments using bulk status endpoint.
+ * Groups by tenant (each has different courier credentials),
+ * then fetches up to 100 tracking IDs per API call via getBulkStatus.
  */
 async function syncYalidineShipments(yalidineShipments) {
     let updatedCount = 0;
 
-    // Group shipments by tenant to find the right courier credentials
-    // We need to look up the Courier doc to get apiId/apiToken
-    const courierCache = new Map();
-    const CHUNK_SIZE = 5; // Yalidine has stricter rate limits (5/sec)
+    // Group shipments by tenant
+    const byTenant = new Map();
+    for (const s of yalidineShipments) {
+        const tid = s.tenant?.toString();
+        if (!byTenant.has(tid)) byTenant.set(tid, []);
+        byTenant.get(tid).push(s);
+    }
 
-    for (let i = 0; i < yalidineShipments.length; i += CHUNK_SIZE) {
-        const chunk = yalidineShipments.slice(i, i + CHUNK_SIZE);
+    for (const [tenantId, shipments] of byTenant) {
+        // Find courier credentials for this tenant
+        const courier = await Courier.findOne({
+            tenant: tenantId,
+            apiProvider: 'Yalidin',
+            integrationType: 'API',
+            deletedAt: null
+        });
 
-        await Promise.allSettled(chunk.map(async (shipment) => {
+        if (!courier) {
+            logger.warn({ tenant: tenantId, count: shipments.length }, '[SYNC] No Yalidine courier found for tenant');
+            continue;
+        }
+
+        const adapter = new (require('../integrations/couriers/YalidineAdapter'))(courier);
+        const BATCH_SIZE = 100; // Yalidine supports up to 1000, but we stay conservative
+
+        // Build lookup map: trackingId → shipment
+        const shipmentMap = new Map();
+        for (const s of shipments) {
+            shipmentMap.set(s.externalTrackingId, s);
+        }
+
+        const allTrackingIds = [...shipmentMap.keys()];
+
+        for (let i = 0; i < allTrackingIds.length; i += BATCH_SIZE) {
+            const batch = allTrackingIds.slice(i, i + BATCH_SIZE);
+
             try {
-                // Find the courier doc for this shipment's tenant
-                const cacheKey = shipment.tenant?.toString();
-                let courier = courierCache.get(cacheKey);
-                if (!courier) {
-                    courier = await Courier.findOne({
-                        tenant: shipment.tenant,
-                        apiProvider: 'Yalidin',
-                        integrationType: 'API',
-                        deletedAt: null
-                    });
-                    if (courier) courierCache.set(cacheKey, courier);
-                }
+                const results = await adapter.getBulkStatus(batch);
 
-                if (!courier) {
-                    logger.warn({ shipmentId: shipment._id, tenant: shipment.tenant }, '[SYNC] No Yalidine courier found for tenant');
-                    return;
-                }
+                for (const parcel of results) {
+                    const tracking = parcel.tracking;
+                    const shipment = shipmentMap.get(tracking);
+                    if (!shipment || !parcel.last_status) continue;
 
-                const adapter = new (require('../integrations/couriers/YalidineAdapter'))(courier);
-                const { status: currentCourierStatus } = await adapter.getTrackingStatus(shipment.externalTrackingId);
+                    const { newShipmentStatus, newPaymentStatus, activityLog } =
+                        YalidineAdapter.mapStatusToInternal(parcel.last_status, shipment, {
+                            paymentStatus: parcel.payment_status,
+                        });
 
-                if (currentCourierStatus) {
-                    const { newShipmentStatus, newPaymentStatus, activityLog } = YalidineAdapter.mapStatusToInternal(currentCourierStatus, shipment);
                     if (activityLog) {
-                        await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, currentCourierStatus);
+                        await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, parcel.last_status);
                         updatedCount++;
                     }
                 }
             } catch (err) {
-                logger.error({ err, trackingId: shipment.externalTrackingId }, '[SYNC] Failed to sync Yalidine shipment');
-            }
-        }));
+                logger.error({ err, tenant: tenantId, batchSize: batch.length }, '[SYNC] Yalidine bulk status fetch failed, falling back to individual');
 
-        // Yalidine rate limit: 5 req/sec → 200ms delay between chunks
-        if (i + CHUNK_SIZE < yalidineShipments.length) {
-            await new Promise(resolve => setTimeout(resolve, 250));
+                // Fallback: fetch individually
+                for (const trackingId of batch) {
+                    try {
+                        const { status } = await adapter.getTrackingStatus(trackingId);
+                        const shipment = shipmentMap.get(trackingId);
+                        if (!shipment || !status) continue;
+
+                        const { newShipmentStatus, newPaymentStatus, activityLog } =
+                            YalidineAdapter.mapStatusToInternal(status, shipment);
+
+                        if (activityLog) {
+                            await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, status);
+                            updatedCount++;
+                        }
+                    } catch (innerErr) {
+                        logger.error({ err: innerErr, trackingId }, '[SYNC] Failed to sync Yalidine shipment individually');
+                    }
+                }
+            }
+
+            // Respect rate limits between batches
+            if (i + BATCH_SIZE < allTrackingIds.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
         }
     }
 

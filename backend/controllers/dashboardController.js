@@ -83,6 +83,7 @@ exports.getDashboardData = async (req, res) => {
                     { $limit: 10 },
                     { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'agent' } },
                     { $unwind: { path: '$agent', preserveNullAndEmptyArrays: true } },
+                    { $match: { $or: [{ agent: { $exists: false } }, { 'agent.tenant': new mongoose.Types.ObjectId(tenantId) }] } },
                     { $project: { _id: 1, totalOrders: 1, delivered: 1, agentName: { $concat: [{ $ifNull: ['$agent.firstName', ''] }, ' ', { $ifNull: ['$agent.lastName', ''] }] } } }
                 ])
             ]);
@@ -96,7 +97,7 @@ exports.getDashboardData = async (req, res) => {
                 totalOrders += s.count;
                 if (['Delivered', 'Paid'].includes(s._id)) {
                     recognizedRevenue += s.totalAmount;
-                    realProfit += s.totalAmount - (s.cogs || 0) - (s.courierFee || 0) - (s.fees || 0);
+                    realProfit += s.totalAmount - (s.cogs ?? 0) - (s.courierFee ?? 0) - (s.fees ?? 0);
                 }
                 if (s._id === 'New') awaitingConfirmation += s.count;
                 if (['Confirmed', 'Preparing', 'Ready for Pickup'].includes(s._id)) awaitingDispatch += s.count;

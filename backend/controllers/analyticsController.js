@@ -352,10 +352,13 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 { $match: { 'products.variantId': { $ne: null } } },
                 { $lookup: { from: 'productvariants', localField: 'products.variantId', foreignField: '_id', as: 'variant' } },
                 { $unwind: '$variant' },
+                { $match: { 'variant.tenant': new mongoose.Types.ObjectId(tenantId) } },
                 { $lookup: { from: 'products', localField: 'variant.productId', foreignField: '_id', as: 'product' } },
                 { $unwind: '$product' },
+                { $match: { 'product.tenant': new mongoose.Types.ObjectId(tenantId) } },
                 { $lookup: { from: 'categories', localField: 'product.category', foreignField: '_id', as: 'cat' } },
                 { $unwind: '$cat' },
+                { $match: { 'cat.tenant': new mongoose.Types.ObjectId(tenantId) } },
                 {
                     $group: {
                         _id: '$cat.name',

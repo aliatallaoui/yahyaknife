@@ -95,7 +95,7 @@ exports.syncEcotrackCoverage = async (req, res) => {
             }
             
             
-            const baseUrl = 'https://api.yalidine.com/v1';
+            const baseUrl = 'https://api.yalidine.app/v1';
             
             let currentUrl = `${baseUrl}/communes`;
             let hasMore = true;

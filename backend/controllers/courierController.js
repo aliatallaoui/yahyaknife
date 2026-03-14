@@ -390,7 +390,7 @@ exports.testCourierConnection = async (req, res) => {
                 return res.status(400).json({ message: 'API ID and API Token are required for Yalidin.' });
             }
 
-            const baseUrl = 'https://api.yalidine.com/v1';
+            const baseUrl = 'https://api.yalidine.app/v1';
             
             // Yalidin test: fetch wilayas
             const wilayasRes = await axios.get(`${baseUrl}/wilayas`, {
