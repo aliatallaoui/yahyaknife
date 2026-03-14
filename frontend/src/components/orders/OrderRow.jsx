@@ -581,8 +581,8 @@ const OrderRow = React.memo(({
                                 <div className="flex flex-col bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 shadow-sm">
                                     <h4 className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-500 mb-2 border-b border-gray-50 dark:border-gray-700 pb-2">{t('ordersControl.expanded.productInfo')}</h4>
                                     <div className="flex flex-col gap-2 max-h-[100px] overflow-y-auto pr-1">
-                                        {order.products?.map((prod, i) => (
-                                            <div key={i} className="flex flex-col text-xs bg-gray-50/50 dark:bg-gray-700/50 p-1.5 rounded border border-gray-100 dark:border-gray-600">
+                                        {order.products?.map((prod) => (
+                                            <div key={prod._id || prod.sku || prod.name} className="flex flex-col text-xs bg-gray-50/50 dark:bg-gray-700/50 p-1.5 rounded border border-gray-100 dark:border-gray-600">
                                                 <span className="font-bold text-gray-800 dark:text-gray-200 truncate" title={prod.name}>{prod.name}</span>
                                                 <div className="flex items-center justify-between mt-1 text-[11px]">
                                                     <span className="text-gray-500 dark:text-gray-400 font-mono">{prod.sku || t('ordersControl.expanded.noSku')}</span>

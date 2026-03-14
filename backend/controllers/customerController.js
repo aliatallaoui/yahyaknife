@@ -156,7 +156,7 @@ const getCustomerMetrics = async (req, res) => {
             Customer.countDocuments({ ...tenantFilter, isReturning: false }),
             Customer.countDocuments({ ...tenantFilter, isReturning: true }),
             Customer.countDocuments({ ...tenantFilter, refusalRate: { $gte: 30 } }),
-            Customer.find(tenantFilter, { acquisitionChannel: 1, lifetimeValue: 1, segment: 1 }).lean()
+            Customer.find(tenantFilter, { acquisitionChannel: 1, lifetimeValue: 1, segment: 1 }).limit(50000).lean()
         ]);
 
         const acquisitionDistribution = {};

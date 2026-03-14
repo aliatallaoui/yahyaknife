@@ -23,7 +23,7 @@ exports.getHRMetrics = async (req, res) => {
                     { $ifNull: [{ $ifNull: ['$contractSettings.monthlySalary', '$salary'] }, 0] },
                     0
                 ] } },
-                departments: { $push: '$department' }
+                departments: { $addToSet: '$department' }
             } }
         ]);
 

@@ -15,7 +15,7 @@ exports.getStockoutPredictions = async (req, res) => {
 
         // Single aggregation instead of N+1 Order.find per variant
         const [variants, salesAgg] = await Promise.all([
-            ProductVariant.find({ tenant: tenantId, status: 'Active' }).lean(),
+            ProductVariant.find({ tenant: tenantId, status: 'Active' }).limit(10000).lean(),
             Order.aggregate([
                 {
                     $match: {

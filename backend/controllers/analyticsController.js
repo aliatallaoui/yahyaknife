@@ -18,7 +18,7 @@ exports.getSkuIntelligence = async (req, res) => {
 
         // Single aggregation: sold-last-30-days grouped by variantId (replaces N individual aggregations)
         const [variants, salesByVariant] = await Promise.all([
-            ProductVariant.find({ tenant: tenantId, status: { $ne: 'Archived' } }).populate('productId', 'name brand category').lean(),
+            ProductVariant.find({ tenant: tenantId, status: { $ne: 'Archived' } }).populate('productId', 'name brand category').limit(10000).lean(),
             StockMovementLedger.aggregate([
                 { $match: { tenant: new mongoose.Types.ObjectId(tenantId), type: 'DEDUCTION', createdAt: { $gte: thirtyDaysAgo } } },
                 { $group: { _id: '$variantId', totalSold: { $sum: { $abs: '$quantity' } } } }

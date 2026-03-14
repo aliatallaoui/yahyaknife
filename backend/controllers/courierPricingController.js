@@ -147,7 +147,8 @@ exports.syncYalidinePricing = async (req, res) => {
         return res.status(400).json({ message: 'Yalidine API ID and Token are not configured.' });
     }
 
-    const fromWilayaId = Number(req.body.fromWilayaId) || 16; // Default: Alger
+    let fromWilayaId = Number(req.body.fromWilayaId);
+    if (!Number.isFinite(fromWilayaId) || fromWilayaId < 1 || fromWilayaId > 58) fromWilayaId = 16; // Default: Alger
     const TOTAL_WILAYAS = 58;
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 

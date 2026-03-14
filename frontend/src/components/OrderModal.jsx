@@ -519,7 +519,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
                                     <div className="p-3 space-y-2.5 overflow-y-auto max-h-[280px] custom-scrollbar">
                                         {store.products.map((product, index) => (
-                                            <div key={index} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600 relative group">
+                                            <div key={product.variantId || product.name || index} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600 relative group">
                                                 {/* Toggle: inventory vs custom */}
                                                 <div className="flex items-center gap-2">
                                                     {product.isCustom ? (

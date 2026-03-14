@@ -101,7 +101,7 @@ const recommendCourier = async (req, res) => {
         if (typeNum === 0) coverageQuery.homeSupported = true;
         else coverageQuery.officeSupported = true;
 
-        const coverages = await CourierCoverage.find(coverageQuery).lean();
+        const coverages = await CourierCoverage.find(coverageQuery).limit(500).lean();
 
         if (coverages.length === 0) {
             return res.json({ recommended: null, available: [] });

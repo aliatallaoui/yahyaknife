@@ -75,8 +75,8 @@ export default function HRReports() {
                             {data.records.length === 0 && (
                                 <tr><td colSpan="4" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
-                            {data.records.map((r, i) => (
-                                <tr key={i}>
+                            {data.records.map((r) => (
+                                <tr key={r.employeeId?._id || r._id}>
                                     <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employeeId?.name} <span className="text-xs text-gray-400 dark:text-gray-500 block">{r.employeeId?.role}</span></td>
                                     <td className="px-5 py-3 font-mono text-center">{Math.floor(r.workedMinutes / 60)}{t('hr.lblHours')} {r.workedMinutes % 60}{t('hr.lblMinutes')}</td>
                                     <td className="px-5 py-3 text-center">
@@ -112,8 +112,8 @@ export default function HRReports() {
                             {data.records.length === 0 && (
                                 <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
-                            {data.records.map((r, i) => (
-                                <tr key={i}>
+                            {data.records.map((r) => (
+                                <tr key={r.employeeId?._id || r._id}>
                                     <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employeeId?.name}</td>
                                     <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-300">{(r.baseSalary || 0).toLocaleString()}</td>
                                     <td className="px-5 py-3 text-end text-red-600 font-bold">-{r.missingTimeDeductions + r.absenceDeductions}</td>
@@ -147,8 +147,8 @@ export default function HRReports() {
                             {data.records.length === 0 && (
                                 <tr><td colSpan="5" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
-                            {data.records.map((r, i) => (
-                                <tr key={i}>
+                            {data.records.map((r) => (
+                                <tr key={r.employeeId?._id || r._id}>
                                     <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employeeId?.name}</td>
                                     <td className="px-5 py-3 text-end font-mono text-gray-600 dark:text-gray-300">{r.metricsTotal?.totalMissingMinutes}{t('hr.lblMinutes')}</td>
                                     <td className="px-5 py-3 text-end text-rose-500 font-medium">-{r.missingTimeDeductions}</td>
@@ -180,8 +180,8 @@ export default function HRReports() {
                             {data.leaders.length === 0 && (
                                 <tr><td colSpan="3" className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">{t('hr.noDataForPeriod', 'No records for this period')}</td></tr>
                             )}
-                            {data.leaders.map((r, i) => (
-                                <tr key={i}>
+                            {data.leaders.map((r) => (
+                                <tr key={r.employee?._id || r._id}>
                                     <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{r.employee?.name} <span className="text-xs text-gray-400 dark:text-gray-500 block">{r.employee?.role}</span></td>
                                     <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-300 font-bold">{r.daysWithOvertime} {t('hr.daysLabel')}</td>
                                     <td className="px-5 py-3 text-end text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/30 dark:bg-emerald-900/20">{r.totalOvertimeMinutes}{t('hr.lblMinutes')}</td>

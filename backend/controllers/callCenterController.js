@@ -300,7 +300,7 @@ exports.assignOrders = async (req, res) => {
 
         if (mode === 'Region') {
             if (!targetAgentId || !region) return res.status(400).json({ message: 'targetAgentId and region required' });
-            const orders = await Order.find({ tenant: tenantId, wilaya: region, status: 'New', assignedAgent: null, deletedAt: null }, { _id: 1 }).lean();
+            const orders = await Order.find({ tenant: tenantId, wilaya: region, status: 'New', assignedAgent: null, deletedAt: null }, { _id: 1 }).limit(5000).lean();
             let count = 0;
             for (const o of orders) {
                 await assignmentService.assignOrder(o._id, tenantId, targetAgentId, 'manual', changedBy, `Region assignment: ${region}`);
