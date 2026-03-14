@@ -108,6 +108,19 @@ class EcotrackAdapter extends CourierAdapter {
     }
 
     /**
+     * Fetch delivery fees for all wilayas from ECOTRACK.
+     * GET /api/v1/get/fees
+     * Response: { livraison: [...], pickup: [...], echange: [...], recouvrement: [...], retours: [...] }
+     * Each entry: { wilaya_id, tarif, tarif_stopdesk }
+     * @param {string|ObjectId} [tenantId]
+     * @returns {object} Raw fees response with service type arrays
+     */
+    async fetchFees(tenantId) {
+        const response = await ecotrackRequest('GET', '/api/v1/get/fees', null, tenantId);
+        return response;
+    }
+
+    /**
      * Fetch current tracking status from ECOTRACK (single tracking).
      * GET /api/v1/get/tracking/info?tracking=X
      * @param {string} trackingId

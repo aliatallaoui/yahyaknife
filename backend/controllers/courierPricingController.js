@@ -1,5 +1,6 @@
 const logger = require('../shared/logger');
 const mongoose = require('mongoose');
+const axios = require('axios');
 const CourierPricing = require('../models/CourierPricing');
 const Courier = require('../models/Courier');
 const { yalidineRequest } = require('../utils/yalidineRequest');
@@ -130,19 +131,153 @@ exports.deletePricingRule = async (req, res) => {
     }
 };
 
-// @desc    Sync pricing rules from Yalidine fees API
+// @desc    Sync pricing rules from courier fees API (Ecotrack or Yalidine)
 // @route   POST /api/couriers/:id/pricing/sync
 // @access  Private
-exports.syncYalidinePricing = async (req, res) => {
+exports.syncPricing = async (req, res) => {
     const { id } = req.params;
     if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
 
     const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
     if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
-    if (courier.integrationType !== 'API' || (courier.apiProvider || '').toLowerCase() !== 'yalidin') {
-        return res.status(400).json({ message: 'Pricing sync is only available for Yalidine couriers.' });
+    if (courier.integrationType !== 'API') {
+        return res.status(400).json({ message: 'Pricing sync is only available for API-integrated couriers.' });
     }
+
+    const provider = (courier.apiProvider || '').toLowerCase();
+
+    if (provider === 'ecotrack') {
+        return syncEcotrackPricing(req, res, courier, id);
+    } else if (provider === 'yalidin') {
+        return syncYalidinePricingInternal(req, res, courier, id);
+    } else {
+        return res.status(400).json({ message: `Pricing sync is not supported for provider "${courier.apiProvider}".` });
+    }
+};
+
+/**
+ * Sync Ecotrack delivery fees — GET /api/v1/get/fees
+ * Returns fees per wilaya for livraison (+ pickup, echange, recouvrement, retours).
+ * Creates Wilaya-level pricing rules with home (tarif) and stop desk (tarif_stopdesk) prices.
+ */
+async function syncEcotrackPricing(req, res, courier, courierId) {
+    const tenantId = req.user.tenant;
+    const operations = [];
+    let totalRules = 0;
+
+    if (!courier.apiBaseUrl || !courier.apiToken) {
+        return res.status(400).json({ message: 'Ecotrack API Base URL and Token are not configured.' });
+    }
+
+    const baseUrl = courier.apiBaseUrl.replace(/\/$/, '');
+    const headers = courier.authType === 'API Key'
+        ? { 'x-api-key': courier.apiToken, Accept: 'application/json' }
+        : { Authorization: `Bearer ${courier.apiToken}`, Accept: 'application/json' };
+
+    let feesData;
+    try {
+        const res2 = await axios.get(`${baseUrl}/api/v1/get/fees`, { headers, timeout: 30000 });
+        feesData = res2.data;
+    } catch (err) {
+        logger.error({ err, courierId }, 'Failed to fetch Ecotrack fees');
+        const msg = err.response?.data?.message || err.message || 'Failed to fetch fees from Ecotrack';
+        return res.status(502).json({ message: msg });
+    }
+
+    if (!feesData || typeof feesData !== 'object') {
+        return res.status(502).json({ message: 'Invalid response from Ecotrack fees API.' });
+    }
+
+    // Process each service type: livraison is the primary delivery fee,
+    // others are stored as Special rules with metadata
+    const serviceTypes = ['livraison', 'pickup', 'echange', 'recouvrement', 'retours'];
+
+    for (const serviceType of serviceTypes) {
+        const entries = feesData[serviceType];
+        if (!Array.isArray(entries)) continue;
+
+        for (const entry of entries) {
+            const wilayaCode = String(entry.wilaya_id);
+            const homeTarif = Number(entry.tarif);
+            const deskTarif = Number(entry.tarif_stopdesk);
+
+            // For livraison: use Wilaya rule type (primary delivery pricing)
+            // For other services: use Special rule type with service metadata
+            const ruleType = serviceType === 'livraison' ? 'Wilaya' : 'Special';
+
+            // Home delivery price (deliveryType=0)
+            if (Number.isFinite(homeTarif) && homeTarif >= 0) {
+                const filter = {
+                    tenant: tenantId,
+                    courierId,
+                    ruleType,
+                    wilayaCode,
+                    deliveryType: 0,
+                    ...(ruleType === 'Special' ? { commune: `ecotrack_${serviceType}` } : {})
+                };
+                operations.push({
+                    updateOne: {
+                        filter,
+                        update: {
+                            $set: {
+                                ...filter,
+                                price: homeTarif,
+                                priority: ruleType === 'Wilaya' ? 1 : 0,
+                            }
+                        },
+                        upsert: true
+                    }
+                });
+                totalRules++;
+            }
+
+            // Stop desk price (deliveryType=1)
+            if (Number.isFinite(deskTarif) && deskTarif >= 0) {
+                const filter = {
+                    tenant: tenantId,
+                    courierId,
+                    ruleType,
+                    wilayaCode,
+                    deliveryType: 1,
+                    ...(ruleType === 'Special' ? { commune: `ecotrack_${serviceType}` } : {})
+                };
+                operations.push({
+                    updateOne: {
+                        filter,
+                        update: {
+                            $set: {
+                                ...filter,
+                                price: deskTarif,
+                                priority: ruleType === 'Wilaya' ? 1 : 0,
+                            }
+                        },
+                        upsert: true
+                    }
+                });
+                totalRules++;
+            }
+        }
+    }
+
+    if (operations.length > 0) {
+        await CourierPricing.bulkWrite(operations);
+    }
+
+    // Update last sync time on courier
+    await Courier.updateOne({ _id: courierId, tenant: tenantId }, { $set: { lastSyncAt: new Date() } });
+
+    res.json({
+        message: `Synced ${totalRules} pricing rules from Ecotrack.`,
+        count: totalRules,
+        serviceTypes: serviceTypes.filter(s => Array.isArray(feesData[s]) && feesData[s].length > 0)
+    });
+}
+
+/**
+ * Sync Yalidine delivery fees — loops through 58 wilayas.
+ */
+async function syncYalidinePricingInternal(req, res, courier, courierId) {
     if (!courier.apiId || !courier.apiToken) {
         return res.status(400).json({ message: 'Yalidine API ID and Token are not configured.' });
     }
@@ -189,7 +324,7 @@ exports.syncYalidinePricing = async (req, res) => {
                         updateOne: {
                             filter: {
                                 tenant: req.user.tenant,
-                                courierId: id,
+                                courierId,
                                 ruleType: 'Wilaya+Commune',
                                 wilayaCode,
                                 commune: communeName,
@@ -200,7 +335,7 @@ exports.syncYalidinePricing = async (req, res) => {
                                     price: Number(homePrice),
                                     priority: 1,
                                     tenant: req.user.tenant,
-                                    courierId: id,
+                                    courierId,
                                     ruleType: 'Wilaya+Commune',
                                     wilayaCode,
                                     commune: communeName,
@@ -219,7 +354,7 @@ exports.syncYalidinePricing = async (req, res) => {
                         updateOne: {
                             filter: {
                                 tenant: req.user.tenant,
-                                courierId: id,
+                                courierId,
                                 ruleType: 'Wilaya+Commune',
                                 wilayaCode,
                                 commune: communeName,
@@ -230,7 +365,7 @@ exports.syncYalidinePricing = async (req, res) => {
                                     price: Number(deskPrice),
                                     priority: 1,
                                     tenant: req.user.tenant,
-                                    courierId: id,
+                                    courierId,
                                     ruleType: 'Wilaya+Commune',
                                     wilayaCode,
                                     commune: communeName,
@@ -263,4 +398,4 @@ exports.syncYalidinePricing = async (req, res) => {
         count: totalRules,
         errors: errors.length > 0 ? errors : undefined
     });
-};
+}

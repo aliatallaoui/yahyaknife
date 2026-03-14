@@ -472,8 +472,8 @@ const resources = {
                 // Pricing Engine
                 pricing_engine: 'Advanced Priority Pricing Engine',
                 pricing_desc: 'Rules are evaluated top-down by priority. The first matching rule determines the delivery fee. Lower priority number = higher precedence.',
-                syncPricing: 'Sync Pricing from Yalidine API',
-                syncingPricing: 'Syncing prices from Yalidine...',
+                syncPricing: 'Sync Pricing from {{provider}} API',
+                syncingPricing: 'Syncing prices from {{provider}}...',
                 edit_rule: 'Edit Pricing Rule',
                 add_rule: 'Create New Rule',
                 rule_type: 'Rule Target Type',
@@ -2796,8 +2796,8 @@ const resources = {
                 // محرك التسعير
                 pricing_engine: 'محرك التسعير المتقدم بالأولوية',
                 pricing_desc: 'يتم تقييم القواعد من الأعلى للأسفل حسب الأولوية. أول قاعدة مطابقة تحدد رسوم التوصيل. رقم أولوية أقل = أسبقية أعلى.',
-                syncPricing: 'مزامنة التسعير من Yalidine API',
-                syncingPricing: 'جاري مزامنة الأسعار من Yalidine...',
+                syncPricing: 'مزامنة التسعير من {{provider}} API',
+                syncingPricing: 'جاري مزامنة الأسعار من {{provider}}...',
                 edit_rule: 'تعديل قاعدة التسعير',
                 add_rule: 'إنشاء قاعدة جديدة',
                 rule_type: 'نوع هدف القاعدة',

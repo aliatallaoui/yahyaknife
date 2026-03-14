@@ -125,7 +125,11 @@ export default function CourierPricingEngine({ courierId, courier }) {
         setIsEditing(false);
     };
 
-    const isYalidine = courier && courier.apiProvider && courier.apiProvider.toLowerCase() === 'yalidin';
+    const providerLower = (courier?.apiProvider || '').toLowerCase();
+    const isYalidine = providerLower === 'yalidin';
+    const isEcotrack = providerLower === 'ecotrack';
+    const canSyncPricing = courier?.integrationType === 'API' && (isYalidine || isEcotrack);
+    const providerLabel = isEcotrack ? 'Ecotrack' : 'Yalidine';
 
     const handleSyncPricing = async () => {
         setSyncing(true);
@@ -142,7 +146,7 @@ export default function CourierPricingEngine({ courierId, courier }) {
             setSyncResult(json.message || `Synced ${json.count} rules.`);
             fetchRules();
         } catch (error) {
-            setErrorMsg(error.message || 'Failed to sync pricing from Yalidine.');
+            setErrorMsg(error.message || `Failed to sync pricing from ${providerLabel}.`);
         } finally {
             setSyncing(false);
         }
@@ -177,7 +181,7 @@ export default function CourierPricingEngine({ courierId, courier }) {
                 </div>
             </div>
 
-            {isYalidine && (
+            {canSyncPricing && (
                 <button
                     onClick={handleSyncPricing}
                     disabled={syncing}
@@ -190,8 +194,8 @@ export default function CourierPricingEngine({ courierId, courier }) {
                 >
                     <RefreshCw className={clsx("w-4 h-4", syncing && "animate-spin")} />
                     {syncing
-                        ? t('couriers.syncingPricing', 'Syncing prices from Yalidine...')
-                        : t('couriers.syncPricing', 'Sync Pricing from Yalidine API')}
+                        ? t('couriers.syncingPricing', 'Syncing prices from {{provider}}...', { provider: providerLabel })
+                        : t('couriers.syncPricing', 'Sync Pricing from {{provider}} API', { provider: providerLabel })}
                 </button>
             )}
 

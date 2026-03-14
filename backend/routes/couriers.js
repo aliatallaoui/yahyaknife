@@ -34,7 +34,7 @@ const {
     addPricingRule,
     updatePricingRule,
     deletePricingRule,
-    syncYalidinePricing
+    syncPricing
 } = require('../controllers/courierPricingController');
 
 const {
@@ -69,7 +69,7 @@ router.get('/:id/settlements', requirePermission(PERMS.FINANCE_SETTLE_COURIER), 
 router.post('/:id/dispatch', requirePermission(PERMS.COURIERS_EDIT), wrap(assignOrdersToCourier));
 
 // Pricing Rules — sync must come before /:id/pricing to avoid Express matching /:id/pricing first
-router.post('/:id/pricing/sync', requirePermission(PERMS.COURIERS_EDIT), wrap(syncYalidinePricing));
+router.post('/:id/pricing/sync', requirePermission(PERMS.COURIERS_EDIT), wrap(syncPricing));
 router.route('/:id/pricing')
     .get(requirePermission(PERMS.COURIERS_VIEW), wrap(getPricingRules))
     .post(requirePermission(PERMS.COURIERS_EDIT), wrap(addPricingRule));

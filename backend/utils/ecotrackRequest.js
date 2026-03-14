@@ -68,7 +68,7 @@ const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) =
         throw new Error('ECOTRACK is not configured. Please add an API token in Settings.');
     }
 
-    if (settings.connectionStatus !== 'Valid' && !endpoint.includes('/validate/token') && !endpoint.includes('/get/wilayas')) {
+    if (settings.connectionStatus !== 'Valid' && !endpoint.includes('/validate/token') && !endpoint.includes('/get/wilayas') && !endpoint.includes('/get/fees')) {
         // Allow validation/ping endpoints to bypass connection check
         throw new Error(`ECOTRACK connection is currently ${settings.connectionStatus}. Check your token.`);
     }
@@ -86,7 +86,7 @@ const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) =
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        timeout: 10_000, // 10s per-request timeout
+        timeout: endpoint.includes('/get/fees') ? 30_000 : 10_000, // 30s for fees bulk fetch, 10s otherwise
         data: data
     };
 
