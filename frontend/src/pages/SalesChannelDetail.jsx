@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Plus, FileText, BarChart3, Eye, EyeOff, Trash2, Edit3,
   ExternalLink, MoreVertical, Globe, ShoppingCart, TrendingUp, Copy,
-  Rocket, Pause, Search, Sparkles
+  Rocket, Pause, Search, Sparkles, CopyPlus
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -28,6 +28,7 @@ export default function SalesChannelDetail() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const fetchData = useCallback(async () => {
     try {
@@ -76,6 +77,20 @@ export default function SalesChannelDetail() {
     setMenuOpen(null);
   };
 
+  const handleClone = async (pageId) => {
+    try {
+      const res = await apiFetch(`/api/sales-channels/${channelId}/pages/${pageId}/clone`, { method: 'POST' });
+      if (res.ok) {
+        toast.success(t('salesChannels.pageCloned', 'Page duplicated'));
+        fetchData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || 'Clone failed');
+      }
+    } catch { toast.error('Clone failed'); }
+    setMenuOpen(null);
+  };
+
   const handleDeletePage = async () => {
     if (!deleteTarget) return;
     const res = await apiFetch(`/api/sales-channels/${channelId}/pages/${deleteTarget._id}`, { method: 'DELETE' });
@@ -85,25 +100,47 @@ export default function SalesChannelDetail() {
 
   const handleAIPageComplete = (page) => {
     setAiWizardOpen(false);
-    // Open preview in new tab so user can see the result immediately
     const pageId = page._id || page.page?._id;
     if (pageId) {
       window.open(`/sales-channels/${channelId}/pages/${pageId}/preview`, '_blank');
     }
-    fetchData(); // Refresh the page list
+    fetchData();
+  };
+
+  const getPageUrl = (page) => {
+    const slug = channel?.domain?.subdomain || channel?.slug;
+    return `${window.location.origin}/s/${slug}/${page.slug}`;
   };
 
   const copyPageUrl = (page) => {
-    const slug = channel?.domain?.subdomain || channel?.slug;
-    const url = `${window.location.origin}/s/${slug}/${page.slug}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(getPageUrl(page));
     toast.success(t('common.copied', 'Copied to clipboard'));
     setMenuOpen(null);
   };
 
-  const filtered = pages.filter(p =>
-    p.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter pages
+  const statusCounts = {
+    all: pages.length,
+    published: pages.filter(p => p.status === 'published').length,
+    draft: pages.filter(p => p.status === 'draft').length,
+  };
+
+  const filtered = pages.filter(p => {
+    if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+    if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  // Conversion rate helper
+  const convRate = (page) => {
+    const r = page.stats?.conversionRate || 0;
+    return r;
+  };
+  const convColor = (rate) => {
+    if (rate >= 5) return 'text-emerald-600 dark:text-emerald-400';
+    if (rate >= 2) return 'text-amber-600 dark:text-amber-400';
+    return 'text-gray-500 dark:text-gray-400';
+  };
 
   if (loading) {
     return (
@@ -172,13 +209,13 @@ export default function SalesChannelDetail() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: t('salesChannels.pages', 'Pages'), value: pages.length, icon: FileText },
-          { label: t('salesChannels.published', 'Published'), value: pages.filter(p => p.status === 'published').length, icon: Globe },
-          { label: t('salesChannels.kpi.orders', 'Orders'), value: channel.stats?.totalOrders || 0, icon: ShoppingCart },
-          { label: t('salesChannels.kpi.revenue', 'Revenue'), value: `${(channel.stats?.totalRevenue || 0).toLocaleString()} DA`, icon: TrendingUp }
+          { label: t('salesChannels.pages', 'Pages'), value: pages.length, icon: FileText, color: 'text-blue-500' },
+          { label: t('salesChannels.published', 'Published'), value: statusCounts.published, icon: Globe, color: 'text-emerald-500' },
+          { label: t('salesChannels.kpi.orders', 'Orders'), value: channel.stats?.totalOrders || 0, icon: ShoppingCart, color: 'text-violet-500' },
+          { label: t('salesChannels.kpi.revenue', 'Revenue'), value: `${(channel.stats?.totalRevenue || 0).toLocaleString()} DA`, icon: TrendingUp, color: 'text-amber-500' }
         ].map((s, i) => (
           <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
-            <s.icon className="w-5 h-5 text-gray-400" />
+            <s.icon className={clsx("w-5 h-5", s.color)} />
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
               <p className="text-lg font-bold text-gray-900 dark:text-white">{s.value}</p>
@@ -187,16 +224,38 @@ export default function SalesChannelDetail() {
         ))}
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={t('salesChannels.searchPages', 'Search pages...')}
-          className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 dark:text-white"
-        />
+      {/* Search + Status Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t('salesChannels.searchPages', 'Search pages...')}
+            className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 dark:text-white"
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          {[
+            { key: 'all', label: t('common.all', 'All') },
+            { key: 'published', label: t('salesChannels.published', 'Published') },
+            { key: 'draft', label: t('salesChannels.draft', 'Draft') },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={clsx(
+                'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
+                statusFilter === tab.key
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              )}
+            >
+              {tab.label} <span className="text-[10px] opacity-60">({statusCounts[tab.key]})</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Pages List */}
@@ -208,86 +267,121 @@ export default function SalesChannelDetail() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(page => (
-            <div
-              key={page._id}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all p-4 flex items-center justify-between cursor-pointer"
-              onClick={() => navigate(`/sales-channels/${channelId}/pages/${page._id}/builder`)}
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* Product image */}
-                <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
-                  {page.product?.images?.[0] ? (
-                    <img src={page.product.images[0]} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400"><FileText className="w-6 h-6" /></div>
-                  )}
+          {filtered.map(page => {
+            const rate = convRate(page);
+            return (
+              <div
+                key={page._id}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all p-4 flex items-center justify-between cursor-pointer group"
+                onClick={() => navigate(`/sales-channels/${channelId}/pages/${page._id}/builder`)}
+              >
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  {/* Product image */}
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
+                    {page.product?.images?.[0] ? (
+                      <img src={page.product.images[0]} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400"><FileText className="w-6 h-6" /></div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{page.title}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {page.product?.name} &bull; /{page.slug}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {page.stats?.views || 0}</span>
+                      <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" /> {page.stats?.orders || 0}</span>
+                      <span className={clsx("flex items-center gap-1 font-semibold", convColor(rate))}>
+                        <TrendingUp className="w-3 h-3" /> {rate.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{page.title}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {page.product?.name} &bull; /{page.slug}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {page.stats?.views || 0}</span>
-                    <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" /> {page.stats?.orders || 0}</span>
-                    <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> {((page.stats?.conversionRate || 0)).toFixed(1)}%</span>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Quick actions — always visible */}
+                  {page.status === 'published' && (
+                    <button
+                      onClick={e => { e.stopPropagation(); window.open(getPageUrl(page), '_blank'); }}
+                      className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                      title={t('salesChannels.openStorefront', 'Open storefront')}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={e => { e.stopPropagation(); copyPageUrl(page); }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    title={t('salesChannels.copyUrl', 'Copy URL')}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  {hasPermission('saleschannels.publish') && (
+                    page.status === 'draft' ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); handlePublish(page._id); }}
+                        className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                        title={t('salesChannels.publish', 'Publish')}
+                      >
+                        <Rocket className="w-4 h-4" />
+                      </button>
+                    ) : page.status === 'published' ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleUnpublish(page._id); }}
+                        className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                        title={t('salesChannels.unpublish', 'Unpublish')}
+                      >
+                        <Pause className="w-4 h-4" />
+                      </button>
+                    ) : null
+                  )}
+
+                  {/* Status badge */}
+                  <span className={clsx(
+                    'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide',
+                    page.status === 'published' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                    page.status === 'draft' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                    'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                  )}>
+                    {page.status}
+                  </span>
+
+                  {/* More menu */}
+                  <div className="relative">
+                    <button
+                      onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === page._id ? null : page._id); }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                    {menuOpen === page._id && (
+                      <div className="absolute end-0 top-full mt-1 w-48 bg-white dark:bg-gray-700 rounded-xl shadow-xl border border-gray-100 dark:border-gray-600 z-20 py-1">
+                        <button onClick={e => { e.stopPropagation(); navigate(`/sales-channels/${channelId}/pages/${page._id}/builder`); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
+                          <Edit3 className="w-3.5 h-3.5" /> {t('salesChannels.editPage', 'Edit Page')}
+                        </button>
+                        <button onClick={e => { e.stopPropagation(); window.open(`/sales-channels/${channelId}/pages/${page._id}/preview`, '_blank'); setMenuOpen(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                          <Eye className="w-3.5 h-3.5" /> {t('salesChannels.preview', 'Preview')}
+                        </button>
+                        {hasPermission('saleschannels.create') && (
+                          <button onClick={e => { e.stopPropagation(); handleClone(page._id); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20">
+                            <CopyPlus className="w-3.5 h-3.5" /> {t('salesChannels.clonePage', 'Duplicate Page')}
+                          </button>
+                        )}
+                        <button onClick={e => { e.stopPropagation(); setDeleteTarget(page); setMenuOpen(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                          <Trash2 className="w-3.5 h-3.5" /> {t('common.delete', 'Delete')}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={clsx(
-                  'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide',
-                  page.status === 'published' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
-                  page.status === 'draft' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                  'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-                )}>
-                  {page.status}
-                </span>
-
-                <div className="relative">
-                  <button
-                    onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === page._id ? null : page._id); }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {menuOpen === page._id && (
-                    <div className="absolute end-0 top-full mt-1 w-48 bg-white dark:bg-gray-700 rounded-xl shadow-xl border border-gray-100 dark:border-gray-600 z-20 py-1">
-                      <button onClick={e => { e.stopPropagation(); navigate(`/sales-channels/${channelId}/pages/${page._id}/builder`); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
-                        <Edit3 className="w-3.5 h-3.5" /> {t('salesChannels.editPage', 'Edit Page')}
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); window.open(`/sales-channels/${channelId}/pages/${page._id}/preview`, '_blank'); setMenuOpen(null); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                        <Eye className="w-3.5 h-3.5" /> {t('salesChannels.preview', 'Preview')}
-                      </button>
-                      {page.status === 'draft' ? (
-                        <button onClick={e => { e.stopPropagation(); handlePublish(page._id); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                          <Rocket className="w-3.5 h-3.5" /> {t('salesChannels.publish', 'Publish')}
-                        </button>
-                      ) : page.status === 'published' ? (
-                        <button onClick={e => { e.stopPropagation(); handleUnpublish(page._id); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20">
-                          <Pause className="w-3.5 h-3.5" /> {t('salesChannels.unpublish', 'Unpublish')}
-                        </button>
-                      ) : null}
-                      <button onClick={e => { e.stopPropagation(); copyPageUrl(page); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
-                        <Copy className="w-3.5 h-3.5" /> {t('salesChannels.copyUrl', 'Copy URL')}
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); setDeleteTarget(page); setMenuOpen(null); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                        <Trash2 className="w-3.5 h-3.5" /> {t('common.delete', 'Delete')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

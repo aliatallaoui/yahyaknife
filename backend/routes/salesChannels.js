@@ -55,6 +55,7 @@ router.post('/:channelId/pages', requirePermission(PERMS.SALES_CHANNELS_CREATE),
 router.get('/:channelId/pages/:pageId', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getPage));
 router.put('/:channelId/pages/:pageId', requirePermission(PERMS.SALES_CHANNELS_EDIT), wrap(ctrl.updatePage));
 router.delete('/:channelId/pages/:pageId', requirePermission(PERMS.SALES_CHANNELS_DELETE), wrap(ctrl.deletePage));
+router.post('/:channelId/pages/:pageId/clone', requirePermission(PERMS.SALES_CHANNELS_CREATE), wrap(ctrl.clonePage));
 router.post('/:channelId/pages/:pageId/publish', requirePermission(PERMS.SALES_CHANNELS_PUBLISH), wrap(ctrl.publishPage));
 router.post('/:channelId/pages/:pageId/unpublish', requirePermission(PERMS.SALES_CHANNELS_PUBLISH), wrap(ctrl.unpublishPage));
 router.get('/:channelId/pages/:pageId/preview', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.previewPage));

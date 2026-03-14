@@ -142,6 +142,17 @@ exports.deletePage = async (req, res, next) => {
     } catch (err) { next(err); }
 };
 
+exports.clonePage = async (req, res, next) => {
+    try {
+        const page = await salesChannelService.clonePage({
+            tenantId: req.user.tenant,
+            pageId: req.params.pageId,
+            targetChannelId: req.body.targetChannelId
+        });
+        res.status(201).json(ApiResponse.created(page));
+    } catch (err) { next(err); }
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ANALYTICS
 // ═══════════════════════════════════════════════════════════════════════════════

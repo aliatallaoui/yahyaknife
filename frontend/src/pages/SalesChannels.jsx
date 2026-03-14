@@ -231,10 +231,13 @@ export default function SalesChannels() {
               <div className="px-5 py-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" /> {channel.stats?.totalPages || 0} {t('salesChannels.pages', 'pages')}
+                    <FileText className="w-3.5 h-3.5" /> {channel.stats?.totalPages || 0}
                   </span>
                   <span className="flex items-center gap-1">
                     <ShoppingCart className="w-3.5 h-3.5" /> {channel.stats?.totalOrders || 0}
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                    <TrendingUp className="w-3.5 h-3.5" /> {(channel.stats?.totalRevenue || 0).toLocaleString()} DA
                   </span>
                 </div>
                 <span className={clsx(

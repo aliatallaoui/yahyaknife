@@ -222,6 +222,44 @@ exports.unpublishPage = async ({ tenantId, pageId }) => {
     return page;
 };
 
+exports.clonePage = async ({ tenantId, pageId, targetChannelId }) => {
+    const source = await LandingPage.findOne({ _id: pageId, tenant: tenantId, deletedAt: null }).lean();
+    if (!source) throw AppError.notFound('Landing Page');
+
+    const channelId = targetChannelId || source.salesChannel;
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+
+    const baseSlug = slugify(source.title + ' copy');
+    let slug = baseSlug;
+    let attempt = 0;
+    while (await LandingPage.exists({ salesChannel: channelId, slug, deletedAt: null })) {
+        attempt++;
+        slug = `${baseSlug}-${attempt}`;
+    }
+
+    const clone = await LandingPage.create({
+        tenant: tenantId,
+        salesChannel: channelId,
+        product: source.product,
+        title: source.title + ' (Copy)',
+        slug,
+        status: 'draft',
+        seo: source.seo || {},
+        blocks: source.blocks || [],
+        productOverrides: source.productOverrides || {},
+        variantDisplay: source.variantDisplay || {},
+        formConfig: source.formConfig || {},
+        theme: source.theme || {},
+        pixels: source.pixels || {},
+        stats: { views: 0, uniqueVisitors: 0, orders: 0, revenue: 0, conversionRate: 0 }
+    });
+
+    await SalesChannel.updateOne({ _id: channelId }, { $inc: { 'stats.totalPages': 1 } });
+
+    return clone;
+};
+
 exports.deletePage = async ({ tenantId, pageId }) => {
     const page = await LandingPage.findOneAndUpdate(
         { _id: pageId, tenant: tenantId, deletedAt: null },
