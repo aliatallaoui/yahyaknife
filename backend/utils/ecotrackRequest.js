@@ -64,8 +64,8 @@ const ecotrackRequest = async (method, endpoint, data = null) => {
         throw new Error('ECOTRACK is not configured. Please add an API token in Settings.');
     }
 
-    if (settings.connectionStatus !== 'Valid' && endpoint !== '/api/v1/getWilayas') {
-        // Allow the ping endpoint to bypass connection check for validation purposes
+    if (settings.connectionStatus !== 'Valid' && !endpoint.includes('/validate/token') && !endpoint.includes('/get/wilayas')) {
+        // Allow validation/ping endpoints to bypass connection check
         throw new Error(`ECOTRACK connection is currently ${settings.connectionStatus}. Check your token.`);
     }
 

@@ -41,17 +41,15 @@ exports.updateSettings = async (req, res) => {
         let connectionStatus = 'Invalid Token';
         if (settings.apiToken && settings.apiUrl) {
             try {
-                // EcoTrack requires testing an endpoint. 
-                // If apiUrl already has /v1, we just append /getWilayas. 
-                // If the user provided a base URL, we might need a more complex join, 
-                // but let's assume the user/default follows the /v1 pattern.
+                // Use Ecotrack's dedicated token validation endpoint
                 const pingUrl = settings.apiUrl.endsWith('/')
-                    ? `${settings.apiUrl}api/v1/get/wilayas`
-                    : `${settings.apiUrl}/api/v1/get/wilayas`;
+                    ? `${settings.apiUrl}api/v1/validate/token`
+                    : `${settings.apiUrl}/api/v1/validate/token`;
 
-                logger.info('[CourierSettings] Pinging EcoTrack for validation');
+                logger.info('[CourierSettings] Validating EcoTrack token');
 
                 const response = await axios.get(pingUrl, {
+                    params: { api_token: settings.apiToken },
                     headers: { 'Authorization': `Bearer ${settings.apiToken}` },
                     timeout: 8000
                 });

@@ -1,79 +1,12 @@
 const logger = require('../shared/logger');
 const Shipment = require('../models/Shipment');
 const Courier = require('../models/Courier');
-const { ecotrackRequest } = require('../utils/ecotrackRequest');
 const OrderService = require('../domains/orders/order.service');
 const YalidineAdapter = require('../integrations/couriers/YalidineAdapter');
-const { getAdapter } = require('../integrations/couriers/adapterFactory');
+const EcotrackAdapter = require('../integrations/couriers/EcotrackAdapter');
 
-/**
- * Maps raw Ecotrack statuses to our Internal ERP Shipment status paradigm
- * and COD payment states.
- */
-const mapEcotrackStatusToInternal = (courierStatus, currentShipment) => {
-    let newShipmentStatus = currentShipment.shipmentStatus;
-    let newPaymentStatus = currentShipment.paymentStatus;
-    let activityLog = null;
-
-    const lowerStatus = (courierStatus || '').toLowerCase();
-
-    // 1. In Transit / Dispatch
-    if (lowerStatus.includes('order_information_received') || lowerStatus.includes('accepted_by_carrier') || lowerStatus.includes('picked')) {
-        newShipmentStatus = 'In Transit';
-    }
-    // 2. Out for delivery
-    else if (lowerStatus.includes('dispatched_to_driver') || lowerStatus.includes('out_for_delivery')) {
-        newShipmentStatus = 'Out for Delivery';
-    }
-    // 3. Failed Attempts
-    else if (lowerStatus.includes('attempt_delivery') || lowerStatus.includes('pas_de_reponse')) {
-        newShipmentStatus = 'Failed Attempt';
-    }
-    // 4. Delivered
-    else if (lowerStatus.includes('livred') || lowerStatus.includes('delivered')) {
-        newShipmentStatus = 'Delivered';
-        if (newPaymentStatus === 'COD_Expected') {
-            newPaymentStatus = 'Delivered_Not_Collected';
-        }
-    }
-    // 5. COD Cash flows
-    else if (lowerStatus.includes('encaissed') || lowerStatus.includes('collected')) {
-        newShipmentStatus = 'Delivered';
-        newPaymentStatus = 'Collected_Not_Paid';
-    }
-    else if (lowerStatus.includes('payed') || lowerStatus.includes('settled')) {
-        newShipmentStatus = 'Delivered';
-        newPaymentStatus = 'Paid_and_Settled';
-    }
-    // 6. Returns
-    else if (lowerStatus.includes('return_asked') || lowerStatus.includes('retour_demandé')) {
-        newShipmentStatus = 'Return Initiated';
-    }
-    else if (lowerStatus.includes('return_in_transit')) {
-        newShipmentStatus = 'Return Initiated';
-    }
-    else if (lowerStatus.includes('return_received') || lowerStatus.includes('retour_recu')) {
-        newShipmentStatus = 'Returned';
-    }
-
-    if (newShipmentStatus !== currentShipment.shipmentStatus || lowerStatus !== currentShipment.courierStatus) {
-        activityLog = {
-            status: newShipmentStatus,
-            remarks: `Courier Status Updated: ${courierStatus}`
-        };
-    }
-
-    return { newShipmentStatus, newPaymentStatus, activityLog };
-};
-
-/**
- * Get the status mapper function for a given provider.
- */
-function getStatusMapper(provider) {
-    const upper = (provider || 'ECOTRACK').toUpperCase();
-    if (upper === 'YALIDIN') return YalidineAdapter.mapStatusToInternal;
-    return mapEcotrackStatusToInternal;
-}
+// Use the canonical status mapper from EcotrackAdapter
+const mapEcotrackStatusToInternal = EcotrackAdapter.mapStatusToInternal;
 
 /**
  * Apply status update to shipment + order (shared logic for all providers).
@@ -121,33 +54,64 @@ async function applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, 
 }
 
 /**
- * Sync ECOTRACK shipments using the global CourierSetting credentials.
+ * Sync ECOTRACK shipments using the bulk status endpoint.
+ * GET /api/v1/get/orders/status?trackings=X,Y,Z&status=all (up to 100 per call)
  */
 async function syncEcotrackShipments(ecotrackShipments) {
     let updatedCount = 0;
-    const CHUNK_SIZE = 10;
+    const BULK_SIZE = 100; // Ecotrack supports up to 100 trackings per bulk call
 
-    for (let i = 0; i < ecotrackShipments.length; i += CHUNK_SIZE) {
-        const chunk = ecotrackShipments.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < ecotrackShipments.length; i += BULK_SIZE) {
+        const chunk = ecotrackShipments.slice(i, i + BULK_SIZE);
 
-        await Promise.allSettled(chunk.map(async (shipment) => {
-            try {
-                const trackingResponse = await ecotrackRequest('GET', `/api/v1/tracking/${shipment.externalTrackingId}`);
-                const currentCourierStatus = trackingResponse.status || trackingResponse.current_status;
+        try {
+            // Build tracking → shipment lookup
+            const shipmentMap = new Map();
+            for (const s of chunk) {
+                shipmentMap.set(s.externalTrackingId, s);
+            }
 
-                if (currentCourierStatus) {
-                    const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(currentCourierStatus, shipment);
+            // Bulk status fetch — single API call for up to 100 trackings
+            const bulkData = await EcotrackAdapter.getBulkStatus(
+                chunk.map(s => s.externalTrackingId)
+            );
+
+            // Process each result
+            for (const [trackingId, info] of Object.entries(bulkData)) {
+                const shipment = shipmentMap.get(trackingId);
+                if (!shipment || !info?.status) continue;
+
+                try {
+                    const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(info.status, shipment);
                     if (activityLog) {
-                        await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, currentCourierStatus);
+                        await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, info.status);
                         updatedCount++;
                     }
+                } catch (err) {
+                    logger.error({ err, trackingId }, '[SYNC] Failed to apply Ecotrack status update');
                 }
-            } catch (err) {
-                logger.error({ err, trackingId: shipment.externalTrackingId }, '[SYNC] Failed to sync Ecotrack shipment');
             }
-        }));
+        } catch (err) {
+            logger.error({ err, chunkSize: chunk.length }, '[SYNC] Failed bulk Ecotrack status fetch');
 
-        if (i + CHUNK_SIZE < ecotrackShipments.length) {
+            // Fallback: try individual tracking for this chunk
+            for (const shipment of chunk) {
+                try {
+                    const { status: currentCourierStatus } = await EcotrackAdapter.getTrackingStatus(shipment.externalTrackingId);
+                    if (currentCourierStatus) {
+                        const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(currentCourierStatus, shipment);
+                        if (activityLog) {
+                            await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, currentCourierStatus);
+                            updatedCount++;
+                        }
+                    }
+                } catch (innerErr) {
+                    logger.error({ err: innerErr, trackingId: shipment.externalTrackingId }, '[SYNC] Failed individual Ecotrack sync');
+                }
+            }
+        }
+
+        if (i + BULK_SIZE < ecotrackShipments.length) {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
     }

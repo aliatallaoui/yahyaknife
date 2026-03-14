@@ -222,21 +222,21 @@ export default function CallCenterDashboard() {
         const riskDot = riskLevel ? RISK_DOT[riskLevel] : null;
 
         const statusBadge = isCallback ? (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-600 w-fit">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-fit">
                 <Calendar className="w-3 h-3" /> {t('callcenter.dueCallback', 'Due callback')}
             </span>
         ) : isSlaBreach ? (
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-bold bg-red-100 text-red-700 w-fit border border-red-200 shadow-sm animate-pulse">
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 w-fit border border-red-200 dark:border-red-800 shadow-sm animate-pulse">
                 <AlertCircle className="w-3 h-3" /> {t('callcenter.slaBreach', 'SLA Breach')} ({waitHours}h)
             </span>
         ) : (
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold w-fit ${isUrgent ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-500'}`}>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold w-fit ${isUrgent ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                 {waitHours}h
             </span>
         );
 
         const orderStatusBadge = order.status && order.status !== 'New' ? (
-            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded w-fit border border-amber-100/50">
+            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded w-fit border border-amber-100/50 dark:border-amber-800/50">
                 {getOrderStatusLabel(t, order.status)}
             </span>
         ) : null;
@@ -244,18 +244,18 @@ export default function CallCenterDashboard() {
         // Mobile card layout
         const MobileCard = () => (
             <div
-                className={`p-3 border-b border-gray-100 cursor-pointer active:bg-indigo-50/50 transition-colors ${isSlaBreach ? 'bg-red-50/40 border-s-2 border-s-red-500' : isUrgent && !isCallback ? 'bg-amber-50/40' : ''} ${isCallback ? 'bg-blue-50/30' : ''}`}
+                className={`p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer active:bg-indigo-50/50 dark:active:bg-indigo-900/30 transition-colors ${isSlaBreach ? 'bg-red-50/40 dark:bg-red-900/20 border-s-2 border-s-red-500' : isUrgent && !isCallback ? 'bg-amber-50/40 dark:bg-amber-900/20' : ''} ${isCallback ? 'bg-blue-50/30 dark:bg-blue-900/20' : ''}`}
                 onClick={() => { setSelectedOrder(order); setIsDrawerOpen(true); }}
             >
                 <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
                         {riskDot && <span className={`w-2 h-2 rounded-full ${riskDot} shrink-0`} title={`${riskLevel} risk`} />}
                         <div className="min-w-0">
-                            <p className="text-gray-900 font-semibold text-sm truncate">{displayName}</p>
-                            <p className="text-[11px] text-gray-500 font-mono">{displayId}</p>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm truncate">{displayName}</p>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">{displayId}</p>
                         </div>
                     </div>
-                    <p className="font-bold text-gray-900 text-sm shrink-0">{(order.totalAmount || 0).toLocaleString()} <span className="text-[10px] text-gray-400">{t('common.dzd', 'DZD')}</span></p>
+                    <p className="font-bold text-gray-900 dark:text-white text-sm shrink-0">{(order.totalAmount || 0).toLocaleString()} <span className="text-[10px] text-gray-400 dark:text-gray-500">{t('common.dzd', 'DZD')}</span></p>
                 </div>
                 {isAdmin && order.assignedAgentName && (
                     <p className="text-[11px] text-indigo-600 font-semibold mb-1">{order.assignedAgentName}</p>
@@ -265,13 +265,13 @@ export default function CallCenterDashboard() {
                         {statusBadge}
                         {orderStatusBadge}
                         <AssignmentBadge mode={order.assignmentMode} />
-                        {displayWilaya && <span className="text-[11px] text-gray-500">{displayWilaya}</span>}
+                        {displayWilaya && <span className="text-[11px] text-gray-500 dark:text-gray-400">{displayWilaya}</span>}
                     </div>
                     {queueTab === 'Unassigned' && canClaimOrders ? (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleClaimOrder(order._id); }}
                             disabled={claimingId === order._id}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0 disabled:opacity-50"
                         >
                             <Hand className="w-3.5 h-3.5" />
                             {claimingId === order._id ? '...' : t('callcenter.claim', 'Claim')}
@@ -279,7 +279,7 @@ export default function CallCenterDashboard() {
                     ) : (
                         <button
                             onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setIsDrawerOpen(true); }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs shrink-0"
                         >
                             <PhoneCall className="w-3.5 h-3.5" />
                         </button>
@@ -291,21 +291,21 @@ export default function CallCenterDashboard() {
         // Desktop table row
         const DesktopRow = () => (
             <tr
-                className={`hover:bg-indigo-50/30 transition-colors cursor-pointer group ${isSlaBreach ? 'bg-red-50/40 border-s-2 border-s-red-500' : isUrgent && !isCallback ? 'bg-amber-50/40' : ''} ${isCallback ? 'bg-blue-50/30' : ''}`}
+                className={`hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors cursor-pointer group ${isSlaBreach ? 'bg-red-50/40 dark:bg-red-900/20 border-s-2 border-s-red-500' : isUrgent && !isCallback ? 'bg-amber-50/40 dark:bg-amber-900/20' : ''} ${isCallback ? 'bg-blue-50/30 dark:bg-blue-900/20' : ''}`}
                 onClick={() => { setSelectedOrder(order); setIsDrawerOpen(true); }}
             >
-                <td className="px-5 py-3.5 font-mono text-xs font-bold text-indigo-600">{displayId}</td>
+                <td className="px-5 py-3.5 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{displayId}</td>
                 <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
                         {riskDot && <span className={`w-2 h-2 rounded-full ${riskDot} shrink-0`} title={`${riskLevel} risk`} />}
                         <div className="min-w-0">
-                            <p className="text-gray-900 font-semibold text-sm truncate">{displayName}</p>
+                            <p className="text-gray-900 dark:text-white font-semibold text-sm truncate">{displayName}</p>
                             <PhoneChip phone={order.customer?.phone || order.shipping?.phone1} />
                         </div>
                     </div>
                 </td>
-                <td className="px-5 py-3.5 text-sm text-gray-600">{displayWilaya}{displayCommune ? `, ${displayCommune}` : ''}</td>
-                <td className="px-5 py-3.5 text-sm text-gray-800">
+                <td className="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400">{displayWilaya}{displayCommune ? `, ${displayCommune}` : ''}</td>
+                <td className="px-5 py-3.5 text-sm text-gray-800 dark:text-gray-200">
                     {order.products?.length > 0 ? (
                         <div className="flex flex-col gap-0.5">
                             {order.products.slice(0, 2).map((p, i) => (
@@ -314,16 +314,16 @@ export default function CallCenterDashboard() {
                                 </span>
                             ))}
                             {order.products.length > 2 && (
-                                <span className="text-[10px] text-gray-400 font-medium bg-gray-50 px-1 py-0.5 rounded w-fit mt-0.5 border border-gray-100">
+                                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium bg-gray-50 dark:bg-gray-700/50 px-1 py-0.5 rounded w-fit mt-0.5 border border-gray-100 dark:border-gray-600">
                                     +{order.products.length - 2} {t('common.more', 'more')}
                                 </span>
                             )}
                         </div>
                     ) : (
-                        <span className="text-gray-400 italic text-[11px]">{t('common.noItems', 'No items')}</span>
+                        <span className="text-gray-400 dark:text-gray-500 italic text-[11px]">{t('common.noItems', 'No items')}</span>
                     )}
                 </td>
-                <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">{(order.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400">{t('common.dzd', 'DZD')}</span></td>
+                <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white text-sm">{(order.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{t('common.dzd', 'DZD')}</span></td>
                 <td className="px-5 py-3.5">
                     <div className="flex flex-col gap-1 items-start">
                         {statusBadge}
@@ -333,7 +333,7 @@ export default function CallCenterDashboard() {
                 <td className="px-5 py-3.5 text-end">
                     <button
                         onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setIsDrawerOpen(true); }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs"
                     >
                         <PhoneCall className="w-3.5 h-3.5" />
                         {t('callcenter.action.call', 'Process')}
@@ -396,15 +396,15 @@ export default function CallCenterDashboard() {
             </div>
 
             {error && (
-                <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-100 rounded-xl text-sm text-rose-700">
+                <div className="flex items-center gap-3 p-4 bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800 rounded-xl text-sm text-rose-700 dark:text-rose-300">
                     <AlertCircle className="w-5 h-5 shrink-0" />
                     {t('callcenter.error', 'Failed to load queue. Check your connection and refresh.')}
                 </div>
             )}
 
             {/* Main Queue with Tabs - takes remaining height */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 min-h-[400px]">
-                <div className="p-5 border-b border-gray-100 space-y-3 shrink-0">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col flex-1 min-h-[400px]">
+                <div className="p-5 border-b border-gray-100 dark:border-gray-700 space-y-3 shrink-0">
                     {/* Tab Bar */}
                     <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
                         {visibleTabs.map(tab => {
@@ -416,15 +416,15 @@ export default function CallCenterDashboard() {
                                     onClick={() => setQueueTab(tab.key)}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
                                         active
-                                            ? 'bg-white text-gray-900 shadow-sm'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     {tab.icon && <tab.icon className="w-3.5 h-3.5" />}
                                     {t(`callcenter.tab.${tab.key}`, tab.key)}
                                     {count > 0 && (
                                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                            active ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'
+                                            active ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                                         }`}>{count}</span>
                                     )}
                                 </button>
@@ -435,21 +435,21 @@ export default function CallCenterDashboard() {
                     {/* Search + Start Processing */}
                     <div className="flex flex-wrap justify-between items-center gap-3">
                         <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-gray-900">{t('callcenter.queue.title', 'Active Queue')}</h3>
+                            <h3 className="font-bold text-gray-900 dark:text-white">{t('callcenter.queue.title', 'Active Queue')}</h3>
                             {!loading && (
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[11px] font-bold">{filtered.length}</span>
+                                <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-[11px] font-bold">{filtered.length}</span>
                             )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                             <div className="relative">
-                                <Search className="w-4 h-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2" />
+                                <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute start-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     ref={searchInputRef}
                                     type="text"
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
                                     placeholder={t('callcenter.queue.search', 'Search by name, phone, wilaya…')}
-                                    className="w-full sm:w-56 ps-9 pe-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full sm:w-56 ps-9 pe-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100"
                                     title={t('common.slashToFocus', 'Press / to focus')}
                                 />
                             </div>
@@ -469,19 +469,19 @@ export default function CallCenterDashboard() {
                 <div className="flex-1 overflow-auto min-h-0 relative">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
-                            <div className="w-7 h-7 rounded-full border-4 border-gray-200 border-t-indigo-500 animate-spin" />
+                            <div className="w-7 h-7 rounded-full border-4 border-gray-200 dark:border-gray-600 border-t-indigo-500 animate-spin" />
                         </div>
                     ) : queueTab === 'Delivery' ? (
                         /* ─── Delivery Follow-Up Tab ─── */
                         filtered.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-                                <Truck className="w-12 h-12 text-gray-300 mb-3" />
-                                <p className="font-bold text-gray-500">{t('callcenter.delivery.empty', 'No orders in delivery follow-up.')}</p>
+                                <Truck className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                                <p className="font-bold text-gray-500 dark:text-gray-400">{t('callcenter.delivery.empty', 'No orders in delivery follow-up.')}</p>
                             </div>
                         ) : (
                             <>
                                 {/* Mobile cards */}
-                                <div className="md:hidden divide-y divide-gray-100">
+                                <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
                                     {filtered.map(o => {
                                         const name = o.customer?.name || o.shipping?.recipientName || '—';
                                         const phone = o.customer?.phone || o.shipping?.phone1 || '';
@@ -496,40 +496,40 @@ export default function CallCenterDashboard() {
                                             <div key={o._id} className="p-3 space-y-2">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-                                                        <p className="text-[11px] text-gray-500 font-mono">{o.orderId || o._id?.slice(-6)}</p>
+                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{name}</p>
+                                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">{o.orderId || o._id?.slice(-6)}</p>
                                                     </div>
                                                     <span className={`shrink-0 px-2 py-1 rounded-full text-[11px] font-bold ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-600'}`}>
                                                         {getOrderStatusLabel(t, o.status)}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                                         {shipment?.externalTrackingId && (
-                                                            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">{shipment.externalTrackingId}</span>
+                                                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">{shipment.externalTrackingId}</span>
                                                         )}
                                                         <span>{o.shipping?.wilayaName || o.wilaya}</span>
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
-                                                        <a href={`tel:${phone}`} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100">
+                                                        <a href={`tel:${phone}`} className="p-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50">
                                                             <PhoneCall className="w-3.5 h-3.5" />
                                                         </a>
                                                         <button
                                                             onClick={() => setQuickMsgOrder(quickMsgOrder?._id === o._id ? null : o)}
-                                                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                                                            className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"
                                                         >
                                                             <SendIcon className="w-3.5 h-3.5" />
                                                         </button>
                                                         <button
                                                             onClick={() => { setSelectedOrder(o); setIsDrawerOpen(true); }}
-                                                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100"
+                                                            className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
                                                         >
                                                             <MessageSquare className="w-3.5 h-3.5" />
                                                         </button>
                                                     </div>
                                                 </div>
                                                 {quickMsgOrder?._id === o._id && (
-                                                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-200 dark:border-gray-600">
                                                         <MessagePanel orderId={o._id} isOpen onMessageSent={() => setQuickMsgOrder(null)} />
                                                     </div>
                                                 )}
@@ -564,13 +564,13 @@ export default function CallCenterDashboard() {
                                                 };
                                                 return (
                                                     <React.Fragment key={o._id}>
-                                                        <tr className="hover:bg-indigo-50/30 transition-colors cursor-pointer" onClick={() => { setSelectedOrder(o); setIsDrawerOpen(true); }}>
-                                                            <td className="px-5 py-3.5 font-mono text-xs font-bold text-indigo-600">{o.orderId || o._id?.slice(-6)}</td>
+                                                        <tr className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors cursor-pointer" onClick={() => { setSelectedOrder(o); setIsDrawerOpen(true); }}>
+                                                            <td className="px-5 py-3.5 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{o.orderId || o._id?.slice(-6)}</td>
                                                             <td className="px-5 py-3.5">
-                                                                <p className="text-gray-900 font-semibold text-sm truncate">{name}</p>
+                                                                <p className="text-gray-900 dark:text-white font-semibold text-sm truncate">{name}</p>
                                                                 <PhoneChip phone={phone} />
                                                             </td>
-                                                            <td className="px-5 py-3.5 text-sm text-gray-600">{o.shipping?.wilayaName || o.wilaya}{o.shipping?.commune ? `, ${o.shipping.commune}` : ''}</td>
+                                                            <td className="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400">{o.shipping?.wilayaName || o.wilaya}{o.shipping?.commune ? `, ${o.shipping.commune}` : ''}</td>
                                                             <td className="px-5 py-3.5">
                                                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                                                     <Truck className="w-3 h-3" />
@@ -579,27 +579,27 @@ export default function CallCenterDashboard() {
                                                             </td>
                                                             <td className="px-5 py-3.5">
                                                                 {shipment?.externalTrackingId ? (
-                                                                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded-md text-gray-700">{shipment.externalTrackingId}</span>
+                                                                    <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300">{shipment.externalTrackingId}</span>
                                                                 ) : (
-                                                                    <span className="text-xs text-gray-400 italic">{t('callcenter.delivery.noTracking', 'No tracking')}</span>
+                                                                    <span className="text-xs text-gray-400 dark:text-gray-500 italic">{t('callcenter.delivery.noTracking', 'No tracking')}</span>
                                                                 )}
                                                             </td>
-                                                            <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">{(o.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400">{t('common.dzd', 'DZD')}</span></td>
+                                                            <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white text-sm">{(o.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{t('common.dzd', 'DZD')}</span></td>
                                                             <td className="px-5 py-3.5">
                                                                 <div className="flex items-center justify-end gap-1.5">
-                                                                    <a href={`tel:${phone}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors" title={t('callcenter.delivery.callCustomer', 'Call customer')}>
+                                                                    <a href={`tel:${phone}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors" title={t('callcenter.delivery.callCustomer', 'Call customer')}>
                                                                         <PhoneCall className="w-3.5 h-3.5" />
                                                                     </a>
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); setQuickMsgOrder(quickMsgOrder?._id === o._id ? null : o); }}
-                                                                        className={`p-1.5 rounded-lg transition-colors ${quickMsgOrder?._id === o._id ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'}`}
+                                                                        className={`p-1.5 rounded-lg transition-colors ${quickMsgOrder?._id === o._id ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white'}`}
                                                                         title={t('callcenter.delivery.sendMessage', 'Send message')}
                                                                     >
                                                                         <SendIcon className="w-3.5 h-3.5" />
                                                                     </button>
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); setIsDrawerOpen(true); }}
-                                                                        className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors"
+                                                                        className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors"
                                                                         title={t('callcenter.delivery.viewDetails', 'View details')}
                                                                     >
                                                                         <MessageSquare className="w-3.5 h-3.5" />
@@ -609,7 +609,7 @@ export default function CallCenterDashboard() {
                                                         </tr>
                                                         {quickMsgOrder?._id === o._id && (
                                                             <tr>
-                                                                <td colSpan={7} className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+                                                                <td colSpan={7} className="px-5 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                                                                     <MessagePanel orderId={o._id} isOpen onMessageSent={() => setQuickMsgOrder(null)} />
                                                                 </td>
                                                             </tr>
@@ -624,8 +624,8 @@ export default function CallCenterDashboard() {
                         )
                     ) : filtered.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-                            <CheckCircle className="w-12 h-12 text-emerald-300 mb-3" />
-                            <p className="font-bold text-gray-500">
+                            <CheckCircle className="w-12 h-12 text-emerald-300 dark:text-emerald-600 mb-3" />
+                            <p className="font-bold text-gray-500 dark:text-gray-400">
                                 {search ? t('callcenter.queue.no_match', 'No orders match your search.') : t('callcenter.queue.empty', 'Inbox zero! All orders processed.')}
                             </p>
                             {search && <button onClick={() => setSearch('')} className="mt-2 text-xs text-indigo-500 hover:underline">{t('callcenter.clearSearch', 'Clear search')}</button>}
@@ -654,15 +654,15 @@ export default function CallCenterDashboard() {
                                             const riskDotRow = riskLevelRow ? RISK_DOT[riskLevelRow] : null;
 
                                             const statusBadge = isCallbackRow ? (
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-600 w-fit">
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-fit">
                                                     <Calendar className="w-3 h-3" /> {t('callcenter.dueCallback', 'Due callback')}
                                                 </span>
                                             ) : isSlaBreachRow ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-bold bg-red-100 text-red-700 w-fit border border-red-200 shadow-sm animate-pulse">
+                                                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 w-fit border border-red-200 dark:border-red-800 shadow-sm animate-pulse">
                                                     <AlertCircle className="w-3 h-3" /> {t('callcenter.slaBreach', 'SLA Breach')} ({waitHours}h)
                                                 </span>
                                             ) : (
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold w-fit ${isUrgentRow ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold w-fit ${isUrgentRow ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                                                     {waitHours}h
                                                 </span>
                                             );
@@ -670,21 +670,21 @@ export default function CallCenterDashboard() {
                                             return (
                                                 <tr
                                                     key={o._id}
-                                                    className={`hover:bg-indigo-50/30 transition-colors cursor-pointer group ${isSlaBreachRow ? 'bg-red-50/40 border-s-2 border-s-red-500' : isUrgentRow && !isCallbackRow ? 'bg-amber-50/40' : ''} ${isCallbackRow ? 'bg-blue-50/30' : ''}`}
+                                                    className={`hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors cursor-pointer group ${isSlaBreachRow ? 'bg-red-50/40 dark:bg-red-900/20 border-s-2 border-s-red-500' : isUrgentRow && !isCallbackRow ? 'bg-amber-50/40 dark:bg-amber-900/20' : ''} ${isCallbackRow ? 'bg-blue-50/30 dark:bg-blue-900/20' : ''}`}
                                                     onClick={() => { setSelectedOrder(o); setIsDrawerOpen(true); }}
                                                 >
-                                                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-indigo-600">{displayIdRow}</td>
+                                                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{displayIdRow}</td>
                                                     <td className="px-5 py-3.5">
                                                         <div className="flex items-center gap-2">
                                                             {riskDotRow && <span className={`w-2 h-2 rounded-full ${riskDotRow} shrink-0`} title={`${riskLevelRow} risk`} />}
                                                             <div className="min-w-0">
-                                                                <p className="text-gray-900 font-semibold text-sm truncate">{displayNameRow}</p>
+                                                                <p className="text-gray-900 dark:text-white font-semibold text-sm truncate">{displayNameRow}</p>
                                                                 <PhoneChip phone={o.customer?.phone || o.shipping?.phone1} />
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-600">{displayWilayaRow}{displayCommuneRow ? `, ${displayCommuneRow}` : ''}</td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-800">
+                                                    <td className="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400">{displayWilayaRow}{displayCommuneRow ? `, ${displayCommuneRow}` : ''}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-gray-800 dark:text-gray-200">
                                                         {o.products?.length > 0 ? (
                                                             <div className="flex flex-col gap-0.5">
                                                                 {o.products.slice(0, 2).map((p, i) => (
@@ -693,22 +693,22 @@ export default function CallCenterDashboard() {
                                                                     </span>
                                                                 ))}
                                                                 {o.products.length > 2 && (
-                                                                    <span className="text-[10px] text-gray-400 font-medium bg-gray-50 px-1 py-0.5 rounded w-fit mt-0.5 border border-gray-100">
+                                                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium bg-gray-50 dark:bg-gray-700/50 px-1 py-0.5 rounded w-fit mt-0.5 border border-gray-100 dark:border-gray-600">
                                                                         +{o.products.length - 2} {t('common.more', 'more')}
                                                                     </span>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-400 italic text-[11px]">{t('common.noItems', 'No items')}</span>
+                                                            <span className="text-gray-400 dark:text-gray-500 italic text-[11px]">{t('common.noItems', 'No items')}</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">{(o.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400">{t('common.dzd', 'DZD')}</span></td>
+                                                    <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white text-sm">{(o.totalAmount || 0).toLocaleString()} <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{t('common.dzd', 'DZD')}</span></td>
                                                     {isAdmin && (
                                                         <td className="px-5 py-3.5">
                                                             {o.assignedAgentName ? (
                                                                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{o.assignedAgentName}</span>
                                                             ) : (
-                                                                <span className="text-[11px] text-gray-400 italic">{t('callcenter.unassigned', 'Unassigned')}</span>
+                                                                <span className="text-[11px] text-gray-400 dark:text-gray-500 italic">{t('callcenter.unassigned', 'Unassigned')}</span>
                                                             )}
                                                         </td>
                                                     )}
@@ -716,7 +716,7 @@ export default function CallCenterDashboard() {
                                                         <div className="flex flex-col gap-1 items-start">
                                                             {statusBadge}
                                                             {o.status && o.status !== 'New' && (
-                                                                <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded w-fit border border-amber-100/50">
+                                                                <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded w-fit border border-amber-100/50 dark:border-amber-800/50">
                                                                     {getOrderStatusLabel(t, o.status)}
                                                                 </span>
                                                             )}
@@ -729,7 +729,7 @@ export default function CallCenterDashboard() {
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); handleClaimOrder(o._id); }}
                                                                     disabled={claimingId === o._id}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors font-bold text-xs disabled:opacity-50"
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors font-bold text-xs disabled:opacity-50"
                                                                 >
                                                                     <Hand className="w-3.5 h-3.5" />
                                                                     {claimingId === o._id ? t('common.loading', '...') : t('callcenter.claim', 'Claim')}
@@ -737,7 +737,7 @@ export default function CallCenterDashboard() {
                                                             ) : (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); setIsDrawerOpen(true); }}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs"
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors font-bold text-xs"
                                                                 >
                                                                     <PhoneCall className="w-3.5 h-3.5" />
                                                                     {t('callcenter.action.call', 'Process')}

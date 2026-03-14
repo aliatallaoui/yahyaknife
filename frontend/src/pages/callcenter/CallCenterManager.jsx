@@ -245,14 +245,14 @@ export default function CallCenterManager() {
 
             {/* Auto-assign feedback banners */}
             {assignSuccess && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 animate-in fade-in">
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300 animate-in fade-in">
                     <CheckCircle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{assignSuccess}</span>
                     <button onClick={() => setAssignSuccess(null)} className="text-emerald-500 hover:text-emerald-700"><X className="w-4 h-4" /></button>
                 </div>
             )}
             {assignError && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 animate-in fade-in">
+                <div className="flex items-center gap-3 px-4 py-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-sm text-rose-700 dark:text-rose-300 animate-in fade-in">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{assignError}</span>
                     <button onClick={() => setAssignError(null)} className="text-rose-400 hover:text-rose-600"><X className="w-4 h-4" /></button>
@@ -264,19 +264,19 @@ export default function CallCenterManager() {
             {ops && (ops.queueDepth > 50 || ops.queueAge?.over24h > 10 || ops.noAnswerTotal > 30) && (
                 <div className="space-y-2 animate-in fade-in">
                     {ops.queueDepth > 50 && (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 font-medium">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-300 font-medium">
                             <Bell className="w-4 h-4 shrink-0 text-amber-500" />
                             <span>{t('callcenter.alert.queueHigh', 'Queue depth is {{count}} orders — consider adding agents or auto-assigning.', { count: ops.queueDepth })}</span>
                         </div>
                     )}
                     {ops.queueAge?.over24h > 10 && (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300 font-medium">
                             <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
                             <span>{t('callcenter.alert.staleOrders', '{{count}} orders have been waiting over 24 hours without resolution.', { count: ops.queueAge.over24h })}</span>
                         </div>
                     )}
                     {ops.noAnswerTotal > 30 && (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700 font-medium">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl text-sm text-orange-700 dark:text-orange-300 font-medium">
                             <PhoneCall className="w-4 h-4 shrink-0 text-orange-500" />
                             <span>{t('callcenter.alert.noAnswer', '{{count}} orders stuck in No Answer status. Follow-up job runs every 2 hours.', { count: ops.noAnswerTotal })}</span>
                         </div>
@@ -286,8 +286,8 @@ export default function CallCenterManager() {
 
             {/* Operations Dashboard */}
             {ops && (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
                         <BarChart3 className="w-4 h-4 text-blue-600" />
                         {t('callcenter.ops.title', 'Live Operations')}
                     </h3>
@@ -303,7 +303,7 @@ export default function CallCenterManager() {
                         ].map((m, i) => (
                             <div key={i} className={`${m.bg} border rounded-xl p-3 text-center`}>
                                 <m.icon className={`w-4 h-4 ${m.iconColor} mx-auto mb-1`} />
-                                <p className="text-xl sm:text-2xl font-black text-gray-900">{m.value}</p>
+                                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{m.value}</p>
                                 <p className={`text-[10px] font-semibold ${m.labelColor} uppercase`}>{m.label}</p>
                             </div>
                         ))}
@@ -312,8 +312,8 @@ export default function CallCenterManager() {
                     {/* Row 2: Queue Age + Workload */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Queue Age */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
-                            <h4 className="font-bold text-gray-700 text-xs uppercase mb-3">{t('callcenter.ops.queueAge', 'Queue Aging')}</h4>
+                        <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-xl p-4">
+                            <h4 className="font-bold text-gray-700 dark:text-gray-300 text-xs uppercase mb-3">{t('callcenter.ops.queueAge', 'Queue Aging')}</h4>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {[
                                     { label: '>1h', val: ops.queueAge?.over1h || 0, color: 'text-gray-600' },
@@ -323,32 +323,32 @@ export default function CallCenterManager() {
                                 ].map(a => (
                                     <div key={a.label} className="text-center">
                                         <p className={`text-xl font-black ${a.color}`}>{a.val}</p>
-                                        <p className="text-[10px] font-semibold text-gray-500 uppercase">{a.label}</p>
+                                        <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">{a.label}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Agent Workload */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
-                            <h4 className="font-bold text-gray-700 text-xs uppercase mb-3">{t('callcenter.ops.agentWorkload', 'Agent Workload')}</h4>
+                        <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-xl p-4">
+                            <h4 className="font-bold text-gray-700 dark:text-gray-300 text-xs uppercase mb-3">{t('callcenter.ops.agentWorkload', 'Agent Workload')}</h4>
                             {ops.agentWorkload?.length > 0 ? (
                                 <div className="space-y-2">
                                     {ops.agentWorkload.map(a => (
                                         <div key={a.agentId} className="flex items-center gap-2 sm:gap-3">
-                                            <span className="text-xs font-semibold text-gray-700 w-16 sm:w-24 truncate">{a.name}</span>
-                                            <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 w-16 sm:w-24 truncate">{a.name}</span>
+                                            <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-indigo-500 rounded-full transition-all"
                                                     style={{ width: `${Math.round((a.count / maxWorkload) * 100)}%` }}
                                                 />
                                             </div>
-                                            <span className="text-xs font-black text-gray-900 w-8 text-right">{a.count}</span>
+                                            <span className="text-xs font-black text-gray-900 dark:text-white w-8 text-right">{a.count}</span>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-gray-400 text-center py-2">{t('callcenter.ops.noWorkload', 'No active assignments')}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">{t('callcenter.ops.noWorkload', 'No active assignments')}</p>
                             )}
                         </div>
                     </div>
@@ -364,13 +364,13 @@ export default function CallCenterManager() {
             </div>
 
             {/* Leaderboard */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gray-50/50">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm sm:text-base">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm sm:text-base">
                         <Users className="w-5 h-5 text-indigo-600 shrink-0" />
                         {t('callcenter.leaderboard.title', 'Agent Performance Leaderboard')}
                     </h3>
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 self-start sm:self-auto">
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 self-start sm:self-auto">
                         {[
                             { key: 'today', label: t('callcenter.period.today', 'Today') },
                             { key: '7d', label: t('callcenter.period.7d', '7 Days') },
@@ -379,7 +379,7 @@ export default function CallCenterManager() {
                             <button
                                 key={key}
                                 onClick={() => setPeriod(key)}
-                                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${period === key ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${period === key ? 'bg-white dark:bg-gray-800 text-indigo-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                             >
                                 {label}
                             </button>
@@ -404,7 +404,7 @@ export default function CallCenterManager() {
                         <tbody>
                             {leaderboard.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                         {t('general.no_data', 'No data available.')}
                                     </td>
                                 </tr>
@@ -415,18 +415,18 @@ export default function CallCenterManager() {
                                     <tr key={agent.agentId} onClick={() => setSelectedAgentForModal(agent.agentId)} className="cursor-pointer group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                                                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">
                                                     {agent.name.charAt(0)}
                                                 </div>
-                                                <span className="font-semibold text-gray-900">{agent.name}</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">{agent.name}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-gray-700">{agent.totalAssigned}</td>
-                                        <td className="px-6 py-4 font-medium text-gray-700">{agent.totalCalls}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-700 dark:text-gray-300">{agent.totalAssigned}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-700 dark:text-gray-300">{agent.totalCalls}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-gray-900">{agent.confirmedRate}%</span>
-                                                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                <span className="font-bold text-gray-900 dark:text-white">{agent.confirmedRate}%</span>
+                                                <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-full ${agent.confirmedRate > 70 ? 'bg-emerald-500' : agent.confirmedRate > 40 ? 'bg-amber-500' : 'bg-red-500'}`}
                                                         style={{ width: `${agent.confirmedRate}%` }}
@@ -444,13 +444,13 @@ export default function CallCenterManager() {
                                                 {agent.returnRate ?? 0}%
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-gray-700">
+                                        <td className="px-6 py-4 font-medium text-gray-700 dark:text-gray-300">
                                             {agent.totalDelivered}
-                                            <span className="text-gray-400 text-xs ml-1">
+                                            <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">
                                                 ({agent.totalAssigned > 0 ? ((agent.totalDelivered / agent.totalAssigned) * 100).toFixed(0) : 0}%)
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 font-bold text-gray-900 text-right">{agent.commissionEarned?.toLocaleString()} {t('common.dzd', 'DZD')}</td>
+                                        <td className="px-6 py-4 font-bold text-gray-900 dark:text-white text-right">{agent.commissionEarned?.toLocaleString()} {t('common.dzd', 'DZD')}</td>
                                     </tr>
                                 );
                             })}
@@ -509,9 +509,9 @@ function SupervisorQueueView({ data, loading, t, onRefresh }) {
 
     if (!data || data.counts?.total === 0) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-12 text-center">
                 <CheckCircle className="w-12 h-12 text-emerald-300 mx-auto mb-3" />
-                <p className="font-bold text-gray-500">{t('callcenter.supervisor.allClear', 'All clear — no orders need supervisor attention.')}</p>
+                <p className="font-bold text-gray-500 dark:text-gray-400">{t('callcenter.supervisor.allClear', 'All clear — no orders need supervisor attention.')}</p>
             </div>
         );
     }
@@ -530,19 +530,19 @@ function SupervisorQueueView({ data, loading, t, onRefresh }) {
                 {sections.map(s => (
                     <div key={s.key} className={`rounded-xl border p-4 text-center ${s.color}`}>
                         <s.icon className={`w-5 h-5 mx-auto mb-1 ${s.iconColor}`} />
-                        <p className="text-2xl font-black text-gray-900">{s.items?.length || 0}</p>
-                        <p className="text-[10px] font-semibold text-gray-600 uppercase">{s.key.replace(/([A-Z])/g, ' $1')}</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">{s.items?.length || 0}</p>
+                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">{s.key.replace(/([A-Z])/g, ' $1')}</p>
                     </div>
                 ))}
             </div>
 
             {/* Detail Sections */}
             {sections.map(s => s.items?.length > 0 && (
-                <div key={s.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div key={s.key} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className={`px-5 py-3 border-b flex items-center gap-2 ${s.color}`}>
                         <s.icon className={`w-4 h-4 ${s.iconColor}`} />
-                        <h3 className="font-bold text-gray-900 text-sm">{s.title}</h3>
-                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-gray-700">{s.items.length}</span>
+                        <h3 className="font-bold text-gray-900 dark:text-white text-sm">{s.title}</h3>
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">{s.items.length}</span>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="cf-table">
@@ -562,16 +562,16 @@ function SupervisorQueueView({ data, loading, t, onRefresh }) {
                                         <td className="px-5 py-2.5 font-mono text-xs font-bold text-indigo-600">{order.orderId || order._id?.slice(-6)}</td>
                                         <td className="px-5 py-2.5">
                                             <div>
-                                                <p className="font-semibold text-gray-800 text-xs">{order.customer?.name || '—'}</p>
-                                                <p className="text-[10px] text-gray-400">{order.customer?.phone || ''}</p>
+                                                <p className="font-semibold text-gray-800 dark:text-gray-200 text-xs">{order.customer?.name || '—'}</p>
+                                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{order.customer?.phone || ''}</p>
                                             </div>
                                         </td>
-                                        <td className="px-5 py-2.5 text-xs text-gray-600">{order.wilaya || '—'}</td>
-                                        <td className="px-5 py-2.5 text-xs font-bold text-gray-900">{(order.totalAmount || 0).toLocaleString()} DZD</td>
+                                        <td className="px-5 py-2.5 text-xs text-gray-600 dark:text-gray-400">{order.wilaya || '—'}</td>
+                                        <td className="px-5 py-2.5 text-xs font-bold text-gray-900 dark:text-white">{(order.totalAmount || 0).toLocaleString()} DZD</td>
                                         <td className="px-5 py-2.5">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{order.status}</span>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{order.status}</span>
                                         </td>
-                                        <td className="px-5 py-2.5 text-xs text-gray-600">{order.assignedAgent?.name || t('callcenter.supervisor.unassigned', 'Unassigned')}</td>
+                                        <td className="px-5 py-2.5 text-xs text-gray-600 dark:text-gray-400">{order.assignedAgent?.name || t('callcenter.supervisor.unassigned', 'Unassigned')}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -585,7 +585,7 @@ function SupervisorQueueView({ data, loading, t, onRefresh }) {
 
 // ─── Heatmap Cell Color ────────────────────────────────────────────
 function heatColor(value, max) {
-    if (!max || !value) return 'bg-gray-100 text-gray-400';
+    if (!max || !value) return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500';
     const ratio = value / max;
     if (ratio > 0.75) return 'bg-indigo-600 text-white';
     if (ratio > 0.5) return 'bg-indigo-400 text-white';
@@ -599,10 +599,10 @@ function FunnelBar({ label, value, total, color }) {
     const width = total > 0 ? Math.max((value / total) * 100, 2) : 0;
     return (
         <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-gray-600 w-24 text-right">{label}</span>
-            <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden relative">
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 w-24 text-right">{label}</span>
+            <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden relative">
                 <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${width}%` }} />
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-700">
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-700 dark:text-gray-300">
                     {value.toLocaleString()} ({pct}%)
                 </span>
             </div>
@@ -629,7 +629,7 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
 
     if (!data) {
         return (
-            <div className="text-center py-20 text-gray-400 text-sm">
+            <div className="text-center py-20 text-gray-400 dark:text-gray-500 text-sm">
                 {t('callcenter.analytics.noData', 'No analytics data available.')}
             </div>
         );
@@ -641,8 +641,8 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
         <div className="space-y-6">
             {/* Period Selector */}
             <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">{t('callcenter.analytics.period', 'Period')}:</span>
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('callcenter.analytics.period', 'Period')}:</span>
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                     {[
                         { d: 7, label: '7d' },
                         { d: 14, label: '14d' },
@@ -652,7 +652,7 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                         <button
                             key={d}
                             onClick={() => setDays(d)}
-                            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${days === d ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${days === d ? 'bg-white dark:bg-gray-800 text-indigo-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                         >
                             {label}
                         </button>
@@ -663,8 +663,8 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
             {/* Row 1: Funnel + Daily Trend */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Confirmation Funnel */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
                         <TrendingUp className="w-4 h-4 text-indigo-600" />
                         {t('callcenter.analytics.funnel', 'Confirmation Funnel')}
                     </h3>
@@ -680,8 +680,8 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                 </div>
 
                 {/* Daily Trend */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
                         <Activity className="w-4 h-4 text-emerald-600" />
                         {t('callcenter.analytics.dailyTrend', 'Daily Call Activity')}
                     </h3>
@@ -691,13 +691,13 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                                 const maxCalls = Math.max(1, ...dailyTrend.map(d => d.totalCalls));
                                 return (
                                     <div key={day._id} className="flex items-center gap-2">
-                                        <span className="text-[10px] font-mono text-gray-500 w-20 shrink-0">{day._id}</span>
-                                        <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden relative">
+                                        <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 w-20 shrink-0">{day._id}</span>
+                                        <div className="flex-1 h-5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden relative">
                                             <div
                                                 className="h-full bg-blue-400 rounded-full"
                                                 style={{ width: `${(day.totalCalls / maxCalls) * 100}%` }}
                                             />
-                                            <span className="absolute inset-0 flex items-center px-2 text-[10px] font-bold text-gray-700">
+                                            <span className="absolute inset-0 flex items-center px-2 text-[10px] font-bold text-gray-700 dark:text-gray-300">
                                                 {day.totalCalls} calls · {day.confirmed} confirmed · {day.noAnswer} NA
                                             </span>
                                         </div>
@@ -706,14 +706,14 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                             })}
                         </div>
                     ) : (
-                        <p className="text-xs text-gray-400 text-center py-4">{t('general.no_data', 'No data available.')}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">{t('general.no_data', 'No data available.')}</p>
                     )}
                 </div>
             </div>
 
             {/* Row 2: Heatmap */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-amber-600" />
                     {t('callcenter.analytics.heatmap', 'Call Activity Heatmap (Hour × Day)')}
                 </h3>
@@ -723,14 +723,14 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                             <tr>
                                 <th className="w-10 sm:w-12" />
                                 {Array.from({ length: 24 }, (_, i) => (
-                                    <th key={i} className="px-0.5 py-1 text-gray-400 font-medium text-center">{i}</th>
+                                    <th key={i} className="px-0.5 py-1 text-gray-400 dark:text-gray-500 font-medium text-center">{i}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {heatmap?.map((row, dow) => (
                                 <tr key={dow}>
-                                    <td className="font-semibold text-gray-600 pe-2 text-end whitespace-nowrap">{DOW_LABELS[dow]}</td>
+                                    <td className="font-semibold text-gray-600 dark:text-gray-400 pe-2 text-end whitespace-nowrap">{DOW_LABELS[dow]}</td>
                                     {row.map((val, hour) => (
                                         <td key={hour} className="px-0.5 py-0.5">
                                             <div
@@ -751,8 +751,8 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
             {/* Row 3: Wilaya Breakdown + Agent Rankings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Wilaya Breakdown */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
                         <MapPin className="w-4 h-4 text-blue-600" />
                         {t('callcenter.analytics.wilaya', 'Wilaya Performance')}
                     </h3>
@@ -770,8 +770,8 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                             <tbody>
                                 {wilayaBreakdown?.map(w => (
                                     <tr key={w._id}>
-                                        <td className="py-1.5 font-semibold text-gray-800">{w._id || '—'}</td>
-                                        <td className="py-1.5 text-center text-gray-600">{w.total}</td>
+                                        <td className="py-1.5 font-semibold text-gray-800 dark:text-gray-200">{w._id || '—'}</td>
+                                        <td className="py-1.5 text-center text-gray-600 dark:text-gray-400">{w.total}</td>
                                         <td className="py-1.5 text-center">
                                             <span className={`px-1.5 py-0.5 rounded-full font-bold ${w.answerRate >= 80 ? 'text-emerald-700 bg-emerald-50' : w.answerRate >= 50 ? 'text-amber-700 bg-amber-50' : 'text-red-700 bg-red-50'}`}>
                                                 {w.answerRate}%
@@ -782,7 +782,7 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                                                 {w.confirmRate}%
                                             </span>
                                         </td>
-                                        <td className="py-1.5 text-center text-gray-500">{w.refused}</td>
+                                        <td className="py-1.5 text-center text-gray-500 dark:text-gray-400">{w.refused}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -791,8 +791,8 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                 </div>
 
                 {/* Agent Rankings */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
                         <Users className="w-4 h-4 text-indigo-600" />
                         {t('callcenter.analytics.agentRankings', 'Agent Rankings')}
                     </h3>
@@ -806,14 +806,14 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                         <div className="space-y-1.5">
                             {agentRankings?.best?.map((a, i) => (
                                 <div key={a.agentId} className="flex items-center gap-2 text-xs">
-                                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
-                                    <span className="font-semibold text-gray-800 flex-1 truncate">{a.name}</span>
+                                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
+                                    <span className="font-semibold text-gray-800 dark:text-gray-200 flex-1 truncate">{a.name}</span>
                                     <span className="font-bold text-emerald-600">{a.confirmRate}%</span>
-                                    <span className="text-gray-400">{a.total} orders</span>
+                                    <span className="text-gray-400 dark:text-gray-500">{a.total} orders</span>
                                 </div>
                             ))}
                             {(!agentRankings?.best?.length) && (
-                                <p className="text-xs text-gray-400">{t('callcenter.analytics.notEnoughData', 'Not enough data (min 5 orders)')}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">{t('callcenter.analytics.notEnoughData', 'Not enough data (min 5 orders)')}</p>
                             )}
                         </div>
                     </div>
@@ -827,14 +827,14 @@ function AnalyticsView({ data, loading, days, setDays, t }) {
                         <div className="space-y-1.5">
                             {agentRankings?.worst?.map((a, i) => (
                                 <div key={a.agentId} className="flex items-center gap-2 text-xs">
-                                    <span className="w-5 h-5 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
-                                    <span className="font-semibold text-gray-800 flex-1 truncate">{a.name}</span>
+                                    <span className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
+                                    <span className="font-semibold text-gray-800 dark:text-gray-200 flex-1 truncate">{a.name}</span>
                                     <span className="font-bold text-red-600">{a.confirmRate}%</span>
-                                    <span className="text-gray-400 text-[10px]">cancel: {a.cancelRate}%</span>
+                                    <span className="text-gray-400 dark:text-gray-500 text-[10px]">cancel: {a.cancelRate}%</span>
                                 </div>
                             ))}
                             {(!agentRankings?.worst?.length) && (
-                                <p className="text-xs text-gray-400">{t('callcenter.analytics.notEnoughData', 'Not enough data (min 5 orders)')}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">{t('callcenter.analytics.notEnoughData', 'Not enough data (min 5 orders)')}</p>
                             )}
                         </div>
                     </div>

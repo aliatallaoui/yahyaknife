@@ -68,8 +68,7 @@ function getStatusMapper(providerName) {
     const upper = (providerName || '').toUpperCase();
     switch (upper) {
         case 'ECOTRACK':
-            // Ecotrack mapper is defined in trackerSync.js (legacy), re-exported here for consistency
-            return null; // Caller should use the existing mapCourierStatusToInternal
+            return ecotrackAdapter.mapStatusToInternal;
         case 'YALIDIN':
             return YalidineAdapter.mapStatusToInternal;
         default:
