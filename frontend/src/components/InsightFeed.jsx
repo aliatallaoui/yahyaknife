@@ -99,7 +99,7 @@ export default function InsightFeed() {
                         ) : (
                             insights.alerts.map((alert, idx) => (
                                 <div 
-                                    key={idx} 
+                                    key={alert.code || idx}
                                     className={clsx(
                                         "flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-bold shadow-sm backdrop-blur-md transition-transform hover:-translate-y-0.5",
                                         getSeverityStyles(alert.severity, alert.type)
@@ -121,8 +121,8 @@ export default function InsightFeed() {
                                     {t('intelligence.rec_title', 'Suggested Actions')}
                                 </span>
                                 <ul className="list-disc list-inside space-y-1">
-                                    {insights.recommendations.map((rec, idx) => (
-                                        <li key={idx} className="font-medium text-[13px]">{t(`intelligence.${rec}`, rec)}</li>
+                                    {insights.recommendations.map((rec) => (
+                                        <li key={rec} className="font-medium text-[13px]">{t(`intelligence.${rec}`, rec)}</li>
                                     ))}
                                 </ul>
                             </div>

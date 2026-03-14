@@ -93,7 +93,7 @@ exports.getSupplierIntelligence = async (req, res) => {
         // Single aggregation replaces N per-supplier PurchaseOrder.find calls
         const tenantId = req.user.tenant;
         const [suppliers, poStats] = await Promise.all([
-            Supplier.find({ tenant: tenantId, status: 'Active' }).lean(),
+            Supplier.find({ tenant: tenantId, status: 'Active', deletedAt: null }).lean(),
             PurchaseOrder.aggregate([
                 { $match: { tenant: tenantId, status: { $ne: 'Draft' } } },
                 {

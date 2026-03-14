@@ -376,7 +376,7 @@ export default function HRSnapshot() {
                 <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">{t('hr.departmentDistribution')}</h3>
                     <div className="flex-1 min-h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={deptData} layout="vertical" margin={{ top: 5, right: isAr ? 70 : 30, left: isAr ? 30 : 20, bottom: 5 }}>
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} orientation={isAr ? 'right' : 'left'} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 500, dx: isAr ? 60 : -10 }} width={80} />
@@ -456,7 +456,7 @@ export default function HRSnapshot() {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">{t('hr.workforceUtilization')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-auto md:h-[280px]">
                     <div className="h-[250px] md:h-full relative flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <PieChart>
                                 <Pie
                                     data={utilizationData}

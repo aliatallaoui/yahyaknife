@@ -196,7 +196,7 @@ async function executeTool(call, tenantId) {
 
             // Find or create category
             const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            let category = await Category.findOne({ tenant: tenantId, name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') }, isActive: true });
+            let category = await Category.findOne({ tenant: tenantId, name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') }, isActive: true, deletedAt: null });
             if (!category) {
                 category = await Category.create({ tenant: tenantId, name: categoryName, description: 'Created via AI Copilot' });
             }

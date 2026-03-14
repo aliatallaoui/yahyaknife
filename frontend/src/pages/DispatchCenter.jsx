@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useHotkey } from '../hooks/useHotkey';
 import { apiFetch } from '../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
@@ -173,18 +173,18 @@ export default function DispatchCenter() {
         }
     };
 
-    const filteredShipments = shipments.filter(s => {
+    const filteredShipments = useMemo(() => shipments.filter(s => {
         const matchesSearch = s.externalTrackingId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (s.customerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (s.internalOrderId?.toLowerCase() || '').includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'All' || s.shipmentStatus === statusFilter;
         return matchesSearch && matchesStatus;
-    });
+    }), [shipments, searchTerm, statusFilter]);
 
     // KPI Calculations
-    const totalActive = shipments.filter(s => ['Created in Courier', 'Validated', 'In Transit', 'Out for Delivery'].includes(s.shipmentStatus)).length;
-    const totalDelivered = shipments.filter(s => s.shipmentStatus === 'Delivered').length;
-    const totalReturns = shipments.filter(s => ['Return Initiated', 'Returned', 'Failed Attempt'].includes(s.shipmentStatus)).length;
+    const totalActive = useMemo(() => shipments.filter(s => ['Created in Courier', 'Validated', 'In Transit', 'Out for Delivery'].includes(s.shipmentStatus)).length, [shipments]);
+    const totalDelivered = useMemo(() => shipments.filter(s => s.shipmentStatus === 'Delivered').length, [shipments]);
+    const totalReturns = useMemo(() => shipments.filter(s => ['Return Initiated', 'Returned', 'Failed Attempt'].includes(s.shipmentStatus)).length, [shipments]);
 
     return (
         <div className="space-y-6">

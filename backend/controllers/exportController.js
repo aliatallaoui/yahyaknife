@@ -43,7 +43,7 @@ exports.enqueueOrderExport = async (req, res) => {
                 tenant: tenantId,
                 deletedAt: null,
                 $text: { $search: search }
-            }).select('_id');
+            }).select('_id').lean();
             const customerIds = matchingCustomers.map(c => c._id);
 
             if (customerIds.length > 0) {

@@ -380,7 +380,7 @@ export default function Financial() {
                         <PipelineNode label={t('finance.settled', 'Cash Settled')} value={pipeline.settledRevenue} color="text-emerald-600" bg="bg-emerald-50" icon={CheckCircle2} />
                     </div>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={pipelineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 600 }} />
@@ -424,7 +424,7 @@ export default function Financial() {
                         <TrendingUp className="w-5 h-5 text-indigo-500" /> {t('finance.revenueTrend', 'Revenue & Profit Trend')}
                     </h3>
                     <div className="h-72 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <LineChart data={revenueTrend} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />

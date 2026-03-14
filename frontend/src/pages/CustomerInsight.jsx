@@ -177,7 +177,7 @@ export default function CustomerInsight() {
                         <Target className="w-5 h-5 text-indigo-500" /> {t('crm.chartAcquisitionTitle', 'Acquisition ROI & Channels')}
                     </h3>
                     <div className="flex-1" dir="ltr">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={acquisitionData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
                                 <XAxis type="number" hide />
@@ -200,7 +200,7 @@ export default function CustomerInsight() {
                         <BarChart3 className="w-5 h-5 text-pink-500" /> {t('crm.chartLtvTitle', 'Lifetime Value Segments')}
                     </h3>
                     <div className="flex h-full items-center">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <PieChart>
                                 <Pie
                                     data={ltvData}

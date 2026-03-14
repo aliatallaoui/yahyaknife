@@ -18,7 +18,7 @@ async function calculateDeliveryFee({ courierId, wilayaCode, commune, deliveryTy
     // Fetch all pricing rules for this courier, sorted by priority (descending)
     const query = { courierId };
     if (tenant) query.tenant = tenant;
-    const rules = await CourierPricing.find(query).sort({ priority: -1 });
+    const rules = await CourierPricing.find(query).sort({ priority: -1 }).lean();
 
     if (!rules || rules.length === 0) {
         return { fee: 0, matched: false, rule: null };

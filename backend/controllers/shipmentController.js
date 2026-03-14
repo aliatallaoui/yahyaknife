@@ -150,7 +150,7 @@ exports.exportShipments = async (req, res) => {
         const tenantId = req.user?.tenant;
         if (!tenantId) return res.status(401).json({ message: 'Not authorized' });
 
-        const shipments = await Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).lean();
+        const shipments = await Shipment.find({ tenant: tenantId }).sort({ createdAt: -1 }).limit(10000).lean();
         const fields = ['externalTrackingId', 'internalOrderId', 'courierProvider', 'customerName', 'phone1', 'wilayaName', 'commune', 'shipmentStatus', 'paymentStatus', 'codAmount', 'createdAt'];
 
         let csv = fields.join(',') + '\n';

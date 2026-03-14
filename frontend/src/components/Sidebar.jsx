@@ -1,8 +1,8 @@
-import React, { useContext, useState, useEffect, useMemo } from 'react';
+import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-    Search, LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
+    LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
     Star, Clock, ChevronDown, X, Layers, UserCircle, PhoneCall, Headset, AlertTriangle,
     ScanBarcode, BadgeDollarSign, BarChart3, FileText, Megaphone
@@ -76,7 +76,8 @@ function SidebarItem({ icon, label, path, isCollapsed, onClick, onFavorite, isFa
     );
 }
 
-function SidebarDomain({ title, icon: _icon, items, isCollapsed, searchTerm, onClick, onFavorite, favorites, isOpen, onToggle }) { // eslint-disable-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+function SidebarDomain({ title, icon: Icon, items, isCollapsed, searchTerm, onClick, onFavorite, favorites, isOpen, onToggle }) {
     const location = useLocation();
 
     // Check if domain is active based on children paths
@@ -226,8 +227,13 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     const location = useLocation();
     const { user, logout, hasPermission } = useContext(AuthContext);
     const { t } = useTranslation();
-    const [searchTerm, _setSearchTerm] = useState('');
-    const [favorites, setFavorites] = useState([]);
+    const [searchTerm] = useState('');
+    const [favorites, setFavorites] = useState(() => {
+        try {
+            const stored = localStorage.getItem('favorite_pages');
+            return stored ? JSON.parse(stored) : [];
+        } catch { return []; }
+    });
     const [openDomain, setOpenDomain] = useState(null);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -245,11 +251,11 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
         });
     };
 
-    const hasAnyPermission = (permissionsArr) => {
+    const hasAnyPermission = useCallback((permissionsArr) => {
         if (!user) return false;
         if (!permissionsArr || permissionsArr.length === 0) return true;
         return permissionsArr.some(p => hasPermission(p));
-    };
+    }, [user, hasPermission]);
 
     const isCollapsed = !open && !mobileOpen;
 
@@ -341,27 +347,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
                 items: domain.items.filter(item => hasPermission(item.permission))
             }))
             .filter(domain => domain.items.length > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [DOMAINS, user, hasPermission]);
-
-    // Initialize Favorites
-    useEffect(() => {
-        try {
-            const storedFavs = localStorage.getItem('favorite_pages');
-            if (storedFavs) {
-                 
-                setFavorites(JSON.parse(storedFavs));
-            } else {
-                 
-                setFavorites([
-                    { path: '/inventory', label: t('sidebar.inventory', 'Inventory Tracking') },
-                    { path: '/customers', label: t('sidebar.crm_acquisition', 'Customer Insights') }
-                ]);
-            }
-        } catch {
-            // localStorage parse failure; use defaults
-        }
-    }, [t]);
+    }, [DOMAINS, hasAnyPermission, hasPermission]);
 
     // Auto-open active domain on mount or location change
     useEffect(() => {
@@ -371,8 +357,7 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
             )
         );
         if (activeDomain && !searchTerm) {
-             
-            setOpenDomain(activeDomain.title);
+            setOpenDomain(activeDomain.title); // eslint-disable-line react-hooks/set-state-in-effect -- syncing UI with URL
         }
     }, [location.pathname, accessibleDomains, searchTerm]);
 
@@ -387,8 +372,6 @@ export default function Sidebar({ open = true, setOpen, mobileOpen, setMobileOpe
     const handleLinkClick = () => {
         if (setMobileOpen) setMobileOpen(false);
     };
-
-    const _handleSignOut = () => setShowLogoutConfirm(true);
 
     return (
         <>

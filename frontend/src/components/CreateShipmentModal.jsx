@@ -39,7 +39,8 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
     useEffect(() => {
         if (isOpen) {
-            fetchPendingOrders();
+            const controller = new AbortController();
+            fetchPendingOrders(controller.signal);
             // Reset state
             setFormData({
                 orderId: '', customerName: '', phone1: '', phone2: '',
@@ -48,14 +49,15 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                 operationType: 1, deliveryType: 0, stopDeskFlag: false, fragileFlag: false
             });
             setError('');
+            return () => controller.abort();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
-    const fetchPendingOrders = async () => {
+    const fetchPendingOrders = async (signal) => {
         setLoadingOrders(true);
         try {
-            const res = await apiFetch('/api/sales/orders');
+            const res = await apiFetch('/api/sales/orders', { signal });
             const json = await res.json();
 
             const standardOrders = json.orders || json;

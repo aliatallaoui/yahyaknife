@@ -10,7 +10,7 @@ const { ok, created, message, paginated } = require('../shared/utils/ApiResponse
 
 exports.getSuppliers = async (req, res) => {
     try {
-        const filter = { tenant: req.user.tenant };
+        const filter = { tenant: req.user.tenant, deletedAt: null };
         const [suppliers, total] = await Promise.all([
             Supplier.find(filter).sort('-createdAt').skip(req.skip).limit(req.limit).lean(),
             Supplier.countDocuments(filter)
@@ -110,7 +110,7 @@ exports.createPurchaseOrder = async (req, res) => {
             return res.status(400).json({ error: 'At least one item is required.' });
 
         // Verify supplier belongs to this tenant
-        const supplierDoc = await Supplier.findOne({ _id: supplier, tenant: tenantId });
+        const supplierDoc = await Supplier.findOne({ _id: supplier, tenant: tenantId, deletedAt: null });
         if (!supplierDoc) return res.status(404).json({ error: 'Supplier not found' });
 
         const po = new PurchaseOrder({
@@ -215,7 +215,7 @@ exports.receivePurchaseOrder = async (req, res) => {
 
         // Update Supplier Reliability Score if fully received
         if (fullyReceived && po.expectedDeliveryDate) {
-            const sup = await Supplier.findOne({ _id: po.supplier, tenant: tenantId }).session(session);
+            const sup = await Supplier.findOne({ _id: po.supplier, tenant: tenantId, deletedAt: null }).session(session);
             if (sup) {
                 const onTime = new Date(po.actualDeliveryDate) <= new Date(po.expectedDeliveryDate);
                 sup.performanceMetrics.reliabilityScore = onTime

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, User, PhoneCall, CheckCircle, XCircle, PackageCheck, DollarSign, TrendingUp, RefreshCw } from 'lucide-react';
+import { X, User, PhoneCall, CheckCircle, XCircle, PackageCheck, TrendingUp, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../../utils/apiFetch';
 import useModalDismiss from '../../hooks/useModalDismiss';
 import { fmtShortDateTime } from '../../utils/dateUtils';
@@ -29,22 +29,21 @@ export default function AgentPerformanceModal({ agentId, onClose }) {
 
     useEffect(() => {
         if (!agentId) return;
-        const controller = new AbortController();
-        const fetchData = async () => {
-            setLoading(true);
+        let cancelled = false;
+        async function fetchData() {
             try {
-                const res = await apiFetch(`/api/call-center/agent-performance/${agentId}?period=30d`, { signal: controller.signal });
+                const res = await apiFetch(`/api/call-center/agent-performance/${agentId}?period=30d`);
                 if (!res.ok) throw new Error('Failed to load agent performance');
                 const json = await res.json();
-                if (!controller.signal.aborted) setData(json.data ?? json);
+                if (!cancelled) setData(json.data ?? json);
             } catch (err) {
-                if (!controller.signal.aborted) setError(err.message);
+                if (!cancelled) setError(err.message);
             } finally {
-                if (!controller.signal.aborted) setLoading(false);
+                if (!cancelled) setLoading(false);
             }
-        };
+        }
         fetchData();
-        return () => controller.abort();
+        return () => { cancelled = true; };
     }, [agentId]);
 
     if (!agentId) return null;

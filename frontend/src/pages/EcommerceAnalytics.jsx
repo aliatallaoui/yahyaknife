@@ -314,7 +314,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     subtitle={t('analytics.charts.revenue_subtitle', 'Daily revenue over the selected period')}
                     icon={TrendingUp}
                 >
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <AreaChart data={dashData?.salesData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -336,7 +336,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     subtitle={t('analytics.charts.orders_subtitle', 'Daily order count')}
                     icon={ShoppingCart}
                 >
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <LineChart data={dashData?.salesData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                             <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: tickColor }} dy={10} />
@@ -355,7 +355,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     icon={BarChart3}
                     className="lg:col-span-2"
                 >
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart data={dashData?.orderStatusData || []} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridColor} />
                             <XAxis type="number" hide />
@@ -371,7 +371,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 </ChartCard>
 
                 <ChartCard title={t('analytics.charts.categories', 'Sales by Category')} icon={Package}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
                             <Pie
                                 data={dashData?.categoryData || []}
@@ -446,7 +446,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                     subtitle={t('analytics.charts.channels_sub', 'Orders by source')}
                     icon={Megaphone}
                 >
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart data={dashData?.channelData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                             <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: tickColor }} />
@@ -500,7 +500,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                 </ChartCard>
 
                 <ChartCard title={t('analytics.charts.stock_health', 'Global Stock Health')} icon={Package}>
-                    <ResponsiveContainer width="100%" height="80%">
+                    <ResponsiveContainer width="100%" height="80%" minWidth={0} minHeight={0}>
                         <PieChart>
                             <Pie
                                 data={dashData?.stockHealthData || []}
@@ -610,7 +610,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                             <span className="text-sm text-gray-400 dark:text-gray-500">{t('analytics.noHistoricalData', 'No historical data yet — runs nightly at 00:30')}</span>
                         </div>
                     ) : (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="grad30Rev" x1="0" y1="0" x2="0" y2="1">
@@ -654,7 +654,7 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
                             <span className="text-sm text-gray-400 dark:text-gray-500">{t('analytics.noHistoricalData', 'No historical data yet — runs nightly at 00:30')}</span>
                         </div>
                     ) : (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <LineChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                                 <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: tickColor }} dy={8} interval={4} />

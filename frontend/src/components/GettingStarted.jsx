@@ -23,9 +23,10 @@ export default function GettingStarted() {
             return;
         }
 
+        const controller = new AbortController();
         (async () => {
             try {
-                const res = await apiFetch('/api/dashboard/setup-progress');
+                const res = await apiFetch('/api/dashboard/setup-progress', { signal: controller.signal });
                 if (res.ok) {
                     const data = await res.json();
                     setProgress(data);
@@ -33,6 +34,7 @@ export default function GettingStarted() {
             } catch { /* non-fatal */ }
             setLoading(false);
         })();
+        return () => controller.abort();
     }, []);
 
     if (loading || dismissed || !progress) return null;
