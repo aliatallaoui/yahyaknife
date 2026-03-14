@@ -23,6 +23,10 @@ const SENSITIVE_CONFIG_KEYS = new Set([
     'clientSecret', 'refreshToken'
 ]);
 
+function hasKey() {
+    return !!process.env.CREDENTIAL_ENCRYPTION_KEY;
+}
+
 function getKey() {
     const envKey = process.env.CREDENTIAL_ENCRYPTION_KEY;
     if (!envKey) {
@@ -45,6 +49,7 @@ function getKey() {
  */
 function encrypt(plaintext) {
     if (!plaintext) return plaintext;
+    if (!hasKey()) return plaintext; // No encryption key — store as-is (dev mode)
     const key = getKey();
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -61,6 +66,7 @@ function encrypt(plaintext) {
  */
 function decrypt(encryptedString) {
     if (!encryptedString || !isEncrypted(encryptedString)) return encryptedString;
+    if (!hasKey()) return encryptedString; // No encryption key — return as-is
     const key = getKey();
     const parts = encryptedString.split(':');
     if (parts.length !== 3) throw new Error('Invalid encrypted format');
@@ -94,7 +100,7 @@ function encryptSensitiveKeys(config) {
     const result = new Map();
     const entries = config instanceof Map ? config.entries() : Object.entries(config);
     for (const [key, value] of entries) {
-        if (SENSITIVE_CONFIG_KEYS.has(key) && value && !isEncrypted(value)) {
+        if (SENSITIVE_CONFIG_KEYS.has(key) && value && !isEncrypted(value) && hasKey()) {
             result.set(key, encrypt(value));
         } else {
             result.set(key, value);
