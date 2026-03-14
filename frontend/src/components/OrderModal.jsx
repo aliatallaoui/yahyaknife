@@ -144,63 +144,81 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         }
     }, [store.customerPhone, isEdit]);
 
-    // 2. Dynamic Commune & Courier Coverage Logic
+    // 2. Courier coverage cache — fetch once per courier, filter locally
     const selectedCourier = couriers.find(c => c._id === store.courierId);
     const isCourierApiConnected = selectedCourier?.integrationType === 'API';
+    const [courierCoverageCache, setCourierCoverageCache] = useState([]);
 
+    // Fetch full coverage when courier changes (one API call per courier selection)
     useEffect(() => {
-        const updateCoverage = async () => {
-            if (!store.shippingWilayaCode) {
-                setAvailableCommunes([]);
-                return;
+        if (!store.courierId || !isCourierApiConnected) {
+            setCourierCoverageCache([]);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await apiFetch(`/api/couriers/${store.courierId}/coverage`);
+                if (!res.ok) throw new Error('coverage fetch failed');
+                const json = await res.json();
+                const data = json.data ?? json;
+                if (!cancelled) setCourierCoverageCache(Array.isArray(data) ? data : []);
+            } catch {
+                if (!cancelled) setCourierCoverageCache([]);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [store.courierId, isCourierApiConnected]);
+
+    // Filter communes locally from cached coverage data
+    useEffect(() => {
+        if (!store.shippingWilayaCode) {
+            setAvailableCommunes([]);
+            return;
+        }
+
+        let allCommunes = getSafeCommunesForWilaya(store.shippingWilayaCode);
+
+        // Only filter if courier is API-connected and has coverage data
+        if (isCourierApiConnected && courierCoverageCache.length > 0) {
+            const wCode = String(store.shippingWilayaCode);
+
+            // Filter coverage entries for this wilaya
+            let wilayaCoverage = courierCoverageCache.filter(c =>
+                String(c.wilayaCode) === wCode
+            );
+
+            // For Stop Desk: only communes with has_stop_desk / officeDelivery
+            if (store.shippingDeliveryType === 1) {
+                wilayaCoverage = wilayaCoverage.filter(c => c.officeDelivery || c.has_stop_desk);
             }
 
-            let allCommunes = getSafeCommunesForWilaya(store.shippingWilayaCode);
+            if (wilayaCoverage.length > 0) {
+                // Check if there's a catch-all wilaya entry (no specific commune)
+                const hasFullWilayaCoverage = wilayaCoverage.some(c => !c.commune || c.commune.trim() === '');
 
-            // Only filter by coverage if courier is API-connected
-            // Manual couriers → show all communes (no coverage data to filter by)
-            if (isCourierApiConnected) {
-                try {
-                    const query = new URLSearchParams({
-                        wilayaCode: store.shippingWilayaCode,
-                        deliveryType: String(store.shippingDeliveryType)
-                    });
-                    query.append('courierId', store.courierId);
-
-                    const covRes = await apiFetch(`/api/couriers/engine/coverage?${query.toString()}`);
-                    if (!covRes.ok) throw new Error('coverage failed');
-                    const covJson = await covRes.json();
-                    const data = covJson.data ?? covJson;
-
-                    if (data && data.length > 0) {
-                        // Filter communes to only those covered
-                        const coveredCommunes = data.map(c => c.commune.toLowerCase());
-
-                        // If there is a catch-all wilaya rule without specific commune limits
-                        const hasFullWilayaCoverage = data.some(c => !c.commune || c.commune.trim() === '');
-
-                        if (!hasFullWilayaCoverage) {
-                            allCommunes = allCommunes.filter(c => coveredCommunes.includes(c.name.toLowerCase()));
-                        }
-                    } else if (store.shippingDeliveryType === 1) {
-                        // Stop Desk + API courier + no coverage rules = no supported communes
-                        allCommunes = [];
-                    }
-                } catch (err) {
-                    // Coverage fetch is best-effort; fall back to full commune list
+                if (!hasFullWilayaCoverage) {
+                    const coveredCommunes = new Set(wilayaCoverage.map(c => c.commune.toLowerCase()));
+                    allCommunes = allCommunes.filter(c => coveredCommunes.has(c.name.toLowerCase()));
                 }
+            } else {
+                // No coverage entries for this wilaya at all
+                if (store.shippingDeliveryType === 1) {
+                    // Stop Desk + no offices = empty
+                    allCommunes = [];
+                }
+                // Home delivery + no coverage = could mean not covered, but show all as fallback
             }
+        }
+        // Manual courier → no filtering, show all communes
 
-            setAvailableCommunes(allCommunes);
+        setAvailableCommunes(allCommunes);
 
-            // Auto reset commune if the newly fetched list doesn't contain the currently selected commune
-            if (store.shippingCommune && !allCommunes.find(c => c.name === store.shippingCommune)) {
-                store.updateField('shippingCommune', '');
-            }
-        };
-
-        if (isOpen) updateCoverage();
-    }, [store.shippingWilayaCode, store.courierId, store.shippingDeliveryType, isCourierApiConnected, isOpen]);
+        // Reset commune if no longer in filtered list
+        if (store.shippingCommune && !allCommunes.find(c => c.name === store.shippingCommune)) {
+            store.updateField('shippingCommune', '');
+        }
+    }, [store.shippingWilayaCode, store.shippingDeliveryType, isCourierApiConnected, courierCoverageCache, isOpen]);
 
     // 3. Dynamic Courier Recommendation & Pricing Engine
     useEffect(() => {
