@@ -333,7 +333,14 @@ const resources = {
                 confirmOrder: 'Confirm Order',
                 errorNoProducts: 'Order must contain at least one valid product line.',
                 errorNoCommune: 'Office pickup requires a specific commune selection.',
-                warningConfirm: 'WARNING: {{warning}}\nAre you sure you want to proceed?'
+                warningConfirm: 'WARNING: {{warning}}\nAre you sure you want to proceed?',
+                moreOptions: 'More options',
+                lessOptions: 'Less options',
+                searchProduct: 'Search products...',
+                priority: 'Priority',
+                phone2: 'Phone 2',
+                weight: 'Weight (kg)',
+                fragile: 'Fragile'
             },
             customerIntel: {
                 searching: 'Looking up phone number...',
@@ -2730,7 +2737,14 @@ const resources = {
                 confirmOrder: 'تأكيد الطلب',
                 errorNoProducts: 'يجب أن يحتوي الطلب على منتج واحد على الأقل.',
                 errorNoCommune: 'الاستلام من المكتب يتطلب تحديد البلدية.',
-                warningConfirm: 'تحذير: {{warning}}\nهل تريد المتابعة في حفظ هذا الطلب؟'
+                warningConfirm: 'تحذير: {{warning}}\nهل تريد المتابعة في حفظ هذا الطلب؟',
+                moreOptions: 'خيارات إضافية',
+                lessOptions: 'إخفاء الخيارات',
+                searchProduct: 'ابحث عن منتج...',
+                priority: 'الأولوية',
+                phone2: 'هاتف 2',
+                weight: 'الوزن (كجم)',
+                fragile: 'قابل للكسر'
             },
             customerIntel: {
                 searching: 'جارٍ البحث عن رقم الهاتف...',

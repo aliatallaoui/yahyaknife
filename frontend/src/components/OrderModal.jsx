@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, AlertCircle, AlertTriangle, Truck, Save, RefreshCw, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { X, Plus, Trash2, AlertCircle, AlertTriangle, Truck, Save, RefreshCw, CheckCircle, ChevronDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import * as leblad from '@dzcode-io/leblad';
@@ -48,13 +48,25 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
     const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
     const [recommendedCourier, setRecommendedCourier] = useState(null);
 
+    // UX: collapsible sections
+    const [showMoreOptions, setShowMoreOptions] = useState(false);
+    const [productSearch, setProductSearch] = useState('');
+    const [codOverride, setCodOverride] = useState(false);
+
     // Initialize Store
     useEffect(() => {
         if (isOpen) {
             setFormError('');
             setIntelligenceData(null);
+            setProductSearch('');
+            setCodOverride(false);
+            setShowMoreOptions(false);
             if (isEdit) {
                 store.setInitialData(initialData);
+                // Show more options if edit has values in optional fields
+                if (initialData?.shipping?.phone2 || initialData?.shipping?.weight > 1 || initialData?.shipping?.fragile || initialData?.priority !== 'Normal') {
+                    setShowMoreOptions(true);
+                }
             } else {
                 store.resetForm();
                 // Pre-fill from CustomerProfile deep-link
@@ -86,6 +98,16 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             };
         });
     });
+
+    // Filtered variants for product search
+    const filteredVariants = useMemo(() => {
+        if (!productSearch.trim()) return availableVariants;
+        const q = productSearch.toLowerCase();
+        return availableVariants.filter(v =>
+            v.displayName.toLowerCase().includes(q) ||
+            (v.sku && v.sku.toLowerCase().includes(q))
+        );
+    }, [availableVariants, productSearch]);
 
     // 1. Phone Lookup Engine (Debounced)
     useEffect(() => {
@@ -346,29 +368,36 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                            {/* Left Column (Customer & Config) */}
-                            <div className="lg:col-span-7 space-y-6">
+                            {/* Left Column — Customer & Shipping (essential) */}
+                            <div className="lg:col-span-7 space-y-5">
 
-                                {/* Section A: Intelligence Panel */}
+                                {/* Intelligence Panel */}
                                 <CustomerIntelligencePanel data={intelligenceData} isSearching={isLookingUpPhone} />
 
-                                {/* Section B: Customer & Delivery */}
+                                {/* Customer & Shipping — essential fields only */}
                                 <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl p-5 shadow-sm">
-                                    <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                        <Truck className="w-4 h-4 text-blue-500" /> {t('orderModal.customerDetails')}
-                                    </h3>
+                                    {/* Order ID badge (auto-generated, not an input) */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <Truck className="w-4 h-4 text-blue-500" /> {t('orderModal.customerDetails')}
+                                        </h3>
+                                        <span className="text-[11px] font-mono font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{store.orderId}</span>
+                                    </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Phone — first field, autofocus */}
                                         <div>
                                             <label htmlFor="order-phone" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.primaryPhone')} *</label>
                                             <input id="order-phone" required autoFocus type="tel" autoComplete="tel" dir="ltr" placeholder="05/06/07..." className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.customerPhone} onChange={e => store.updateField('customerPhone', e.target.value)} />
                                         </div>
+                                        {/* Name */}
                                         <div>
                                             <label htmlFor="order-name" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.fullName')} *</label>
-                                            <input id="order-name" required type="text" autoComplete="name" placeholder="John Doe" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
+                                            <input id="order-name" required type="text" autoComplete="name" placeholder="..." className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
                                         </div>
-
+                                        {/* Wilaya */}
                                         <div>
                                             <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
                                             <select id="order-wilaya" required className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
@@ -378,36 +407,36 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                 ))}
                                             </select>
                                         </div>
-
+                                        {/* Commune */}
                                         <div>
                                             <label htmlFor="order-commune" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between uppercase tracking-wide">
                                                 <span>{t('orderModal.commune')} *</span>
-                                                {store.shippingWilayaCode && <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium normal-case bg-blue-50 dark:bg-blue-900/40 px-1.5 rounded">{t('orderModal.communeOptions', { count: availableCommunes.length })}</span>}
+                                                {store.shippingWilayaCode && <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium normal-case bg-blue-50 dark:bg-blue-900/40 px-1.5 rounded">{availableCommunes.length}</span>}
                                             </label>
-                                            <select id="order-commune" required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
+                                            <select id="order-commune" required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
                                                 <option value="" disabled>{store.shippingWilayaCode ? t('orderModal.selectCommune') : t('orderModal.selectWilayaFirst')}</option>
                                                 {availableCommunes.map(c => (
                                                     <option key={c.code} value={c.name}>{c.name}</option>
                                                 ))}
                                             </select>
                                         </div>
-
+                                        {/* Address */}
                                         <div className="md:col-span-2">
                                             <label htmlFor="order-address" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.detailedAddress')}</label>
                                             <input id="order-address" type="text" placeholder={t('orderModal.addressPlaceholder')} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.shippingAddress} onChange={e => store.updateField('shippingAddress', e.target.value)} />
                                         </div>
-
-                                        <div className="grid grid-cols-2 gap-4 md:col-span-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600">
+                                        {/* Delivery mode + Courier — inline */}
+                                        <div className="grid grid-cols-2 gap-3 md:col-span-2">
                                             <div>
                                                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.deliveryMode')}</label>
-                                                <div className="flex bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-1">
-                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 0)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 0 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600")}>{t('orderModal.deliveryHome')}</button>
-                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 1)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 1 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600")}>{t('orderModal.deliveryStopDesk')}</button>
+                                                <div className="flex bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-0.5">
+                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 0)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 0 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-600")}>{t('orderModal.deliveryHome')}</button>
+                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 1)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 1 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-600")}>{t('orderModal.deliveryStopDesk')}</button>
                                                 </div>
                                             </div>
                                             <div>
                                                 <label htmlFor="order-courier" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.courierPriority')}</label>
-                                                <select id="order-courier" className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
+                                                <select id="order-courier" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
                                                     <option value="">{t('orderModal.systemRecommended')}</option>
                                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                                 </select>
@@ -419,155 +448,182 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* More Options toggle — Channel, Priority, Phone2, Weight, Fragile, Notes */}
+                                    <button type="button" onClick={() => setShowMoreOptions(!showMoreOptions)} className="mt-4 w-full flex items-center justify-center gap-1 text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-1">
+                                        <ChevronDown className={clsx("w-3.5 h-3.5 transition-transform", showMoreOptions && "rotate-180")} />
+                                        {showMoreOptions ? t('orderModal.lessOptions', 'Less options') : t('orderModal.moreOptions', 'More options')}
+                                    </button>
+
+                                    {showMoreOptions && (
+                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 md:grid-cols-4 gap-3 animate-in slide-in-from-top-2 duration-200">
+                                            <div>
+                                                <label htmlFor="order-channel" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">{t('orderModal.channel')}</label>
+                                                <select id="order-channel" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 dark:text-gray-100 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
+                                                    {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label htmlFor="order-priority" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">{t('orderModal.priority', 'Priority')}</label>
+                                                <select id="order-priority" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 dark:text-gray-100 appearance-none cursor-pointer" value={store.priority} onChange={e => store.updateField('priority', e.target.value)}>
+                                                    {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label htmlFor="order-phone2" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">{t('orderModal.phone2', 'Phone 2')}</label>
+                                                <input id="order-phone2" type="tel" dir="ltr" placeholder="Optional" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-2 py-1.5 text-xs dark:text-gray-100 font-medium" value={store.shippingPhone2} onChange={e => store.updateField('shippingPhone2', e.target.value)} />
+                                            </div>
+                                            <div className="flex gap-3 items-end">
+                                                <div className="flex-1">
+                                                    <label htmlFor="order-weight" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">{t('orderModal.weight', 'Weight')}</label>
+                                                    <input id="order-weight" type="number" min="0.1" step="0.1" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-2 py-1.5 text-xs dark:text-gray-100 font-medium" value={store.shippingWeight} onChange={e => store.updateField('shippingWeight', Number(e.target.value))} />
+                                                </div>
+                                                <label className="flex items-center gap-1.5 pb-1 cursor-pointer">
+                                                    <input type="checkbox" checked={store.shippingFragile} onChange={e => store.updateField('shippingFragile', e.target.checked)} className="rounded border-gray-300 dark:border-gray-600 text-blue-500 w-3.5 h-3.5" />
+                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('orderModal.fragile', 'Fragile')}</span>
+                                                </label>
+                                            </div>
+                                            <div className="col-span-2 md:col-span-4">
+                                                <label htmlFor="order-notes" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">{t('orderModal.notesLabel')}</label>
+                                                <textarea id="order-notes" rows="1" placeholder={t('orderModal.notesPlaceholder')} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-2 py-1.5 text-xs dark:text-gray-100 resize-none font-medium" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Right Column (Products, Config, Pricing) */}
-                            <div className="lg:col-span-5 space-y-6 flex flex-col">
+                            {/* Right Column — Products & Pricing */}
+                            <div className="lg:col-span-5 space-y-5 flex flex-col">
 
-                                {/* Section C: Meta */}
-                                <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl p-5 shadow-sm grid grid-cols-2 gap-4">
-                                     <div>
-                                        <label htmlFor="order-orderId" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.orderId')}</label>
-                                        <input id="order-orderId" required type="text" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-600 dark:text-gray-100" value={store.orderId} onChange={e => store.updateField('orderId', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="order-channel" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.channel')}</label>
-                                        <select id="order-channel" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 dark:text-gray-100 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
-                                            {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Section D: Products */}
+                                {/* Products with search */}
                                 <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
-                                    <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                                        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm uppercase tracking-wide">
-                                            {t('orderModal.cartItems')}
-                                        </h3>
-                                        <button type="button" onClick={store.addProduct} className="flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors">
-                                            <Plus className="w-3 h-3" /> {t('orderModal.addItem')}
-                                        </button>
+                                    <div className="p-3 border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-bold text-gray-900 dark:text-white text-sm">{t('orderModal.cartItems')}</h3>
+                                            <button type="button" onClick={store.addProduct} className="flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors">
+                                                <Plus className="w-3 h-3" /> {t('orderModal.addItem')}
+                                            </button>
+                                        </div>
+                                        {/* Product search bar */}
+                                        <div className="relative">
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                            <input type="text" placeholder={t('orderModal.searchProduct', 'Search products...')} className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg pl-8 pr-3 py-1.5 text-xs dark:text-gray-100 focus:border-blue-500 transition-colors" value={productSearch} onChange={e => setProductSearch(e.target.value)} />
+                                        </div>
                                     </div>
 
-                                    <div className="p-4 space-y-3 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/20 dark:bg-gray-800/20">
+                                    <div className="p-3 space-y-2.5 overflow-y-auto max-h-[280px] custom-scrollbar">
                                         {store.products.map((product, index) => (
-                                            <div key={index} className="flex flex-col gap-2 bg-white dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600 shadow-sm relative group">
-                                                <div className="flex gap-2 w-full">
-                                                    <div className="flex-1">
-                                                        <select
-                                                            required
-                                                            className="w-full bg-gray-50 dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 rounded px-2 py-1.5 text-sm dark:text-gray-100 font-semibold appearance-none cursor-pointer transition-colors"
-                                                            value={product.variantId || ''}
-                                                            onChange={e => {
-                                                                const selectedId = e.target.value;
-                                                                const selectedVariant = availableVariants.find(v => v.variantId === selectedId);
-                                                                if (selectedVariant) {
-                                                                    store.updateProductMulti(index, {
-                                                                        variantId: selectedVariant.variantId,
-                                                                        name: selectedVariant.displayName,
-                                                                        unitPrice: selectedVariant.price,
-                                                                        sku: selectedVariant.sku,
-                                                                        availableStock: selectedVariant.availableStock
-                                                                    });
-                                                                }
-                                                            }}
-                                                        >
-                                                            <option value="" disabled>{t('orderModal.selectVariant')}</option>
-                                                            {availableVariants.map(v => (
-                                                                <option key={v.variantId} value={v.variantId}>
-                                                                    {v.displayName}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        {product.availableStock !== null && (
-                                                            <div className="flex items-center justify-between mt-1 px-1">
-                                                                <span className={clsx("text-[10px] font-medium", product.availableStock <= 5 ? "text-red-500" : "text-green-600")}>
-                                                                    {t('orderModal.inStock', { count: product.availableStock })}
-                                                                </span>
-                                                                {product.sku && <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium font-mono">{product.sku}</span>}
-                                                            </div>
-                                                        )}
+                                            <div key={index} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600 relative group">
+                                                <select
+                                                    required
+                                                    className="w-full bg-white dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-sm dark:text-gray-100 font-semibold appearance-none cursor-pointer transition-colors"
+                                                    value={product.variantId || ''}
+                                                    onChange={e => {
+                                                        const selectedId = e.target.value;
+                                                        const selectedVariant = availableVariants.find(v => v.variantId === selectedId);
+                                                        if (selectedVariant) {
+                                                            store.updateProductMulti(index, {
+                                                                variantId: selectedVariant.variantId,
+                                                                name: selectedVariant.displayName,
+                                                                unitPrice: selectedVariant.price,
+                                                                sku: selectedVariant.sku,
+                                                                availableStock: selectedVariant.availableStock
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="" disabled>{t('orderModal.selectVariant')}</option>
+                                                    {filteredVariants.map(v => (
+                                                        <option key={v.variantId} value={v.variantId}>{v.displayName}</option>
+                                                    ))}
+                                                </select>
+                                                {product.availableStock !== null && (
+                                                    <div className="flex items-center justify-between px-1">
+                                                        <span className={clsx("text-[10px] font-medium", product.availableStock <= 5 ? "text-red-500" : "text-green-600")}>
+                                                            {t('orderModal.inStock', { count: product.availableStock })}
+                                                        </span>
+                                                        {product.sku && <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">{product.sku}</span>}
                                                     </div>
-                                                </div>
+                                                )}
                                                 <div className="flex gap-2 items-center">
                                                     <div className="w-20">
-                                                        <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded overflow-hidden">
-                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', Math.max(1, product.quantity - 1))} className="px-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-medium">-</button>
+                                                        <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded overflow-hidden bg-white dark:bg-gray-700">
+                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', Math.max(1, product.quantity - 1))} className="px-2 bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 font-medium">-</button>
                                                             <input required type="number" min="1" max={product.availableStock || undefined} className="w-full bg-white dark:bg-gray-700 dark:text-gray-100 outline-none py-1 text-center text-sm font-bold appearance-none" value={product.quantity} onChange={e => store.updateProduct(index, 'quantity', Number(e.target.value))} />
-                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', product.quantity + 1)} className="px-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-medium">+</button>
+                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', product.quantity + 1)} className="px-2 bg-gray-50 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 font-medium">+</button>
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 relative">
                                                         <span className="absolute left-2 top-1.5 text-gray-400 dark:text-gray-500 text-xs font-bold">{t('common.dzd', 'DZD')}</span>
-                                                        <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 py-1 pl-10 pr-2 rounded text-sm dark:text-gray-100 font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
+                                                        <input required type="number" min="0" step="0.01" className="w-full bg-white dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 py-1 pl-10 pr-2 rounded text-sm dark:text-gray-100 font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
                                                     </div>
-                                                    <div className="w-24 text-right pr-2">
-                                                        <span className="text-sm font-bold text-gray-900 dark:text-white truncate">{(product.quantity * product.unitPrice).toFixed(2)} {t('common.dzd', 'DZD')}</span>
-                                                    </div>
+                                                    <span className="w-20 text-right text-sm font-bold text-gray-900 dark:text-white">{(product.quantity * product.unitPrice).toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                                 </div>
-                                                <button type="button" onClick={() => store.removeProduct(index)} disabled={store.products.length === 1} className="absolute -right-2 -top-2 p-1.5 bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600 text-gray-400 hover:text-red-500 rounded-full disabled:opacity-0 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                <button type="button" onClick={() => store.removeProduct(index)} disabled={store.products.length === 1} className="absolute -right-1.5 -top-1.5 p-1 bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600 text-gray-400 hover:text-red-500 rounded-full disabled:opacity-0 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Trash2 className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Section E: Pricing Summary */}
-                                <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-800 rounded-xl p-5 text-white shadow-lg relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                                {/* Pricing Summary — cleaner */}
+                                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 text-white shadow-lg relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none"></div>
 
-                                    <div className="space-y-2 mb-4 relative z-10">
-                                        <div className="flex justify-between text-sm items-center">
-                                            <span className="text-gray-300 font-medium">{t('orderModal.subtotal')}</span>
-                                            <span className="font-bold tracking-wide">{store.calculateSubtotal().toFixed(2)} {t('common.dzd', 'DZD')}</span>
+                                    <div className="space-y-1.5 mb-3 relative z-10 text-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-400">{t('orderModal.subtotal')}</span>
+                                            <span className="font-bold">{store.calculateSubtotal().toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm items-center">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-300 font-medium">{t('orderModal.delivery')}</span>
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-gray-400">{t('orderModal.delivery')}</span>
                                                 {isCalculatingPrice && <RefreshCw className="w-3 h-3 text-blue-400 animate-spin" />}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <input type="checkbox" checked={store.manualPricing} onChange={e => store.updateField('manualPricing', e.target.checked)} className="rounded bg-gray-800 border-gray-600 text-blue-500 focus:ring-offset-gray-900 w-3 h-3" title={t('orderModal.overrideFee')} />
+                                            <div className="flex items-center gap-1.5">
+                                                <input type="checkbox" checked={store.manualPricing} onChange={e => store.updateField('manualPricing', e.target.checked)} className="rounded bg-gray-800 border-gray-600 text-blue-500 w-3 h-3" title={t('orderModal.overrideFee')} />
                                                 {store.manualPricing ? (
                                                     <input type="number" className="w-16 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold" value={store.courierFee} onChange={e => store.updateField('courierFee', e.target.value)} />
                                                 ) : (
-                                                    <span className="font-bold text-blue-300 tracking-wide">{Number(store.courierFee).toFixed(2)} {t('common.dzd', 'DZD')}</span>
+                                                    <span className="font-bold text-blue-300">{Number(store.courierFee).toLocaleString()} {t('common.dzd', 'DZD')}</span>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex justify-between text-sm items-center">
-                                            <span className="text-gray-300 font-medium">{t('orderModal.discount')}</span>
-                                            <input type="number" className="w-16 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold text-green-400 focus:bg-white/20 transition-colors" value={store.discount} onChange={e => store.updateField('discount', e.target.value)} placeholder="0" />
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-400">{t('orderModal.discount')}</span>
+                                            <input type="number" className="w-14 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold text-green-400" value={store.discount} onChange={e => store.updateField('discount', e.target.value)} placeholder="0" />
                                         </div>
                                     </div>
 
-                                    <div className="border-t border-gray-700 pt-3 mt-1 flex justify-between items-end relative z-10">
+                                    <div className="border-t border-gray-700 pt-2.5 flex justify-between items-end relative z-10">
                                         <div>
-                                            <span className="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-0.5">{t('orderModal.finalCollection')}</span>
-                                            <span className="text-2xl font-black text-white leading-none">{store.calculateFinalTotal().toFixed(2)} <span className="text-sm">{t('common.dzd', 'DZD')}</span></span>
+                                            <span className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">{t('orderModal.finalCollection')}</span>
+                                            <span className="text-xl font-black leading-none">{store.calculateFinalTotal().toLocaleString()} <span className="text-xs">{t('common.dzd', 'DZD')}</span></span>
                                         </div>
+                                        {/* COD override — only show input when clicked */}
                                         <div className="text-right">
-                                            <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold block mb-1">{t('orderModal.overrideCod')}</label>
-                                            <input type="number" className="w-20 bg-black/30 outline-none border border-gray-600 focus:border-blue-500 rounded px-2 py-1 text-right text-sm font-bold transition-colors" value={store.codAmount || store.calculateFinalTotal()} onChange={e => store.updateField('codAmount', e.target.value)} />
+                                            {codOverride ? (
+                                                <div>
+                                                    <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-0.5">{t('orderModal.overrideCod')}</label>
+                                                    <input type="number" autoFocus className="w-20 bg-black/30 outline-none border border-gray-600 focus:border-blue-500 rounded px-2 py-1 text-right text-sm font-bold" value={store.codAmount || store.calculateFinalTotal()} onChange={e => store.updateField('codAmount', e.target.value)} onBlur={() => { if (!store.codAmount || Number(store.codAmount) === store.calculateFinalTotal()) { store.updateField('codAmount', 0); setCodOverride(false); } }} />
+                                                </div>
+                                            ) : (
+                                                <button type="button" onClick={() => setCodOverride(true)} className="text-[10px] text-gray-500 hover:text-gray-300 font-bold uppercase tracking-wide transition-colors">
+                                                    {t('orderModal.overrideCod')}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                         {/* Bottom Row (Notes & Initial Status) */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-                             <div className="md:col-span-8">
-                                <label htmlFor="order-notes" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.notesLabel')}</label>
-                                <textarea id="order-notes" rows="2" placeholder={t('orderModal.notesPlaceholder')} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 resize-none transition-colors" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
-                            </div>
-                            <div className="md:col-span-4 flex flex-col justify-end">
-                                <label htmlFor="order-status" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.saveAsStatus')}</label>
-                                <select id="order-status" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-bold text-blue-900 dark:text-blue-300 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
-                                    {STATUSES.map(st => <option key={st} value={st}>{getOrderStatusLabel(t, st)}</option>)}
-                                </select>
+                                {/* Save as status — inline compact */}
+                                <div className="flex items-center gap-3">
+                                    <label htmlFor="order-status" className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">{t('orderModal.saveAsStatus')}</label>
+                                    <select id="order-status" className="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 transition-all font-bold text-blue-900 dark:text-blue-300 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
+                                        {STATUSES.map(st => <option key={st} value={st}>{getOrderStatusLabel(t, st)}</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
