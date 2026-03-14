@@ -1101,12 +1101,19 @@ exports.syncOrders = async ({ tenantId, channelId, since }) => {
     let hasMore = true;
     const maxPages = 20; // Safety limit
 
-    while (hasMore && page <= maxPages) {
-        const result = await adapter.fetchOrders({ since: syncSince, page, perPage: 50 });
-        const normalized = result.orders.map(o => adapter.normalizeOrder(o));
-        allOrders.push(...normalized);
-        hasMore = result.hasMore;
-        page++;
+    try {
+        while (hasMore && page <= maxPages) {
+            const result = await adapter.fetchOrders({ since: syncSince, page, perPage: 50 });
+            const normalized = result.orders.map(o => adapter.normalizeOrder(o));
+            allOrders.push(...normalized);
+            hasMore = result.hasMore;
+            page++;
+        }
+    } catch (fetchErr) {
+        const status = fetchErr.response?.status;
+        if (status === 401) throw AppError.unauthorized('Store API credentials are invalid. Please reconnect.');
+        if (status === 404) throw AppError.notFound('Store API endpoint not found. Check the store URL.');
+        throw new AppError(fetchErr.message || 'Failed to fetch orders from store', status >= 400 && status < 500 ? status : 502);
     }
 
     if (allOrders.length === 0) {
