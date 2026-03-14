@@ -48,8 +48,8 @@ function extractCourierError(err) {
     if (apiData?.message) return apiData.message;
     if (err.message?.includes('circuit breaker')) return 'Courier service is temporarily unavailable. Please try again in a few minutes.';
     if (err.message?.includes('Rate limit')) return err.message;
-    if (err.message?.includes('ECONNREFUSED') || err.message?.includes('ETIMEDOUT') || err.message?.includes('timeout'))
-        return 'Could not reach the courier service. Please check your internet connection and try again.';
+    if (err.message?.includes('ECONNREFUSED') || err.message?.includes('ETIMEDOUT') || err.message?.includes('timeout') || err.message?.includes('ENOTFOUND'))
+        return 'Could not reach the courier service. Please check courier API URL and try again.';
     return err.message || 'Courier integration error. Please check courier settings and try again.';
 }
 
@@ -167,6 +167,15 @@ exports.quickDispatch = async (orderId, tenantId) => {
 
     if (order.status === 'Dispatched') {
         throw new AppError('This order has already been dispatched to a courier.', 400, 'ALREADY_DISPATCHED');
+    }
+
+    // If order already has a tracking number from a previous dispatch, block re-dispatch
+    if (order.trackingInfo?.trackingNumber) {
+        throw new AppError(
+            `This order already has tracking number ${order.trackingInfo.trackingNumber}. Cancel the existing shipment before re-dispatching.`,
+            400,
+            'ALREADY_HAS_TRACKING'
+        );
     }
 
     if (order.totalAmount == null || order.totalAmount < 0) {

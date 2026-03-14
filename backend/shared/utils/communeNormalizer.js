@@ -57,18 +57,25 @@ async function matchCommuneForCourier(courierId, tenantId, wilayaCode, communeNa
 
     if (coverageList.length === 0) return null; // courier hasn't synced coverage
 
+    // If all coverage records have null commune, this is wilaya-level coverage only.
+    // The courier covers the entire wilaya — pass through with the first record's flags.
+    const allNullCommune = coverageList.every(c => !c.commune);
+    if (allNullCommune) {
+        return { commune: communeName, homeSupported: coverageList[0].homeSupported, officeSupported: coverageList[0].officeSupported };
+    }
+
     // 1. Exact match
     const exact = coverageList.find(c => c.commune === communeName);
     if (exact) return { commune: exact.commune, homeSupported: exact.homeSupported, officeSupported: exact.officeSupported };
 
     // 2. Case-insensitive + accent-stripped
     const inputLower = stripAccents(communeName).toLowerCase();
-    const ci = coverageList.find(c => stripAccents(c.commune).toLowerCase() === inputLower);
+    const ci = coverageList.find(c => c.commune && stripAccents(c.commune).toLowerCase() === inputLower);
     if (ci) return { commune: ci.commune, homeSupported: ci.homeSupported, officeSupported: ci.officeSupported };
 
     // 3. Compressed match (ignore spaces, hyphens, apostrophes, el/al prefix)
     const inputCanon = canonical(communeName);
-    const compressed = coverageList.find(c => canonical(c.commune) === inputCanon);
+    const compressed = coverageList.find(c => c.commune && canonical(c.commune) === inputCanon);
     if (compressed) return { commune: compressed.commune, homeSupported: compressed.homeSupported, officeSupported: compressed.officeSupported };
 
     // 4. No match
