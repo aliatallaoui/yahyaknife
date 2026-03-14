@@ -126,7 +126,7 @@ export default function PageBuilder() {
         setBlocks(data.blocks || []);
       }
     } catch {
-      toast.error('Failed to load page');
+      toast.error('Failed to load page. Please refresh and try again.');
     } finally { setLoading(false); }
   }, [channelId, pageId]);
 
@@ -147,9 +147,9 @@ export default function PageBuilder() {
         const json = await res.json();
         setPage(json.data ?? json);
       } else {
-        toast.error('Save failed');
+        toast.error('Failed to save page. Please try again.');
       }
-    } catch { toast.error('Save failed'); }
+    } catch { toast.error('Failed to save page. Please try again.'); }
     setSaving(false);
   }, [saving, channelId, pageId, blocks, t]);
 
@@ -187,7 +187,7 @@ export default function PageBuilder() {
         const json = await res.json();
         setPage(json.data ?? json);
       }
-    } catch { toast.error('Save failed'); }
+    } catch { toast.error('Failed to save page. Please try again.'); }
     setSaving(false);
   };
 

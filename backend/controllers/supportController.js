@@ -33,7 +33,7 @@ exports.createTicket = async (req, res) => {
         res.status(201).json(created(ticket));
     } catch (error) {
         logger.error({ err: error }, 'Failed to create support ticket');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to create support ticket. Please try again.' });
     }
 };
 
@@ -47,11 +47,11 @@ exports.getTickets = async (req, res) => {
         const VALID_TYPES    = ['General Inquiry', 'Shipping Issue', 'Product Defect', 'RMA Request'];
         const VALID_PRIORITY = ['Low', 'Medium', 'High', 'Urgent'];
 
-        if (status) { if (VALID_STATUSES.includes(status)) query.status = status; else return res.status(400).json({ error: 'Invalid status filter' }); }
-        if (type)   { if (VALID_TYPES.includes(type))     query.type = type;     else return res.status(400).json({ error: 'Invalid type filter' }); }
-        if (priority) { if (VALID_PRIORITY.includes(priority)) query.priority = priority; else return res.status(400).json({ error: 'Invalid priority filter' }); }
+        if (status) { if (VALID_STATUSES.includes(status)) query.status = status; else return res.status(400).json({ message: 'Invalid status filter.' }); }
+        if (type)   { if (VALID_TYPES.includes(type))     query.type = type;     else return res.status(400).json({ message: 'Invalid type filter.' }); }
+        if (priority) { if (VALID_PRIORITY.includes(priority)) query.priority = priority; else return res.status(400).json({ message: 'Invalid priority filter.' }); }
         if (customerId) {
-            if (!mongoose.Types.ObjectId.isValid(customerId)) return res.status(400).json({ error: 'Invalid customerId' });
+            if (!mongoose.Types.ObjectId.isValid(customerId)) return res.status(400).json({ message: 'Invalid customer ID.' });
             query.customerId = customerId;
         }
 
@@ -69,7 +69,7 @@ exports.getTickets = async (req, res) => {
         res.json(paginated(tickets, { total, hasNextPage: req.skip + tickets.length < total }));
     } catch (error) {
         logger.error({ err: error }, 'Failed to fetch support tickets');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load tickets. Please try again.' });
     }
 };
 
@@ -77,7 +77,7 @@ exports.getTicketById = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const ticket = await SupportTicket.findOne({ _id: req.params.id, tenant: tenantId })
             .populate('customerId', 'name email phone')
             .populate('orderId', 'orderId totalAmount status items')
@@ -85,11 +85,11 @@ exports.getTicketById = async (req, res) => {
             .populate('messages.senderId', 'name')
             .lean();
 
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found.' });
         res.json(ok(ticket));
     } catch (error) {
         logger.error({ err: error }, 'Failed to fetch support ticket');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load ticket details. Please try again.' });
     }
 };
 
@@ -97,14 +97,14 @@ exports.addMessage = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const { message, sender, senderId } = req.body;
 
         if (!['Agent', 'Customer'].includes(sender))
-            return res.status(400).json({ error: 'sender must be Agent or Customer' });
+            return res.status(400).json({ message: 'Sender must be Agent or Customer.' });
 
         const ticket = await SupportTicket.findOne({ _id: req.params.id, tenant: tenantId });
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found.' });
 
         ticket.messages.push({
             sender,
@@ -133,7 +133,7 @@ exports.addMessage = async (req, res) => {
         res.json(ok(populatedTicket));
     } catch (error) {
         logger.error({ err: error }, 'Failed to add message to support ticket');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to send message. Please try again.' });
     }
 };
 
@@ -141,7 +141,7 @@ exports.updateTicketStatus = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const { status, resolutionNotes } = req.body;
         const updateData = { status };
 
@@ -160,10 +160,10 @@ exports.updateTicketStatus = async (req, res) => {
             .populate('messages.senderId', 'name')
             .lean();
 
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found.' });
         res.json(ok(ticket));
     } catch (error) {
         logger.error({ err: error }, 'Failed to update support ticket status');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update ticket status. Please try again.' });
     }
 };

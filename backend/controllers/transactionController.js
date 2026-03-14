@@ -39,7 +39,7 @@ exports.getTransactions = async (req, res) => {
         res.json({ data: allTransactions, pagination: req.paginationMeta(total) });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching transactions');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load transactions. Please try again.' });
     }
 };
 
@@ -78,7 +78,7 @@ exports.addTransaction = async (req, res) => {
         }
     } catch (error) {
         logger.error({ err: error }, 'Error adding transaction');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to add transaction. Please try again.' });
     }
 };
 
@@ -122,7 +122,7 @@ exports.updateTransaction = async (req, res) => {
         }
     } catch (error) {
         logger.error({ err: error }, 'Error updating transaction');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update transaction. Please try again.' });
     }
 };
 
@@ -159,10 +159,10 @@ exports.deleteTransaction = async (req, res) => {
                 audit({ tenant: tenantId, actorUserId: req.user._id, action: 'DELETE_REVENUE', module: 'finance', metadata: { id, amount: deletedRevenue.amount } });
                 return res.json({ message: 'Transaction removed' });
             }
-            return res.status(404).json({ message: 'Transaction not found in any collection' });
+            return res.status(404).json({ message: 'Transaction not found. It may have been deleted.' });
         }
     } catch (error) {
         logger.error({ err: error }, 'Error deleting transaction');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to delete transaction. Please try again.' });
     }
 };

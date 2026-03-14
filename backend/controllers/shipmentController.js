@@ -77,7 +77,7 @@ exports.bulkQuickDispatch = async (req, res) => {
 exports.getAllShipments = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(403).json({ error: 'Tenant context required' });
+        if (!tenantId) return res.status(403).json({ message: 'Tenant context required.' });
 
         const STATUS_MAP = {
             'Dispatched':       'Created in Courier',
@@ -127,7 +127,7 @@ exports.getAllShipments = async (req, res) => {
         res.json(combined);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching all shipments');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to load shipments. Please try again.' });
     }
 };
 
@@ -139,7 +139,7 @@ exports.getShipmentById = async (req, res) => {
         res.json(shipment);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching shipment by ID');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to load shipment details. Please try again.' });
     }
 };
 
@@ -164,28 +164,28 @@ exports.exportShipments = async (req, res) => {
         return res.send(csv);
     } catch (error) {
         logger.error({ err: error }, 'Error exporting shipments');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to export shipments. Please try again.' });
     }
 };
 
 exports.generateManifest = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(401).send('Not authorized');
+        if (!tenantId) return res.status(401).json({ message: 'Authentication required. Please log in.' });
 
         const { ids } = req.query;
-        if (!ids) return res.status(400).send('No shipment IDs provided');
+        if (!ids) return res.status(400).json({ message: 'No shipment IDs provided.' });
 
         const idArray = ids.split(',').map(id => id.trim());
         if (!idArray.every(id => validId(id))) {
-            return res.status(400).send('One or more invalid order IDs');
+            return res.status(400).json({ message: 'One or more invalid order IDs.' });
         }
         
         // Fetch original Orders which ALWAYS contain the product and customer details
         // even if they haven't been dispatched to a courier yet.
         const orders = await Order.find({ _id: { $in: idArray }, tenant: tenantId, deletedAt: null }).populate('customer', 'name phone email').lean();
         
-        if (orders.length === 0) return res.status(404).send('Aucune commande trouvée.');
+        if (orders.length === 0) return res.status(404).json({ message: 'No orders found for the given IDs.' });
 
         const printDate = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
         
@@ -272,7 +272,7 @@ exports.generateManifest = async (req, res) => {
         res.send(html);
     } catch (error) {
         logger.error({ err: error }, 'generateManifest critical error');
-        res.status(500).send('Erreur lors de la génération du bordereau. Veuillez réessayer.');
+        res.status(500).json({ message: 'Failed to generate manifest. Please try again.' });
     }
 };
 
@@ -314,7 +314,7 @@ exports.deleteShipment = async (req, res) => {
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         logger.error({ err: error }, 'Error deleting shipment');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to update shipment. Please try again.' });
     }
 };
 
@@ -349,7 +349,7 @@ exports.recallByOrder = async (req, res) => {
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         logger.error({ err: error }, 'Error recalling order');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to delete shipment. Please try again.' });
     }
 };
 
@@ -378,7 +378,7 @@ exports.getShipmentLabel = async (req, res) => {
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         logger.error({ err: error }, 'Error fetching shipment label');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to validate shipment. Please try again.' });
     }
 };
 
@@ -392,6 +392,6 @@ exports.requestReturn = async (req, res) => {
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         logger.error({ err: error }, 'Error requesting shipment return');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate label. Please try again.' });
     }
 };

@@ -1095,7 +1095,7 @@ exports.getMessageTemplates = async (req, res) => {
         res.json(ok(getTemplates()));
     } catch (error) {
         logger.error({ err: error }, 'getMessageTemplates error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load message templates. Please try again.' });
     }
 };
 
@@ -1488,7 +1488,7 @@ exports.getAssignmentHistory = async (req, res) => {
         res.json(ok(history));
     } catch (error) {
         logger.error({ err: error }, 'getAssignmentHistory error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load assignment history. Please try again.' });
     }
 };
 
@@ -1540,7 +1540,7 @@ exports.getAssignmentRules = async (req, res) => {
         res.json(ok(enriched));
     } catch (error) {
         logger.error({ err: error }, 'getAssignmentRules error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load assignment rules. Please try again.' });
     }
 };
 
@@ -1570,7 +1570,7 @@ exports.createAssignmentRule = async (req, res) => {
     } catch (error) {
         if (error.code === 11000) return res.status(409).json({ message: 'A rule for this source already exists' });
         logger.error({ err: error }, 'createAssignmentRule error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to create assignment rule. Please try again.' });
     }
 };
 
@@ -1603,7 +1603,7 @@ exports.updateAssignmentRule = async (req, res) => {
         res.json(ok(rule));
     } catch (error) {
         logger.error({ err: error }, 'updateAssignmentRule error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update assignment rule. Please try again.' });
     }
 };
 
@@ -1620,7 +1620,7 @@ exports.deleteAssignmentRule = async (req, res) => {
         res.json(ok({ message: 'Rule deleted' }));
     } catch (error) {
         logger.error({ err: error }, 'deleteAssignmentRule error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to delete assignment rule. Please try again.' });
     }
 };
 
@@ -1640,7 +1640,7 @@ exports.getAgentsList = async (req, res) => {
         res.json(ok(users));
     } catch (error) {
         logger.error({ err: error }, 'getAgentsList error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load agents list. Please try again.' });
     }
 };
 

@@ -18,53 +18,53 @@ exports.getSuppliers = async (req, res) => {
         res.json(paginated(suppliers, { total, hasNextPage: req.skip + suppliers.length < total }));
     } catch (error) {
         logger.error({ err: error }, 'Supplier list fetch error');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load suppliers. Please try again.' });
     }
 };
 
 exports.createSupplier = async (req, res) => {
     try {
         const { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes } = req.body;
-        if (!name) return res.status(400).json({ error: 'Supplier name is required.' });
+        if (!name) return res.status(400).json({ message: 'Supplier name is required.' });
         const sup = new Supplier({ tenant: req.user.tenant, name, contactPerson, supplierCategory, materialsSupplied, address, status, notes });
         await sup.save();
         res.status(201).json(created(sup));
     } catch (error) {
-        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ message: 'Invalid request. Please check the form.' });
     }
 };
 
 exports.updateSupplier = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid supplier ID' });
+            return res.status(400).json({ message: 'Invalid supplier ID.' });
         const { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes } = req.body;
         const sup = await Supplier.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
             { name, contactPerson, supplierCategory, materialsSupplied, address, status, notes },
             { returnDocument: 'after', runValidators: true }
         );
-        if (!sup) return res.status(404).json({ error: 'Supplier not found' });
+        if (!sup) return res.status(404).json({ message: 'Supplier not found.' });
         res.json(ok(sup));
     } catch (error) {
-        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ message: 'Invalid request. Please check the form.' });
     }
 };
 
 exports.deleteSupplier = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const sup = await Supplier.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
             { status: 'Inactive' },
             { returnDocument: 'after' }
         );
-        if (!sup) return res.status(404).json({ error: 'Supplier not found' });
+        if (!sup) return res.status(404).json({ message: 'Supplier not found.' });
         res.json(message('Supplier archived'));
     } catch (error) {
         logger.error({ err: error }, 'Supplier archive error');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to delete supplier. Please try again.' });
     }
 };
 
@@ -89,7 +89,7 @@ exports.getPurchaseOrders = async (req, res) => {
         res.json(paginated(pos, { total, hasNextPage: req.skip + pos.length < total }));
     } catch (error) {
         logger.error({ err: error }, 'Purchase order list fetch error');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load purchase orders. Please try again.' });
     }
 };
 
@@ -105,13 +105,13 @@ exports.createPurchaseOrder = async (req, res) => {
 
         const { supplier, items, expectedDeliveryDate, notes, orderDate } = req.body;
         if (!supplier || !mongoose.Types.ObjectId.isValid(supplier))
-            return res.status(400).json({ error: 'Valid supplier ID is required.' });
+            return res.status(400).json({ message: 'Valid supplier ID is required.' });
         if (!items || !Array.isArray(items) || items.length === 0)
-            return res.status(400).json({ error: 'At least one item is required.' });
+            return res.status(400).json({ message: 'At least one item is required.' });
 
         // Verify supplier belongs to this tenant
         const supplierDoc = await Supplier.findOne({ _id: supplier, tenant: tenantId, deletedAt: null });
-        if (!supplierDoc) return res.status(404).json({ error: 'Supplier not found' });
+        if (!supplierDoc) return res.status(404).json({ message: 'Supplier not found.' });
 
         const po = new PurchaseOrder({
             tenant: tenantId,
@@ -142,13 +142,13 @@ exports.createPurchaseOrder = async (req, res) => {
 
         res.status(201).json(created(po));
     } catch (error) {
-        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ message: 'Invalid request. Please check the form.' });
     }
 };
 
 exports.receivePurchaseOrder = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
-        return res.status(400).json({ error: 'Invalid ID' });
+        return res.status(400).json({ message: 'Invalid ID.' });
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -233,6 +233,6 @@ exports.receivePurchaseOrder = async (req, res) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ error: 'Invalid request' });
+        logger.error({ err: error }, 'Procurement error'); res.status(400).json({ message: 'Invalid request. Please check the form.' });
     }
 };

@@ -179,7 +179,7 @@ exports.getDashboardData = async (req, res) => {
         return res.json(data);
     } catch (error) {
         logger.error({ err: error }, 'Error generating advanced dashboard metrics');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load dashboard data. Please try again.' });
     }
 };
 
@@ -206,6 +206,6 @@ exports.getSetupProgress = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching setup progress');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load dashboard summary. Please try again.' });
     }
 };

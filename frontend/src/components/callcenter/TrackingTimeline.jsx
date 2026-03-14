@@ -89,7 +89,7 @@ export default function TrackingTimeline({ orderId, isOpen }) {
             const json = await res.json();
             setData(json.data ?? json);
         } catch (err) {
-            setError(err.message || 'Failed to load tracking');
+            setError(err.message || 'Failed to load tracking information. Please try again.');
         } finally {
             setLoading(false);
         }

@@ -144,7 +144,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
             await onSubmit(formData);
             onClose();
         } catch (err) {
-            setError(err.message || t('common.errorOccurred', 'An error occurred'));
+            setError(err.message || t('common.errorOccurred', 'Failed to save transaction. Please try again.'));
         } finally {
             setLoading(false);
         }

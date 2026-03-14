@@ -93,10 +93,10 @@ export default function SalesChannels() {
         fetchChannels();
       } else {
         const err = await res.json();
-        toast.error(err.message || 'Error');
+        toast.error(err.message || 'Failed to save channel. Please try again.');
       }
     } catch {
-      toast.error('Error saving channel');
+      toast.error('Failed to save channel. Please try again.');
     }
   };
 

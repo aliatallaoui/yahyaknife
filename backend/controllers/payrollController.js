@@ -10,8 +10,8 @@ exports.generateMonthlyPayroll = async (req, res) => {
     try {
         const tenant = req.user.tenant;
         const { period } = req.body; // e.g., "03-2026"
-        if (!period) return res.status(400).json({ error: 'Period is required (MM-YYYY)' });
-        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
+        if (!period) return res.status(400).json({ message: 'Period is required (MM-YYYY)' });
+        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ message: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
 
@@ -105,7 +105,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
         res.json({ message: `Successfully generated payroll for ${period}`, count: payrollResults.length, data: payrollResults });
     } catch (err) {
         logger.error({ err }, 'Error generating monthly payroll');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate payroll. Please try again.' });
     }
 };
 
@@ -114,12 +114,12 @@ exports.getPayrollRecords = async (req, res) => {
         const tenant = req.user.tenant;
         const { period, employeeId } = req.query;
         if (period && !/^\d{2}-\d{4}$/.test(period))
-            return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
+            return res.status(400).json({ message: 'Period must be in MM-YYYY format' });
         const query = { tenant };
         if (period) query.period = period;
         if (employeeId) {
             if (!mongoose.Types.ObjectId.isValid(employeeId))
-                return res.status(400).json({ error: 'Invalid employeeId' });
+                return res.status(400).json({ message: 'Invalid employee ID.' });
             query.employeeId = employeeId;
         }
 
@@ -131,7 +131,7 @@ exports.getPayrollRecords = async (req, res) => {
         res.json(records.filter(r => r.employeeId));
     } catch (err) {
         logger.error({ err }, 'Error fetching payroll records');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to load payroll records. Please try again.' });
     }
 };
 
@@ -149,15 +149,15 @@ exports.approvePayroll = async (req, res) => {
 
         if (!payroll) {
             const exists = await Payroll.findOne({ _id: id, tenant: req.user.tenant }).select('status').lean();
-            if (!exists) return res.status(404).json({ error: 'Payroll record not found' });
-            return res.status(400).json({ error: `Cannot approve payroll in '${exists.status}' status. Only 'Pending Approval' records can be approved.` });
+            if (!exists) return res.status(404).json({ message: 'Payroll record not found.' });
+            return res.status(400).json({ message: `Cannot approve payroll in '${exists.status}' status. Only 'Pending Approval' records can be approved.` });
         }
 
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'APPROVE_PAYROLL', module: 'hr', metadata: { payrollId: id, employeeId: payroll.employeeId, period: payroll.period, amount: payroll.finalPayableSalary } });
         res.json(payroll);
     } catch (err) {
         logger.error({ err }, 'Error approving payroll');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to approve payroll. Please try again.' });
     }
 };
 
@@ -169,15 +169,15 @@ exports.recordPayment = async (req, res) => {
 
         // Pre-read for validation (lightweight lean query)
         const existing = await Payroll.findOne({ _id: id, tenant: req.user.tenant }).select('status amountPaid finalPayableSalary').lean();
-        if (!existing) return res.status(404).json({ error: 'Payroll record not found' });
+        if (!existing) return res.status(404).json({ message: 'Payroll record not found.' });
 
         if (!['Approved', 'Partially Paid'].includes(existing.status)) {
-            return res.status(400).json({ error: `Payroll must be 'Approved' before payment can be recorded. Current status: '${existing.status}'.` });
+            return res.status(400).json({ message: `Payroll must be 'Approved' before payment can be recorded. Current status: '${existing.status}'.` });
         }
 
         let paymentAmount = amount ? Number(amount) : (existing.finalPayableSalary - existing.amountPaid);
         if (paymentAmount <= 0) {
-            return res.status(400).json({ error: 'Invalid payment amount.' });
+            return res.status(400).json({ message: 'Invalid payment amount.' });
         }
 
         // Atomic conditional update — prevents overpayment race
@@ -199,10 +199,10 @@ exports.recordPayment = async (req, res) => {
         if (!payroll) {
             // Re-check to give specific error message
             const recheck = await Payroll.findOne({ _id: id, tenant: req.user.tenant }).select('amountPaid finalPayableSalary status').lean();
-            if (!recheck) return res.status(404).json({ error: 'Payroll record not found' });
+            if (!recheck) return res.status(404).json({ message: 'Payroll record not found.' });
             if (!['Approved', 'Partially Paid'].includes(recheck.status))
-                return res.status(400).json({ error: `Payroll status changed to '${recheck.status}' — cannot record payment.` });
-            return res.status(400).json({ error: `Cannot overpay. Maximum remaining balance is ${recheck.finalPayableSalary - recheck.amountPaid} DZD` });
+                return res.status(400).json({ message: `Payroll status changed to '${recheck.status}' — cannot record payment.` });
+            return res.status(400).json({ message: `Cannot overpay. Maximum remaining balance is ${recheck.finalPayableSalary - recheck.amountPaid} DZD` });
         }
 
         const newStatus = payroll.status;
@@ -228,6 +228,6 @@ exports.recordPayment = async (req, res) => {
         res.json(payroll);
     } catch (err) {
         logger.error({ err }, 'Error recording payroll payment');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to record payment. Please try again.' });
     }
 };

@@ -61,7 +61,7 @@ exports.getProductLedger = async (req, res) => {
         res.json(movements);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching product ledger');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load product stock ledger. Please try again.' });
     }
 };
 
@@ -82,6 +82,6 @@ exports.getGlobalLedger = async (req, res) => {
         res.json(movements);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching global stock ledger');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load stock movements. Please try again.' });
     }
 };

@@ -32,7 +32,7 @@ exports.getMyTenant = async (req, res) => {
         res.json({ ...tenant, teamCount });
     } catch (err) {
         logger.error({ err }, 'tenantController.getMyTenant');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load workspace settings. Please try again.' });
     }
 };
 
@@ -88,7 +88,7 @@ exports.updateSettings = async (req, res) => {
         res.json(tenant);
     } catch (err) {
         logger.error({ err }, 'tenantController.updateSettings');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update workspace settings. Please try again.' });
     }
 };
 
@@ -129,7 +129,7 @@ exports.getUsage = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'tenantController.getUsage');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load team members. Please try again.' });
     }
 };
 
@@ -146,7 +146,7 @@ exports.getTeam = async (req, res) => {
         res.json(users);
     } catch (err) {
         logger.error({ err }, 'tenantController.getTeam');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to invite team member. Please try again.' });
     }
 };
 
@@ -209,7 +209,7 @@ exports.inviteUser = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'tenantController.inviteUser');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update team member. Please try again.' });
     }
 };
 
@@ -351,7 +351,7 @@ exports.acceptInvite = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'tenantController.acceptInvite');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to generate API key. Please try again.' });
     }
 };
 
@@ -394,7 +394,7 @@ exports.requestDeletion = async (req, res) => {
         res.json({ message: 'Workspace scheduled for deletion. Data will be retained for 90 days.' });
     } catch (err) {
         logger.error({ err }, 'tenantController.requestDeletion');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update webhook. Please try again.' });
     }
 };
 
@@ -455,7 +455,7 @@ exports.changePlan = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'tenantController.changePlan');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load webhook deliveries. Please try again.' });
     }
 };
 
@@ -491,7 +491,7 @@ exports.requestDataExport = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'tenantController.requestDataExport');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to start export. Please try again.' });
     }
 };
 
@@ -503,7 +503,7 @@ exports.getDataExportStatus = async (req, res) => {
         res.json(status);
     } catch (err) {
         logger.error({ err }, 'tenantController.getDataExportStatus');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to download export. Please try again.' });
     }
 };
 

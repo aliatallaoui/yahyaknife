@@ -17,7 +17,7 @@ exports.listWebhooks = async (req, res) => {
         res.json(webhooks);
     } catch (err) {
         logger.error({ err }, 'webhookController.listWebhooks');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load webhooks. Please try again.' });
     }
 };
 
@@ -66,7 +66,7 @@ exports.createWebhook = async (req, res) => {
         res.status(201).json(webhook);
     } catch (err) {
         logger.error({ err }, 'webhookController.createWebhook');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to create webhook. Please try again.' });
     }
 };
 
@@ -116,7 +116,7 @@ exports.updateWebhook = async (req, res) => {
         res.json(webhook);
     } catch (err) {
         logger.error({ err }, 'webhookController.updateWebhook');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update webhook. Please try again.' });
     }
 };
 
@@ -139,7 +139,7 @@ exports.deleteWebhook = async (req, res) => {
         res.json({ message: 'Webhook deleted' });
     } catch (err) {
         logger.error({ err }, 'webhookController.deleteWebhook');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to delete webhook. Please try again.' });
     }
 };
 
@@ -165,7 +165,7 @@ exports.getDeliveries = async (req, res) => {
         res.json(deliveries);
     } catch (err) {
         logger.error({ err }, 'webhookController.getDeliveries');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load webhook deliveries. Please try again.' });
     }
 };
 
@@ -234,6 +234,6 @@ exports.testWebhook = async (req, res) => {
         }
     } catch (err) {
         logger.error({ err }, 'webhookController.testWebhook');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to test webhook. Please try again.' });
     }
 };

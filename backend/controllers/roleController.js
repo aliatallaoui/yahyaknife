@@ -25,7 +25,7 @@ exports.getRoles = async (req, res) => {
         res.json(roles);
     } catch (error) {
         logger.error({ err: error }, 'Role list fetch error');
-        res.status(500).json({ message: 'Server Error fetching roles' });
+        res.status(500).json({ message: 'Failed to load roles. Please try again.' });
     }
 };
 
@@ -83,7 +83,7 @@ exports.createRole = async (req, res) => {
         res.status(201).json(role);
     } catch (error) {
         logger.error({ err: error }, 'Role creation error');
-        res.status(500).json({ message: 'Server Error creating role' });
+        res.status(500).json({ message: 'Failed to create role. Please try again.' });
     }
 };
 
@@ -115,7 +115,7 @@ exports.updateRole = async (req, res) => {
         res.json(updatedRole);
     } catch (error) {
         logger.error({ err: error }, 'Role update error');
-        res.status(500).json({ message: 'Server Error updating role' });
+        res.status(500).json({ message: 'Failed to update role. Please try again.' });
     }
 };
 
@@ -146,6 +146,6 @@ exports.deleteRole = async (req, res) => {
         res.json({ message: 'Role deleted successfully' });
     } catch (error) {
         logger.error({ err: error }, 'Role deletion error');
-        res.status(500).json({ message: 'Server Error deleting role' });
+        res.status(500).json({ message: 'Failed to delete role. Please try again.' });
     }
 };

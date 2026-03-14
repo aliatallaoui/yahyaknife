@@ -22,7 +22,7 @@ exports.getPricingRules = async (req, res) => {
             .lean();
         res.json(rules);
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load pricing rules. Please try again.' });
     }
 };
 
@@ -58,7 +58,7 @@ exports.addPricingRule = async (req, res) => {
         
         res.status(201).json(newRule);
     } catch (error) {
-        logger.error({ err: error }, 'Courier pricing error'); res.status(400).json({ error: 'Invalid pricing data' });
+        logger.error({ err: error }, 'Courier pricing error'); res.status(400).json({ message: 'Invalid pricing data. Please check the form.' });
     }
 };
 
@@ -107,7 +107,7 @@ exports.updatePricingRule = async (req, res) => {
         
         res.json(updatedRule);
     } catch (error) {
-        logger.error({ err: error }, 'Courier pricing error'); res.status(400).json({ error: 'Invalid pricing data' });
+        logger.error({ err: error }, 'Courier pricing error'); res.status(400).json({ message: 'Invalid pricing data. Please check the form.' });
     }
 };
 
@@ -127,7 +127,7 @@ exports.deletePricingRule = async (req, res) => {
 
         res.json({ message: 'Pricing rule deleted successfully' });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to delete pricing rule. Please try again.' });
     }
 };
 

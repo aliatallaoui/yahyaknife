@@ -30,7 +30,7 @@ exports.recordPointage = async (req, res) => {
         const { employeeId, type, timestamp, date } = req.body;
 
         const employee = await Employee.findOne({ _id: employeeId, tenant, deletedAt: null }).lean();
-        if (!employee) return res.status(404).json({ error: 'Employee not found' });
+        if (!employee) return res.status(404).json({ message: 'Employee not found.' });
 
         const dateStr = date || (timestamp ? moment(timestamp).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'));
 
@@ -45,12 +45,12 @@ exports.recordPointage = async (req, res) => {
             } else {
                 // Reject duplicate clock-in/out — require explicit clear first
                 if (attendance[type]) {
-                    return res.status(409).json({ error: `${type} is already recorded for this date. Clear it first before re-recording.` });
+                    return res.status(409).json({ message: `${type} is already recorded for this date. Clear it first before re-recording.` });
                 }
                 attendance[type] = new Date(timestamp);
             }
         } else {
-            return res.status(400).json({ error: 'Invalid pointage type' });
+            return res.status(400).json({ message: 'Invalid attendance type.' });
         }
 
         await attendance.save();
@@ -60,7 +60,7 @@ exports.recordPointage = async (req, res) => {
         res.json({ message: 'Pointage recorded successfully', attendance });
     } catch (err) {
         logger.error({ err }, 'Error recording pointage');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to record attendance. Please try again.' });
     }
 };
 
@@ -163,17 +163,17 @@ exports.getDailyAttendance = async (req, res) => {
         res.json(records.filter(r => r.employeeId));
     } catch (err) {
         logger.error({ err }, 'Error fetching daily attendance');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to load daily attendance. Please try again.' });
     }
 };
 
 exports.getEmployeeAttendance = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid employee ID' });
+            return res.status(400).json({ message: 'Invalid employee ID.' });
         // Verify employee is not soft-deleted before returning history
         const emp = await require('../models/Employee').findOne({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null }).select('_id').lean();
-        if (!emp) return res.status(404).json({ error: 'Employee not found' });
+        if (!emp) return res.status(404).json({ message: 'Employee not found.' });
         const records = await Attendance.find({ tenant: req.user.tenant, employeeId: req.params.id })
             .sort({ date: -1 })
             .limit(60)
@@ -181,14 +181,14 @@ exports.getEmployeeAttendance = async (req, res) => {
         res.json(records);
     } catch (err) {
         logger.error({ err }, 'Error fetching employee attendance');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to load employee attendance. Please try again.' });
     }
 };
 
 exports.updateAttendanceRecord = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid attendance record ID' });
+            return res.status(400).json({ message: 'Invalid attendance record ID.' });
         const { morningIn, morningOut, eveningIn, eveningOut, status } = req.body;
         const updated = await Attendance.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant },
@@ -196,12 +196,12 @@ exports.updateAttendanceRecord = async (req, res) => {
             { returnDocument: 'after' }
         );
 
-        if (!updated) return res.status(404).json({ error: 'Attendance record not found' });
+        if (!updated) return res.status(404).json({ message: 'Attendance record not found.' });
         await exports.calculateDailyMetrics(updated._id);
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_ATTENDANCE', module: 'hr', metadata: { attendanceId: req.params.id, employeeId: updated.employeeId, date: updated.date } });
         res.json(updated);
     } catch (err) {
         logger.error({ err }, 'Error updating attendance record');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to update attendance record. Please try again.' });
     }
 };

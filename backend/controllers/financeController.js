@@ -11,7 +11,7 @@ const { fireAndRetry } = require('../shared/utils/retryAsync');
 exports.getFinancialOverview = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(403).json({ error: 'Tenant context required' });
+        if (!tenantId) return res.status(403).json({ message: 'Tenant context required.' });
 
         // Optional date range — defaults to all-time if not provided
         let dateFilter = {};
@@ -125,7 +125,7 @@ exports.getFinancialOverview = async (req, res) => {
         }));
     } catch (error) {
         logger.error({ err: error }, 'Finance controller error');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load financial overview. Please try again.' });
     }
 };
 
@@ -139,7 +139,7 @@ exports.getExpenses = async (req, res) => {
         res.json(ok({ data: expenses, pagination: req.paginationMeta(total) }));
     } catch (error) {
         logger.error({ err: error }, 'Finance controller error');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load expenses. Please try again.' });
     }
 };
 
@@ -153,7 +153,7 @@ exports.getRevenues = async (req, res) => {
         res.json(ok({ data: revenues, pagination: req.paginationMeta(total) }));
     } catch (error) {
         logger.error({ err: error }, 'Finance controller error');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load revenues. Please try again.' });
     }
 };
 
@@ -174,7 +174,7 @@ exports.getCourierBalances = async (req, res) => {
         res.json(ok(couriers));
     } catch (error) {
         logger.error({ err: error }, 'Finance controller error fetching courier balances');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load courier balances. Please try again.' });
     }
 };
 
@@ -200,7 +200,7 @@ exports.getCourierDeliveries = async (req, res) => {
         res.json(ok(deliveries));
     } catch (error) {
         logger.error({ err: error }, 'Finance controller error fetching deliveries');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load courier deliveries. Please try again.' });
     }
 };
 

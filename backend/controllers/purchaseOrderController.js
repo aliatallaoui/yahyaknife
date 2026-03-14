@@ -21,7 +21,7 @@ exports.getPurchaseOrders = async (req, res) => {
         res.json(pos);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching purchase orders');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to load purchase orders. Please try again.' });
     }
 };
 
@@ -60,7 +60,7 @@ exports.createPurchaseOrder = async (req, res) => {
         res.status(201).json(populatedPO);
     } catch (error) {
         logger.error({ err: error }, 'Error creating purchase order');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to create purchase order. Please try again.' });
     }
 };
 
@@ -137,6 +137,6 @@ exports.updatePOStatus = async (req, res) => {
         res.json(updatedPO);
     } catch (error) {
         logger.error({ err: error }, 'Error updating purchase order status');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to update purchase order. Please try again.' });
     }
 };

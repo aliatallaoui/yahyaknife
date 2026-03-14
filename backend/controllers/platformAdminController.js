@@ -81,7 +81,7 @@ exports.listTenants = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.listTenants');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load tenants. Please try again.' });
     }
 };
 
@@ -124,7 +124,7 @@ exports.getTenantDetail = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.getTenantDetail');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load tenant details. Please try again.' });
     }
 };
 
@@ -159,7 +159,7 @@ exports.suspendTenant = async (req, res) => {
         res.json({ message: `Tenant "${tenant.name}" suspended` });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.suspendTenant');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to suspend tenant. Please try again.' });
     }
 };
 
@@ -194,7 +194,7 @@ exports.reactivateTenant = async (req, res) => {
         res.json({ message: `Tenant "${tenant.name}" reactivated` });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.reactivateTenant');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to reactivate tenant. Please try again.' });
     }
 };
 
@@ -248,7 +248,7 @@ exports.changeTenantPlan = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.changeTenantPlan');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to change tenant plan. Please try again.' });
     }
 };
 
@@ -298,7 +298,7 @@ exports.impersonateTenant = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.impersonateTenant');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to impersonate tenant. Please try again.' });
     }
 };
 
@@ -370,7 +370,7 @@ exports.getPlatformAnalytics = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.getPlatformAnalytics');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load platform analytics. Please try again.' });
     }
 };
 
@@ -506,7 +506,7 @@ exports.getDetailedAnalytics = async (req, res) => {
         });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.getDetailedAnalytics');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load detailed analytics. Please try again.' });
     }
 };
 
@@ -527,7 +527,7 @@ exports.getTenantMembers = async (req, res) => {
         res.json(members);
     } catch (err) {
         logger.error({ err }, 'platformAdmin.getTenantMembers');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load tenant members. Please try again.' });
     }
 };
 
@@ -547,7 +547,7 @@ exports.getTenantUsage = async (req, res) => {
         res.json({ current, history });
     } catch (err) {
         logger.error({ err }, 'platformAdmin.getTenantUsage');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load tenant usage. Please try again.' });
     }
 };
 
@@ -571,6 +571,6 @@ exports.getTenantAuditLog = async (req, res) => {
         res.json(logs);
     } catch (err) {
         logger.error({ err }, 'platformAdmin.getTenantAuditLog');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load audit log. Please try again.' });
     }
 };

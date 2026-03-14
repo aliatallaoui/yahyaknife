@@ -15,11 +15,11 @@ exports.getDailyRollups = async (req, res) => {
         const tenant = req.user.tenant;
         const { from, to } = req.query;
 
-        if (!from || !to) return res.status(400).json({ error: 'from and to date params required (YYYY-MM-DD)' });
+        if (!from || !to) return res.status(400).json({ message: 'From and to date parameters are required (YYYY-MM-DD)' });
         if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to))
-            return res.status(400).json({ error: 'Dates must be in YYYY-MM-DD format' });
+            return res.status(400).json({ message: 'Dates must be in YYYY-MM-DD format.' });
         if (from > to)
-            return res.status(400).json({ error: 'from must be before to' });
+            return res.status(400).json({ message: 'Start date must be before end date.' });
 
         const rollups = await DailyRollup.find({ tenant, date: { $gte: from, $lte: to } })
             .sort({ date: 1 })
@@ -29,7 +29,7 @@ exports.getDailyRollups = async (req, res) => {
         res.json(ok({ from, to, count: rollups.length, rollups }));
     } catch (err) {
         logger.error({ err }, 'Error fetching daily rollups');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to load daily rollup. Please try again.' });
     }
 };
 
@@ -45,7 +45,7 @@ exports.triggerDailyRollup = async (req, res) => {
         const { date } = req.body;
 
         if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date))
-            return res.status(400).json({ error: 'date must be in YYYY-MM-DD format' });
+            return res.status(400).json({ message: 'Date must be in YYYY-MM-DD format.' });
 
         // Run async — don't await in request cycle for large datasets
         fireAndRetry('dailyRollup:trigger', () => runDailyRollup(date));
@@ -53,6 +53,6 @@ exports.triggerDailyRollup = async (req, res) => {
         res.json(ok({ message: `DailyRollup triggered for ${date || 'yesterday'}` }));
     } catch (err) {
         logger.error({ err }, 'Error triggering daily rollup');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate daily rollup. Please try again.' });
     }
 };

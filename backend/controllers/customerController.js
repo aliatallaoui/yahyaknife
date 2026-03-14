@@ -17,7 +17,7 @@ const getCustomers = async (req, res) => {
         ]);
         res.json({ data: customers, pagination: req.paginationMeta(total) });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load customers. Please try again.' });
     }
 };
 
@@ -54,7 +54,7 @@ const lookupCustomerByPhone = async (req, res) => {
             warning
         });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to look up customer. Please try again.' });
     }
 };
 
@@ -110,7 +110,7 @@ const deleteCustomer = async (req, res) => {
         if (!customer) return res.status(404).json({ message: 'Customer not found' });
         res.json({ message: 'Customer removed' });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to update customer. Please try again.' });
     }
 };
 
@@ -130,7 +130,7 @@ const getCustomerOrders = async (req, res) => {
         ]);
         res.json({ data: orders, pagination: req.paginationMeta(total) });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to delete customer. Please try again.' });
     }
 };
 
@@ -191,7 +191,7 @@ const getCustomerMetrics = async (req, res) => {
             averageLTV: totalCustomers > 0 ? totalLTV / totalCustomers : 0
         });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load customer metrics. Please try again.' });
     }
 };
 

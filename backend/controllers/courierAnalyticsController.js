@@ -117,7 +117,7 @@ exports.getCourierKPIs = async (req, res) => {
 
         res.json(cachedKPIs);
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load courier KPIs. Please try again.' });
     }
 };
 
@@ -168,6 +168,6 @@ exports.getRegionalPerformance = async (req, res) => {
 
         res.json(cachedRegions);
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load courier metrics. Please try again.' });
     }
 };

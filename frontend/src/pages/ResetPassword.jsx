@@ -41,7 +41,7 @@ export default function ResetPassword() {
                 body: JSON.stringify({ password }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Something went wrong');
+            if (!res.ok) throw new Error(data.message || 'Password reset failed. Please try again.');
 
             setSuccess(true);
             setTimeout(() => navigate('/login'), 3000);

@@ -74,7 +74,7 @@ exports.getHRMetrics = async (req, res) => {
             absentToday: Math.max(0, activeEmployees - presentToday)
         }));
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load HR metrics. Please try again.' });
     }
 };
 
@@ -87,20 +87,20 @@ exports.getEmployees = async (req, res) => {
         ]);
         res.json(paginated(employees, { total, hasNextPage: req.skip + employees.length < total }));
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load employees. Please try again.' });
     }
 };
 
 exports.getEmployeeById = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const employee = await Employee.findOne({ _id: req.params.id, tenant: req.user.tenant, deletedAt: null }).lean();
-        if (!employee) return res.status(404).json({ error: 'Employee not found' });
+        if (!employee) return res.status(404).json({ message: 'Employee not found.' });
         res.json(ok(employee));
     } catch (err) {
         logger.error({ err }, 'Error fetching employee by ID');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to load employee details. Please try again.' });
     }
 };
 
@@ -109,7 +109,7 @@ exports.getLeaveRequests = async (req, res) => {
         const query = { tenant: req.user.tenant };
         if (req.query.employeeId) {
             if (!mongoose.Types.ObjectId.isValid(req.query.employeeId))
-                return res.status(400).json({ error: 'Invalid employeeId' });
+                return res.status(400).json({ message: 'Invalid employee ID.' });
             query.employeeId = req.query.employeeId;
         }
         const requests = await LeaveRequest.find(query)
@@ -119,7 +119,7 @@ exports.getLeaveRequests = async (req, res) => {
             .lean();
         res.json(ok(requests.filter(r => r.employeeId)));
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ error: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load leave requests. Please try again.' });
     }
 };
 
@@ -139,14 +139,14 @@ exports.createEmployee = async (req, res) => {
         res.status(201).json(created(saved));
     } catch (err) {
         logger.error({ err }, 'Error creating employee');
-        res.status(400).json({ error: 'Invalid employee data' });
+        res.status(400).json({ message: 'Invalid employee data. Please check the form.' });
     }
 };
 
 exports.updateEmployee = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const {
             name, email, phone, role, department, salary, performanceScore, leaveBalance,
             joinDate, status, managerId, contractSettings
@@ -157,30 +157,30 @@ exports.updateEmployee = async (req, res) => {
               joinDate, status, managerId, contractSettings },
             { returnDocument: 'after' }
         ).lean();
-        if (!updated) return res.status(404).json({ error: 'Employee not found' });
+        if (!updated) return res.status(404).json({ message: 'Employee not found.' });
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'UPDATE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id } });
         res.json(ok(updated));
     } catch (err) {
         logger.error({ err }, 'Error updating employee');
-        res.status(400).json({ error: 'Invalid employee data' });
+        res.status(400).json({ message: 'Invalid employee data. Please check the form.' });
     }
 };
 
 exports.deleteEmployee = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const deleted = await Employee.findOneAndUpdate(
             { _id: req.params.id, tenant: req.user.tenant, deletedAt: null },
             { deletedAt: new Date() },
             { returnDocument: 'after' }
         );
-        if (!deleted) return res.status(404).json({ error: 'Employee not found' });
+        if (!deleted) return res.status(404).json({ message: 'Employee not found.' });
         audit({ tenant: req.user.tenant, actorUserId: req.user._id, action: 'DELETE_EMPLOYEE', module: 'hr', metadata: { employeeId: req.params.id, name: deleted.name } });
         res.json(message('Employee deleted'));
     } catch (err) {
         logger.error({ err }, 'Error deleting employee');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to delete employee. Please try again.' });
     }
 };
 
@@ -188,13 +188,13 @@ exports.createLeaveRequest = async (req, res) => {
     try {
         const { employeeId, type, startDate, endDate, reason } = req.body;
         if (!employeeId || !startDate || !endDate) {
-            return res.status(400).json({ error: 'employeeId, startDate, and endDate are required' });
+            return res.status(400).json({ message: 'Employee, start date, and end date are required.' });
         }
 
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-            return res.status(400).json({ error: 'Invalid date range' });
+            return res.status(400).json({ message: 'Invalid date range. End date must be after start date.' });
         }
 
         // Check for overlapping approved or pending leaves for the same employee
@@ -206,7 +206,7 @@ exports.createLeaveRequest = async (req, res) => {
             endDate:   { $gte: start }
         });
         if (overlap) {
-            return res.status(409).json({ error: 'Leave request overlaps with an existing pending or approved leave' });
+            return res.status(409).json({ message: 'Leave request overlaps with an existing pending or approved leave' });
         }
 
         const reqData = new LeaveRequest({ tenant: req.user.tenant, employeeId, type, startDate: start, endDate: end, reason });
@@ -215,26 +215,26 @@ exports.createLeaveRequest = async (req, res) => {
         res.status(201).json(created(saved));
     } catch (err) {
         logger.error({ err }, 'Error creating leave request');
-        res.status(400).json({ error: 'Invalid leave request data' });
+        res.status(400).json({ message: 'Invalid leave request data. Please check the form.' });
     }
 };
 
 exports.updateLeaveRequestStatus = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid ID.' });
         const { status } = req.body;
         if (!status || !['Pending', 'Approved', 'Rejected'].includes(status))
-            return res.status(400).json({ error: 'Status must be one of: Pending, Approved, Rejected' });
+            return res.status(400).json({ message: 'Status must be one of: Pending, Approved, Rejected' });
         const request = await LeaveRequest.findOne({ _id: req.params.id, tenant: req.user.tenant });
-        if (!request) return res.status(404).json({ error: 'Leave Request not found' });
+        if (!request) return res.status(404).json({ message: 'Leave request not found.' });
 
         if (status === 'Approved') {
             if (request.status === 'Approved') {
-                return res.status(400).json({ error: 'Leave request is already approved' });
+                return res.status(400).json({ message: 'Leave request is already approved.' });
             }
             if (request.status === 'Rejected') {
-                return res.status(400).json({ error: 'Cannot re-approve a rejected leave request. Create a new request instead.' });
+                return res.status(400).json({ message: 'Cannot re-approve a rejected leave request. Create a new request instead.' });
             }
             // Only deduct from 'Pending' → 'Approved'
             const diffDays = Math.ceil(Math.abs(new Date(request.endDate) - new Date(request.startDate)) / (1000 * 60 * 60 * 24)) + 1;
@@ -247,8 +247,8 @@ exports.updateLeaveRequestStatus = async (req, res) => {
                 );
                 if (!updated) {
                     const exists = await Employee.findOne({ _id: request.employeeId, tenant: req.user.tenant, deletedAt: null }).lean();
-                    if (!exists) return res.status(404).json({ error: 'Employee not found' });
-                    return res.status(400).json({ error: 'Insufficient leave balance' });
+                    if (!exists) return res.status(404).json({ message: 'Employee not found.' });
+                    return res.status(400).json({ message: 'Insufficient leave balance.' });
                 }
             }
         }
@@ -259,6 +259,6 @@ exports.updateLeaveRequestStatus = async (req, res) => {
         res.json(ok(request));
     } catch (err) {
         logger.error({ err }, 'Error updating leave request status');
-        res.status(400).json({ error: 'Failed to update leave request' });
+        res.status(400).json({ message: 'Failed to update leave request. Please try again.' });
     }
 };

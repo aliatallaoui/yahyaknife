@@ -79,7 +79,7 @@ export default function ProcurementHub() {
             setOrders(ordersData?.data ?? ordersData);
             setSuppliers(suppliersData?.data ?? suppliersData);
         } catch (error) {
-            setFetchError(error.response?.data?.error || error.message || t('procurement.errorLoadData', 'Failed to load procurement data.'));
+            setFetchError(error.response?.data?.message || error.message || t('procurement.errorLoadData', 'Failed to load procurement data.'));
         } finally {
             setLoading(false);
         }

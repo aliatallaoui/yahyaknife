@@ -17,7 +17,7 @@ exports.triggerEcotrackSync = async (req, res) => {
 
         if (now - lastCourierSyncTime < oneHourMs) {
             const timeLeft = Math.ceil((oneHourMs - (now - lastCourierSyncTime)) / 60000);
-            return res.status(429).json({ error: `You can only sync once per hour. Please wait ${timeLeft} minutes.` });
+            return res.status(429).json({ message: `You can only sync once per hour. Please wait ${timeLeft} minutes.` });
         }
 
         await syncActiveShipments();
@@ -26,7 +26,7 @@ exports.triggerEcotrackSync = async (req, res) => {
         res.json({ message: 'Courier sync completed (all providers).', lastSync: lastCourierSyncTime });
     } catch (error) {
         logger.error({ err: error }, 'Manual Courier Sync Error');
-        res.status(500).json({ error: 'Failed to run courier sync' });
+        res.status(500).json({ message: 'Failed to sync couriers. Please try again.' });
     }
 };
 
@@ -41,7 +41,7 @@ exports.getOrders = async (req, res) => {
         // Opt-in Cursor Pagination for massive datasets
         if (req.query.lastId) {
             if (!mongoose.Types.ObjectId.isValid(req.query.lastId))
-                return res.status(400).json({ error: 'Invalid cursor (lastId).' });
+                return res.status(400).json({ message: 'Invalid cursor.' });
             query._id = { $lt: new mongoose.Types.ObjectId(req.query.lastId) };
             skip = 0; // Disable offset when using cursor
         }
@@ -75,7 +75,7 @@ exports.getOrders = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching orders');
-        res.status(500).json({ error: 'Failed to fetch orders' });
+        res.status(500).json({ message: 'Failed to load orders. Please try again.' });
     }
 };
 
@@ -104,17 +104,17 @@ exports.getAdvancedOrders = async (req, res) => {
             if (sortField === 'updatedAt' && cursor.includes('_')) {
                 const [dateStr, idStr] = cursor.split('_');
                 if (!mongoose.Types.ObjectId.isValid(idStr))
-                    return res.status(400).json({ error: 'Invalid cursor.' });
+                    return res.status(400).json({ message: 'Invalid cursor.' });
                 const cursorDate = new Date(dateStr);
                 if (isNaN(cursorDate.getTime()))
-                    return res.status(400).json({ error: 'Invalid cursor date.' });
+                    return res.status(400).json({ message: 'Invalid cursor date.' });
                 query.$or = [
                     { updatedAt: { [op]: cursorDate } },
                     { updatedAt: cursorDate, _id: { [op]: new mongoose.Types.ObjectId(idStr) } }
                 ];
             } else if (cursorField === '_id') {
                 if (!mongoose.Types.ObjectId.isValid(cursor))
-                    return res.status(400).json({ error: 'Invalid cursor.' });
+                    return res.status(400).json({ message: 'Invalid cursor.' });
                 query._id = { [op]: new mongoose.Types.ObjectId(cursor) };
             } else {
                 // Numeric/string sort fields — use as-is (already whitelisted above)
@@ -259,7 +259,7 @@ exports.getAdvancedOrders = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching advanced orders');
-        res.status(500).json({ error: 'Failed to fetch orders' });
+        res.status(500).json({ message: 'Failed to load orders. Please try again.' });
     }
 };
 
@@ -325,7 +325,7 @@ exports.updateBulkOrders = async (req, res) => {
         res.json({ message: `${result.modifiedCount} orders updated successfully` });
     } catch (error) {
         logger.error({ err: error }, 'Error in bulk order update');
-        res.status(500).json({ error: 'Failed to update orders' });
+        res.status(500).json({ message: 'Failed to update orders. Please try again.' });
     }
 };
 
@@ -353,7 +353,7 @@ exports.getOrdersKPIs = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching KPIs');
-        res.status(500).json({ error: 'Failed to fetch KPIs' });
+        res.status(500).json({ message: 'Failed to load KPIs. Please try again.' });
     }
 };
 
@@ -413,7 +413,7 @@ exports.getSalesPerformance = async (req, res) => {
         res.json(cachedPerformance);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching sales performance');
-        res.status(500).json({ error: 'Failed to fetch sales performance' });
+        res.status(500).json({ message: 'Failed to load sales performance. Please try again.' });
     }
 };
 
@@ -428,7 +428,7 @@ exports.createOrder = async (req, res) => {
     } catch (error) {
         const status = error.isOperational ? (error.statusCode || 400) : 500;
         if (!error.isOperational) logger.error({ err: error }, 'Error creating order');
-        res.status(status).json({ message: status >= 500 ? 'Server error' : error.message });
+        res.status(status).json({ message: status >= 500 ? 'An unexpected error occurred. Please try again.' : error.message });
     }
 };
 
@@ -454,7 +454,7 @@ exports.updateOrder = async (req, res) => {
     } catch (error) {
         const status = error.isOperational ? (error.statusCode || 400) : 500;
         if (!error.isOperational) logger.error({ err: error }, 'Error updating order');
-        res.status(status).json({ message: status >= 500 ? 'Server error' : error.message });
+        res.status(status).json({ message: status >= 500 ? 'An unexpected error occurred. Please try again.' : error.message });
     }
 };
 

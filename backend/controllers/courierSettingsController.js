@@ -21,7 +21,7 @@ exports.getSettings = async (req, res) => {
         res.json(safe);
     } catch (error) {
         logger.error({ err: error }, 'Courier settings fetch error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load courier settings. Please try again.' });
     }
 };
 

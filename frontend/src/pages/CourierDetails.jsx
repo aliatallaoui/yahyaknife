@@ -69,7 +69,7 @@ export default function CourierDetails() {
                 const res = await apiFetch('/api/couriers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(courier) });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    throw new Error(err.message || t('couriers.saveFailed', 'Error saving courier.'));
+                    throw new Error(err.message || t('couriers.saveFailed', 'Failed to save courier. Please try again.'));
                 }
                 const json = await res.json();
                 const data = json.data ?? json;
@@ -80,12 +80,12 @@ export default function CourierDetails() {
                 const res = await apiFetch(`/api/couriers/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    throw new Error(err.message || t('couriers.saveFailed', 'Error saving courier.'));
+                    throw new Error(err.message || t('couriers.saveFailed', 'Failed to save courier. Please try again.'));
                 }
                 showSuccess();
             }
         } catch (error) {
-            setSaveToast({ type: 'error', msg: error.message || t('couriers.saveFailed', 'Error saving courier.') });
+            setSaveToast({ type: 'error', msg: error.message || t('couriers.saveFailed', 'Failed to save courier. Please try again.') });
         } finally {
             setSaving(false);
         }
@@ -112,7 +112,7 @@ export default function CourierDetails() {
                     }
                     navigate('/couriers');
                 } catch (error) {
-                    setSaveToast({ type: 'error', msg: error.message });
+                    setSaveToast({ type: 'error', msg: error.message || 'Failed to delete courier. Please try again.' });
                     setDeleting(false);
                 }
             }

@@ -29,7 +29,7 @@ exports.getDailyReport = async (req, res) => {
         res.json(ok({ date: targetDate, summary, records }));
     } catch (err) {
         logger.error({ err }, 'Error fetching daily attendance report');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate daily report. Please try again.' });
     }
 };
 
@@ -38,8 +38,8 @@ exports.getMonthlyReport = async (req, res) => {
     try {
         const tenant = req.user.tenant;
         const { period } = req.query; // MM-YYYY
-        if (!period) return res.status(400).json({ error: 'period required (MM-YYYY)' });
-        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
+        if (!period) return res.status(400).json({ message: 'Period is required (MM-YYYY)' });
+        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ message: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
         const paddedMonth = month.padStart(2, '0');
@@ -78,7 +78,7 @@ exports.getMonthlyReport = async (req, res) => {
         res.json(ok({ period, data: Object.values(matrix) }));
     } catch (err) {
         logger.error({ err }, 'Error fetching monthly attendance report');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate monthly report. Please try again.' });
     }
 };
 
@@ -104,7 +104,7 @@ exports.getPayrollReport = async (req, res) => {
         res.json(ok({ period: period || 'All Time', summary, records: payrolls }));
     } catch (err) {
         logger.error({ err }, 'Error fetching payroll report');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate payroll report. Please try again.' });
     }
 };
 
@@ -113,8 +113,8 @@ exports.getOvertimeReport = async (req, res) => {
     try {
         const tenant = req.user.tenant;
         const { period } = req.query;
-        if (!period) return res.status(400).json({ error: 'period required (MM-YYYY)' });
-        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ error: 'Period must be in MM-YYYY format' });
+        if (!period) return res.status(400).json({ message: 'Period is required (MM-YYYY)' });
+        if (!/^\d{2}-\d{4}$/.test(period)) return res.status(400).json({ message: 'Period must be in MM-YYYY format' });
 
         const [month, year] = period.split('-');
         const mm = month.padStart(2, '0');
@@ -141,7 +141,7 @@ exports.getOvertimeReport = async (req, res) => {
         res.json(ok({ period, leaders: formatted }));
     } catch (err) {
         logger.error({ err }, 'Error fetching overtime report');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate overtime report. Please try again.' });
     }
 };
 
@@ -150,7 +150,7 @@ exports.getDeductionsReport = async (req, res) => {
     try {
         const tenant = req.user.tenant;
         const { period } = req.query;
-        if (!period) return res.status(400).json({ error: 'period required (MM-YYYY)' });
+        if (!period) return res.status(400).json({ message: 'Period is required (MM-YYYY)' });
 
         const payrolls = await Payroll.find({
             tenant,
@@ -163,6 +163,6 @@ exports.getDeductionsReport = async (req, res) => {
         res.json(ok({ period, records: payrolls }));
     } catch (err) {
         logger.error({ err }, 'Error fetching deductions report');
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ message: 'Failed to generate deductions report. Please try again.' });
     }
 };

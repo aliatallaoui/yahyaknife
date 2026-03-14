@@ -237,15 +237,15 @@ async function executeTool(call, tenantId) {
 const handleChat = async (req, res) => {
     try {
         const tenantId = req.user?.tenant;
-        if (!tenantId) return res.status(403).json({ error: 'Tenant context required' });
+        if (!tenantId) return res.status(403).json({ message: 'Tenant context required.' });
 
         const { messages } = req.body;
 
         if (!Array.isArray(messages) || messages.length === 0) {
-            return res.status(400).json({ error: "messages must be a non-empty array." });
+            return res.status(400).json({ message: 'Messages must be a non-empty array.' });
         }
         if (messages.length > 100) {
-            return res.status(400).json({ error: "Conversation history too long." });
+            return res.status(400).json({ message: 'Conversation history too long.' });
         }
 
         if (!process.env.GEMINI_API_KEY) {

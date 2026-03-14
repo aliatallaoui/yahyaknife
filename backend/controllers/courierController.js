@@ -14,7 +14,7 @@ exports.getCouriers = async (req, res) => {
         res.json(couriers);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching couriers');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load couriers. Please try again.' });
     }
 };
 
@@ -31,7 +31,7 @@ exports.getCourierById = async (req, res) => {
         res.json(courier);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching courier');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load courier details. Please try again.' });
     }
 };
 
@@ -43,7 +43,7 @@ exports.createCourier = async (req, res) => {
             authType, apiId, apiToken, accountReference, notes, vehicleType,
             coverageZones, deliverySLAs
         } = req.body;
-        if (!name) return res.status(400).json({ error: 'Courier name is required.' });
+        if (!name) return res.status(400).json({ message: 'Courier name is required.' });
         const newCourier = await Courier.create({
             name, phone, logo, status, integrationType, apiProvider, apiBaseUrl,
             authType, apiId, apiToken, accountReference, notes, vehicleType,
@@ -89,7 +89,7 @@ exports.updateCourier = async (req, res) => {
         res.json(response);
     } catch (error) {
         logger.error({ err: error }, 'Error updating courier');
-        res.status(400).json({ error: 'Invalid courier data' });
+        res.status(400).json({ message: 'Invalid courier data. Please check the form.' });
     }
 };
 
@@ -126,7 +126,7 @@ exports.deleteCourier = async (req, res) => {
             { deletedAt: new Date() },
             { returnDocument: 'after' }
         );
-        if (!courier) return res.status(404).json({ error: 'Courier not found' });
+        if (!courier) return res.status(404).json({ message: 'Courier not found.' });
 
         // Unassign courier from any pre-dispatch orders to prevent ghost references
         if (preDispatchOrders > 0) {
@@ -141,7 +141,7 @@ exports.deleteCourier = async (req, res) => {
         res.json({ message: 'Courier deleted successfully' });
     } catch (error) {
         logger.error({ err: error }, 'Error deleting courier');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to settle courier cash. Please try again.' });
     }
 };
 
@@ -239,7 +239,7 @@ exports.settleCourierCash = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error settling courier cash');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load settlement history. Please try again.' });
     }
 };
 
@@ -264,7 +264,7 @@ exports.getSettlementHistory = async (req, res) => {
         res.json({ courierId: id, totalSettled, settlements });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching settlement history');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to assign orders to courier. Please try again.' });
     }
 };
 
@@ -321,7 +321,7 @@ exports.assignOrdersToCourier = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error assigning orders to courier');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to recalculate courier KPIs. Please try again.' });
     }
 };
 

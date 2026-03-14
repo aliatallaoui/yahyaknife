@@ -198,10 +198,10 @@ export default function AIGeneratorWizard({ channelId, onComplete, onClose }) {
         onComplete(page);
       } else {
         const err = await res.json();
-        setError(err.message || 'Generation failed');
+        setError(err.message || 'Failed to generate page. Please try again.');
       }
     } catch (err) {
-      setError(err.message || 'Connection error');
+      setError(err.message || 'Connection failed. Please check your network and try again.');
     } finally {
       setGenerating(false);
     }

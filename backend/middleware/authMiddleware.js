@@ -35,7 +35,7 @@ const protect = async (req, res, next) => {
             }, AUTH_CACHE_TTL);
 
             if (!user || !user.isActive) {
-                return res.status(401).json({ message: 'Not authorized, user inactive or not found' });
+                return res.status(401).json({ message: 'Your account is inactive or not found. Please contact support.' });
             }
 
             req.user = user;
@@ -146,17 +146,17 @@ const protect = async (req, res, next) => {
             return next();
         } catch (error) {
             logger.error({ err: error }, 'Auth token verification failed');
-            return res.status(401).json({ message: 'Not authorized, token failed' });
+            return res.status(401).json({ message: 'Session expired. Please log in again.' });
         }
     }
 
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Authentication required. Please log in.' });
 };
 
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({ message: 'Not authorized' });
+            return res.status(401).json({ message: 'Authentication required. Please log in.' });
         }
 
         // Legacy check for string role fallback
@@ -168,7 +168,7 @@ const authorizeRoles = (...roles) => {
 
         if (!roles.includes(userRoleName)) {
             return res.status(403).json({
-                message: `User role ${userRoleName} is not authorized to access this route`
+                message: 'You don\'t have permission to perform this action.'
             });
         }
         next();
@@ -182,7 +182,7 @@ const authorizeRoles = (...roles) => {
 const requirePermission = (permission) => {
     return (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({ message: 'Not authorized' });
+            return res.status(401).json({ message: 'Authentication required. Please log in.' });
         }
 
         // Check computed permissions
@@ -196,7 +196,7 @@ const requirePermission = (permission) => {
         }
 
         return res.status(403).json({
-            message: `Forbidden: Missing required permission '${permission}'`
+            message: 'You don\'t have permission to perform this action.'
         });
     };
 };

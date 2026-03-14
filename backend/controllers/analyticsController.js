@@ -84,7 +84,7 @@ exports.getSkuIntelligence = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error generating SKU intelligence');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load analytics data. Please try again.' });
     }
 };
 
@@ -180,7 +180,7 @@ exports.getSupplierIntelligence = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error generating Supplier intelligence');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load supplier intelligence. Please try again.' });
     }
 };
 
@@ -197,7 +197,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
             endDate = moment(customEnd).endOf('day');
             // Cap at 366 days
             if (endDate.diff(startDate, 'days') > 366) {
-                return res.status(400).json({ error: 'Date range cannot exceed 366 days' });
+                return res.status(400).json({ message: 'Date range cannot exceed 366 days.' });
             }
         } else if (range === 'today') {
             startDate = moment().startOf('day');
@@ -548,6 +548,6 @@ exports.getEcommerceAnalytics = async (req, res) => {
         res.json(analyticsData);
     } catch (error) {
         logger.error({ err: error }, 'Error generating Ecommerce Analytics');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load ecommerce analytics. Please try again.' });
     }
 };

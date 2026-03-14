@@ -110,9 +110,9 @@ export default function SalesChannelDetail() {
         toast.success(t('salesChannels.integration.connectionSuccess', 'Connection successful'));
         fetchData();
       } else {
-        toast.error(json.message || 'Connection failed');
+        toast.error(json.message || 'Connection failed. Please check your store URL and API keys.');
       }
-    } catch { toast.error('Connection test failed'); }
+    } catch { toast.error('Connection test failed. Please check your network and try again.'); }
     finally { setTesting(false); }
   };
 
@@ -126,9 +126,9 @@ export default function SalesChannelDetail() {
         fetchData();
         fetchSyncLogs();
       } else {
-        toast.error(json.message || 'Sync failed');
+        toast.error(json.message || 'Order sync failed. Please try again.');
       }
-    } catch { toast.error('Sync failed'); }
+    } catch { toast.error('Order sync failed. Please check your connection and try again.'); }
     finally { setSyncing(false); }
   };
 
@@ -140,9 +140,9 @@ export default function SalesChannelDetail() {
         fetchData();
       } else {
         const json = await res.json();
-        toast.error(json.message || 'Failed to register webhooks');
+        toast.error(json.message || 'Failed to register webhooks. Please try again.');
       }
-    } catch { toast.error('Failed to register webhooks'); }
+    } catch { toast.error('Failed to register webhooks. Please try again.'); }
   };
 
   // Landing page handlers
@@ -161,9 +161,9 @@ export default function SalesChannelDetail() {
         navigate(`/sales-channels/${channelId}/pages/${page._id}/builder`);
       } else {
         const err = await res.json();
-        toast.error(err.message || 'Error');
+        toast.error(err.message || 'Failed to create page. Please try again.');
       }
-    } catch { toast.error('Error'); }
+    } catch { toast.error('Failed to create page. Please try again.'); }
   };
 
   const handlePublish = async (pageId) => {
@@ -205,9 +205,9 @@ export default function SalesChannelDetail() {
         fetchData();
       } else {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.message || 'Error');
+        toast.error(err.message || 'Failed to update page slug. Please try again.');
       }
-    } catch { toast.error('Error'); }
+    } catch { toast.error('Failed to update page slug. Please try again.'); }
     setEditingSlug(null);
   };
 

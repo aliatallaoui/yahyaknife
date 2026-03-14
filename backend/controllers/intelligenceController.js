@@ -56,7 +56,7 @@ exports.getStockoutPredictions = async (req, res) => {
 
         res.json(predictions.filter(p => ['Critical', 'Moderate', 'Stockout'].includes(p.riskLevel)));
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load stockout predictions. Please try again.' });
     }
 };
 
@@ -103,7 +103,7 @@ exports.evaluateOrderRisk = async (req, res) => {
 
         res.json({ orderId: order._id, riskScore, recommendation, flags, customerTrustScore: customer.trustScore });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to evaluate order risk. Please try again.' });
     }
 };
 
@@ -131,7 +131,7 @@ exports.optimizeCourierSelection = async (req, res) => {
             zones: c.coverageZones
         })));
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to optimize courier selection. Please try again.' });
     }
 };
 
@@ -156,6 +156,6 @@ exports.getGlobalIntelligence = async (req, res) => {
             ]
         });
     } catch (error) {
-        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Server error' });
+        logger.error({ err: error }, 'Server error'); res.status(500).json({ message: 'Failed to load intelligence data. Please try again.' });
     }
 };

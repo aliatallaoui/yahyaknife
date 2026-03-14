@@ -28,7 +28,7 @@ export default function ForgotPassword() {
                 body: JSON.stringify({ email }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Something went wrong');
+            if (!res.ok) throw new Error(data.message || 'Password reset request failed. Please try again.');
 
             setSuccess(true);
             if (data.resetToken) {

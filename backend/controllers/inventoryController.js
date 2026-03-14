@@ -20,7 +20,7 @@ exports.getProducts = async (req, res) => {
         res.json(products);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching products');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load products. Please try again.' });
     }
 };
 
@@ -72,7 +72,7 @@ exports.createProduct = async (req, res) => {
         res.status(201).json(populatedProduct);
     } catch (error) {
         logger.error({ err: error }, 'Error creating product');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to create product. Please try again.' });
     }
 };
 
@@ -120,7 +120,7 @@ exports.updateProduct = async (req, res) => {
         res.json(updated);
     } catch (error) {
         logger.error({ err: error }, 'Error updating product');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update product. Please try again.' });
     }
 };
 
@@ -142,7 +142,7 @@ exports.deleteProduct = async (req, res) => {
         res.json({ message: "Product successfully archived." });
     } catch (error) {
         logger.error({ err: error }, 'Error deleting product');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to delete product. Please try again.' });
     }
 };
 
@@ -176,7 +176,7 @@ exports.getInventoryMetrics = async (req, res) => {
         });
     } catch (error) {
         logger.error({ err: error }, 'Error fetching inventory metrics');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load inventory metrics. Please try again.' });
     }
 };
 
@@ -195,7 +195,7 @@ exports.getCategories = async (req, res) => {
         res.json(categories);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching categories');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load categories. Please try again.' });
     }
 };
 
@@ -207,7 +207,7 @@ exports.createCategory = async (req, res) => {
         res.status(201).json(newCategory);
     } catch (error) {
         logger.error({ err: error }, 'Error creating category');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to create category. Please try again.' });
     }
 };
 
@@ -221,7 +221,7 @@ exports.updateCategory = async (req, res) => {
         res.json(category);
     } catch (error) {
         logger.error({ err: error }, 'Error updating category');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update category. Please try again.' });
     }
 };
 
@@ -234,7 +234,7 @@ exports.deleteCategory = async (req, res) => {
         res.json({ message: "Category archived." });
     } catch (error) {
         logger.error({ err: error }, 'Error deleting category');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to delete category. Please try again.' });
     }
 };
 
@@ -246,7 +246,7 @@ exports.getWarehouses = async (req, res) => {
         res.json(warehouses);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching warehouses');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load warehouses. Please try again.' });
     }
 };
 
@@ -258,20 +258,20 @@ exports.createWarehouse = async (req, res) => {
         res.status(201).json(w);
     } catch (error) {
         logger.error({ err: error }, 'Error creating warehouse');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to create warehouse. Please try again.' });
     }
 };
 
 exports.updateWarehouse = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id))
-            return res.status(400).json({ error: 'Invalid ID' });
+            return res.status(400).json({ message: 'Invalid warehouse ID.' });
         const { name, code, location, manager, capacity, status } = req.body;
         const w = await Warehouse.findOneAndUpdate({ _id: req.params.id, tenant: req.user.tenant }, { name, code, location, manager, capacity, status }, { returnDocument: 'after' });
         res.json(w);
     } catch (error) {
         logger.error({ err: error }, 'Error updating warehouse');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to update warehouse. Please try again.' });
     }
 };
 
@@ -344,7 +344,7 @@ exports.adjustStock = async (req, res) => {
         res.json({ message: "Stock adjusted successfully", variant: updatedVariant, ledger });
     } catch (error) {
         logger.error({ err: error }, 'Error adjusting stock');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to adjust stock. Please try again.' });
     }
 };
 
@@ -365,7 +365,7 @@ exports.getStockLedger = async (req, res) => {
         res.json(ledger);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching stock ledger');
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load stock ledger. Please try again.' });
     }
 };
 

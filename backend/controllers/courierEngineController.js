@@ -33,7 +33,7 @@ const getCourierCoverage = async (req, res) => {
         res.json(coverage.filter(c => c.courierId));
     } catch (error) {
         logger.error({ err: error }, 'Courier coverage fetch error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to calculate delivery fee. Please try again.' });
     }
 };
 
@@ -79,7 +79,7 @@ const calculateCourierPrice = async (req, res) => {
         res.json({ price: result.fee, matched: result.matched, rule: result.rule });
     } catch (error) {
         logger.error({ err: error }, 'Courier price calculation error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to recommend courier. Please try again.' });
     }
 };
 
@@ -165,7 +165,7 @@ const recommendCourier = async (req, res) => {
 
     } catch (error) {
         logger.error({ err: error }, 'Courier recommendation error');
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to load courier options. Please try again.' });
     }
 }
 

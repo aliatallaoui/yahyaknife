@@ -163,7 +163,7 @@ export default function OrderEditPanel({ order, onSaved }) {
             toast.success(t('callcenter.orderUpdated', 'Order updated'), { duration: 3000 });
             if (onSaved) onSaved();
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Failed to save order. Please try again.');
         } finally {
             setSaving(false);
         }

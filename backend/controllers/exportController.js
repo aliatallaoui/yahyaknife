@@ -68,7 +68,7 @@ exports.enqueueOrderExport = async (req, res) => {
 
     } catch (error) {
         logger.error({ err: error }, 'Error enqueuing order export');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to start export. Please try again.' });
     }
 };
 
@@ -84,6 +84,6 @@ exports.getExportJobStatus = async (req, res) => {
         res.json(jobStatus);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching export job status');
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Failed to download export. Please try again.' });
     }
 };
