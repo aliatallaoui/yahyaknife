@@ -883,6 +883,60 @@ exports.getChannelAnalytics = async ({ tenantId, channelId, from, to }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  WOOCOMMERCE OAUTH
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate WooCommerce OAuth authorization URL.
+ * The flow:
+ *   1. We generate a unique state token and store it in channel.config.oauthState
+ *   2. We build the /wc-auth/v1/authorize URL pointing to the WooCommerce store
+ *   3. user_id = "channelId:stateToken" so the callback can verify + match
+ *   4. WooCommerce POSTs consumer_key + consumer_secret to our callback_url
+ */
+exports.generateWcAuthUrl = async ({ tenantId, channelId, returnUrl }) => {
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
+    if (!channel) throw AppError.notFound('Sales Channel');
+    if (channel.channelType !== 'woocommerce') {
+        throw AppError.validationFailed({ channelType: 'Only WooCommerce channels support OAuth' });
+    }
+
+    const configObj = decryptSensitiveKeys(channel.config);
+    const storeUrl = configObj.storeUrl;
+    if (!storeUrl) {
+        throw AppError.validationFailed({ storeUrl: 'Store URL is required. Set it in channel settings first.' });
+    }
+
+    // Generate a one-time state token for CSRF protection
+    const stateToken = crypto.randomBytes(24).toString('hex');
+
+    // Store it in channel config
+    channel.config.set('oauthState', stateToken);
+    await channel.save();
+
+    // Build the WooCommerce OAuth URL
+    const appName = process.env.APP_NAME || 'Octomatic';
+    const baseUrl = process.env.APP_BASE_URL || returnUrl?.replace(/\/[^/]*$/, '') || 'https://app.octomatic.shop';
+    const callbackUrl = `${process.env.API_BASE_URL || baseUrl}/api/integrations/webhooks/wc-auth/callback`;
+    const finalReturnUrl = returnUrl || `${baseUrl}/sales-channels/${channelId}`;
+
+    // Normalize store URL
+    const normalizedStoreUrl = storeUrl.replace(/\/+$/, '');
+
+    const params = new URLSearchParams({
+        app_name: appName,
+        scope: 'read_write',
+        user_id: `${channelId}:${stateToken}`,
+        return_url: finalReturnUrl,
+        callback_url: callbackUrl,
+    });
+
+    const authUrl = `${normalizedStoreUrl}/wc-auth/v1/authorize?${params.toString()}`;
+
+    return { authUrl };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  STORE INTEGRATION METHODS
 // ═══════════════════════════════════════════════════════════════════════════════
 

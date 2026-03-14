@@ -284,6 +284,25 @@ exports.calculateStorefrontPrice = async (req, res, next) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  WOOCOMMERCE OAUTH
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate WooCommerce OAuth authorization URL.
+ * POST /api/sales-channels/:id/wc-auth-url
+ */
+exports.generateWcAuthUrl = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.generateWcAuthUrl({
+            tenantId: req.user.tenant,
+            channelId: req.params.id,
+            returnUrl: req.body.returnUrl
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  STORE INTEGRATION
 // ═══════════════════════════════════════════════════════════════════════════════
 

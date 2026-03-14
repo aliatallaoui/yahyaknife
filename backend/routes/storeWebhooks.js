@@ -31,6 +31,79 @@ const webhookLimiter = rateLimit({
 });
 
 /**
+ * WooCommerce OAuth Callback
+ * POST /api/integrations/webhooks/wc-auth/callback
+ *
+ * WooCommerce POSTs here after the store owner approves the app:
+ *   Body: { user_id, consumer_key, consumer_secret, key_permissions }
+ *   user_id = our channelId (set when generating the auth URL)
+ */
+router.post(
+    '/wc-auth/callback',
+    webhookLimiter,
+    express.json(),
+    async (req, res) => {
+        const { user_id, consumer_key, consumer_secret, key_permissions } = req.body;
+
+        try {
+            if (!user_id || !consumer_key || !consumer_secret) {
+                return res.status(400).json({ error: 'Missing required fields' });
+            }
+
+            // user_id is "channelId:token" format
+            const [channelId, token] = user_id.split(':');
+
+            if (!mongoose.Types.ObjectId.isValid(channelId)) {
+                return res.status(400).json({ error: 'Invalid channel reference' });
+            }
+
+            const channel = await SalesChannel.findOne({
+                _id: channelId,
+                channelType: 'woocommerce',
+                deletedAt: null,
+            });
+
+            if (!channel) {
+                return res.status(404).json({ error: 'Channel not found' });
+            }
+
+            // Verify the OAuth state token matches
+            const storedToken = channel.config?.get?.('oauthState') || channel.config?.oauthState;
+            if (!storedToken || storedToken !== token) {
+                logger.warn({ channelId }, 'WooCommerce OAuth callback token mismatch');
+                return res.status(401).json({ error: 'Invalid OAuth state' });
+            }
+
+            // Encrypt and store the received credentials
+            const { encrypt } = require('../shared/utils/credentialEncryption');
+            const configUpdates = {
+                'config.consumerKey': consumer_key,
+                'config.consumerSecret': encrypt(consumer_secret),
+                'config.oauthState': null, // Clear the used token
+            };
+
+            await SalesChannel.updateOne(
+                { _id: channelId },
+                {
+                    $set: {
+                        ...configUpdates,
+                        'integration.status': 'connected',
+                        'integration.lastError': null,
+                    }
+                }
+            );
+
+            logger.info({ channelId, permissions: key_permissions }, 'WooCommerce OAuth credentials received');
+            return res.status(200).json({ success: true });
+
+        } catch (error) {
+            logger.error({ err: error, user_id }, 'WooCommerce OAuth callback error');
+            return res.status(500).json({ error: 'Internal error processing OAuth callback' });
+        }
+    }
+);
+
+/**
  * WooCommerce Webhook Handler
  * POST /api/integrations/webhooks/:channelId/woocommerce
  *

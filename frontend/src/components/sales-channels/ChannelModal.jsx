@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Store, Globe, Palette, Activity, Link2, ShoppingBag } from 'lucide-react';
+import { X, Store, Globe, Palette, Activity, Link2, ShoppingBag, KeyRound } from 'lucide-react';
 import clsx from 'clsx';
 import useModalDismiss from '../../hooks/useModalDismiss';
 
@@ -229,7 +229,9 @@ export default function ChannelModal({ channel, onSave, onClose }) {
           {tab === 'integration' && isStore && (
             <>
               <div className="px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
-                {t('salesChannels.integrationHint', 'Enter your store API credentials. Secrets are encrypted before storage.')}
+                {form.channelType === 'woocommerce'
+                  ? t('salesChannels.integrationHintWc', 'Enter your store URL, then use OAuth to connect automatically. Or enter API keys manually.')
+                  : t('salesChannels.integrationHint', 'Enter your store API credentials. Secrets are encrypted before storage.')}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -243,45 +245,62 @@ export default function ChannelModal({ channel, onSave, onClose }) {
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
               {form.channelType === 'woocommerce' && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('salesChannels.consumerKey', 'Consumer Key')} *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.config.consumerKey}
-                      onChange={e => update('config.consumerKey', e.target.value)}
-                      placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('salesChannels.consumerSecret', 'Consumer Secret')} *
-                    </label>
-                    <input
-                      type="password"
-                      value={form.config.consumerSecret}
-                      onChange={e => update('config.consumerSecret', e.target.value)}
-                      placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('salesChannels.webhookSecret', 'Webhook Secret')}
-                      <span className="text-xs text-gray-400 ms-1">({t('common.optional', 'Optional')})</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={form.config.webhookSecret}
-                      onChange={e => update('config.webhookSecret', e.target.value)}
-                      placeholder={t('salesChannels.webhookSecretPlaceholder', 'For verifying incoming webhooks')}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
-                    />
-                  </div>
+                  {/* OAuth info — shown on create (keys will be fetched via OAuth after save) */}
+                  {!channel && (
+                    <div className="px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-sm text-purple-700 dark:text-purple-300">
+                      {t('salesChannels.oauthHint', 'Save the channel first with your Store URL, then use "Connect with WooCommerce OAuth" from the channel detail page to authorize automatically.')}
+                    </div>
+                  )}
+
+                  {/* Manual key entry — collapsible for advanced users */}
+                  <details className="group">
+                    <summary className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+                      <Link2 className="w-4 h-4" />
+                      {t('salesChannels.manualKeys', 'Manual API Keys (Advanced)')}
+                    </summary>
+                    <div className="mt-3 space-y-3 ps-6 border-s-2 border-gray-200 dark:border-gray-600">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('salesChannels.consumerKey', 'Consumer Key')}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.config.consumerKey}
+                          onChange={e => update('config.consumerKey', e.target.value)}
+                          placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxx"
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('salesChannels.consumerSecret', 'Consumer Secret')}
+                        </label>
+                        <input
+                          type="password"
+                          value={form.config.consumerSecret}
+                          onChange={e => update('config.consumerSecret', e.target.value)}
+                          placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxx"
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('salesChannels.webhookSecret', 'Webhook Secret')}
+                          <span className="text-xs text-gray-400 ms-1">({t('common.optional', 'Optional')})</span>
+                        </label>
+                        <input
+                          type="password"
+                          value={form.config.webhookSecret}
+                          onChange={e => update('config.webhookSecret', e.target.value)}
+                          placeholder={t('salesChannels.webhookSecretPlaceholder', 'For verifying incoming webhooks')}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </details>
                 </>
               )}
             </>

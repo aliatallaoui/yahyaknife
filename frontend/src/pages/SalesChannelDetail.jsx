@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, FileText, BarChart3, Eye, EyeOff, Trash2, Edit3,
   ExternalLink, MoreVertical, Globe, ShoppingCart, TrendingUp, Copy,
   Rocket, Pause, Search, Sparkles, CopyPlus, Link, Check, X,
-  Wifi, WifiOff, RefreshCw, PlayCircle, AlertCircle, Clock, Package, Loader2
+  Wifi, WifiOff, RefreshCw, PlayCircle, AlertCircle, Clock, Package, Loader2, Link2
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -63,7 +63,7 @@ export default function SalesChannelDetail() {
   const fetchSyncLogs = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/sales-channels/${channelId}/sync-logs`);
-      if (res.ok) { const j = await res.json(); setSyncLogs(j.data ?? j); }
+      if (res.ok) { const j = await res.json(); const d = j.data ?? j; setSyncLogs(Array.isArray(d) ? d : d.logs ?? []); }
     } catch {}
   }, [channelId]);
 
@@ -80,6 +80,24 @@ export default function SalesChannelDetail() {
       fetchMappings();
     }
   }, [channel?.channelType, fetchSyncLogs, fetchMappings]);
+
+  // WooCommerce OAuth handler
+  const handleWcOAuth = async () => {
+    try {
+      const returnUrl = window.location.href;
+      const res = await apiFetch(`/api/sales-channels/${channelId}/wc-auth-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnUrl })
+      });
+      const json = await res.json();
+      if (res.ok && json.data?.authUrl) {
+        window.open(json.data.authUrl, '_self');
+      } else {
+        toast.error(json.message || 'Failed to generate OAuth URL');
+      }
+    } catch { toast.error('Failed to start WooCommerce connection'); }
+  };
 
   // Store integration handlers
   const handleTestConnection = async () => {
@@ -430,8 +448,18 @@ export default function SalesChannelDetail() {
               </div>
             )}
 
-            {/* Register Webhooks button (if not registered) */}
-            {!channel.integration?.webhookId && hasPermission('saleschannels.integrate') && (
+            {/* WooCommerce OAuth Connect button */}
+            {channel.channelType === 'woocommerce' && channel.integration?.status !== 'connected' && hasPermission('saleschannels.integrate') && (
+              <button
+                onClick={handleWcOAuth}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors shadow-sm"
+              >
+                <Link2 className="w-4 h-4" /> {t('salesChannels.integration.connectWooCommerce', 'Connect with WooCommerce OAuth')}
+              </button>
+            )}
+
+            {/* Register Webhooks button (if connected but no webhook) */}
+            {channel.integration?.status === 'connected' && !channel.integration?.webhookId && hasPermission('saleschannels.integrate') && (
               <button
                 onClick={handleRegisterWebhooks}
                 className="mt-4 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-xl transition-colors border border-violet-200 dark:border-violet-700"
