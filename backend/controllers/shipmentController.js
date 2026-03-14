@@ -134,7 +134,7 @@ exports.getAllShipments = async (req, res) => {
 exports.getShipmentById = async (req, res) => {
     try {
         if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid shipment ID' });
-        const shipment = await Shipment.findOne({ _id: req.params.id, tenant: req.user.tenant });
+        const shipment = await Shipment.findOne({ _id: req.params.id, tenant: req.user.tenant }).lean();
         if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
         res.json(shipment);
     } catch (error) {

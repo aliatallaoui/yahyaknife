@@ -151,6 +151,7 @@ orderSchema.index({ tenant: 1, courier: 1, 'deliveryStatus.deliveredAt': -1 }); 
 orderSchema.index({ tenant: 1, courier: 1, status: 1 }); // Courier settlement queries
 
 orderSchema.index({ tenant: 1, createdAt: -1 }); // Date-range analytics & daily rollup
+orderSchema.index({ tenant: 1, status: 1, createdAt: -1 }); // Status-filtered date-sorted queries
 orderSchema.index({ tenant: 1, customer: 1 }); // Customer order history
 orderSchema.index({ deletedAt: 1, tenant: 1, status: 1 }); // Soft-delete filtering (most queries add deletedAt: null)
 

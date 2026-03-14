@@ -261,10 +261,10 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         if (!item.variantId) continue;
         if (isFulfilled) {
             await ProductVariant.findOneAndUpdate({ _id: item.variantId, tenant: tenantId }, { $inc: { totalStock: -item.quantity, totalSold: item.quantity } });
-            await logStockMovement(item.variantId, -item.quantity, 'Sale', `Fulfilled Order ${savedOrder.orderId}`, savedOrder._id);
+            await logStockMovement(item.variantId, -item.quantity, 'Sale', `Fulfilled Order ${savedOrder.orderId}`, savedOrder._id, 'Order', tenantId);
         } else if (isActive) {
             await ProductVariant.findOneAndUpdate({ _id: item.variantId, tenant: tenantId }, { $inc: { reservedStock: item.quantity, totalSold: item.quantity } });
-            await logStockMovement(item.variantId, -item.quantity, 'Sale', `Reserved for Order ${savedOrder.orderId}`, savedOrder._id);
+            await logStockMovement(item.variantId, -item.quantity, 'Sale', `Reserved for Order ${savedOrder.orderId}`, savedOrder._id, 'Order', tenantId);
         }
     }
 
@@ -446,7 +446,9 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
             delta.total !== 0 ? delta.total : delta.reserved,
             'Sale',
             `Updated Order ${existingOrder.orderId} Delta (${moveInfo.join(', ')})`,
-            existingOrder._id
+            existingOrder._id,
+            'Order',
+            tenantId
         );
     }
 

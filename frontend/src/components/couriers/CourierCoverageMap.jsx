@@ -285,7 +285,7 @@ export default function CourierCoverageMap({ courierId }) {
                                             {c.officeSupported ? <span className="text-indigo-600 dark:text-indigo-400 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300 dark:text-gray-600">{t('common.no', 'No')}</span>}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            <button onClick={() => handleDelete(c._id)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors">
+                                            <button onClick={() => handleDelete(c._id)} title={t('couriers.deleteRule', 'Delete rule')} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </td>

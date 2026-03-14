@@ -165,7 +165,7 @@ exports.getAdvancedOrders = async (req, res) => {
                     { name: searchRegex },
                     { phone: searchRegex }
                 ]
-            }).select('_id');
+            }).select('_id').lean();
             const customerIds = matchingCustomers.map(c => c._id);
 
             const orConditions = [

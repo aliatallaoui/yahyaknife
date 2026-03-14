@@ -16,10 +16,14 @@ export default function TenantSwitcher({ isCollapsed }) {
     useEffect(() => {
         if (!user?.hasMultipleTenants) return;
 
-        apiFetch('/api/auth/tenants')
+        const controller = new AbortController();
+        apiFetch('/api/auth/tenants', { signal: controller.signal })
             .then(res => res.ok ? res.json() : [])
-            .then(data => setTenants(Array.isArray(data) ? data : []))
+            .then(data => {
+                if (!controller.signal.aborted) setTenants(Array.isArray(data) ? data : []);
+            })
             .catch(() => {});
+        return () => controller.abort();
     }, [user?.hasMultipleTenants, user?.tenant]);
 
     // Close dropdown on outside click

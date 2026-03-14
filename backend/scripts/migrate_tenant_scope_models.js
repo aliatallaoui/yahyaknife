@@ -73,7 +73,7 @@ async function migrate() {
         const tenantId = firstTenant._id;
         console.log(`Using tenant ${tenantId} for backfill`);
 
-        for (const collName of ['suppliers', 'purchaseorders', 'warehouses', 'reorderalerts', 'couriersettings']) {
+        for (const collName of ['suppliers', 'purchaseorders', 'warehouses', 'reorderalerts', 'couriersettings', 'stockmovementledgers']) {
             const result = await db.collection(collName).updateMany(
                 { tenant: { $exists: false } },
                 { $set: { tenant: tenantId } }

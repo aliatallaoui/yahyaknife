@@ -12,8 +12,9 @@ const ProductVariant = require('../models/ProductVariant');
  * @param {String} reason
  * @param {ObjectId|String} referenceId (Order ID, PO ID, etc.)
  * @param {String} referenceModel ('Order', 'PurchaseOrder', 'Manual', 'Transfer')
+ * @param {ObjectId|String} tenantId
  */
-exports.logStockMovement = async (variantId, quantity, type, reason, referenceId = null, referenceModel = 'Order') => {
+exports.logStockMovement = async (variantId, quantity, type, reason, referenceId = null, referenceModel = 'Order', tenantId = null) => {
     try {
         // Map caller-friendly types to StockMovementLedger enum
         const typeMapping = {
@@ -30,14 +31,16 @@ exports.logStockMovement = async (variantId, quantity, type, reason, referenceId
 
         const ledgerType = typeMapping[type] || 'ADJUSTMENT';
 
-        await StockMovementLedger.create({
+        const doc = {
             variantId,
             quantity,
             type: ledgerType,
             referenceId: referenceId ? referenceId.toString() : `SYS-${Date.now()}`,
             referenceModel: ['Order', 'PurchaseOrder', 'Manual', 'Transfer'].includes(referenceModel) ? referenceModel : 'Order',
             notes: reason
-        });
+        };
+        if (tenantId) doc.tenant = tenantId;
+        await StockMovementLedger.create(doc);
     } catch (error) {
         logger.error({ err: error }, 'Failed to log stock movement in ledger');
     }
@@ -50,7 +53,7 @@ exports.getProductLedger = async (req, res) => {
     try {
         const { variantId } = req.params;
 
-        const movements = await StockMovementLedger.find({ variantId })
+        const movements = await StockMovementLedger.find({ variantId, tenant: req.user.tenant })
             .sort({ createdAt: -1 })
             .limit(100)
             .lean();
@@ -67,11 +70,7 @@ exports.getProductLedger = async (req, res) => {
 // @access  Private
 exports.getGlobalLedger = async (req, res) => {
     try {
-        // StockMovementLedger has no tenant field — scope via tenant's variant IDs
-        const tenantVariantIds = await ProductVariant.find({ tenant: req.user.tenant })
-            .select('_id').lean().then(docs => docs.map(d => d._id));
-
-        const movements = await StockMovementLedger.find({ variantId: { $in: tenantVariantIds } })
+        const movements = await StockMovementLedger.find({ tenant: req.user.tenant })
             .populate({
                 path: 'variantId',
                 populate: { path: 'productId', select: 'name' }

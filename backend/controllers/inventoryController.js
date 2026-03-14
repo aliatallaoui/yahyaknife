@@ -323,6 +323,7 @@ exports.adjustStock = async (req, res) => {
 
         // Create immutable ledger entry
         const ledger = await StockMovementLedger.create({
+            tenant: req.user.tenant,
             variantId,
             warehouseId: warehouseId || null,
             type: 'ADJUSTMENT',
@@ -350,7 +351,7 @@ exports.adjustStock = async (req, res) => {
 exports.getStockLedger = async (req, res) => {
     try {
         const { variantId, warehouseId } = req.query;
-        let query = {};
+        let query = { tenant: req.user.tenant };
         if (variantId) query.variantId = variantId;
         if (warehouseId) query.warehouseId = warehouseId;
 

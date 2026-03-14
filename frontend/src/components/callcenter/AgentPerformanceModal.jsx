@@ -14,15 +14,17 @@ export default function AgentPerformanceModal({ agentId, onClose }) {
 
     useEffect(() => {
         if (!agentId) return;
+        const controller = new AbortController();
         setLoading(true);
-        apiFetch(`/api/call-center/agent-performance/${agentId}?period=30d`)
+        apiFetch(`/api/call-center/agent-performance/${agentId}?period=30d`, { signal: controller.signal })
             .then(res => {
                 if (!res.ok) throw new Error('Failed to load agent performance');
                 return res.json();
             })
-            .then(json => setData(json.data ?? json))
-            .catch(err => setError(err.message))
-            .finally(() => setLoading(false));
+            .then(json => { if (!controller.signal.aborted) setData(json.data ?? json); })
+            .catch(err => { if (!controller.signal.aborted) setError(err.message); })
+            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        return () => controller.abort();
     }, [agentId]);
 
     if (!agentId) return null;

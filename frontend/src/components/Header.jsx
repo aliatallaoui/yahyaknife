@@ -94,6 +94,7 @@ export default function Header({ setMobileMenuOpen }) {
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <button
                         onClick={() => setMobileMenuOpen?.(true)}
+                        title={t('header.openMenu', 'Open menu')}
                         className="p-1 -ms-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden shrink-0"
                     >
                         <Menu className="w-6 h-6" />

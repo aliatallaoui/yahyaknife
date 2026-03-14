@@ -20,7 +20,7 @@ exports.getSkuIntelligence = async (req, res) => {
         const [variants, salesByVariant] = await Promise.all([
             ProductVariant.find({ tenant: tenantId, status: { $ne: 'Archived' } }).populate('productId', 'name brand category').lean(),
             StockMovementLedger.aggregate([
-                { $match: { type: 'DEDUCTION', createdAt: { $gte: thirtyDaysAgo } } },
+                { $match: { tenant: new mongoose.Types.ObjectId(tenantId), type: 'DEDUCTION', createdAt: { $gte: thirtyDaysAgo } } },
                 { $group: { _id: '$variantId', totalSold: { $sum: { $abs: '$quantity' } } } }
             ])
         ]);

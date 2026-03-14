@@ -337,10 +337,10 @@ export default function CourierPricingEngine({ courierId }) {
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(rule)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors">
+                                                    <button onClick={() => handleEdit(rule)} title={t('couriers.editRule', 'Edit rule')} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors">
                                                         <Edit3 className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => handleDelete(rule._id)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors">
+                                                    <button onClick={() => handleDelete(rule._id)} title={t('couriers.deleteRule', 'Delete rule')} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>

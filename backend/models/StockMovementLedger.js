@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const stockMovementLedgerSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     variantId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ProductVariant',
@@ -38,6 +39,6 @@ const stockMovementLedgerSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Index for fast chronological queries per variant
-stockMovementLedgerSchema.index({ variantId: 1, createdAt: -1 });
+stockMovementLedgerSchema.index({ tenant: 1, variantId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('StockMovementLedger', stockMovementLedgerSchema);

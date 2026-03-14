@@ -12,6 +12,7 @@ import { AuthContext } from '../context/AuthContext';
 import TenantSwitcher from './TenantSwitcher';
 
 function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite, isFavorite, itemIcon: ItemIcon }) {
+    const { t } = useTranslation();
     const location = useLocation();
     const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
     const RenderIcon = ItemIcon || Icon;
@@ -58,6 +59,7 @@ function SidebarItem({ icon: Icon, label, path, isCollapsed, onClick, onFavorite
                         e.stopPropagation();
                         onFavorite(path, label);
                     }}
+                    title={isFavorite ? t('sidebar.unfavorite', 'Remove from favorites') : t('sidebar.favorite', 'Add to favorites')}
                     className={clsx(
                         "absolute end-6 p-1.5 rounded-md transition-all z-10",
                         isFavorite

@@ -43,10 +43,10 @@ router.post('/:channelId/pages/ai-generate', express.json({ limit: '20mb' }), re
 
 // ── Block Image Upload ──────────────────────────────────────────────────────
 
-router.post('/pages/upload-image', requirePermission(PERMS.SALES_CHANNELS_EDIT), uploadPageImage.single('image'), (req, res) => {
+router.post('/pages/upload-image', requirePermission(PERMS.SALES_CHANNELS_EDIT), uploadPageImage.single('image'), wrap((req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No image file uploaded' });
     res.json({ url: `/uploads/pages/${req.file.filename}` });
-});
+}));
 
 // ── Landing Pages (nested under channel) ────────────────────────────────────
 

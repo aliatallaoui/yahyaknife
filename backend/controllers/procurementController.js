@@ -184,6 +184,7 @@ exports.receivePurchaseOrder = async (req, res) => {
 
                 if (ledgerRefId) {
                     await StockMovementLedger.create([{
+                        tenant: req.user.tenant,
                         variantId: ledgerRefId,
                         referenceId: po._id.toString(),
                         referenceModel: 'PurchaseOrder',

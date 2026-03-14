@@ -34,6 +34,7 @@ export default function CustomerProfile() {
     }, [blacklistConfirm]);
 
     useEffect(() => {
+        const controller = new AbortController();
         const loadCustomerData = async () => {
             // Priority: Find in context first for instant load
             const existingCustomer = customers.find(c => c._id === id);
@@ -41,10 +42,12 @@ export default function CustomerProfile() {
             try {
                 // Fetch fresh profile and orders and tickets
                 const [ordersRes, profilesRes, ticketsRes] = await Promise.all([
-                    apiFetch(`/api/customers/${id}/orders`),
-                    apiFetch(`/api/customers`), // Refresh full list to get newest metrics for this ID
-                    apiFetch(`/api/support?customerId=${id}`)
+                    apiFetch(`/api/customers/${id}/orders`, { signal: controller.signal }),
+                    apiFetch(`/api/customers`, { signal: controller.signal }),
+                    apiFetch(`/api/support?customerId=${id}`, { signal: controller.signal })
                 ]);
+
+                if (controller.signal.aborted) return;
 
                 if (ordersRes.ok) { const oj = await ordersRes.json(); setOrders(oj.data ?? oj); }
                 if (ticketsRes.ok) { const tj = await ticketsRes.json(); setTickets(tj.data ?? (Array.isArray(tj) ? tj : [])); }
@@ -58,14 +61,16 @@ export default function CustomerProfile() {
                 }
 
             } catch (error) {
+                if (controller.signal.aborted) return;
                 setFetchError(t('crm.errorLoadProfile', 'Failed to load profile data.'));
                 if (existingCustomer) setCustomer(existingCustomer);
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) setLoading(false);
             }
         };
 
         if (id) loadCustomerData();
+        return () => controller.abort();
     }, [id, customers]);
 
     const handleToggleBlacklist = () => {

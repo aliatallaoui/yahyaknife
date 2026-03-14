@@ -195,6 +195,7 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveItem(idx)}
+                                            title={t('procurement.removeItem', 'Remove item')}
                                             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />

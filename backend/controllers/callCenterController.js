@@ -675,6 +675,7 @@ exports.getBestTimeToCall = async (req, res) => {
                 { $match: { tenant: tenantId, actionType: 'Confirmed' } },
                 { $lookup: { from: 'orders', localField: 'order', foreignField: '_id', as: 'ord' } },
                 { $unwind: '$ord' },
+                { $match: { 'ord.tenant': tenantId, 'ord.deletedAt': null } },
                 { $group: {
                     _id: { wilaya: '$ord.wilaya', hour: { $hour: '$createdAt' } },
                     confirmations: { $sum: 1 }
