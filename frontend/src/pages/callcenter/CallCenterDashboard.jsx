@@ -379,8 +379,8 @@ export default function CallCenterDashboard() {
                         {t('callcenter.agent_subtitle', 'Your queue · Click a row or Process to open order.')}
                     </p>
                 </div>
-                <button onClick={fetchDashboard} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0" title={t('common.refresh', 'Refresh')}>
-                    <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+                <button onClick={fetchDashboard} className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0" title={t('common.refresh', 'Refresh')}>
+                    <RefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 

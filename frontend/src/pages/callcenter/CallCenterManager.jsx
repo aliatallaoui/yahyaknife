@@ -179,15 +179,15 @@ export default function CallCenterManager() {
     };
 
     const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
                 <div className={`p-2 rounded-lg ${colorClass} bg-opacity-10`}>
                     <Icon className={`w-5 h-5 ${colorClass.replace('bg-', 'text-')}`} />
                 </div>
             </div>
             <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-                <h3 className="text-2xl font-black text-gray-900">{value}{suffix}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">{title}</p>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white">{value}{suffix}</h3>
             </div>
         </div>
     );
@@ -201,7 +201,7 @@ export default function CallCenterManager() {
                     <h1 className="text-2xl font-black text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                         {t('callcenter.manager_title', 'Call Center Hub')}
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1">{t('callcenter.manager_subtitle', 'Monitor agent performance and distribute workloads.')}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{t('callcenter.manager_subtitle', 'Monitor agent performance and distribute workloads.')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {canManage && (
@@ -215,14 +215,14 @@ export default function CallCenterManager() {
                         <span className="sm:hidden">{t('callcenter.action.auto_assign_short', 'Auto-Assign')}</span>
                     </button>
                     )}
-                    <button onClick={refresh} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button onClick={refresh} className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </div>
 
             {/* Tab Switch */}
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
                 {[
                     { key: 'operations', label: t('callcenter.tab.operations', 'Operations'), icon: Activity },
                     canManage && { key: 'supervisor', label: t('callcenter.tab.supervisor', 'Review Queue'), icon: ShieldAlert, badge: supervisorQueue?.counts?.total },
@@ -232,12 +232,12 @@ export default function CallCenterManager() {
                     <button
                         key={key}
                         onClick={() => setActiveTab(key)}
-                        className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${activeTab === key ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${activeTab === key ? 'bg-white dark:bg-gray-800 text-indigo-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                     >
                         <Icon className="w-4 h-4" />
                         {label}
                         {badge > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">{badge}</span>
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">{badge}</span>
                         )}
                     </button>
                 ))}
