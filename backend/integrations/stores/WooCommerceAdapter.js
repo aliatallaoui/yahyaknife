@@ -139,6 +139,38 @@ class WooCommerceAdapter extends StoreAdapter {
         }
     }
 
+    /**
+     * Check health of registered webhooks on the WooCommerce store.
+     * Returns status of each webhook ID (active/paused/deleted/unknown).
+     */
+    async checkWebhookHealth(webhookId) {
+        if (!webhookId) return { healthy: false, webhooks: [], error: 'No webhook ID configured' };
+        const ids = webhookId.split(',').filter(Boolean);
+        const webhooks = [];
+        for (const id of ids) {
+            try {
+                const { data } = await woocommerceRequest(
+                    'GET', this._endpoint(`/webhooks/${id}`), this.config
+                );
+                webhooks.push({
+                    id: String(data.id),
+                    topic: data.topic,
+                    status: data.status,
+                    deliveryUrl: data.delivery_url,
+                    dateCreated: data.date_created,
+                });
+            } catch (err) {
+                webhooks.push({
+                    id,
+                    status: err.response?.status === 404 ? 'deleted' : 'unknown',
+                    error: err.message,
+                });
+            }
+        }
+        const healthy = webhooks.length > 0 && webhooks.every(w => w.status === 'active');
+        return { healthy, webhooks };
+    }
+
     // ─── Webhook Verification ─────────────────────────────────────────────────
 
     verifyWebhookSignature(rawBody, signature) {

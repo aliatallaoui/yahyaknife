@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, FileText, BarChart3, Eye, EyeOff, Trash2, Edit3,
   ExternalLink, MoreVertical, Globe, ShoppingCart, TrendingUp, Copy,
   Rocket, Pause, Search, Sparkles, CopyPlus, Link, Check, X,
-  Wifi, WifiOff, RefreshCw, PlayCircle, AlertCircle, Clock, Package, Loader2, Link2, Truck, Zap
+  Wifi, WifiOff, RefreshCw, PlayCircle, AlertCircle, Clock, Package, Loader2, Link2, Truck, Zap, Activity
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -154,6 +154,27 @@ export default function SalesChannelDetail() {
         toast.error(json.message || 'Failed to register webhooks. Please try again.');
       }
     } catch { toast.error('Failed to register webhooks. Please try again.'); }
+  };
+
+  const handleCheckWebhookHealth = async () => {
+    try {
+      const res = await apiFetch(`/api/sales-channels/${channelId}/webhook-health`);
+      if (res.ok) {
+        const json = await res.json();
+        const data = json.data ?? json;
+        if (data.healthy) {
+          toast.success('Webhooks are healthy and active');
+        } else if (data.healthy === false) {
+          toast.error(data.message || 'Webhooks need attention — see error details above');
+        } else {
+          toast(data.message || 'Health check not available');
+        }
+        fetchData(); // Refresh to show updated lastError
+      } else {
+        const json = await res.json();
+        toast.error(json.message || 'Failed to check webhook health');
+      }
+    } catch { toast.error('Failed to check webhook health'); }
   };
 
   // Auto-dispatch toggle handler
@@ -552,8 +573,10 @@ export default function SalesChannelDetail() {
               </div>
               <div className="bg-gray-50 dark:bg-gray-750 rounded-xl p-3">
                 <p className="text-xs text-gray-500 dark:text-gray-400">{t('salesChannels.integration.webhookStatus', 'Webhook')}</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
-                  {channel.integration?.webhookId ? t('salesChannels.integration.active', 'Active') : t('salesChannels.integration.notRegistered', 'Not Registered')}
+                <p className={`text-sm font-semibold mt-0.5 ${channel.integration?.webhookId ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  {channel.integration?.webhookId
+                    ? `✓ ${t('salesChannels.integration.active', 'Active')}`
+                    : `⚠ ${t('salesChannels.integration.notRegistered', 'Not Registered')}`}
                 </p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-750 rounded-xl p-3">
@@ -584,14 +607,32 @@ export default function SalesChannelDetail() {
               </button>
             )}
 
-            {/* Register Webhooks button (if connected but no webhook) */}
-            {channel.integration?.status === 'connected' && !channel.integration?.webhookId && hasPermission('saleschannels.integrate') && (
-              <button
-                onClick={handleRegisterWebhooks}
-                className="mt-4 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-xl transition-colors border border-violet-200 dark:border-violet-700"
-              >
-                <Globe className="w-4 h-4" /> {t('salesChannels.integration.registerWebhooks', 'Register Webhooks')}
-              </button>
+            {/* Webhook action buttons */}
+            {channel.integration?.status === 'connected' && hasPermission('saleschannels.integrate') && (
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={handleRegisterWebhooks}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-colors border ${
+                    !channel.integration?.webhookId
+                      ? 'text-white bg-violet-600 hover:bg-violet-700 border-violet-600 dark:border-violet-500'
+                      : 'text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 border-violet-200 dark:border-violet-700'
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  {channel.integration?.webhookId
+                    ? t('salesChannels.integration.reRegisterWebhooks', 'Re-register Webhooks')
+                    : t('salesChannels.integration.registerWebhooks', 'Register Webhooks')}
+                </button>
+                {channel.integration?.webhookId && (
+                  <button
+                    onClick={handleCheckWebhookHealth}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors border border-gray-200 dark:border-gray-700"
+                  >
+                    <Activity className="w-4 h-4" />
+                    {t('salesChannels.integration.checkHealth', 'Check Health')}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

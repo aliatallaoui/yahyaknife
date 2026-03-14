@@ -69,7 +69,7 @@ router.post(
 
             const { encrypt } = require('../shared/utils/credentialEncryption');
 
-            // Helper: register webhooks on the WooCommerce store (fire-and-forget)
+            // Helper: register webhooks on the WooCommerce store
             const autoRegisterWebhooks = async (channelId, storeUrl, rawKey, rawSecret) => {
                 try {
                     const webhookSecret = crypto.randomBytes(32).toString('hex');
@@ -77,7 +77,7 @@ router.post(
                         { storeUrl, consumerKey: rawKey, consumerSecret: rawSecret, webhookSecret },
                         channelId.toString()
                     );
-                    const baseUrl = process.env.API_BASE_URL || 'http://localhost:5000';
+                    const baseUrl = process.env.API_BASE_URL || `${process.env.BASE_URL || 'http://localhost:5000'}`;
                     const callbackUrl = `${baseUrl}/api/integrations/webhooks/${channelId}/woocommerce`;
                     const result = await adapter.registerWebhook(callbackUrl);
 
@@ -92,7 +92,12 @@ router.post(
                     );
                     logger.info({ channelId, webhookId: result.webhookId }, 'Auto-registered WooCommerce webhooks');
                 } catch (err) {
-                    logger.warn({ err, channelId }, 'Failed to auto-register WooCommerce webhooks — user can register manually');
+                    // Store the error so it's visible in the UI — user can retry via "Register Webhooks" button
+                    logger.error({ err, channelId, storeUrl }, 'Failed to auto-register WooCommerce webhooks');
+                    await SalesChannel.updateOne(
+                        { _id: channelId },
+                        { $set: { 'integration.lastError': `Webhook registration failed: ${err.message?.substring(0, 400)}. Click "Register Webhooks" to retry.` } }
+                    ).catch(() => {});
                 }
             };
 

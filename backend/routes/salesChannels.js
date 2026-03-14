@@ -43,6 +43,7 @@ router.post('/wc-auth/initiate', requirePermission(PERMS.SALES_CHANNELS_CREATE),
 router.post('/:id/wc-auth-url', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.generateWcAuthUrl));
 router.post('/:id/test-connection', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.testConnection));
 router.post('/:id/register-webhooks', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.registerWebhooks));
+router.get('/:id/webhook-health', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.checkWebhookHealth));
 router.post('/:id/sync-orders', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.syncOrders));
 router.get('/:id/sync-logs', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getSyncLogs));
 router.get('/:id/product-mappings', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getProductMappings));

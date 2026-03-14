@@ -1177,6 +1177,52 @@ exports.registerWebhooks = async ({ tenantId, channelId }) => {
 };
 
 /**
+ * Check webhook health on the external store.
+ * Verifies that registered webhooks are still active and pointing to the correct URL.
+ */
+exports.checkWebhookHealth = async ({ tenantId, channelId }) => {
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null }).lean();
+    if (!channel) throw AppError.notFound('Sales Channel');
+    if (!isStoreChannel(channel.channelType)) {
+        throw AppError.validationFailed({ channelType: 'This channel type does not support webhooks' });
+    }
+
+    const webhookId = channel.integration?.webhookId;
+    if (!webhookId) {
+        return { healthy: false, webhooks: [], message: 'No webhooks registered. Click "Register Webhooks" to set up.' };
+    }
+
+    const decryptedConfig = decryptSensitiveKeys(channel.config);
+    const adapter = getStoreAdapter(channel, decryptedConfig);
+
+    if (typeof adapter.checkWebhookHealth !== 'function') {
+        return { healthy: null, message: 'Webhook health check not supported for this channel type' };
+    }
+
+    const result = await adapter.checkWebhookHealth(webhookId);
+
+    // Update lastError if unhealthy
+    if (!result.healthy) {
+        const staleWebhooks = result.webhooks.filter(w => w.status !== 'active');
+        const errorMsg = staleWebhooks.length > 0
+            ? `Webhook(s) ${staleWebhooks.map(w => `#${w.id}: ${w.status}`).join(', ')}. Re-register to fix.`
+            : 'Webhooks are not healthy.';
+        await SalesChannel.updateOne(
+            { _id: channelId, tenant: tenantId },
+            { $set: { 'integration.lastError': errorMsg } }
+        );
+    } else {
+        // Clear any previous webhook error if healthy now
+        await SalesChannel.updateOne(
+            { _id: channelId, tenant: tenantId },
+            { $set: { 'integration.lastError': null } }
+        );
+    }
+
+    return result;
+};
+
+/**
  * Manually sync orders from an external store (polling).
  */
 exports.syncOrders = async ({ tenantId, channelId, since }) => {

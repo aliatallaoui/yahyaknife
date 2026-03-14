@@ -341,6 +341,16 @@ exports.registerWebhooks = async (req, res, next) => {
     } catch (err) { next(err); }
 };
 
+exports.checkWebhookHealth = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.checkWebhookHealth({
+            tenantId: req.user.tenant,
+            channelId: req.params.id
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
 exports.syncOrders = async (req, res, next) => {
     try {
         const result = await salesChannelService.syncOrders({
