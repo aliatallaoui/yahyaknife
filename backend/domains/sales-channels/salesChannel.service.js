@@ -103,19 +103,93 @@ exports.createChannel = async ({ tenantId, body }) => {
     return channel;
 };
 
+/**
+ * Compute real stats from Order collection for given channel IDs.
+ */
+async function computeChannelStats(tenantId, channelIds) {
+    if (!channelIds.length) return {};
+
+    const agg = await Order.aggregate([
+        {
+            $match: {
+                tenant: tenantId,
+                'salesChannelSource.salesChannel': { $in: channelIds },
+                deletedAt: null,
+            }
+        },
+        {
+            $group: {
+                _id: '$salesChannelSource.salesChannel',
+                totalOrders: { $sum: 1 },
+                totalRevenue: {
+                    $sum: {
+                        $cond: [
+                            { $in: ['$status', ['Delivered', 'Paid']] },
+                            '$totalAmount',
+                            0
+                        ]
+                    }
+                },
+                confirmed: {
+                    $sum: {
+                        $cond: [
+                            { $in: ['$status', ['Confirmed', 'Preparing', 'Ready for Pickup', 'Dispatched', 'Shipped', 'Out for Delivery', 'Delivered', 'Paid']] },
+                            1,
+                            0
+                        ]
+                    }
+                }
+            }
+        }
+    ]);
+
+    const map = {};
+    for (const row of agg) {
+        map[row._id.toString()] = {
+            totalOrders: row.totalOrders,
+            totalRevenue: row.totalRevenue,
+            confirmationRate: row.totalOrders > 0
+                ? parseFloat(((row.confirmed / row.totalOrders) * 100).toFixed(1))
+                : 0,
+        };
+    }
+    return map;
+}
+
 exports.listChannels = async ({ tenantId, channelType }) => {
     const filter = { tenant: tenantId, deletedAt: null };
     if (channelType) filter.channelType = channelType;
 
-    return SalesChannel.find(filter)
+    const channels = await SalesChannel.find(filter)
         .sort({ createdAt: -1 })
         .limit(200)
         .lean();
+
+    // Overlay real stats from Order collection
+    const channelIds = channels.map(c => c._id);
+    const statsMap = await computeChannelStats(tenantId, channelIds);
+
+    for (const ch of channels) {
+        const real = statsMap[ch._id.toString()];
+        if (real) {
+            ch.stats = { ...ch.stats, ...real };
+        }
+    }
+
+    return channels;
 };
 
 exports.getChannel = async ({ tenantId, channelId }) => {
     const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null }).lean();
     if (!channel) throw AppError.notFound('Sales Channel');
+
+    // Overlay real stats
+    const statsMap = await computeChannelStats(tenantId, [channel._id]);
+    const real = statsMap[channel._id.toString()];
+    if (real) {
+        channel.stats = { ...channel.stats, ...real };
+    }
+
     return channel;
 };
 
