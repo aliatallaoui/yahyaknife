@@ -53,6 +53,7 @@ const CopilotWidget = lazy(() => import('./components/CopilotWidget'));
 const SalesChannels = lazy(() => import('./pages/SalesChannels'));
 const SalesChannelDetail = lazy(() => import('./pages/SalesChannelDetail'));
 const PageBuilder = lazy(() => import('./pages/PageBuilder'));
+const StorePage = lazy(() => import('./pages/StorePage'));
 const Storefront = lazy(() => import('./pages/Storefront'));
 const StorefrontPreview = lazy(() => import('./pages/StorefrontPreview'));
 
@@ -185,6 +186,7 @@ const Layout = () => {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/subscription-expired" element={<SubscriptionExpired />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/s/:channelSlug" element={<StorePage />} />
           <Route path="/s/:channelSlug/:pageSlug" element={<Storefront />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

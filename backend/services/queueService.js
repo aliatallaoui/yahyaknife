@@ -110,7 +110,7 @@ const queueService = {
                 wilaya: order.shipping?.wilaya || '',
                 commune: order.shipping?.commune || '',
                 status: order.status,
-                totalAmount: order.totalAmount || 0,
+                totalAmount: order.totalAmount ?? 0,
                 products: productNames
             });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, DollarSign, RefreshCw, CheckCircle, XCircle, Search, AlertTriangle, Layers } from 'lucide-react';
 import { apiFetch } from '../utils/apiFetch';
@@ -90,9 +90,9 @@ export default function CourierFinanceDesk() {
         }
     };
 
-    const calculatedTotal = deliveries
+    const calculatedTotal = useMemo(() => deliveries
         .filter(d => selectedOrderIds.has(d._id))
-        .reduce((sum, d) => sum + (d.financials?.codAmount || 0), 0);
+        .reduce((sum, d) => sum + (d.financials?.codAmount ?? 0), 0), [deliveries, selectedOrderIds]);
 
     const handleSettle = async () => {
         if (selectedOrderIds.size === 0) {

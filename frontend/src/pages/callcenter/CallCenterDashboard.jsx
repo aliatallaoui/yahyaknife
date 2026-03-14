@@ -88,16 +88,17 @@ export default function CallCenterDashboard() {
     useHotkey('/', () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); }, { preventDefault: true });
     useHotkey('escape', () => { if (document.activeElement === searchInputRef.current) { setSearch(''); searchInputRef.current?.blur(); } });
 
-    const fetchDashboard = useCallback(async () => {
+    const fetchDashboard = useCallback(async (signal) => {
         setLoading(true);
         setError(null);
         try {
+            const opts = signal ? { signal } : {};
             const fetches = [
-                apiFetch('/api/call-center/agent-dashboard'),
-                apiFetch('/api/call-center/follow-up-queue'),
+                apiFetch('/api/call-center/agent-dashboard', opts),
+                apiFetch('/api/call-center/follow-up-queue', opts),
             ];
             if (canViewUnassigned) {
-                fetches.push(apiFetch('/api/call-center/unassigned-queue'));
+                fetches.push(apiFetch('/api/call-center/unassigned-queue', opts));
             }
 
             const results = await Promise.all(fetches);
@@ -141,7 +142,11 @@ export default function CallCenterDashboard() {
         }
     }, [fetchDashboard, t]);
 
-    useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchDashboard(controller.signal);
+        return () => controller.abort();
+    }, [fetchDashboard]);
 
     // Tab filtering
     const now = useMemo(() => new Date(), [allOrders]);

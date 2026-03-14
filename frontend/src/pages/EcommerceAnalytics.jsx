@@ -52,13 +52,13 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
     };
     const cursorStyle = { stroke: isDark ? '#475569' : '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' };
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = async (signal) => {
         setIsRefreshing(true);
         try {
             const params = dateRange === 'custom' && customStart && customEnd
                 ? `startDate=${customStart}&endDate=${customEnd}`
                 : `range=${dateRange}`;
-            const res = await apiFetch(`/api/analytics/ecommerce?${params}`);
+            const res = await apiFetch(`/api/analytics/ecommerce?${params}`, { signal });
             if (res.ok) {
                 const data = await res.json();
                 setDashData(data);
@@ -70,12 +70,12 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
         }
     };
 
-    const fetchTrendData = async () => {
+    const fetchTrendData = async (signal) => {
         setTrendLoading(true);
         try {
             const to = new Date().toISOString().slice(0, 10);
             const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-            const res = await apiFetch(`/api/analytics/daily?from=${from}&to=${to}`);
+            const res = await apiFetch(`/api/analytics/daily?from=${from}&to=${to}`, { signal });
             if (res.ok) {
                 const json = await res.json();
                 setTrendData((json.data?.rollups ?? []).map(d => ({
@@ -97,11 +97,15 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
     };
 
     useEffect(() => {
-        fetchAnalytics();
+        const controller = new AbortController();
+        fetchAnalytics(controller.signal);
+        return () => controller.abort();
     }, [dateRange]);
 
     useEffect(() => {
-        fetchTrendData();
+        const controller = new AbortController();
+        fetchTrendData(controller.signal);
+        return () => controller.abort();
     }, []);
 
     // --- KPI Card ---

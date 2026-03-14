@@ -15,7 +15,7 @@ exports.generateMonthlyPayroll = async (req, res) => {
 
         const [month, year] = period.split('-');
 
-        const employees = await Employee.find({ tenant, status: 'Active', deletedAt: null });
+        const employees = await Employee.find({ tenant, status: 'Active', deletedAt: null }).lean();
         const payrollResults = [];
 
         const paddedMonth = month.padStart(2, '0');
@@ -204,6 +204,8 @@ exports.recordPayment = async (req, res) => {
                 return res.status(400).json({ error: `Payroll status changed to '${recheck.status}' — cannot record payment.` });
             return res.status(400).json({ error: `Cannot overpay. Maximum remaining balance is ${recheck.finalPayableSalary - recheck.amountPaid} DZD` });
         }
+
+        const newStatus = payroll.status;
 
         // Sync payment to financial ledger
         try {

@@ -13,7 +13,7 @@ exports.getPricingRules = async (req, res) => {
     try {
         const { id } = req.params;
         if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         const rules = await CourierPricing.find({ courierId: id, tenant: req.user.tenant })
             .populate('productIds', 'name sku')
@@ -33,7 +33,7 @@ exports.addPricingRule = async (req, res) => {
         const { id } = req.params;
         if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
@@ -53,7 +53,7 @@ exports.addPricingRule = async (req, res) => {
             return res.status(400).json({ message: 'deliveryType must be 0 (Home) or 1 (Office)' });
         }
 
-        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price: priceNum, priority: Number(priority) || 0, courierId: id, tenant: req.user.tenant });
+        const newRule = await CourierPricing.create({ ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price: priceNum, priority: Number(priority) ?? 0, courierId: id, tenant: req.user.tenant });
         
         res.status(201).json(newRule);
     } catch (error) {
@@ -69,7 +69,7 @@ exports.updatePricingRule = async (req, res) => {
         const { id, ruleId } = req.params;
         if (!validId(id) || !validId(ruleId)) return res.status(400).json({ message: 'Invalid ID' });
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const { ruleType, wilayaCode, commune, deliveryType, productIds, minWeight, maxWeight, price, priority } = req.body;
@@ -94,7 +94,7 @@ exports.updatePricingRule = async (req, res) => {
         if (minWeight !== undefined) updateFields.minWeight = minWeight;
         if (maxWeight !== undefined) updateFields.maxWeight = maxWeight;
         if (price !== undefined) updateFields.price = Number(price);
-        if (priority !== undefined) updateFields.priority = Number(priority) || 0;
+        if (priority !== undefined) updateFields.priority = Number(priority) ?? 0;
 
         const updatedRule = await CourierPricing.findOneAndUpdate(
             { _id: ruleId, courierId: id, tenant: req.user.tenant },
@@ -118,7 +118,7 @@ exports.deletePricingRule = async (req, res) => {
         const { id, ruleId } = req.params;
         if (!validId(id) || !validId(ruleId)) return res.status(400).json({ message: 'Invalid ID' });
 
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
         const deletedRule = await CourierPricing.findOneAndDelete({ _id: ruleId, courierId: id, tenant: req.user.tenant });
@@ -137,7 +137,7 @@ exports.syncYalidinePricing = async (req, res) => {
     const { id } = req.params;
     if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
 
-    const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null });
+    const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
     if (!courier) return res.status(404).json({ message: 'Courier not found' });
 
     if (courier.integrationType !== 'API' || (courier.apiProvider || '').toLowerCase() !== 'yalidin') {

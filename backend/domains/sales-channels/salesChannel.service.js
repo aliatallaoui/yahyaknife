@@ -331,6 +331,67 @@ exports.deletePage = async ({ tenantId, pageId }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * Store homepage — returns channel info + all published landing pages.
+ */
+exports.getStorefrontHome = async ({ channelSlug }) => {
+    const cacheKey = `storefront-home:${channelSlug}`;
+    const cached = cacheService.get(cacheKey);
+    if (cached) return cached;
+
+    const channel = await SalesChannel.findOne({
+        $or: [
+            { slug: channelSlug, deletedAt: null },
+            { 'domain.subdomain': channelSlug, deletedAt: null },
+            { 'domain.customDomain': channelSlug, deletedAt: null }
+        ]
+    }).lean();
+
+    if (!channel || channel.status !== 'active') throw AppError.notFound('Store');
+
+    const pages = await LandingPage.find({
+        salesChannel: channel._id,
+        status: 'published',
+        deletedAt: null
+    })
+        .populate('product', 'name images description')
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean();
+
+    // Build page cards with product info and pricing
+    const pageCards = pages.map(page => ({
+        _id: page._id,
+        title: page.title,
+        slug: page.slug,
+        product: {
+            name: page.productOverrides?.displayName || page.product?.name,
+            image: page.productOverrides?.images?.[0] || page.product?.images?.[0],
+            description: page.productOverrides?.description || page.product?.description,
+            promotionalPrice: page.productOverrides?.promotionalPrice
+        },
+        theme: page.theme,
+        stats: {
+            views: page.stats?.views ?? 0,
+            orders: page.stats?.orders ?? 0
+        }
+    }));
+
+    const result = {
+        channel: {
+            _id: channel._id,
+            name: channel.name,
+            slug: channel.slug,
+            description: channel.description,
+            branding: channel.branding
+        },
+        pages: pageCards
+    };
+
+    cacheService.set(cacheKey, result, 60);
+    return result;
+};
+
+/**
  * Resolve a published landing page by channel slug + page slug.
  * Returns all data needed to render the storefront page.
  */

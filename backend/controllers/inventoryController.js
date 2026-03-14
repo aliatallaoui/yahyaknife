@@ -54,9 +54,9 @@ exports.createProduct = async (req, res) => {
                 productId: newProduct._id,
                 sku: v.sku,
                 attributes: v.attributes || {},
-                price: v.price || 0,
-                cost: v.cost || 0,
-                totalStock: v.stock || 0,
+                price: v.price ?? 0,
+                cost: v.cost ?? 0,
+                totalStock: v.stock ?? 0,
                 reorderLevel: v.reorderLevel || 10
             })));
         }

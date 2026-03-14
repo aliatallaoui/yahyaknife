@@ -38,15 +38,16 @@ export default function Warehouses() {
         return () => document.removeEventListener('keydown', handler);
     }, [isWarehouseModalOpen]);
 
-    const fetchData = async () => {
+    const fetchData = async (signal) => {
         if (!token) return;
         setLoading(true);
         setFetchError(null);
         try {
+            const opts = signal ? { signal } : {};
             const [wRes, lRes, sRes] = await Promise.all([
-                apiFetch(`/api/inventory/warehouses`),
-                apiFetch(`/api/inventory/ledger`),
-                apiFetch(`/api/inventory/suppliers`)
+                apiFetch(`/api/inventory/warehouses`, opts),
+                apiFetch(`/api/inventory/ledger`, opts),
+                apiFetch(`/api/inventory/suppliers`, opts)
             ]);
             if (!wRes.ok || !lRes.ok || !sRes.ok) throw new Error('fetch failed');
             setWarehouses(await wRes.json());
@@ -60,7 +61,9 @@ export default function Warehouses() {
     };
 
     useEffect(() => {
-        fetchData();
+        const controller = new AbortController();
+        fetchData(controller.signal);
+        return () => controller.abort();
         // eslint-disable-next-line
     }, [token]);
 

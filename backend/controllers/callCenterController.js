@@ -284,7 +284,7 @@ exports.assignOrders = async (req, res) => {
 
         // Validate targetAgentId belongs to this tenant
         if (targetAgentId) {
-            const agentUser = await User.findOne({ _id: targetAgentId, tenant: tenantId });
+            const agentUser = await User.findOne({ _id: targetAgentId, tenant: tenantId }).lean();
             if (!agentUser) return res.status(400).json({ message: 'Target agent not found in this workspace' });
         }
 
@@ -861,7 +861,7 @@ exports.bulkUpdateOrders = async (req, res) => {
             if (!targetAgentId || !mongoose.Types.ObjectId.isValid(targetAgentId)) {
                 return res.status(400).json({ message: 'Valid targetAgentId is required for reassignment' });
             }
-            const agentUser = await User.findOne({ _id: targetAgentId, tenant: tenantId });
+            const agentUser = await User.findOne({ _id: targetAgentId, tenant: tenantId }).lean();
             if (!agentUser) return res.status(400).json({ message: 'Target agent not found in this workspace' });
 
             const result = await Order.updateMany(filter, { $set: { assignedAgent: targetAgentId } });
@@ -930,7 +930,7 @@ exports.lockOrder = async (req, res) => {
         }, { returnDocument: 'after' });
 
         if (!order) {
-            const exists = await Order.findOne({ _id: id, tenant: tenantId, deletedAt: null });
+            const exists = await Order.findOne({ _id: id, tenant: tenantId, deletedAt: null }).lean();
             if (!exists) return res.status(404).json({ message: 'Order not found' });
             return res.status(409).json({ message: 'Order is currently locked by another user' });
         }
@@ -977,7 +977,7 @@ exports.getAgentPerformanceDetail = async (req, res) => {
         let days = parseInt(period, 10) || 30;
         const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-        const agent = await User.findOne({ _id: agentId, tenant: tenantId }).select('name email role isActive');
+        const agent = await User.findOne({ _id: agentId, tenant: tenantId }).select('name email role isActive').lean();
         if (!agent) return res.status(404).json({ message: 'Agent not found' });
 
         // Fetch recent confirmed orders
@@ -1377,6 +1377,7 @@ exports.getMyQueue = async (req, res) => {
             Order.find(inProgressFilter)
             .populate('customer', 'name phone trustScore blacklisted')
             .select('orderId status wilaya commune totalAmount priority tags assignmentMode assignedAgent channel createdAt updatedAt')
+            .limit(200)
             .lean(),
 
             // Follow-up — postponed/no answer orders assigned to me
@@ -1461,7 +1462,7 @@ exports.reassignOrder = async (req, res) => {
 
         if (!orderId || !newAgentId) return res.status(400).json({ message: 'orderId and newAgentId required' });
 
-        const agentUser = await User.findOne({ _id: newAgentId, tenant: tenantId });
+        const agentUser = await User.findOne({ _id: newAgentId, tenant: tenantId }).lean();
         if (!agentUser) return res.status(400).json({ message: 'Target agent not found' });
 
         const order = await assignmentService.reassignOrder(orderId, tenantId, newAgentId, changedBy, reason || '');
@@ -1556,7 +1557,7 @@ exports.createAssignmentRule = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(agentId)) return res.status(400).json({ message: 'Invalid agentId' });
 
         // Verify agent belongs to tenant
-        const agentUser = await User.findOne({ _id: agentId, tenant: tenantId });
+        const agentUser = await User.findOne({ _id: agentId, tenant: tenantId }).lean();
         if (!agentUser) return res.status(400).json({ message: 'Agent not found in this workspace' });
 
         const rule = await AssignmentRule.findOneAndUpdate(
@@ -1586,7 +1587,7 @@ exports.updateAssignmentRule = async (req, res) => {
         const updates = {};
         if (agentId !== undefined) {
             if (!mongoose.Types.ObjectId.isValid(agentId)) return res.status(400).json({ message: 'Invalid agentId' });
-            const agentUser = await User.findOne({ _id: agentId, tenant: tenantId });
+            const agentUser = await User.findOne({ _id: agentId, tenant: tenantId }).lean();
             if (!agentUser) return res.status(400).json({ message: 'Agent not found' });
             updates.agent = agentId;
         }

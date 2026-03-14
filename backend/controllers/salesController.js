@@ -85,7 +85,7 @@ exports.getAdvancedOrders = async (req, res) => {
         let queryLimit = Math.min(Math.max(1, parseInt(limit, 10) || 50), 200);
 
         const ALLOWED_SORT_FIELDS = new Set(['_id', 'totalAmount', 'createdAt', 'status', 'priority', 'date', 'updatedAt']);
-        let { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
+        let { search, status, courier, agent, wilaya, channel, salesChannelId, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;
         
         // Force sort by updatedAt descending for post-dispatch if default date is requested
         if (stage === 'post-dispatch' && (sortField === 'date' || !req.query.sortField)) {
@@ -146,6 +146,9 @@ exports.getAdvancedOrders = async (req, res) => {
         if (agent && typeof agent === 'string') query.assignedAgent = agent === 'unassigned' ? null : agent;
         if (wilaya && typeof wilaya === 'string') query.wilaya = wilaya;
         if (channel && typeof channel === 'string') query.channel = channel;
+        if (salesChannelId && typeof salesChannelId === 'string' && mongoose.Types.ObjectId.isValid(salesChannelId)) {
+            query['salesChannelSource.salesChannel'] = new mongoose.Types.ObjectId(salesChannelId);
+        }
 
         if (dateFrom || dateTo) {
             query.createdAt = {};
@@ -425,7 +428,7 @@ exports.createOrder = async (req, res) => {
     } catch (error) {
         const status = error.isOperational ? (error.statusCode || 400) : 500;
         if (!error.isOperational) logger.error({ err: error }, 'Error creating order');
-        res.status(status).json({ message: error.message });
+        res.status(status).json({ message: status >= 500 ? 'Server error' : error.message });
     }
 };
 
@@ -451,7 +454,7 @@ exports.updateOrder = async (req, res) => {
     } catch (error) {
         const status = error.isOperational ? (error.statusCode || 400) : 500;
         if (!error.isOperational) logger.error({ err: error }, 'Error updating order');
-        res.status(status).json({ message: error.message });
+        res.status(status).json({ message: status >= 500 ? 'Server error' : error.message });
     }
 };
 

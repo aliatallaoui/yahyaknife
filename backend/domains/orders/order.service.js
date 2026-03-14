@@ -71,7 +71,7 @@ async function calculateCourierFee(courierId, wilayaCode, commune, tenantId) {
 
     const query = { courierId };
     if (tenantId) query.tenant = tenantId;
-    const pricingRules = await CourierPricing.find(query).sort({ priority: -1 }).lean();
+    const pricingRules = await CourierPricing.find(query).sort({ priority: -1 }).limit(500).lean();
     if (!pricingRules.length) return null;
 
     let matchedRule = null;
@@ -240,7 +240,7 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         if (savedOrder && savedOrder._id) {
             // Attempt manual rollback for all related documents
             await Promise.allSettled([
-                Order.findByIdAndDelete(savedOrder._id),
+                Order.findOneAndDelete({ _id: savedOrder._id, tenant: savedOrder.tenant }),
                 OrderItem.deleteMany({ orderId: savedOrder._id }),
                 OrderStatusHistory.deleteMany({ orderId: savedOrder._id }),
                 OrderNote.deleteMany({ orderId: savedOrder._id }),

@@ -82,7 +82,7 @@ exports.getEmployees = async (req, res) => {
     try {
         const filter = { tenant: req.user.tenant, deletedAt: null };
         const [employees, total] = await Promise.all([
-            Employee.find(filter).sort({ joinDate: -1 }).skip(req.skip).limit(req.limit).lean(),
+            Employee.find(filter).select('name employeeId department role status joinDate phone email leaveBalance performanceScore').sort({ joinDate: -1 }).skip(req.skip).limit(req.limit).lean(),
             Employee.countDocuments(filter)
         ]);
         res.json(paginated(employees, { total, hasNextPage: req.skip + employees.length < total }));
@@ -237,15 +237,17 @@ exports.updateLeaveRequestStatus = async (req, res) => {
                 return res.status(400).json({ error: 'Cannot re-approve a rejected leave request. Create a new request instead.' });
             }
             // Only deduct from 'Pending' → 'Approved'
-            const employee = await Employee.findOne({ _id: request.employeeId, tenant: req.user.tenant, deletedAt: null });
-            if (employee) {
-                const diffDays = Math.ceil(Math.abs(new Date(request.endDate) - new Date(request.startDate)) / (1000 * 60 * 60 * 24)) + 1;
-                if (employee.leaveBalance >= diffDays || request.type === 'Unpaid') {
-                    if (request.type !== 'Unpaid') {
-                        employee.leaveBalance -= diffDays;
-                        await employee.save();
-                    }
-                } else {
+            const diffDays = Math.ceil(Math.abs(new Date(request.endDate) - new Date(request.startDate)) / (1000 * 60 * 60 * 24)) + 1;
+            if (request.type !== 'Unpaid') {
+                // Atomic deduction with balance check to prevent race conditions
+                const updated = await Employee.findOneAndUpdate(
+                    { _id: request.employeeId, tenant: req.user.tenant, deletedAt: null, leaveBalance: { $gte: diffDays } },
+                    { $inc: { leaveBalance: -diffDays } },
+                    { returnDocument: 'after' }
+                );
+                if (!updated) {
+                    const exists = await Employee.findOne({ _id: request.employeeId, tenant: req.user.tenant, deletedAt: null }).lean();
+                    if (!exists) return res.status(404).json({ error: 'Employee not found' });
                     return res.status(400).json({ error: 'Insufficient leave balance' });
                 }
             }

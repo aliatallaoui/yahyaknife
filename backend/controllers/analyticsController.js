@@ -415,6 +415,31 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 revenue: c.revenue
             }));
 
+            // 3d. Sales Channel source breakdown — orders by linked SalesChannel entity
+            const channelSourceAgg = await Order.aggregate([
+                { $match: { ...dateQuery, 'salesChannelSource.salesChannel': { $ne: null } } },
+                {
+                    $group: {
+                        _id: '$salesChannelSource.salesChannel',
+                        count: { $sum: 1 },
+                        revenue: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, '$totalAmount', 0] } }
+                    }
+                },
+                { $lookup: { from: 'saleschannels', localField: '_id', foreignField: '_id', as: 'ch' } },
+                { $unwind: { path: '$ch', preserveNullAndEmptyArrays: true } },
+                // Defense-in-depth: only include channels belonging to this tenant
+                { $match: { $or: [{ 'ch.tenant': new mongoose.Types.ObjectId(tenantId) }, { ch: { $exists: false } }] } },
+                { $sort: { count: -1 } },
+                { $limit: 50 }
+            ]);
+            const channelSourceData = channelSourceAgg.map(c => ({
+                id: c._id,
+                name: c.ch?.name || 'Unknown Channel',
+                channelType: c.ch?.channelType || 'unknown',
+                orders: c.count,
+                revenue: c.revenue
+            }));
+
             // 4. Products Table (Top by sales volume logic)
             const topProductsAgg = await Order.aggregate([
                 { $match: dateQuery },
@@ -512,6 +537,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 categoryData,
                 wilayaData,
                 channelData,
+                channelSourceData,
                 courierData,
                 customerData,
                 stockHealthData,

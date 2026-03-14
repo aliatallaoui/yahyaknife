@@ -98,6 +98,8 @@ const PERMS = {
     SALES_CHANNELS_DELETE:      'saleschannels.delete',
     SALES_CHANNELS_PUBLISH:     'saleschannels.publish',
     SALES_CHANNELS_ANALYTICS:   'saleschannels.analytics',
+    SALES_CHANNELS_INTEGRATE:   'saleschannels.integrate',
+    SALES_CHANNELS_MAP:         'saleschannels.map',
 
     // ── Tenant ──────────────────────────────────────────────────────────────
     TENANT_VIEW:            'tenant.view',

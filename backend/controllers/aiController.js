@@ -143,11 +143,13 @@ async function executeTool(call, tenantId) {
         if (call.name === 'add_expense') {
             const { description, amount, category } = call.args || {};
             if (!description || !amount) return { error: "Missing required fields: description or amount" };
+            const parsedAmount = Number(amount);
+            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return { error: "Amount must be a valid positive number" };
 
             const newExpense = await Expense.create({
                 tenant: tenantId,
                 description,
-                amount: Number(amount),
+                amount: parsedAmount,
                 category: category || 'General',
                 date: new Date()
             });
@@ -180,7 +182,7 @@ async function executeTool(call, tenantId) {
                 name,
                 department,
                 role,
-                salary: Number(salary) || 0,
+                salary: Number.isFinite(Number(salary)) ? Number(salary) : 0,
                 status: 'Active',
                 joinDate: new Date(),
                 leaveBalance: 30
@@ -194,7 +196,7 @@ async function executeTool(call, tenantId) {
 
             // Find or create category
             const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            let category = await Category.findOne({ tenant: tenantId, name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') } });
+            let category = await Category.findOne({ tenant: tenantId, name: { $regex: new RegExp(`^${escapedCategory}$`, 'i') }, isActive: true });
             if (!category) {
                 category = await Category.create({ tenant: tenantId, name: categoryName, description: 'Created via AI Copilot' });
             }
@@ -212,9 +214,9 @@ async function executeTool(call, tenantId) {
                 tenant: tenantId,
                 productId: newProduct._id,
                 sku: `SKU-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-                price: Number(price) || 0,
+                price: Number.isFinite(Number(price)) ? Number(price) : 0,
                 cost: 0,
-                totalStock: Number(stock) || 0,
+                totalStock: Number.isFinite(Number(stock)) ? Number(stock) : 0,
                 reorderLevel: 10
             });
 

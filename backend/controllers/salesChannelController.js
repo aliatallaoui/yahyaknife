@@ -18,7 +18,10 @@ exports.createChannel = async (req, res, next) => {
 
 exports.listChannels = async (req, res, next) => {
     try {
-        const channels = await salesChannelService.listChannels({ tenantId: req.user.tenant });
+        const channels = await salesChannelService.listChannels({
+            tenantId: req.user.tenant,
+            channelType: req.query.channelType || undefined,
+        });
         res.json(ApiResponse.ok(channels));
     } catch (err) { next(err); }
 };
@@ -217,6 +220,15 @@ exports.getThemeTemplates = async (req, res, next) => {
 //  PUBLIC STOREFRONT ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+exports.getStorefrontHome = async (req, res, next) => {
+    try {
+        const data = await salesChannelService.getStorefrontHome({
+            channelSlug: req.params.channelSlug
+        });
+        res.json(ApiResponse.ok(data));
+    } catch (err) { next(err); }
+};
+
 exports.getStorefrontPage = async (req, res, next) => {
     try {
         const data = await salesChannelService.getStorefrontPage({
@@ -268,6 +280,105 @@ exports.calculateStorefrontPrice = async (req, res, next) => {
             deliveryType: req.query.deliveryType
         });
         res.json(ApiResponse.ok(priceData));
+    } catch (err) { next(err); }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  STORE INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+exports.testConnection = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.testConnection({
+            tenantId: req.user.tenant,
+            channelId: req.params.id
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
+exports.registerWebhooks = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.registerWebhooks({
+            tenantId: req.user.tenant,
+            channelId: req.params.id
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
+exports.syncOrders = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.syncOrders({
+            tenantId: req.user.tenant,
+            channelId: req.params.id,
+            since: req.body.since
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
+exports.getSyncLogs = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.getSyncLogs({
+            tenantId: req.user.tenant,
+            channelId: req.params.id,
+            page: parseInt(req.query.page, 10) || 1,
+            limit: parseInt(req.query.limit, 10) || 20
+        });
+        res.json(ApiResponse.ok(result));
+    } catch (err) { next(err); }
+};
+
+exports.getChannelHealthSummary = async (req, res, next) => {
+    try {
+        const summary = await salesChannelService.getChannelHealthSummary({
+            tenantId: req.user.tenant
+        });
+        res.json(ApiResponse.ok(summary));
+    } catch (err) { next(err); }
+};
+
+exports.getProductMappings = async (req, res, next) => {
+    try {
+        const mappings = await salesChannelService.getProductMappings({
+            tenantId: req.user.tenant,
+            channelId: req.params.id
+        });
+        res.json(ApiResponse.ok(mappings));
+    } catch (err) { next(err); }
+};
+
+exports.createProductMapping = async (req, res, next) => {
+    try {
+        const mapping = await salesChannelService.createProductMapping({
+            tenantId: req.user.tenant,
+            channelId: req.params.id,
+            body: req.body
+        });
+        res.status(201).json(ApiResponse.created(mapping));
+    } catch (err) { next(err); }
+};
+
+exports.deleteProductMapping = async (req, res, next) => {
+    try {
+        await salesChannelService.deleteProductMapping({
+            tenantId: req.user.tenant,
+            channelId: req.params.id,
+            mappingId: req.params.mappingId
+        });
+        res.json(ApiResponse.message('Product mapping deleted'));
+    } catch (err) { next(err); }
+};
+
+exports.fetchExternalProducts = async (req, res, next) => {
+    try {
+        const result = await salesChannelService.fetchExternalProducts({
+            tenantId: req.user.tenant,
+            channelId: req.params.id,
+            page: parseInt(req.query.page, 10) || 1
+        });
+        res.json(ApiResponse.ok(result));
     } catch (err) { next(err); }
 };
 

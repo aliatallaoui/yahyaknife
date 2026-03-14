@@ -15,10 +15,10 @@ export default function InsightFeed() {
     const [loading, setLoading] = useState(true);
     const [isVisible, setIsVisible] = useState(true);
 
-    const fetchInsights = async () => {
+    const fetchInsights = async (signal) => {
         try {
             setLoading(true);
-            const res = await apiFetch(`/api/intelligence/global-summary`);
+            const res = await apiFetch(`/api/intelligence/global-summary`, { signal });
             if (res.ok) {
                 const data = await res.json();
                 setInsights(data);
@@ -31,7 +31,10 @@ export default function InsightFeed() {
     };
 
     useEffect(() => {
-        if (token) fetchInsights();
+        if (!token) return;
+        const controller = new AbortController();
+        fetchInsights(controller.signal);
+        return () => controller.abort();
     }, [token]);
 
     if (!isVisible || (insights.alerts.length === 0 && insights.recommendations.length === 0)) {

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus, Store, Globe, BarChart3, ExternalLink, Trash2, Edit3,
-  Eye, EyeOff, MoreVertical, FileText, TrendingUp, ShoppingCart, Search, Megaphone
+  Eye, EyeOff, MoreVertical, FileText, TrendingUp, ShoppingCart, Search, Megaphone,
+  Wifi, WifiOff, ShoppingBag, Laptop
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
@@ -11,6 +12,16 @@ import { apiFetch } from '../utils/apiFetch';
 import toast from 'react-hot-toast';
 import ChannelModal from '../components/sales-channels/ChannelModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+
+const CHANNEL_TYPE_META = {
+  landing_page: { label: 'Landing Page', icon: FileText, color: 'blue' },
+  woocommerce: { label: 'WooCommerce', icon: ShoppingCart, color: 'purple' },
+  shopify: { label: 'Shopify', icon: ShoppingBag, color: 'green' },
+  manual: { label: 'Manual', icon: FileText, color: 'gray' },
+  tiktok_shop: { label: 'TikTok Shop', icon: Store, color: 'pink' },
+  facebook_shop: { label: 'Facebook Shop', icon: Store, color: 'blue' },
+  custom_api: { label: 'Custom API', icon: Laptop, color: 'indigo' },
+};
 
 export default function SalesChannels() {
   const { t } = useTranslation();
@@ -20,6 +31,7 @@ export default function SalesChannels() {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -88,9 +100,10 @@ export default function SalesChannels() {
     }
   };
 
-  const filtered = channels.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = channels.filter(c => {
+    if (typeFilter !== 'all' && c.channelType !== typeFilter) return false;
+    return c.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   // Summary stats
   const totalPages = channels.reduce((s, c) => s + (c.stats?.totalPages || 0), 0);
@@ -107,7 +120,7 @@ export default function SalesChannels() {
             {t('salesChannels.title', 'Sales Channels')}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {t('salesChannels.subtitle', 'Create and manage landing pages for your COD products')}
+            {t('salesChannels.subtitle', 'Manage your sales channels — landing pages, stores, and integrations')}
           </p>
         </div>
         {hasPermission('saleschannels.create') && (
@@ -157,6 +170,30 @@ export default function SalesChannels() {
         />
       </div>
 
+      {/* Channel Type Filter Pills */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {[
+          { key: 'all', label: t('common.all', 'All') },
+          { key: 'landing_page', label: t('salesChannels.types.landingPage', 'Landing Pages') },
+          { key: 'woocommerce', label: 'WooCommerce' },
+          { key: 'shopify', label: 'Shopify' },
+          { key: 'manual', label: t('salesChannels.types.manual', 'Manual') },
+        ].map(pill => (
+          <button
+            key={pill.key}
+            onClick={() => setTypeFilter(pill.key)}
+            className={clsx(
+              'px-3 py-1.5 rounded-full text-xs font-bold transition-colors',
+              typeFilter === pill.key
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            )}
+          >
+            {pill.label}
+          </button>
+        ))}
+      </div>
+
       {/* Channel Cards */}
       {loading ? (
         <div className="flex justify-center py-20">
@@ -192,13 +229,44 @@ export default function SalesChannels() {
                       {channel.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">{channel.name}</h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Globe className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {channel.domain?.subdomain || channel.slug}.store
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-gray-900 dark:text-white text-sm">{channel.name}</h3>
+                        {channel.channelType !== 'landing_page' && (
+                          <span className={clsx(
+                            'w-2 h-2 rounded-full shrink-0',
+                            channel.integration?.status === 'connected' ? 'bg-emerald-500' :
+                            channel.integration?.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                          )} title={channel.integration?.status || 'pending_setup'} />
+                        )}
                       </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {channel.channelType === 'landing_page' ? (
+                          <>
+                            <Globe className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {channel.domain?.subdomain || channel.slug}.store
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Globe className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+                              {channel.config?.storeUrl || channel.name}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <span className={clsx(
+                        'inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase',
+                        CHANNEL_TYPE_META[channel.channelType]?.color === 'blue' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                        CHANNEL_TYPE_META[channel.channelType]?.color === 'purple' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+                        CHANNEL_TYPE_META[channel.channelType]?.color === 'green' && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                        CHANNEL_TYPE_META[channel.channelType]?.color === 'gray' && 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300',
+                        CHANNEL_TYPE_META[channel.channelType]?.color === 'pink' && 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400',
+                        CHANNEL_TYPE_META[channel.channelType]?.color === 'indigo' && 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                      )}>
+                        {CHANNEL_TYPE_META[channel.channelType]?.label || channel.channelType}
+                      </span>
                     </div>
                   </div>
                   <div className="relative">
@@ -230,9 +298,19 @@ export default function SalesChannels() {
               {/* Stats Footer */}
               <div className="px-5 py-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" /> {channel.stats?.totalPages || 0}
-                  </span>
+                  {channel.channelType === 'landing_page' ? (
+                    <span className="flex items-center gap-1">
+                      <FileText className="w-3.5 h-3.5" /> {channel.stats?.totalPages || 0}
+                    </span>
+                  ) : (
+                    <span className={clsx('flex items-center gap-1 text-[10px] font-bold uppercase',
+                      channel.integration?.status === 'connected' ? 'text-emerald-600 dark:text-emerald-400' :
+                      channel.integration?.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-500'
+                    )}>
+                      {channel.integration?.status === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+                      {channel.integration?.status || 'pending'}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <ShoppingCart className="w-3.5 h-3.5" /> {channel.stats?.totalOrders || 0}
                   </span>

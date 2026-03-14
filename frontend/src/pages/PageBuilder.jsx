@@ -326,6 +326,15 @@ export default function PageBuilder() {
               </button>
             </div>
 
+            {/* Live preview (StorefrontPreview) */}
+            <button
+              onClick={() => window.open(`/sales-channels/${channelId}/pages/${pageId}/preview`, '_blank')}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium transition-colors"
+              title="Preview as customer"
+            >
+              <Eye className="w-3.5 h-3.5" /> Preview
+            </button>
+
             {/* Fullscreen preview */}
             <button
               onClick={() => setFullscreenPreview(true)}
@@ -341,8 +350,8 @@ export default function PageBuilder() {
                 href={`/s/${page.channelSlug || channelId}/${page.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                title="Open storefront"
+                className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-500"
+                title="Open live store"
               >
                 <ExternalLink className="w-4 h-4" />
               </a>

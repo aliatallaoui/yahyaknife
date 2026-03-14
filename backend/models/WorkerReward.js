@@ -18,5 +18,6 @@ const workerRewardSchema = new mongoose.Schema({
 
 // Index for fast payroll aggregation
 workerRewardSchema.index({ employeeId: 1, isPaid: 1 });
+workerRewardSchema.index({ tenant: 1, dateAwarded: -1 }); // Reward listing sort
 
 module.exports = mongoose.model('WorkerReward', workerRewardSchema);

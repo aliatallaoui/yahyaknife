@@ -109,7 +109,7 @@ exports.getAllShipments = async (req, res) => {
             phone1:            o.shipping?.phone1 || o.customer?.phone || '',
             wilayaName:        o.shipping?.wilayaName || '',
             commune:           o.shipping?.commune || '',
-            codAmount:         o.totalAmount || 0,
+            codAmount:         o.totalAmount ?? 0,
             paymentStatus:     o.status === 'Paid' ? 'Paid' : 'Pending',
             shipmentStatus:    STATUS_MAP[o.status] || o.status,
             createdAt:         o.createdAt,

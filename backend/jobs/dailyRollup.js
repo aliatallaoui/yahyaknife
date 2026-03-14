@@ -81,7 +81,7 @@ const runDailyRollup = async (targetDate) => {
 
                 const om = orderMetrics[0] || {};
                 // netProfit computed from real fields (financials.netProfit doesn't exist on Order)
-                const netProfit = (om.grossRevenue || 0) - (om.cogs || 0) - (om.courierFees || 0) - (om.gatewayFees || 0);
+                const netProfit = (om.grossRevenue ?? 0) - (om.cogs ?? 0) - (om.courierFees ?? 0) - (om.gatewayFees ?? 0);
 
                 // ── HR metrics ───────────────────────────────────────────────────────
                 const hrRecords = await Attendance.aggregate([
@@ -102,26 +102,26 @@ const runDailyRollup = async (targetDate) => {
                 const rollupData = {
                     orders: {
                         created:    ordersCreated,
-                        confirmed:  om.confirmed   || 0,
-                        dispatched: om.dispatched  || 0,
-                        delivered:  om.delivered   || 0,
-                        returned:   om.returned    || 0,
-                        refused:    om.refused     || 0,
-                        cancelled:  om.cancelled   || 0,
+                        confirmed:  om.confirmed   ?? 0,
+                        dispatched: om.dispatched  ?? 0,
+                        delivered:  om.delivered   ?? 0,
+                        returned:   om.returned    ?? 0,
+                        refused:    om.refused     ?? 0,
+                        cancelled:  om.cancelled   ?? 0,
                     },
                     revenue: {
-                        gross:        om.grossRevenue || 0,
-                        cogs:         om.cogs         || 0,
-                        courierFees:  om.courierFees  || 0,
-                        gatewayFees:  om.gatewayFees  || 0,
+                        gross:        om.grossRevenue ?? 0,
+                        cogs:         om.cogs         ?? 0,
+                        courierFees:  om.courierFees  ?? 0,
+                        gatewayFees:  om.gatewayFees  ?? 0,
                         netProfit,
-                        codCollected: om.codCollected || 0,
+                        codCollected: om.codCollected ?? 0,
                     },
                     hr: {
-                        present:         hr.present         || 0,
-                        absent:          hr.absent          || 0,
-                        late:            hr.late            || 0,
-                        overtimeMinutes: hr.overtimeMinutes || 0,
+                        present:         hr.present         ?? 0,
+                        absent:          hr.absent          ?? 0,
+                        late:            hr.late            ?? 0,
+                        overtimeMinutes: hr.overtimeMinutes ?? 0,
                     },
                     stock: {
                         lowStockVariants: lowStockCount
@@ -173,15 +173,15 @@ const runWeeklyReport = async () => {
                 if (days.length === 0) continue; // no data for this tenant
 
                 const totals = days.reduce((acc, d) => {
-                    acc.ordersTotal     += d.orders.created   || 0;
-                    acc.ordersConfirmed += d.orders.confirmed || 0;
-                    acc.ordersDelivered += d.orders.delivered || 0;
-                    acc.ordersReturned  += d.orders.returned  || 0;
-                    acc.ordersCancelled += d.orders.cancelled || 0;
-                    acc.gross           += d.revenue.gross        || 0;
-                    acc.netProfit       += d.revenue.netProfit     || 0;
-                    acc.cogs            += d.revenue.cogs          || 0;
-                    acc.courierFees     += d.revenue.courierFees   || 0;
+                    acc.ordersTotal     += d.orders.created   ?? 0;
+                    acc.ordersConfirmed += d.orders.confirmed ?? 0;
+                    acc.ordersDelivered += d.orders.delivered ?? 0;
+                    acc.ordersReturned  += d.orders.returned  ?? 0;
+                    acc.ordersCancelled += d.orders.cancelled ?? 0;
+                    acc.gross           += d.revenue.gross        ?? 0;
+                    acc.netProfit       += d.revenue.netProfit     ?? 0;
+                    acc.cogs            += d.revenue.cogs          ?? 0;
+                    acc.courierFees     += d.revenue.courierFees   ?? 0;
                     return acc;
                 }, {
                     ordersTotal: 0, ordersConfirmed: 0, ordersDelivered: 0,
@@ -268,23 +268,23 @@ const runMonthlyReport = async (targetMonth) => {
                 if (days.length === 0) continue;
 
                 const totals = days.reduce((acc, d) => {
-                    acc.ordersTotal     += d.orders.created   || 0;
-                    acc.ordersConfirmed += d.orders.confirmed || 0;
-                    acc.ordersDelivered += d.orders.delivered || 0;
-                    acc.ordersReturned  += d.orders.returned  || 0;
-                    acc.ordersRefused   += d.orders.refused   || 0;
-                    acc.ordersCancelled += d.orders.cancelled || 0;
-                    acc.gross           += d.revenue.gross        || 0;
-                    acc.netProfit       += d.revenue.netProfit    || 0;
-                    acc.cogs            += d.revenue.cogs         || 0;
-                    acc.courierFees     += d.revenue.courierFees  || 0;
-                    acc.gatewayFees     += d.revenue.gatewayFees  || 0;
-                    acc.codCollected    += d.revenue.codCollected || 0;
-                    acc.hrPresent       += d.hr.present           || 0;
-                    acc.hrAbsent        += d.hr.absent            || 0;
-                    acc.hrLate          += d.hr.late              || 0;
-                    acc.hrOvertimeMin   += d.hr.overtimeMinutes   || 0;
-                    acc.lowStockSum     += d.stock.lowStockVariants || 0;
+                    acc.ordersTotal     += d.orders.created   ?? 0;
+                    acc.ordersConfirmed += d.orders.confirmed ?? 0;
+                    acc.ordersDelivered += d.orders.delivered ?? 0;
+                    acc.ordersReturned  += d.orders.returned  ?? 0;
+                    acc.ordersRefused   += d.orders.refused   ?? 0;
+                    acc.ordersCancelled += d.orders.cancelled ?? 0;
+                    acc.gross           += d.revenue.gross        ?? 0;
+                    acc.netProfit       += d.revenue.netProfit    ?? 0;
+                    acc.cogs            += d.revenue.cogs         ?? 0;
+                    acc.courierFees     += d.revenue.courierFees  ?? 0;
+                    acc.gatewayFees     += d.revenue.gatewayFees  ?? 0;
+                    acc.codCollected    += d.revenue.codCollected ?? 0;
+                    acc.hrPresent       += d.hr.present           ?? 0;
+                    acc.hrAbsent        += d.hr.absent            ?? 0;
+                    acc.hrLate          += d.hr.late              ?? 0;
+                    acc.hrOvertimeMin   += d.hr.overtimeMinutes   ?? 0;
+                    acc.lowStockSum     += d.stock.lowStockVariants ?? 0;
                     return acc;
                 }, {
                     ordersTotal: 0, ordersConfirmed: 0, ordersDelivered: 0,

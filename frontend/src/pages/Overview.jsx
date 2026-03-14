@@ -33,11 +33,11 @@ export default function Overview() {
     const [briefing, setBriefing] = useState(null);
     const [briefingLoading, setBriefingLoading] = useState(true);
 
-    const fetchBriefing = async () => {
+    const fetchBriefing = async (signal) => {
         if (!token) return;
         setBriefingLoading(true);
         try {
-            const res = await apiFetch(`/api/dashboard/metrics`);
+            const res = await apiFetch(`/api/dashboard/metrics`, { signal });
             if (res.ok) {
                 const json = await res.json();
                 setBriefing(json.data ?? json);
@@ -50,7 +50,9 @@ export default function Overview() {
     };
 
     useEffect(() => {
-        fetchBriefing();
+        const controller = new AbortController();
+        fetchBriefing(controller.signal);
+        return () => controller.abort();
     }, [token]);
 
     // Derive actionable counts from the dedicated briefing sub-object

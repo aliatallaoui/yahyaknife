@@ -73,6 +73,11 @@ const EVENTS = {
     // Customer
     CUSTOMER_RISK_UPDATED:  'customer.risk.updated',
 
+    // Store Integrations
+    STORE_ORDER_IMPORTED:   'store.order.imported',
+    STORE_SYNC_COMPLETED:   'store.sync.completed',
+    STORE_CONNECTION_ERROR:  'store.connection.error',
+
     // Analytics
     KPI_INVALIDATED:        'kpi.invalidated',
 };

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const logger = require('../shared/logger');
 const queueService = require('../services/queueService');
 const Customer = require('../models/Customer');
@@ -7,7 +8,7 @@ exports.enqueueOrderExport = async (req, res) => {
         const tenantId = req.user.tenant;
         const userEmail = req.user.email; // Optional, to send notification later
 
-        const { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, stage } = req.query;
+        const { search, status, courier, agent, wilaya, channel, salesChannelId, dateFrom, dateTo, stage } = req.query;
 
         // Build the identical query object as the frontend table
         const query = { tenant: tenantId, deletedAt: null };
@@ -27,6 +28,9 @@ exports.enqueueOrderExport = async (req, res) => {
         if (agent) query.assignedAgent = agent === 'unassigned' ? null : agent;
         if (wilaya) query.wilaya = wilaya;
         if (channel) query.channel = channel;
+        if (salesChannelId && mongoose.Types.ObjectId.isValid(salesChannelId)) {
+            query['salesChannelSource.salesChannel'] = new mongoose.Types.ObjectId(salesChannelId);
+        }
 
         if (dateFrom || dateTo) {
             query.createdAt = {};

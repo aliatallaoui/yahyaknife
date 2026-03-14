@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useRef } from 'react';
+import { useEffect, useState, useContext, useRef, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, UserCheck, CalendarDays, Search, CheckCircle, XCircle, Clock, Banknote, Filter, UserPlus, AlertTriangle } from 'lucide-react';
@@ -96,16 +96,16 @@ export default function HRSnapshot() {
     }
 
     // Format Department Data
-    const deptData = metrics?.departmentDistribution ? Object.keys(metrics.departmentDistribution).map((key) => ({
+    const deptData = useMemo(() => metrics?.departmentDistribution ? Object.keys(metrics.departmentDistribution).map((key) => ({
         name: key,
         Headcount: metrics.departmentDistribution[key]
-    })).sort((a, b) => b.Headcount - a.Headcount) : [];
+    })).sort((a, b) => b.Headcount - a.Headcount) : [], [metrics?.departmentDistribution]);
 
     // Filter options
-    const uniqueDepts = ['All', ...new Set(employees.map(e => e.department || 'Unassigned'))];
-    const uniqueRoles = ['All', ...new Set(employees.map(e => e.role || 'Unassigned'))];
+    const uniqueDepts = useMemo(() => ['All', ...new Set(employees.map(e => e.department || 'Unassigned'))], [employees]);
+    const uniqueRoles = useMemo(() => ['All', ...new Set(employees.map(e => e.role || 'Unassigned'))], [employees]);
 
-    const filteredEmployees = employees.filter(emp => {
+    const filteredEmployees = useMemo(() => employees.filter(emp => {
         const empNameMatch = (emp.name || '').toLowerCase().includes(searchTerm.toLowerCase());
         const empIdMatch = (emp.employeeId || emp._id || '').toString().toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSearch = empNameMatch || empIdMatch;
@@ -113,9 +113,9 @@ export default function HRSnapshot() {
         const matchesRole = filterRole === 'All' || (emp.role || 'Unassigned') === filterRole;
         const matchesStatus = filterStatus === 'All' || (emp.status || 'Active') === filterStatus;
         return matchesSearch && matchesDept && matchesRole && matchesStatus;
-    });
+    }), [employees, searchTerm, filterDept, filterRole, filterStatus]);
 
-    const pendingLeavesCount = leaves.filter(l => l.status === 'Pending').length;
+    const pendingLeavesCount = useMemo(() => leaves.filter(l => l.status === 'Pending').length, [leaves]);
 
     const utilizationData = [
         { name: t('hr.activeWorking'), value: metrics?.activeEmployees || 0 },

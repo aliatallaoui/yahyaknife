@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Search, Filter, SlidersHorizontal, ArrowDownCircle, X, LayoutTemplate, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, ArrowDownCircle, X, LayoutTemplate, RefreshCw, PhoneCall, CheckCircle2, Truck, FileText, Ban, AlertTriangle, Tag, Calendar, MapPin, PackageOpen, ChevronUp, ChevronDown, Trash2, RotateCcw, Store } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import PageHeader from '../components/PageHeader';
 import OrderDetailsDrawer from '../components/orders/OrderDetailsDrawer';
@@ -16,7 +16,7 @@ import { toISODate, subtract, startOfMonth, endOfMonth, formatDuration } from '.
 import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel } from '../constants/statusColors';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 
-const FILTER_KEYS = ['status', 'courier', 'agent', 'wilaya', 'channel', 'priority', 'tags', 'dateFrom', 'dateTo'];
+const FILTER_KEYS = ['status', 'courier', 'agent', 'wilaya', 'channel', 'salesChannelId', 'priority', 'tags', 'dateFrom', 'dateTo'];
 
 const PRIORITY_STYLES = {
     'Normal': '',
@@ -40,6 +40,7 @@ export default function OrderControlCenter() {
     const [couriers, setCouriers] = useState([]);
     const [agents, setAgents] = useState([]);
     const [productsList, setProductsList] = useState([]); // Added for product filter
+    const [salesChannelsList, setSalesChannelsList] = useState([]);
 
     // Query State
     const [error, setError] = useState(null);
@@ -299,6 +300,7 @@ export default function OrderControlCenter() {
         safeFetch('/api/call-center/agents', setAgents, j => (j.data ?? j) || [], t('ordersControl.errorLoadAgents', 'Failed to load agents list'));
         safeFetch('/api/sales/orders/operations-kpi', setKpis, j => j.data ?? j, null); // KPIs non-critical
         safeFetch('/api/inventory/products', setProductsList, j => { const d = j.data ?? j; return d.products || d || []; }, t('ordersControl.errorLoadProducts', 'Failed to load products list'));
+        safeFetch('/api/sales-channels', setSalesChannelsList, j => (j.data ?? j) || [], null);
 
         return () => controller.abort();
     }, []);
@@ -1333,6 +1335,15 @@ export default function OrderControlCenter() {
                                     {['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'Manual Entry', 'Other'].map(ch => <option key={ch} value={ch}>{ch}</option>)}
                                 </select>
                             </div>
+                            {salesChannelsList.length > 0 && (
+                                <div className="relative flex items-center shrink-0">
+                                    <Store className="w-[14px] h-[14px] text-indigo-500 absolute left-3 pointer-events-none" />
+                                    <select value={filters.salesChannelId} onChange={e => handleFilterChange('salesChannelId', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 appearance-none cursor-pointer hover:bg-indigo-100/80 dark:hover:bg-indigo-900/50 transition-all shadow-sm">
+                                        <option value="">{t('ordersControl.filters.salesChannel', { defaultValue: 'Sales Channel' })}</option>
+                                        {salesChannelsList.map(sc => <option key={sc._id} value={sc._id}>{sc.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div className="relative flex items-center shrink-0">
                                 <MapPin className="w-[14px] h-[14px] text-teal-500 absolute left-3 pointer-events-none" />
                                 <select value={filters.wilaya} onChange={e => handleFilterChange('wilaya', e.target.value)} className="pl-9 pr-4 py-1.5 rounded-full border border-teal-200 dark:border-teal-800 bg-teal-50/60 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[11px] font-bold outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 appearance-none cursor-pointer hover:bg-teal-100/80 dark:hover:bg-teal-900/50 transition-all shadow-sm">
@@ -1398,7 +1409,7 @@ export default function OrderControlCenter() {
                             {Object.values(filters).some(val => val !== '') && (
                                 <button 
                                     onClick={() => {
-                                        setFilters({ status: '', priority: '', channel: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' });
+                                        setFilters({ status: '', priority: '', channel: '', salesChannelId: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' });
                                         setSearchTerm('');
                                     }}
                                     className="ml-auto shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 rounded-full text-[11px] font-bold transition-colors group"
@@ -1491,7 +1502,7 @@ export default function OrderControlCenter() {
                                                 <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t('ordersControl.grid.emptyFiltered', 'No orders match your filters')}</p>
                                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('ordersControl.grid.emptyFilteredHint', 'Try adjusting or clearing your active filters.')}</p>
                                                 <button
-                                                    onClick={() => { setFilters({ status: '', priority: '', channel: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' }); setSearchTerm(''); }}
+                                                    onClick={() => { setFilters({ status: '', priority: '', channel: '', salesChannelId: '', wilaya: '', tags: '', dateFrom: '', dateTo: '', agent: '', courier: '' }); setSearchTerm(''); }}
                                                     className="mt-4 px-4 py-2 text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-700 transition-colors"
                                                 >
                                                     {t('ordersControl.grid.clearFilters', 'Clear Filters')}

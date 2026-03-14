@@ -75,7 +75,7 @@ async function resolveAssignment(order, tenantId) {
     }
 
     // Priority 4: Round-robin — filter to current tenant
-    const activeProfiles = await AgentProfile.find({ tenant: tenantId, isActive: true }).lean();
+    const activeProfiles = await AgentProfile.find({ tenant: tenantId, isActive: true }).limit(500).lean();
     if (activeProfiles.length === 0) return null;
 
     const agentIds = activeProfiles.map(p => p.user);
@@ -202,7 +202,7 @@ async function distributeUnassignedOrders(tenantId, changedById) {
         status: { $in: DISTRIBUTABLE },
         assignedAgent: null,
         deletedAt: null
-    }).lean();
+    }).limit(5000).lean();
 
     if (!unassigned.length) return 0;
 

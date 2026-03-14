@@ -8,7 +8,27 @@ const salesChannelSchema = new mongoose.Schema({
     description: { type: String, maxlength: 500 },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 
-    // ── Domain / URL Settings ───────────────────────────────────────────────
+    // ── Channel Type ──────────────────────────────────────────────────────────
+    channelType: {
+        type: String,
+        enum: ['landing_page', 'woocommerce', 'shopify', 'tiktok_shop', 'facebook_shop', 'manual', 'custom_api'],
+        default: 'landing_page',
+        required: true
+    },
+
+    // ── Provider-specific Config (encrypted key-value pairs) ──────────────────
+    config: { type: Map, of: String, default: {} },
+
+    // ── Integration Health ────────────────────────────────────────────────────
+    integration: {
+        status: { type: String, enum: ['connected', 'disconnected', 'error', 'pending_setup'], default: 'pending_setup' },
+        lastSyncAt: { type: Date },
+        lastError: { type: String, maxlength: 500 },
+        webhookId: { type: String },
+        syncEnabled: { type: Boolean, default: true }
+    },
+
+    // ── Domain / URL Settings (landing_page channels) ─────────────────────────
     domain: {
         type: { type: String, enum: ['subdomain', 'custom'], default: 'subdomain' },
         subdomain: { type: String, trim: true, lowercase: true, maxlength: 60 },
@@ -52,6 +72,7 @@ const salesChannelSchema = new mongoose.Schema({
 // Unique slug per tenant (only active records)
 salesChannelSchema.index({ tenant: 1, slug: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } });
 salesChannelSchema.index({ tenant: 1, status: 1 });
+salesChannelSchema.index({ tenant: 1, channelType: 1, deletedAt: 1 });
 salesChannelSchema.index({ 'domain.subdomain': 1 }, { sparse: true });
 salesChannelSchema.index({ 'domain.customDomain': 1 }, { sparse: true });
 

@@ -67,5 +67,6 @@ customerSchema.index(
 );
 customerSchema.index({ tenant: 1, riskLevel: 1, _id: -1 });
 customerSchema.index({ tenant: 1, status: 1, _id: -1 }); // Segment analysis & active customer lists
+customerSchema.index({ tenant: 1, lifetimeValue: -1 }); // Top customer analytics sort
 
 module.exports = mongoose.model('Customer', customerSchema);

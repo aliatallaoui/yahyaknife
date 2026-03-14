@@ -64,14 +64,16 @@ export default function OrderDetailsDrawer({ order, onClose, onUpdate }) {
     }, [onClose]);
 
     useEffect(() => {
+        const controller = new AbortController();
         const fetchDeps = async () => {
             try {
-                const usrRes = await apiFetch('/api/call-center/agents');
+                const usrRes = await apiFetch('/api/call-center/agents', { signal: controller.signal });
                 const usrData = await usrRes.json();
                 setAgents((usrData.data ?? usrData) || []);
             } catch (err) { /* agent list fetch is best-effort */ }
         };
         fetchDeps();
+        return () => controller.abort();
     }, []);
 
     if (!order) return null;

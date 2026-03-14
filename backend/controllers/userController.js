@@ -25,7 +25,7 @@ const getUsers = async (req, res) => {
     try {
         const users = await User.find({ tenant: req.user.tenant })
             .select('name email role isActive preferences createdAt permissionOverrides phone jobTitle tenant')
-            .populate('role')
+            .populate('role', 'name permissions')
             .limit(500)
             .lean();
         res.json(users);
@@ -77,7 +77,7 @@ const createUser = async (req, res) => {
             isActive: true
         });
 
-        await user.populate('role');
+        await user.populate('role', 'name permissions');
 
         await AuditLog.create({
             tenant: req.user.tenant,

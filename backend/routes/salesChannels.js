@@ -29,12 +29,24 @@ router.use(protect);
 
 // ── Sales Channels ──────────────────────────────────────────────────────────
 
+router.get('/health/summary', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getChannelHealthSummary));
 router.get('/', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.listChannels));
 router.post('/', requirePermission(PERMS.SALES_CHANNELS_CREATE), wrap(ctrl.createChannel));
 router.get('/:id', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getChannel));
 router.put('/:id', requirePermission(PERMS.SALES_CHANNELS_EDIT), wrap(ctrl.updateChannel));
 router.delete('/:id', requirePermission(PERMS.SALES_CHANNELS_DELETE), wrap(ctrl.deleteChannel));
 router.get('/:id/analytics', requirePermission(PERMS.SALES_CHANNELS_ANALYTICS), wrap(ctrl.getChannelAnalytics));
+
+// ── Store Integration ───────────────────────────────────────────────────────
+
+router.post('/:id/test-connection', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.testConnection));
+router.post('/:id/register-webhooks', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.registerWebhooks));
+router.post('/:id/sync-orders', requirePermission(PERMS.SALES_CHANNELS_INTEGRATE), wrap(ctrl.syncOrders));
+router.get('/:id/sync-logs', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getSyncLogs));
+router.get('/:id/product-mappings', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.getProductMappings));
+router.post('/:id/product-mappings', requirePermission(PERMS.SALES_CHANNELS_MAP), wrap(ctrl.createProductMapping));
+router.delete('/:id/product-mappings/:mappingId', requirePermission(PERMS.SALES_CHANNELS_MAP), wrap(ctrl.deleteProductMapping));
+router.get('/:id/external-products', requirePermission(PERMS.SALES_CHANNELS_VIEW), wrap(ctrl.fetchExternalProducts));
 
 // ── AI Page Generator ────────────────────────────────────────────────────────
 

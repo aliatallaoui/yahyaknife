@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../utils/apiFetch';
 import { Truck, PackageSearch, Users, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Download, Search } from 'lucide-react';
@@ -108,14 +108,14 @@ export default function ProcurementHub() {
     };
 
     const term = searchTerm.toLowerCase();
-    const filteredOrders = orders.filter(o =>
+    const filteredOrders = useMemo(() => orders.filter(o =>
         o.poNumber?.toLowerCase().includes(term) ||
         o.supplier?.name?.toLowerCase().includes(term)
-    );
-    const filteredSuppliers = suppliers.filter(s =>
+    ), [orders, term]);
+    const filteredSuppliers = useMemo(() => suppliers.filter(s =>
         s.name?.toLowerCase().includes(term) ||
         s.contactPerson?.name?.toLowerCase().includes(term)
-    );
+    ), [suppliers, term]);
 
     return (
         <div className="pb-32">

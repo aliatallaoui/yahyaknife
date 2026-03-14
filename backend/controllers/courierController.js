@@ -159,16 +159,20 @@ exports.settleCourierCash = async (req, res) => {
         }
         const amountToSettle = amount;
 
-        const courier = await Courier.findOne({ _id: id, tenant: tenantId, deletedAt: null });
-        if (!courier) return res.status(404).json({ message: 'Courier not found' });
-
-        if (amountToSettle > courier.pendingRemittance) {
+        // Atomic settlement: validate + update in one operation to prevent race conditions
+        const courier = await Courier.findOneAndUpdate(
+            { _id: id, tenant: tenantId, deletedAt: null, pendingRemittance: { $gte: amountToSettle } },
+            { $inc: { cashSettled: amountToSettle, pendingRemittance: -amountToSettle } },
+            { returnDocument: 'before' }
+        );
+        if (!courier) {
+            // Distinguish not-found vs insufficient balance
+            const exists = await Courier.findOne({ _id: id, tenant: tenantId, deletedAt: null }).lean();
+            if (!exists) return res.status(404).json({ message: 'Courier not found' });
             return res.status(400).json({ message: 'Settlement amount exceeds pending remittance' });
         }
 
         const previousPendingRemittance = courier.pendingRemittance;
-        courier.cashSettled += amountToSettle;
-        await courier.save(); // pre-save hook updates pendingRemittance naturally
 
         // CRITICAL DATA COHERENCE: Map the bulk cash back to specific individual Orders
         // Otherwise, the Finance Hub has 'Delivered' orders that never flip to 'Paid' (Settled Revenue)

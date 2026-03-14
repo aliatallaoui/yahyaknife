@@ -41,6 +41,9 @@ const eventLimiter = rateLimit({
 
 // ── Public Storefront Endpoints ─────────────────────────────────────────────
 
+// Store homepage — list all published pages for a channel
+router.get('/:channelSlug', pageViewLimiter, wrap(ctrl.getStorefrontHome));
+
 // Get landing page data (product, variants, blocks, pixels)
 router.get('/:channelSlug/:pageSlug', pageViewLimiter, wrap(ctrl.getStorefrontPage));
 

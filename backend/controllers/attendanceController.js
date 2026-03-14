@@ -29,7 +29,7 @@ exports.recordPointage = async (req, res) => {
         const tenant = req.user.tenant;
         const { employeeId, type, timestamp, date } = req.body;
 
-        const employee = await Employee.findOne({ _id: employeeId, tenant, deletedAt: null });
+        const employee = await Employee.findOne({ _id: employeeId, tenant, deletedAt: null }).lean();
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
         const dateStr = date || (timestamp ? moment(timestamp).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'));

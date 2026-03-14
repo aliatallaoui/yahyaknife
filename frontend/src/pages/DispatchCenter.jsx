@@ -51,12 +51,14 @@ export default function DispatchCenter() {
     useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
     useEffect(() => {
-        fetchShipments();
+        const controller = new AbortController();
+        fetchShipments(controller.signal);
+        return () => controller.abort();
     }, []);
 
-    const fetchShipments = async () => {
+    const fetchShipments = async (signal) => {
         try {
-            const res = await apiFetch('/api/shipments');
+            const res = await apiFetch('/api/shipments', signal ? { signal } : {});
             const json = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(json.message || 'Failed to load shipments');
             setShipments(json.data ?? json);

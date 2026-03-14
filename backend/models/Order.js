@@ -65,6 +65,10 @@ const orderSchema = new mongoose.Schema({
             content: { type: String }
         }
     },
+    // ── External Order Tracking ─────────────────────────────────────────────
+    externalOrderId: { type: String, default: null, maxlength: 200 },
+    importMethod: { type: String, enum: ['manual', 'webhook', 'sync', 'api', null], default: null },
+
     // Main COD Lifecycle Status
     status: {
         type: String,
@@ -149,6 +153,12 @@ orderSchema.index({ tenant: 1, assignedAgent: 1, status: 1, deletedAt: 1 }); // 
 orderSchema.index({ tenant: 1, 'shipping.phone1': 1 }); // Call Center Lookup
 orderSchema.index({ tenant: 1, courier: 1, 'deliveryStatus.deliveredAt': -1 }); // Courier KPI lookups
 orderSchema.index({ tenant: 1, courier: 1, status: 1 }); // Courier settlement queries
+
+orderSchema.index({ tenant: 1, 'salesChannelSource.salesChannel': 1, createdAt: -1 }); // Channel-filtered queries
+orderSchema.index(
+    { tenant: 1, 'salesChannelSource.salesChannel': 1, externalOrderId: 1 },
+    { unique: true, sparse: true, partialFilterExpression: { externalOrderId: { $type: 'string' } } }
+); // Deduplication for imported orders
 
 orderSchema.index({ tenant: 1, createdAt: -1 }); // Date-range analytics & daily rollup
 orderSchema.index({ tenant: 1, status: 1, createdAt: -1 }); // Status-filtered date-sorted queries
