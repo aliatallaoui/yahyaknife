@@ -251,7 +251,7 @@ const handleChat = async (req, res) => {
         if (!process.env.GEMINI_API_KEY) {
             logger.error('GEMINI_API_KEY is missing from environment variables');
             return res.status(500).json({
-                error: "GEMINI_API_KEY is missing from environment variables.",
+                message: "GEMINI_API_KEY is missing from environment variables.",
                 reply: "I cannot connect to my AI brain right now. Please tell the administrator to configure the GEMINI_API_KEY."
             });
         }
@@ -320,7 +320,7 @@ const handleChat = async (req, res) => {
     } catch (error) {
         logger.error({ err: error }, 'AI Controller Error');
         res.status(500).json({
-            error: "Failed to process AI request.",
+            message: "Failed to process AI request.",
             reply: "I encountered an error while processing your request. Please try again."
         });
     }

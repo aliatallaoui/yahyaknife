@@ -739,9 +739,20 @@ export default function OrderControlCenter() {
                     if (d > 0 && f === 0) {
                         toast.success(t('ordersControl.bulk.dispatchSuccess', { count: d }));
                     } else if (d > 0 && f > 0) {
-                        toast(t('ordersControl.bulk.dispatchPartial', { dispatched: d, failed: f }), { icon: '⚠️' });
+                        toast(t('ordersControl.bulk.dispatchPartial', { dispatched: d, failed: f }), { icon: '⚠️', duration: 6000 });
+                        // Show individual failure reasons
+                        if (data.failed?.length) {
+                            const failDetails = data.failed.map(f => `${f.orderId}: ${f.error}`).join('\n');
+                            toast.error(failDetails, { duration: 8000, style: { maxWidth: '500px', whiteSpace: 'pre-line' } });
+                        }
                     } else {
-                        toast.error(t('ordersControl.bulk.dispatchAllFailed', { count: f }));
+                        // All failed — show detailed reasons
+                        if (data.failed?.length) {
+                            const failDetails = data.failed.map(f => `${f.orderId}: ${f.error}`).join('\n');
+                            toast.error(failDetails, { duration: 8000, style: { maxWidth: '500px', whiteSpace: 'pre-line' } });
+                        } else {
+                            toast.error(t('ordersControl.bulk.dispatchAllFailed', { count: f }));
+                        }
                     }
 
                     setSelectedIds(new Set());

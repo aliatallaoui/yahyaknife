@@ -36,7 +36,7 @@ class YalidineAdapter extends CourierAdapter {
      */
     toPayload(shipment) {
         if (!shipment.codAmount && shipment.codAmount !== 0) {
-            throw AppError.validationFailed({ codAmount: 'COD amount is required for courier dispatch' });
+            throw AppError.validationFailed({ codAmount: 'COD amount is required. Please verify the order has a valid total amount before dispatching.' });
         }
 
         // Split customerName into first/family if possible
@@ -93,12 +93,22 @@ class YalidineAdapter extends CourierAdapter {
         }
 
         if (parcel?.success === false) {
-            throw new Error(`Yalidine creation failed: ${parcel.message || JSON.stringify(response)}`);
+            // Extract user-friendly message from Yalidine response
+            const yalidineMsg = parcel.message || '';
+            let userMsg = yalidineMsg;
+            if (yalidineMsg.includes('commune') || yalidineMsg.includes('wilaya')) {
+                userMsg = `Courier does not cover this area. ${yalidineMsg}`;
+            } else if (yalidineMsg.includes('phone') || yalidineMsg.includes('contact')) {
+                userMsg = `Invalid phone number format. ${yalidineMsg}`;
+            } else if (!yalidineMsg) {
+                userMsg = `Courier rejected the order. Response: ${JSON.stringify(response)}`;
+            }
+            throw new Error(userMsg);
         }
 
         const trackingId = parcel?.tracking || parcel?.tracking_id;
         if (!trackingId) {
-            throw new Error(`Yalidine did not return a tracking ID: ${parcel?.message || JSON.stringify(response)}`);
+            throw new Error(`Courier accepted the request but did not return a tracking ID. Please contact Yalidine support. (${parcel?.message || ''})`);
         }
 
         return { trackingId, labelUrl: parcel?.label || null };

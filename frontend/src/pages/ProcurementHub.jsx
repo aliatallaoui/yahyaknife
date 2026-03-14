@@ -53,7 +53,7 @@ export default function ProcurementHub() {
                         body: JSON.stringify({ itemsReceived })
                     });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    if (!res.ok) throw new Error(data.message || 'Failed to receive delivery.');
                     toast.success(t('procurement.receiveSuccess', 'Delivery received — stock updated'));
                     fetchData();
                 } catch (err) {

@@ -78,11 +78,16 @@ export default function Header({ setMobileMenuOpen }) {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
     };
 
+    const themeTimerRef = useRef(null);
+    useEffect(() => {
+        return () => { if (themeTimerRef.current) clearTimeout(themeTimerRef.current); };
+    }, []);
+
     const handleThemeToggle = () => {
-        // Add transition class briefly for smooth theme switch
         document.documentElement.classList.add('theme-transitioning');
         toggleTheme();
-        setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 400);
+        if (themeTimerRef.current) clearTimeout(themeTimerRef.current);
+        themeTimerRef.current = setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 400);
     };
 
     const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;

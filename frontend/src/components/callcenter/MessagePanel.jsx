@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     MessageSquare, Send, Loader2, CheckCircle, AlertTriangle,
     Phone, MapPin, Truck, Bell, Clock, PenLine
@@ -65,6 +65,11 @@ export default function MessagePanel({ orderId, isOpen, onMessageSent }) {
     const [sending, setSending] = useState(false);
     const [result, setResult] = useState(null);
     const [lang, setLang] = useState('ar');
+    const resultTimerRef = useRef(null);
+
+    useEffect(() => {
+        return () => { if (resultTimerRef.current) clearTimeout(resultTimerRef.current); };
+    }, []);
 
     if (!isOpen) return null;
 
@@ -97,7 +102,8 @@ export default function MessagePanel({ orderId, isOpen, onMessageSent }) {
             if (data.sent && onMessageSent) onMessageSent(templateKey);
 
             // Auto-clear result after 4s
-            setTimeout(() => setResult(null), 4000);
+            if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+            resultTimerRef.current = setTimeout(() => setResult(null), 4000);
         } catch (err) {
             setResult({ success: false, error: err.message });
         } finally {

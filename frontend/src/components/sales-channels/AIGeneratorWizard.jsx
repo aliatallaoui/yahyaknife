@@ -300,7 +300,7 @@ export default function AIGeneratorWizard({ channelId, onComplete, onClose }) {
                     >
                       <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-600 overflow-hidden shrink-0">
                         {p.images?.[0] ? (
-                          <img src={p.images[0]} alt="" className="w-full h-full object-cover" />
+                          <img src={p.images[0]} alt={p.name || 'Product'} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-gray-400" /></div>
                         )}
@@ -348,7 +348,7 @@ export default function AIGeneratorWizard({ channelId, onComplete, onClose }) {
                 <div className="flex gap-2 flex-wrap">
                   {selectedProduct.images.slice(0, 4).map((img, i) => (
                     <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-700">
-                      <img src={img.startsWith('data:') || img.startsWith('http') ? img : `${API_BASE}${img}`} alt="" className="w-full h-full object-cover" />
+                      <img src={img.startsWith('data:') || img.startsWith('http') ? img : `${API_BASE}${img}`} alt={`Product image ${i + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -390,10 +390,11 @@ export default function AIGeneratorWizard({ channelId, onComplete, onClose }) {
                     <div className="flex gap-2 flex-wrap">
                       {uploadedImages.map((img, i) => (
                         <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
-                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <img src={img} alt={`Uploaded image ${i + 1}`} className="w-full h-full object-cover" />
                           <button
                             onClick={() => removeImage(i)}
                             className="absolute top-0.5 end-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Remove image"
                           >
                             <X className="w-3 h-3" />
                           </button>

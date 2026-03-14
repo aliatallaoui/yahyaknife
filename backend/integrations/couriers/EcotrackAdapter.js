@@ -36,7 +36,7 @@ class EcotrackAdapter extends CourierAdapter {
     async _directRequest(method, endpoint, data = null) {
         const courier = this.courier;
         if (!courier || !courier.apiBaseUrl || !courier.apiToken) {
-            throw new Error('Ecotrack API credentials are not configured on this courier.');
+            throw new Error('Courier API credentials are not configured. Please go to Courier Settings and add your API token and base URL.');
         }
 
         const baseUrl = courier.apiBaseUrl.replace(/\/+$/, '');
@@ -103,7 +103,7 @@ class EcotrackAdapter extends CourierAdapter {
         const response = await this._request('POST', '/api/v1/create/order', payload, tenantId);
         const trackingId = response?.tracking || response?.tracking_id;
         if (!trackingId) {
-            throw new Error('ECOTRACK did not return a tracking ID');
+            throw new Error('Courier accepted the request but did not return a tracking ID. Please contact your courier provider.');
         }
         return { trackingId };
     }

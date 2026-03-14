@@ -59,11 +59,12 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || 'Dispatch failed');
+                const trackingId = data.trackingId || data.tracking || data.externalTrackingId;
                 setDispatchItems(prev => prev.map((d, idx) =>
                     idx === i ? {
                         ...d,
                         status: STATUS.SUCCESS,
-                        message: data.tracking ? `${t('dispatch.tracking', 'Tracking')}: ${data.tracking}` : t('dispatch.dispatchedSuccessfully', 'Dispatched successfully')
+                        message: trackingId ? `${t('dispatch.tracking', 'Tracking')}: ${trackingId}` : t('dispatch.dispatchedSuccessfully', 'Dispatched successfully')
                     } : d
                 ));
             } catch (err) {
@@ -190,9 +191,9 @@ export default function BatchDispatchModal({ isOpen, onClose, orders, onComplete
                                 </div>
                                 {item.message && (
                                     <p className={clsx(
-                                        "text-[11px] mt-0.5 font-medium truncate",
+                                        "text-[11px] mt-0.5 font-medium",
+                                        item.status === STATUS.ERROR ? "text-red-600 dark:text-red-400" : "truncate",
                                         item.status === STATUS.SUCCESS && "text-green-600 dark:text-green-400",
-                                        item.status === STATUS.ERROR && "text-red-600 dark:text-red-400",
                                         item.status === STATUS.DISPATCHING && "text-blue-600 dark:text-blue-400"
                                     )}>
                                         {item.message}

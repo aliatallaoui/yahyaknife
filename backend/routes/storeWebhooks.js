@@ -51,7 +51,7 @@ router.post(
 
         try {
             if (!stateToken || !consumer_key || !consumer_secret) {
-                return res.status(400).json({ error: 'Missing required fields' });
+                return res.status(400).json({ message: 'Missing required fields.' });
             }
 
             // Look up pending OAuth data from cache
@@ -59,7 +59,7 @@ router.post(
             const pending = cacheService.get(`wc-oauth:${stateToken}`);
             if (!pending) {
                 logger.warn({ stateToken }, 'WooCommerce OAuth callback: token expired or invalid');
-                return res.status(401).json({ error: 'OAuth session expired. Please try again.' });
+                return res.status(401).json({ message: 'OAuth session expired. Please try again.' });
             }
 
             // Clear the used token
@@ -76,7 +76,7 @@ router.post(
                     deletedAt: null,
                 });
                 if (!channel) {
-                    return res.status(404).json({ error: 'Channel not found' });
+                    return res.status(404).json({ message: 'Channel not found.' });
                 }
 
                 await SalesChannel.updateOne(
@@ -123,7 +123,7 @@ router.post(
 
         } catch (error) {
             logger.error({ err: error, stateToken }, 'WooCommerce OAuth callback error');
-            return res.status(500).json({ error: 'Internal error processing OAuth callback' });
+            return res.status(500).json({ message: 'Failed to process OAuth callback. Please try again.' });
         }
     }
 );
@@ -150,7 +150,7 @@ router.post(
         try {
             // 1. Validate channelId
             if (!mongoose.Types.ObjectId.isValid(channelId)) {
-                return res.status(400).json({ error: 'Invalid channel ID' });
+                return res.status(400).json({ message: 'Invalid channel ID.' });
             }
 
             // 2. Load sales channel
@@ -161,7 +161,7 @@ router.post(
             });
 
             if (!channel) {
-                return res.status(404).json({ error: 'Channel not found' });
+                return res.status(404).json({ message: 'Channel not found.' });
             }
 
             if (channel.status !== 'active' || !channel.integration?.syncEnabled) {
@@ -178,7 +178,7 @@ router.post(
                 const valid = adapter.verifyWebhookSignature(req.rawBody || JSON.stringify(req.body), signature);
                 if (!valid) {
                     logger.warn({ channelId }, 'WooCommerce webhook signature verification failed');
-                    return res.status(401).json({ error: 'Invalid signature' });
+                    return res.status(401).json({ message: 'Invalid webhook signature.' });
                 }
             }
 

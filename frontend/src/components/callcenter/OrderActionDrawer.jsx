@@ -142,7 +142,9 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
             toast.success(data.trackingId ? `Dispatched! Tracking: ${data.trackingId}` : 'Dispatched (tracking pending)', { duration: 4000 });
             onSuccess();
         } catch (err) {
-            setError(err.message || 'Dispatch failed');
+            const msg = err.message || 'Dispatch failed';
+            setError(msg);
+            toast.error(msg, { duration: 6000 });
         } finally {
             setDispatching(false);
         }
@@ -234,7 +236,7 @@ export default function OrderActionDrawer({ order, onClose, onSuccess, orderInde
                         <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg text-sm text-rose-700 dark:text-rose-400">
                             <AlertTriangle className="w-4 h-4 shrink-0" />
                             <span>{error}</span>
-                            <button onClick={() => setError(null)} className="ms-auto text-rose-400 hover:text-rose-600"><X className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setError(null)} className="ms-auto text-rose-400 hover:text-rose-600" aria-label="Dismiss"><X className="w-3.5 h-3.5" /></button>
                         </div>
                     )}
 

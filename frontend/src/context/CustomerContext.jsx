@@ -56,14 +56,14 @@ export const CustomerProvider = ({ children }) => {
         });
         if (!res.ok) throw new Error(t('crm.errorUpdateCustomer', 'Failed to update customer'));
         const updatedCustomer = await res.json();
-        setCustomers(customers.map(c => c._id === id ? updatedCustomer : c));
+        setCustomers(prev => prev.map(c => c._id === id ? updatedCustomer : c));
         return updatedCustomer;
     };
 
     const deleteCustomer = async (id) => {
         const res = await apiFetch(`/api/customers/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error(t('crm.errorDeleteCustomer', 'Failed to delete customer'));
-        setCustomers(customers.filter(c => c._id !== id));
+        setCustomers(prev => prev.filter(c => c._id !== id));
         return true;
     };
 

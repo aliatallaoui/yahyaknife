@@ -19,10 +19,12 @@ exports.getTransactions = async (req, res) => {
         ]);
         const total = expenseCount + revenueCount;
 
-        // Fetch paginated from both, sorted by date desc
+        // Fetch from both collections up to skip+limit, then merge and slice.
+        // This is the standard pattern for paginating across two collections sorted by date.
+        const fetchLimit = Math.min(req.skip + req.limit, 500);
         const [expenses, revenues] = await Promise.all([
-            Expense.find(filter).sort({ date: -1 }).limit(req.skip + req.limit).lean(),
-            Revenue.find(filter).sort({ date: -1 }).limit(req.skip + req.limit).lean()
+            Expense.find(filter).sort({ date: -1 }).limit(fetchLimit).lean(),
+            Revenue.find(filter).sort({ date: -1 }).limit(fetchLimit).lean()
         ]);
 
         const formattedExpenses = expenses.map(e => ({ ...e, type: 'expense' }));

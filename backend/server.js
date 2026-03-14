@@ -131,7 +131,7 @@ app.use(pinoHttp({
 app.use((_req, res, next) => {
     res.setTimeout(30_000, () => {
         if (!res.headersSent) {
-            res.status(408).json({ error: 'Request timeout' });
+            res.status(408).json({ message: 'Request timed out. Please try again.' });
         }
     });
     next();

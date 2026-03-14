@@ -511,10 +511,10 @@ export default function Inventory() {
                                     <div className="flex items-center gap-2">
                                         <div className="hidden group-hover:flex items-center gap-1">
                                             {hasPermission('inventory.adjust') && (
-                                                <button onClick={() => handleEditSupplier(supplier)} className="text-gray-400 hover:text-blue-600 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => handleEditSupplier(supplier)} className="text-gray-400 hover:text-blue-600 transition-colors" aria-label="Edit supplier"><Pencil className="w-3.5 h-3.5" /></button>
                                             )}
                                             {hasPermission('inventory.view') && (
-                                                <button onClick={() => handleDeleteSupplier(supplier._id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => handleDeleteSupplier(supplier._id)} className="text-gray-400 hover:text-red-600 transition-colors" aria-label="Delete supplier"><Trash2 className="w-3.5 h-3.5" /></button>
                                             )}
                                         </div>
                                         <span className={clsx("w-2 h-2 rounded-full", supplier.active ? "bg-green-400" : "bg-gray-300 dark:bg-gray-600")}></span>

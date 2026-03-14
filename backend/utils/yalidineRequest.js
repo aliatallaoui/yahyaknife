@@ -50,10 +50,10 @@ function checkRateLimit(courierId) {
         else break; // sorted ascending, no need to continue
     }
 
-    if (perSec >= 5) throw new Error('Yalidine rate limit: max 5 requests/second. Please wait.');
-    if (perMin >= 50) throw new Error('Yalidine rate limit: max 50 requests/minute. Please wait.');
-    if (perHour >= 1000) throw new Error('Yalidine rate limit: max 1000 requests/hour. Please wait.');
-    if (bucket.length >= 10000) throw new Error('Yalidine rate limit: max 10000 requests/day. Please wait.');
+    if (perSec >= 5) throw new Error('Rate limit exceeded: too many requests per second. Please wait a moment and try again.');
+    if (perMin >= 50) throw new Error('Rate limit exceeded: too many requests per minute. Please wait a moment and try again.');
+    if (perHour >= 1000) throw new Error('Rate limit exceeded: too many requests this hour. Please wait a few minutes and try again.');
+    if (bucket.length >= 10000) throw new Error('Rate limit exceeded: daily request limit reached. Please try again tomorrow.');
 
     bucket.push(now);
 }
@@ -72,7 +72,7 @@ function checkRateLimit(courierId) {
  */
 const yalidineRequest = async (method, endpoint, courier, data = null) => {
     if (!courier.apiId || !courier.apiToken) {
-        throw new Error('Yalidine API ID and Token are not configured for this courier.');
+        throw new Error('Courier API credentials are not configured. Please go to Courier Settings and add your Yalidine API ID and Token.');
     }
 
     // Rate limit per courier account

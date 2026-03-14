@@ -40,7 +40,7 @@ export default function CustomerInsight() {
                 if (!metricsRes.ok) throw new Error('Failed to load metrics');
 
                 const data = await metricsRes.json();
-                setMetrics(Array.isArray(data) ? data : (data.error ? null : data));
+                setMetrics(Array.isArray(data) ? data : (data.message && !data.data ? null : (data.data ?? data)));
             } catch {
                 setMetricsError(t('crm.failedLoadMetrics', 'Failed to load customer metrics.'));
             } finally {

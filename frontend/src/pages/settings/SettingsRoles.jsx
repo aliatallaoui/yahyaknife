@@ -266,7 +266,7 @@ export default function SettingsRoles() {
                         <X className="w-4 h-4 text-red-500 dark:text-red-400" />
                     </div>
                     <p className="text-sm font-medium flex-1">{error}</p>
-                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1" aria-label="Dismiss"><X className="w-4 h-4" /></button>
                 </div>
             )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Globe, Clock, Palette, Monitor, Sun, Moon, CheckCircle2, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../../context/AuthContext';
@@ -23,6 +23,15 @@ export default function SettingsGeneral() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState(null);
+    const feedbackTimerRef = useRef(null);
+    const themeTimerRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+            if (themeTimerRef.current) clearTimeout(themeTimerRef.current);
+        };
+    }, []);
 
     // Sync from global user state on mount/update
     useEffect(() => {
@@ -40,7 +49,8 @@ export default function SettingsGeneral() {
         setTheme(newTheme);
         document.documentElement.classList.add('theme-transitioning');
         applyTheme(newTheme);
-        setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 400);
+        if (themeTimerRef.current) clearTimeout(themeTimerRef.current);
+        themeTimerRef.current = setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 400);
     };
 
     const handleSave = async () => {
@@ -70,11 +80,13 @@ export default function SettingsGeneral() {
                     i18n.changeLanguage(language);
                 }
                 setSaveSuccess(true);
-                setTimeout(() => setSaveSuccess(false), 3000);
+                if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+                feedbackTimerRef.current = setTimeout(() => setSaveSuccess(false), 3000);
             } else {
                 const data = await res.json().catch(() => ({}));
                 setSaveError(data.message || t('saveError', 'Failed to save preferences.'));
-                setTimeout(() => setSaveError(null), 4000);
+                if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+                feedbackTimerRef.current = setTimeout(() => setSaveError(null), 4000);
             }
         } catch {
             setSaveError(t('saveError', 'Failed to save preferences.'));

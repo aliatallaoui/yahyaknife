@@ -235,14 +235,14 @@ export default function CallCenterManager() {
                 <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300 animate-in fade-in">
                     <CheckCircle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{assignSuccess}</span>
-                    <button onClick={() => setAssignSuccess(null)} className="text-emerald-500 hover:text-emerald-700"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setAssignSuccess(null)} className="text-emerald-500 hover:text-emerald-700" aria-label="Dismiss"><X className="w-4 h-4" /></button>
                 </div>
             )}
             {assignError && (
                 <div className="flex items-center gap-3 px-4 py-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-sm text-rose-700 dark:text-rose-300 animate-in fade-in">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{assignError}</span>
-                    <button onClick={() => setAssignError(null)} className="text-rose-400 hover:text-rose-600"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setAssignError(null)} className="text-rose-400 hover:text-rose-600" aria-label="Dismiss"><X className="w-4 h-4" /></button>
                 </div>
             )}
 

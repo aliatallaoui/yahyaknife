@@ -23,7 +23,11 @@ exports.createShipment = async (req, res) => {
 exports.quickDispatch = async (req, res) => {
     try {
         const shipment = await ShipmentService.quickDispatch(req.params.orderId, req.user.tenant);
-        res.status(201).json(shipment);
+        res.status(201).json({
+            shipmentId: shipment._id,
+            trackingId: shipment.externalTrackingId,
+            status: shipment.shipmentStatus,
+        });
     } catch (error) {
         if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
         logger.error({ err: error }, 'quickDispatch error');

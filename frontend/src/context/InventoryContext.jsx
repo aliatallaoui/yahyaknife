@@ -70,12 +70,12 @@ export const InventoryProvider = ({ children }) => {
             )
         });
 
+        const responseData = await response.json();
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || t('inventory.errorCreateProduct', 'Failed to create product'));
+            throw new Error(responseData.message || t('inventory.errorCreateProduct', 'Failed to create product'));
         }
 
-        const newProduct = await response.json();
+        const newProduct = responseData;
         setProducts(prev => [...prev, newProduct]);
         refreshMetrics();
         return newProduct;
@@ -91,12 +91,12 @@ export const InventoryProvider = ({ children }) => {
             )
         });
 
+        const responseData = await response.json();
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || t('inventory.errorUpdateProduct', 'Failed to update product'));
+            throw new Error(responseData.message || t('inventory.errorUpdateProduct', 'Failed to update product'));
         }
 
-        const updatedProduct = await response.json();
+        const updatedProduct = responseData;
         setProducts(prev => prev.map(p => p._id === id ? updatedProduct : p));
         refreshMetrics();
         return updatedProduct;

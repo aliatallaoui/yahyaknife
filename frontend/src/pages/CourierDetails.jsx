@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/apiFetch';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,11 @@ export default function CourierDetails() {
     const [activeTab, setActiveTab] = useState('general');
     const [saveToast, setSaveToast] = useState(null); // { type: 'success'|'error', msg }
     const { dialog, confirm } = useConfirmDialog();
+    const toastTimerRef = useRef(null);
+
+    useEffect(() => {
+        return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+    }, []);
 
     const [courier, setCourier] = useState({
         name: '',
@@ -93,7 +98,8 @@ export default function CourierDetails() {
 
     const showSuccess = () => {
         setSaveToast({ type: 'success', msg: t('common.saved_successfully', 'Saved successfully!') });
-        setTimeout(() => setSaveToast(null), 3000);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => setSaveToast(null), 3000);
     };
 
     const handleDelete = () => {
@@ -268,7 +274,7 @@ export default function CourierDetails() {
                         ? <CheckCircle className="w-4 h-4 shrink-0" />
                         : <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />}
                     <span className="flex-1 leading-snug">{saveToast.msg}</span>
-                    <button onClick={() => setSaveToast(null)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity shrink-0"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setSaveToast(null)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity shrink-0" aria-label="Dismiss"><X className="w-4 h-4" /></button>
                 </div>
             )}
 

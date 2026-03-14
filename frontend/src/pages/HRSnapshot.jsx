@@ -34,6 +34,12 @@ export default function HRSnapshot() {
     const [leaveError, setLeaveError] = useState(null);
     const [fetchError, setFetchError] = useState(null);
     const searchRef = useRef(null);
+    const leaveErrorTimerRef = useRef(null);
+
+    useEffect(() => {
+        return () => { if (leaveErrorTimerRef.current) clearTimeout(leaveErrorTimerRef.current); };
+    }, []);
+
     useHotkey('/', () => { searchRef.current?.focus(); searchRef.current?.select(); }, { preventDefault: true });
     useHotkey('escape', () => { if (document.activeElement === searchRef.current) { setSearchTerm(''); searchRef.current?.blur(); } });
 
@@ -145,7 +151,8 @@ export default function HRSnapshot() {
                 const errMsg = data.message || t('hr.leaveUpdateError', 'Failed to update leave status.');
                 setLeaveError(errMsg);
                 toast.error(errMsg);
-                setTimeout(() => setLeaveError(null), 4000);
+                if (leaveErrorTimerRef.current) clearTimeout(leaveErrorTimerRef.current);
+                leaveErrorTimerRef.current = setTimeout(() => setLeaveError(null), 4000);
             }
         } catch {
             const errMsg = t('hr.leaveUpdateError', 'Failed to update leave status.');

@@ -44,7 +44,7 @@ export default function CopilotWidget() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.reply || data.error || "Request failed");
+                throw new Error(data.reply || data.message || "Request failed");
             }
 
             if (data?.reply) {

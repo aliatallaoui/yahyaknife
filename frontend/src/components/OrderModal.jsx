@@ -153,6 +153,16 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         return () => { cancelled = true; };
     }, [store.courierId, isCourierApiConnected]);
 
+    // Compute available wilayas — filtered by coverage when API courier is selected
+    const availableWilayas = useMemo(() => {
+        const allWilayas = getWilayaList();
+        if (!isCourierApiConnected || courierCoverageCache.length === 0) return allWilayas;
+
+        // Show all wilayas that have any coverage (home or stop desk)
+        const coveredWilayaCodes = new Set(courierCoverageCache.map(c => String(c.wilayaCode)));
+        return allWilayas.filter(w => coveredWilayaCodes.has(String(w.code)));
+    }, [isCourierApiConnected, courierCoverageCache]);
+
     // Filter communes locally from cached coverage data
     useEffect(() => {
         if (!store.shippingWilayaCode) {
@@ -160,15 +170,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             return;
         }
 
-        let allCommunes = getCommunesForWilaya(store.shippingWilayaCode).map(name => ({ name }));
-
-        // Only filter if courier is API-connected and has coverage data
+        // When API-connected courier has coverage data, use coverage communes directly
         if (isCourierApiConnected && courierCoverageCache.length > 0) {
             const wCode = String(store.shippingWilayaCode);
 
-            // Filter coverage entries for this wilaya
+            // Filter coverage entries for this wilaya (exclude null commune catch-all entries)
             let wilayaCoverage = courierCoverageCache.filter(c =>
-                String(c.wilayaCode) === wCode
+                String(c.wilayaCode) === wCode && c.commune
             );
 
             // For Stop Desk: only communes where officeSupported is true
@@ -177,32 +185,45 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             }
 
             if (wilayaCoverage.length > 0) {
-                // Check if there's a catch-all wilaya entry (no specific commune)
-                const hasFullWilayaCoverage = wilayaCoverage.some(c => !c.commune || c.commune.trim() === '');
-
-                if (!hasFullWilayaCoverage) {
-                    const coveredCommunes = new Set(wilayaCoverage.map(c => c.commune.toLowerCase()));
-                    allCommunes = allCommunes.filter(c => coveredCommunes.has(c.name.toLowerCase()));
-                }
+                // Use commune names directly from coverage data (Ecotrack's naming)
+                const communeNames = [...new Set(wilayaCoverage.map(c => c.commune))].sort();
+                setAvailableCommunes(communeNames.map(name => ({ name })));
             } else {
-                // No coverage entries for this wilaya at all
-                if (store.shippingDeliveryType === 1) {
-                    // Stop Desk + no offices = empty
-                    allCommunes = [];
+                // No commune-level entries — check for wilaya-level catch-all entry
+                const catchAll = courierCoverageCache.find(c =>
+                    String(c.wilayaCode) === wCode && !c.commune
+                );
+                if (catchAll && (store.shippingDeliveryType === 0 || catchAll.officeSupported)) {
+                    // Catch-all covers entire wilaya — show all communes from static list
+                    setAvailableCommunes(getCommunesForWilaya(store.shippingWilayaCode).map(name => ({ name })));
+                } else {
+                    setAvailableCommunes([]);
                 }
-                // Home delivery + no coverage = could mean not covered, but show all as fallback
             }
+        } else {
+            // Manual courier → show all communes from static list
+            setAvailableCommunes(getCommunesForWilaya(store.shippingWilayaCode).map(name => ({ name })));
         }
-        // Manual courier → no filtering, show all communes
 
-        setAvailableCommunes(allCommunes);
+    }, [store.shippingWilayaCode, store.shippingDeliveryType, isCourierApiConnected, courierCoverageCache, isOpen]);
 
-        // Reset commune if no longer in filtered list
-        if (store.shippingCommune && !allCommunes.find(c => c.name === store.shippingCommune)) {
+    // Reset commune when it's no longer in the filtered list
+    useEffect(() => {
+        if (store.shippingCommune && availableCommunes.length > 0 && !availableCommunes.find(c => c.name === store.shippingCommune)) {
             store.updateField('shippingCommune', '');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [store.shippingWilayaCode, store.shippingDeliveryType, isCourierApiConnected, courierCoverageCache, isOpen]);
+    }, [availableCommunes]);
+
+    // Reset wilaya when courier changes and selected wilaya is no longer covered
+    useEffect(() => {
+        if (store.shippingWilayaCode && availableWilayas.length > 0 && !availableWilayas.find(w => String(w.code) === String(store.shippingWilayaCode))) {
+            store.updateField('shippingWilayaCode', '');
+            store.updateField('shippingWilayaName', '');
+            store.updateField('shippingCommune', '');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [availableWilayas]);
 
     // 3. Auto Pricing Calculation — fires when commune/courier/deliveryType changes
     const [priceError, setPriceError] = useState('');
@@ -409,10 +430,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         </div>
                                         {/* Wilaya */}
                                         <div>
-                                            <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
+                                            <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between uppercase tracking-wide">
+                                                <span>{t('orderModal.wilaya')} *</span>
+                                                {isCourierApiConnected && courierCoverageCache.length > 0 && <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium normal-case bg-blue-50 dark:bg-blue-900/40 px-1.5 rounded">{availableWilayas.length}</span>}
+                                            </label>
                                             <select id="order-wilaya" required className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = getWilayaByCode(wCode); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
                                                 <option value="" disabled>{t('orderModal.selectWilaya')}</option>
-                                                {getWilayaList().map(w => (
+                                                {availableWilayas.map(w => (
                                                     <option key={w.code} value={w.code}>{String(w.code).padStart(2, '0')} - {w.name}</option>
                                                 ))}
                                             </select>

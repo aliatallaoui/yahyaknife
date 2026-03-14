@@ -174,7 +174,7 @@ export default function SupportDesk() {
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{fetchError}</span>
                     <button onClick={() => { setFetchError(null); fetchTickets(); }} className="text-red-600 underline hover:no-underline text-xs font-bold">{t('common.retry', 'Retry')}</button>
-                    <button onClick={() => setFetchError(null)} className="ml-2 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setFetchError(null)} className="ml-2 text-red-400 hover:text-red-600" aria-label="Dismiss"><X className="w-4 h-4" /></button>
                 </div>
             )}
 

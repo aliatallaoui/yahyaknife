@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { KeyRound, ArrowLeft, Loader2, CheckCircle, Eye, EyeOff, Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,11 @@ export default function ResetPassword() {
     const [showConfirm, setShowConfirm] = useState(false);
     const { t, i18n } = useTranslation('translation', { keyPrefix: 'auth' });
     const isAr = i18n.language === 'ar';
+    const navTimerRef = useRef(null);
+
+    useEffect(() => {
+        return () => { if (navTimerRef.current) clearTimeout(navTimerRef.current); };
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -44,7 +49,7 @@ export default function ResetPassword() {
             if (!res.ok) throw new Error(data.message || 'Password reset failed. Please try again.');
 
             setSuccess(true);
-            setTimeout(() => navigate('/login'), 3000);
+            navTimerRef.current = setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
             setError(err.message);
         } finally {

@@ -79,14 +79,14 @@ export default function EcommerceAnalytics({ hideTitle = false }) {
             if (res.ok) {
                 const json = await res.json();
                 setTrendData((json.data?.rollups ?? []).map(d => ({
-                    date: d.date.slice(5),
-                    revenue: d.revenue.gross,
-                    profit: d.revenue.netProfit,
-                    orders: d.orders.created,
-                    delivered: d.orders.delivered,
-                    returned: d.orders.returned,
-                    present: d.hr.present,
-                    absent: d.hr.absent,
+                    date: (d.date ?? '').slice(5),
+                    revenue: d.revenue?.gross ?? 0,
+                    profit: d.revenue?.netProfit ?? 0,
+                    orders: d.orders?.created ?? 0,
+                    delivered: d.orders?.delivered ?? 0,
+                    returned: d.orders?.returned ?? 0,
+                    present: d.hr?.present ?? 0,
+                    absent: d.hr?.absent ?? 0,
                 })));
             }
         } catch {

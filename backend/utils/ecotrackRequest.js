@@ -38,13 +38,13 @@ const checkRateLimits = async (settings) => {
     const currentDay = resetFields['currentUsage.dayCount'] !== undefined ? 0 : (usage.dayCount || 0);
 
     if (currentMinute >= (limits.requestsPerMinute || 50)) {
-        throw new Error('ECOTRACK Rate Limit Exceeded: Max 50 requests per minute.');
+        throw new Error('Rate limit exceeded: too many requests per minute. Please wait a moment and try again.');
     }
     if (currentHour >= (limits.requestsPerHour || 1500)) {
-        throw new Error('ECOTRACK Rate Limit Exceeded: Max 1500 requests per hour.');
+        throw new Error('Rate limit exceeded: too many requests this hour. Please wait a few minutes and try again.');
     }
     if (currentDay >= (limits.requestsPerDay || 15000)) {
-        throw new Error('ECOTRACK Rate Limit Exceeded: Max 15000 requests per day.');
+        throw new Error('Rate limit exceeded: daily request limit reached. Please try again tomorrow.');
     }
 
     // Atomic increment + reset in a single operation (no race condition)
@@ -78,12 +78,12 @@ const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) =
     const settings = await CourierSetting.findOne(query);
 
     if (!settings || !settings.apiToken) {
-        throw new Error('ECOTRACK is not configured. Please add an API token in Settings.');
+        throw new Error('Courier API is not configured. Please go to Settings and add your courier API token.');
     }
 
     if (settings.connectionStatus !== 'Valid' && !endpoint.includes('/validate/token') && !endpoint.includes('/get/wilayas') && !endpoint.includes('/get/fees')) {
         // Allow validation/ping endpoints to bypass connection check
-        throw new Error(`ECOTRACK connection is currently ${settings.connectionStatus}. Check your token.`);
+        throw new Error(`Courier connection status is "${settings.connectionStatus}". Please verify your API token in Settings and test the connection.`);
     }
 
     // Enforce rate limiting

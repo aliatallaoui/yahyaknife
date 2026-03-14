@@ -583,8 +583,8 @@ export default function SalesChannelDetail() {
                                 className="text-xs bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-600 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 w-36 font-mono dark:text-white"
                                 dir="ltr"
                               />
-                              <button onClick={() => handleSaveSlug(page._id)} className="p-0.5 text-emerald-500 hover:text-emerald-700"><Check className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => setEditingSlug(null)} className="p-0.5 text-gray-400 hover:text-gray-600"><X className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleSaveSlug(page._id)} className="p-0.5 text-emerald-500 hover:text-emerald-700" aria-label="Save slug"><Check className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setEditingSlug(null)} className="p-0.5 text-gray-400 hover:text-gray-600" aria-label="Cancel"><X className="w-3.5 h-3.5" /></button>
                             </span>
                           ) : (
                             <button

@@ -11,6 +11,7 @@
 const Shipment = require('../../models/Shipment');
 const Order = require('../../models/Order');
 const Courier = require('../../models/Courier');
+const CourierCoverage = require('../../models/CourierCoverage');
 const { getAdapter, getProviderName } = require('../../integrations/couriers/adapterFactory');
 const AppError = require('../../shared/errors/AppError');
 const logger = require('../../shared/logger');
@@ -28,6 +29,30 @@ async function resolveOrder(orderId, tenantId) {
     return doc;
 }
 
+/** Extract a user-friendly error message from a courier API error */
+function extractCourierError(err) {
+    const apiData = err.response?.data;
+    if (apiData?.errors && typeof apiData.errors === 'object') {
+        const fieldMap = {
+            commune: 'Commune', code_wilaya: 'Wilaya code', telephone: 'Phone number',
+            nom_client: 'Customer name', adresse: 'Address', montant: 'COD amount',
+            produit: 'Product name', quantite: 'Quantity',
+            to_commune_name: 'Commune', to_wilaya_name: 'Wilaya', contact_phone: 'Phone number',
+            firstname: 'First name', familyname: 'Last name', price: 'COD amount'
+        };
+        const details = Object.entries(apiData.errors)
+            .map(([field, msgs]) => `${fieldMap[field] || field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join(' | ');
+        return `${apiData.message || 'Courier rejected the order'} — ${details}`;
+    }
+    if (apiData?.message) return apiData.message;
+    if (err.message?.includes('circuit breaker')) return 'Courier service is temporarily unavailable. Please try again in a few minutes.';
+    if (err.message?.includes('Rate limit')) return err.message;
+    if (err.message?.includes('ECONNREFUSED') || err.message?.includes('ETIMEDOUT') || err.message?.includes('timeout'))
+        return 'Could not reach the courier service. Please check your internet connection and try again.';
+    return err.message || 'Courier integration error. Please check courier settings and try again.';
+}
+
 /**
  * Resolve the courier for an order and return the appropriate adapter.
  * Falls back to Ecotrack global adapter if no courier is assigned.
@@ -40,7 +65,43 @@ async function resolveAdapter(order, tenantId) {
     }
     const adapter = getAdapter(courier);
     const providerName = getProviderName(courier);
-    return { adapter, courier, providerName };
+    return { adapter, courier, courierId, providerName };
+}
+
+/**
+ * Check if the courier covers the given wilaya/commune using the synced
+ * CourierCoverage collection. Throws a clear AppError if not covered.
+ * Silently passes if no coverage data exists (courier may not have synced yet).
+ */
+async function checkCoverage(courierId, tenantId, { wilayaCode, commune, wilayaName, deliveryType }) {
+    if (!courierId) return; // Ecotrack global — no local coverage data
+
+    // Check if this courier has ANY coverage records (i.e. they synced)
+    const hasCoverage = await CourierCoverage.exists({ courierId, tenant: tenantId });
+    if (!hasCoverage) return; // No synced data — skip local check, let courier API decide
+
+    // Check if the specific wilaya + commune is covered
+    const coverage = await CourierCoverage.findOne({
+        courierId, tenant: tenantId, wilayaCode: String(wilayaCode), commune
+    }).lean();
+
+    if (!coverage) {
+        const location = commune && wilayaName ? `${commune}, ${wilayaName}` : wilayaName || `wilaya ${wilayaCode}`;
+        throw new AppError(
+            `Courier does not cover ${location}. Please choose a different courier or update the delivery address.`,
+            400,
+            'AREA_NOT_COVERED'
+        );
+    }
+
+    // Check delivery type support (0 = home, 1 = stop desk)
+    if (deliveryType === 1 && !coverage.officeSupported) {
+        throw new AppError(
+            `Stop desk delivery is not available in ${commune}. Please switch to home delivery or choose a different commune.`,
+            400,
+            'STOP_DESK_NOT_AVAILABLE'
+        );
+    }
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────
@@ -80,7 +141,7 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
         trackingId = result.trackingId;
     } catch (err) {
         logger.error({ err, provider: providerName }, 'Failed to dispatch to external courier API');
-        courierError = err.message || 'Unknown API Error';
+        courierError = extractCourierError(err);
     }
 
     if (trackingId) {
@@ -122,16 +183,40 @@ exports.quickDispatch = async (orderId, tenantId) => {
     const order = await Order.findOne({ _id: orderId, tenant: tenantId, deletedAt: null }).populate('customer', 'name phone').lean();
     if (!order) throw AppError.notFound('Order');
 
-    if (!order.shipping?.phone1 || !order.shipping?.wilayaName || !order.shipping?.commune) {
-        throw new AppError('Order is missing shipping details (phone, wilaya, commune). Please edit the order first.', 400, 'MISSING_SHIPPING_DETAILS');
+    // Validate each required field individually for clear user feedback
+    const missing = [];
+    if (!order.shipping?.phone1) missing.push('phone number');
+    if (!order.shipping?.wilayaName) missing.push('wilaya');
+    if (!order.shipping?.commune) missing.push('commune');
+    if (!order.shipping?.address) missing.push('delivery address');
+    if (!order.customer?.name && !order.shipping?.recipientName) missing.push('customer name');
+
+    if (missing.length > 0) {
+        throw new AppError(
+            `Cannot dispatch: missing ${missing.join(', ')}. Please edit the order and fill in the required shipping details.`,
+            400,
+            'MISSING_SHIPPING_DETAILS'
+        );
     }
 
     if (order.status === 'Dispatched') {
-        throw new AppError('Order has already been dispatched.', 400, 'ALREADY_DISPATCHED');
+        throw new AppError('This order has already been dispatched to a courier.', 400, 'ALREADY_DISPATCHED');
+    }
+
+    if (order.totalAmount == null || order.totalAmount < 0) {
+        throw new AppError('Order total amount is invalid. Please verify the order products and pricing.', 400, 'INVALID_AMOUNT');
     }
 
     // Resolve courier adapter
-    const { adapter, providerName } = await resolveAdapter(order, tenantId);
+    const { adapter, courierId, providerName } = await resolveAdapter(order, tenantId);
+
+    // Check coverage before hitting the courier API — instant clear feedback
+    await checkCoverage(courierId, tenantId, {
+        wilayaCode: order.shipping.wilayaCode,
+        commune: order.shipping.commune,
+        wilayaName: order.shipping.wilayaName,
+        deliveryType: order.shipping.deliveryType || 0
+    });
 
     const newShipment = new Shipment({
         tenant: tenantId,
@@ -166,38 +251,35 @@ exports.quickDispatch = async (orderId, tenantId) => {
         trackingId = result.trackingId;
     } catch (err) {
         logger.error({ err, provider: providerName }, 'Failed to quick-dispatch to external courier API');
-        courierError = err.message || 'Unknown API Error';
+        courierError = extractCourierError(err);
     }
 
     if (trackingId) {
+        // SUCCESS — courier accepted the order
         newShipment.externalTrackingId = trackingId;
         newShipment.courierStatus = 'Created';
         newShipment.shipmentStatus = 'Created in Courier';
-    } else {
-        newShipment.shipmentStatus = 'Dispatch Failed';
-        newShipment.activityHistory.push({ status: 'Dispatch Failed', remarks: `Courier Integration Error: ${courierError}` });
+
+        const savedShipment = await newShipment.save();
+
+        // Move order to Dispatched
+        await OrderService.updateOrder({
+            orderId: orderId.toString(),
+            tenantId,
+            updateData: {
+                status: 'Dispatched',
+                trackingInfo: { carrier: providerName, trackingNumber: trackingId },
+            },
+            bypassStateMachine: true
+        });
+
+        return savedShipment;
     }
 
-    const savedShipment = await newShipment.save();
-
-    // Sync order status through service to trigger inventory + audit trail
-    const trackingInfo = trackingId
-        ? { carrier: providerName, trackingNumber: trackingId }
-        : { carrier: providerName, error: courierError };
-
-    // Only update order status to 'Dispatched' on success.
-    // On failure, leave order at its current status — 'Dispatch Failed' is not a valid order status.
-    const updateData = { trackingInfo };
-    if (trackingId) updateData.status = 'Dispatched';
-
-    await OrderService.updateOrder({
-        orderId: orderId.toString(),
-        tenantId,
-        updateData,
-        bypassStateMachine: true
-    });
-
-    return savedShipment;
+    // FAILURE — courier rejected the order
+    // Do NOT create a shipment record, do NOT change order status.
+    // Throw a clear error so the caller (controller) can report it.
+    throw new AppError(courierError, 422, 'COURIER_REJECTED');
 };
 
 // ─── Validate ─────────────────────────────────────────────────────────────────

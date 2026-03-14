@@ -57,7 +57,7 @@ export default function Onboarding() {
             toast.success(t('toastSuccess'));
             navigate('/orders-hub', { replace: true });
         } catch (err) {
-            toast.error(err.message);
+            toast.error(err.message || 'Failed to complete onboarding. Please try again.');
         } finally {
             setSaving(false);
         }

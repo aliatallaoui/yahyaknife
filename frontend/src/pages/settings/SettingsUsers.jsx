@@ -204,7 +204,7 @@ export default function SettingsUsers() {
                 <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{pageError}</span>
-                    <button onClick={() => setPageError('')} className="text-red-400 hover:text-red-700 dark:hover:text-red-300"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setPageError('')} className="text-red-400 hover:text-red-700 dark:hover:text-red-300" aria-label="Dismiss"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
@@ -473,7 +473,7 @@ export default function SettingsUsers() {
                             <div className="mx-6 mb-3 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
                                 <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                                 <span className="flex-1">{modalError}</span>
-                                <button onClick={() => setModalError('')} className="text-red-400 hover:text-red-700 dark:hover:text-red-300"><X className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setModalError('')} className="text-red-400 hover:text-red-700 dark:hover:text-red-300" aria-label="Dismiss"><X className="w-3.5 h-3.5" /></button>
                             </div>
                         )}
 

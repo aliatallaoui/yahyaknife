@@ -18,13 +18,17 @@ export default function RTOArrivalScanner() {
     const [lastProcessed, setLastProcessed] = useState(null);
     const [error, setError] = useState('');
     const inputRef = useRef(null);
+    const focusTimerRef = useRef(null);
 
     // Auto-focus the hidden/main input field for barcode scanners
     useEffect(() => {
         const timeout = setTimeout(() => {
             inputRef.current?.focus();
         }, 100);
-        return () => clearTimeout(timeout);
+        return () => {
+            clearTimeout(timeout);
+            if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+        };
     }, []);
 
     // Keep focus even if clicking around
@@ -66,7 +70,7 @@ export default function RTOArrivalScanner() {
         } finally {
             setScanInput('');
             setLoading(false);
-            setTimeout(() => inputRef.current?.focus(), 100);
+            focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 100);
         }
     };
 

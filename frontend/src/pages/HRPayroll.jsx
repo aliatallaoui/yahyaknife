@@ -83,7 +83,7 @@ export default function HRPayroll() {
                 fetchPayroll(period);
             } else {
                 const data = await res.json();
-                setErrorMsg(data.error || t('hr.alertFailedApprove', 'Approval failed'));
+                setErrorMsg(data.message || t('hr.alertFailedApprove', 'Approval failed'));
             }
         } catch {
             setErrorMsg(t('hr.alertFailedApprove', 'Approval failed'));
@@ -124,7 +124,7 @@ export default function HRPayroll() {
                 setPaymentAmount('');
             } else {
                 const data = await res.json();
-                setErrorMsg(data.error || t('hr.alertFailedPayment'));
+                setErrorMsg(data.message || t('hr.alertFailedPayment'));
             }
         } catch {
             setErrorMsg(t('hr.alertFailedPayment'));

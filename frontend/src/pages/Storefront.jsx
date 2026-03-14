@@ -350,7 +350,7 @@ export default function Storefront({ previewData: externalPreviewData } = {}) {
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {channel?.branding?.logo ? (
-                  <img src={channel.branding.logo} alt="" className="h-10" />
+                  <img src={channel.branding.logo} alt="Store logo" className="h-10" />
                 ) : (
                   <div className="w-10 h-10 rounded-full border-2 border-[#c9a84c] flex items-center justify-center">
                     <span className="text-[#c9a84c] font-bold text-lg">{(channel?.name || 'S')[0]}</span>
@@ -629,7 +629,7 @@ function StorefrontBlock({
                           'w-20 h-20 rounded-lg overflow-hidden shrink-0 transition-all artisan-frame',
                           i === galleryIndex ? 'ring-2 ring-[#c9a84c] scale-105' : 'opacity-60 hover:opacity-100'
                         )}>
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <img src={img} alt={`Gallery image ${i + 1}`} className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -657,7 +657,7 @@ function StorefrontBlock({
                       className={clsx('w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-colors',
                         i === galleryIndex ? 'border-blue-500' : 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                       )}>
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img src={img} alt={`Gallery image ${i + 1}`} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -1068,7 +1068,7 @@ function StorefrontBlock({
                   {/* Circular gold-framed icon */}
                   <div className="artisan-circle-frame w-24 h-24 flex items-center justify-center">
                     {s.backgroundImage ? (
-                      <img src={safeMediaUrl(s.backgroundImage)} alt="" className="w-full h-full object-cover" />
+                      <img src={safeMediaUrl(s.backgroundImage)} alt="" role="presentation" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full rounded-full flex items-center justify-center bg-[#1a1208]">
                         <Check className="w-8 h-8" style={{ color: primaryColor }} />
@@ -1253,7 +1253,7 @@ function StorefrontBlock({
           <div className="px-4 md:px-8 py-6 max-w-xl mx-auto">
             <div className="flex items-center gap-4 p-5 rounded-xl border border-[#c9a84c]/30 bg-[#2a1f0e]/60">
               {s.badgeImage ? (
-                <img src={safeMediaUrl(s.badgeImage)} alt="" className="w-14 h-14 object-contain shrink-0" />
+                <img src={safeMediaUrl(s.badgeImage)} alt="Trust badge" className="w-14 h-14 object-contain shrink-0" />
               ) : (
                 <Shield className="w-12 h-12 shrink-0" style={{ color: primaryColor }} />
               )}
