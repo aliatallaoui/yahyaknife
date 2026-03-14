@@ -56,9 +56,13 @@ const checkRateLimits = async (settings) => {
  * @param {string} method - 'GET', 'POST', 'PUT', 'DELETE'
  * @param {string} endpoint - e.g., '/api/v1/create/order'
  * @param {object} data - Payload body
+ * @param {string|ObjectId} tenantId - Tenant context for credential isolation
  */
-const ecotrackRequest = async (method, endpoint, data = null) => {
-    const settings = await CourierSetting.findOne({ providerName: 'ECOTRACK' });
+const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) => {
+    const query = { providerName: 'ECOTRACK' };
+    if (tenantId) query.tenant = tenantId;
+
+    const settings = await CourierSetting.findOne(query);
 
     if (!settings || !settings.apiToken) {
         throw new Error('ECOTRACK is not configured. Please add an API token in Settings.');

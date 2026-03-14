@@ -671,7 +671,8 @@ export default function Financial() {
                                                         hasPermission('finance.edit') && 'cursor-pointer hover:opacity-75',
                                                         tx.type === 'revenue' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                                     )}
-                                                    title={hasPermission('finance.edit') ? "Click to change" : ""}
+                                                    title={hasPermission('finance.edit') ? t('finance.clickToChange', 'Click to change') : ""}
+                                                    {...(hasPermission('finance.edit') && { role: 'button', tabIndex: 0, onKeyDown: e => e.key === 'Enter' && startEdit(tx, 'type') })}
                                                 >
                                                     {tx.type === 'revenue' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                                                     {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
@@ -694,7 +695,8 @@ export default function Financial() {
                                                 <span
                                                     onClick={() => hasPermission('finance.edit') && startEdit(tx, 'category')}
                                                     className={clsx("font-semibold text-gray-700 dark:text-gray-200 block", hasPermission('finance.edit') && "cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline underline-offset-2")}
-                                                    title={hasPermission('finance.edit') ? "Click to edit" : ""}
+                                                    title={hasPermission('finance.edit') ? t('finance.clickToEdit', 'Click to edit') : ""}
+                                                    {...(hasPermission('finance.edit') && { role: 'button', tabIndex: 0, onKeyDown: e => e.key === 'Enter' && startEdit(tx, 'category') })}
                                                 >{tx.category || <span className="text-gray-300 dark:text-gray-600">—</span>}</span>
                                             )}
                                         </td>
@@ -714,7 +716,8 @@ export default function Financial() {
                                                 <span
                                                     onClick={() => hasPermission('finance.edit') && startEdit(tx, 'description')}
                                                     className={clsx("text-gray-500 dark:text-gray-400 block truncate max-w-[220px]", hasPermission('finance.edit') && "cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline underline-offset-2")}
-                                                    title={hasPermission('finance.edit') ? "Click to edit" : ""}
+                                                    title={hasPermission('finance.edit') ? t('finance.clickToEdit', 'Click to edit') : ""}
+                                                    {...(hasPermission('finance.edit') && { role: 'button', tabIndex: 0, onKeyDown: e => e.key === 'Enter' && startEdit(tx, 'description') })}
                                                 >{tx.description || <span className="text-gray-300 dark:text-gray-600 italic">Add description…</span>}</span>
                                             )}
                                         </td>
@@ -739,7 +742,8 @@ export default function Financial() {
                                                         hasPermission('finance.edit') && 'cursor-pointer hover:underline underline-offset-2',
                                                         tx.type === 'revenue' ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-white'
                                                     )}
-                                                    title={hasPermission('finance.edit') ? "Click to edit" : ""}
+                                                    title={hasPermission('finance.edit') ? t('finance.clickToEdit', 'Click to edit') : ""}
+                                                    {...(hasPermission('finance.edit') && { role: 'button', tabIndex: 0, onKeyDown: e => e.key === 'Enter' && startEdit(tx, 'amount') })}
                                                 >
                                                     {tx.type === 'revenue' ? '+' : '-'}{Number(tx.amount).toLocaleString()} DZ
                                                 </span>

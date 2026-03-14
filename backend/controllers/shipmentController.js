@@ -31,6 +31,47 @@ exports.quickDispatch = async (req, res) => {
     }
 };
 
+// ─── BULK DISPATCH ───────────────────────────────────────────────────────────
+
+exports.bulkQuickDispatch = async (req, res) => {
+    const { orderIds } = req.body;
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: 'orderIds array is required' });
+    }
+    if (orderIds.length > 50) {
+        return res.status(400).json({ message: 'Maximum 50 orders per bulk dispatch' });
+    }
+    if (!orderIds.every(id => validId(id))) {
+        return res.status(400).json({ message: 'One or more invalid order IDs' });
+    }
+
+    const tenantId = req.user.tenant;
+    const results = { dispatched: [], failed: [] };
+
+    // Process sequentially to respect courier rate limits
+    for (const orderId of orderIds) {
+        try {
+            const shipment = await ShipmentService.quickDispatch(orderId, tenantId);
+            results.dispatched.push({
+                orderId,
+                trackingId: shipment.externalTrackingId,
+                shipmentStatus: shipment.shipmentStatus,
+            });
+        } catch (err) {
+            results.failed.push({
+                orderId,
+                error: err.isOperational ? err.message : 'Courier Integration Error',
+            });
+        }
+    }
+
+    const status = results.dispatched.length > 0 ? 200 : 422;
+    res.status(status).json({
+        message: `${results.dispatched.length} dispatched, ${results.failed.length} failed`,
+        ...results,
+    });
+};
+
 // ─── READ ─────────────────────────────────────────────────────────────────────
 
 exports.getAllShipments = async (req, res) => {

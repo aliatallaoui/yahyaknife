@@ -4,7 +4,8 @@
  * This script:
  * 1. Drops the old unique index on PurchaseOrder.poNumber (now compound with tenant)
  * 2. Drops the old unique index on Warehouse.code (now compound with tenant)
- * 3. Backfills tenant field on existing documents from the first active tenant
+ * 3. Drops the old unique index on CourierSetting.providerName (now compound with tenant)
+ * 4. Backfills tenant field on existing documents from the first active tenant
  *
  * Usage: node scripts/migrate_tenant_scope_models.js
  *
@@ -49,6 +50,19 @@ async function migrate() {
         console.log('- Warehouse index drop skipped:', e.message);
     }
 
+    try {
+        const csIndexes = await db.collection('couriersettings').indexes();
+        const csUniqueIdx = csIndexes.find(i => i.key?.providerName && i.unique);
+        if (csUniqueIdx) {
+            await db.collection('couriersettings').dropIndex(csUniqueIdx.name);
+            console.log('✓ Dropped old unique index on CourierSetting.providerName');
+        } else {
+            console.log('- No old unique providerName index found (already migrated or never existed)');
+        }
+    } catch (e) {
+        console.log('- CourierSetting index drop skipped:', e.message);
+    }
+
     // 2. Backfill tenant on documents that don't have one
     const Tenant = require('../models/Tenant');
     const firstTenant = await Tenant.findOne({ isActive: true }).select('_id').lean();
@@ -59,7 +73,7 @@ async function migrate() {
         const tenantId = firstTenant._id;
         console.log(`Using tenant ${tenantId} for backfill`);
 
-        for (const collName of ['suppliers', 'purchaseorders', 'warehouses', 'reorderalerts']) {
+        for (const collName of ['suppliers', 'purchaseorders', 'warehouses', 'reorderalerts', 'couriersettings']) {
             const result = await db.collection(collName).updateMany(
                 { tenant: { $exists: false } },
                 { $set: { tenant: tenantId } }

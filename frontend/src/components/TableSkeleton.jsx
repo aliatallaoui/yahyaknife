@@ -31,7 +31,7 @@ export default function TableSkeleton({ rows = 8, cols = 5, showHeader = true, s
                         <tr>
                             {Array.from({ length: cols }).map((_, i) => (
                                 <th key={i}>
-                                    <div className="h-3 w-16 bg-gray-200 rounded" />
+                                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
                                 </th>
                             ))}
                         </tr>
@@ -41,7 +41,7 @@ export default function TableSkeleton({ rows = 8, cols = 5, showHeader = true, s
                             <tr key={r}>
                                 {Array.from({ length: cols }).map((_, c) => (
                                     <td key={c}>
-                                        <div className={`h-4 bg-gray-${c === 0 ? '200' : '100'} rounded`}
+                                        <div className={`h-4 rounded ${c === 0 ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
                                             style={{ width: `${50 + Math.random() * 40}%` }} />
                                     </td>
                                 ))}

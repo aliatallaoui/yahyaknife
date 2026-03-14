@@ -97,12 +97,12 @@ exports.getFinancialOverview = async (req, res) => {
         const courierSettlements = courierList.map(c => ({
             _id:              c._id,
             name:             c.name,
-            pendingRemittance: c.pendingRemittance || 0,
-            cashCollected:    c.cashCollected || 0,
+            pendingRemittance: c.pendingRemittance ?? 0,
+            cashCollected:    c.cashCollected ?? 0,
             reliabilityScore: c.reliabilityScore || null,
         })).filter(c => c.pendingRemittance > 0 || c.cashCollected > 0);
 
-        const totalPendingSettlements = courierList.reduce((s, c) => s + (c.pendingRemittance || 0), 0);
+        const totalPendingSettlements = courierList.reduce((s, c) => s + (c.pendingRemittance ?? 0), 0);
 
         res.json(ok({
             pipeline: {

@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const courierSettingSchema = new mongoose.Schema({
+    tenant: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     providerName: {
         type: String,
         default: 'ECOTRACK',
-        required: true,
-        unique: true
+        required: true
     },
     apiUrl: {
         type: String,
@@ -36,5 +36,8 @@ const courierSettingSchema = new mongoose.Schema({
         lastRequestAt: { type: Date }
     }
 }, { timestamps: true });
+
+// One setting per provider per tenant
+courierSettingSchema.index({ tenant: 1, providerName: 1 }, { unique: true });
 
 module.exports = mongoose.model('CourierSetting', courierSettingSchema);

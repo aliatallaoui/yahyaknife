@@ -683,6 +683,49 @@ export default function OrderControlCenter() {
         handleStatusChange(orderId, 'Dispatched');
     }, [handleStatusChange]);
 
+    const handleBulkDispatch = useCallback(() => {
+        if (selectedIds.size === 0) return;
+        const idsSnapshot = Array.from(selectedIds);
+        showConfirm({
+            title: t('ordersControl.bulk.dispatchTitle', 'Bulk Dispatch'),
+            body: t('ordersControl.bulk.dispatchConfirm', { count: idsSnapshot.length }),
+            confirmLabel: t('ordersControl.bulk.dispatchConfirmBtn', 'Dispatch All'),
+            onConfirm: async () => {
+                try {
+                    setLoading(true);
+                    const res = await apiFetch('/api/shipments/bulk-dispatch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderIds: idsSnapshot }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok && !data.dispatched?.length) {
+                        throw new Error(data.message || 'Bulk dispatch failed');
+                    }
+
+                    const d = data.dispatched?.length || 0;
+                    const f = data.failed?.length || 0;
+                    if (d > 0 && f === 0) {
+                        toast.success(t('ordersControl.bulk.dispatchSuccess', { count: d }));
+                    } else if (d > 0 && f > 0) {
+                        toast(t('ordersControl.bulk.dispatchPartial', { dispatched: d, failed: f }), { icon: '⚠️' });
+                    } else {
+                        toast.error(t('ordersControl.bulk.dispatchAllFailed', { count: f }));
+                    }
+
+                    setSelectedIds(new Set());
+                    setBulkActionType(null);
+                    setBulkActionValue('');
+                    fetchOrders();
+                } catch (err) {
+                    showError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            },
+        });
+    }, [selectedIds, fetchOrders, showConfirm, t]);
+
     const handleSingleDelete = useCallback(async (orderId) => {
         try {
             const res = await apiFetch(`/api/sales/orders/bulk/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds: [orderId] }) });
@@ -1607,6 +1650,11 @@ export default function OrderControlCenter() {
                                             <button onClick={() => setBulkActionType('agent')} className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.assignCsr')}</button>
                                             <button onClick={() => setBulkActionType('status')} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.changeStatus')}</button>
                                             <button onClick={() => setBulkActionType('courier')} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.sendToCourier')}</button>
+                                            {hasPermission('shipments.create') && (
+                                                <button onClick={handleBulkDispatch} className="px-4 py-1.5 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5">
+                                                    <Truck className="w-3.5 h-3.5" /> {t('ordersControl.bulk.dispatch', 'Dispatch')}
+                                                </button>
+                                            )}
                                         </>
                                     )
                                 )}

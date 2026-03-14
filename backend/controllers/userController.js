@@ -238,7 +238,7 @@ const updateMyPreferences = async (req, res) => {
     try {
         const { language, timezone, dateFormat, currency, theme } = req.body;
 
-        const user = await User.findById(req.user._id);
+        const user = await User.findOne({ _id: req.user._id, tenant: req.user.tenant });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -275,7 +275,7 @@ const updateMyProfile = async (req, res) => {
     try {
         const { name, phone, jobTitle } = req.body;
 
-        const user = await User.findById(req.user._id);
+        const user = await User.findOne({ _id: req.user._id, tenant: req.user.tenant });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (name !== undefined) {
@@ -315,7 +315,7 @@ const changePassword = async (req, res) => {
             return res.status(400).json({ message: 'New password must be at least 12 characters' });
         }
 
-        const user = await User.findById(req.user._id).select('+password');
+        const user = await User.findOne({ _id: req.user._id, tenant: req.user.tenant }).select('+password');
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const isMatch = await user.matchPassword(currentPassword);

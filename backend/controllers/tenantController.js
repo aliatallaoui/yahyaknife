@@ -179,7 +179,7 @@ exports.inviteUser = async (req, res) => {
 
         // Validate role if provided
         if (roleId) {
-            const role = await Role.findById(roleId).lean();
+            const role = await Role.findOne({ _id: roleId, $or: [{ tenant: tenantId }, { isSystemRole: true }] }).lean();
             if (!role) return res.status(400).json({ message: 'Invalid role' });
         }
 
@@ -333,7 +333,7 @@ exports.acceptInvite = async (req, res) => {
             metadata: { email, roleId, existingUser: !!existingUser }
         });
 
-        const populatedRole = roleId ? await Role.findById(roleId).lean() : null;
+        const populatedRole = roleId ? await Role.findOne({ _id: roleId, $or: [{ tenant: tenantId }, { isSystemRole: true }] }).lean() : null;
 
         res.status(201).json({
             _id: user._id,

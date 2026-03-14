@@ -245,7 +245,6 @@ const runWeeklyReport = async () => {
  * If targetMonth is provided (e.g., '2026-02'), it generates for that specific month.
  */
 const MonthlyReport = require('../models/MonthlyReport');
-const Order = require('../models/Order');
 
 const runMonthlyReport = async (targetMonth) => {
     const monthStr = targetMonth || moment().subtract(1, 'month').format('YYYY-MM');

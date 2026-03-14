@@ -61,58 +61,70 @@ async function syncEcotrackShipments(ecotrackShipments) {
     let updatedCount = 0;
     const BULK_SIZE = 100; // Ecotrack supports up to 100 trackings per bulk call
 
-    for (let i = 0; i < ecotrackShipments.length; i += BULK_SIZE) {
-        const chunk = ecotrackShipments.slice(i, i + BULK_SIZE);
+    // Group shipments by tenant — each tenant has its own CourierSetting credentials
+    const byTenant = new Map();
+    for (const s of ecotrackShipments) {
+        const tid = s.tenant?.toString();
+        if (!tid) continue;
+        if (!byTenant.has(tid)) byTenant.set(tid, []);
+        byTenant.get(tid).push(s);
+    }
 
-        try {
-            // Build tracking → shipment lookup
-            const shipmentMap = new Map();
-            for (const s of chunk) {
-                shipmentMap.set(s.externalTrackingId, s);
-            }
+    for (const [tenantId, tenantShipments] of byTenant) {
+        for (let i = 0; i < tenantShipments.length; i += BULK_SIZE) {
+            const chunk = tenantShipments.slice(i, i + BULK_SIZE);
 
-            // Bulk status fetch — single API call for up to 100 trackings
-            const bulkData = await EcotrackAdapter.getBulkStatus(
-                chunk.map(s => s.externalTrackingId)
-            );
-
-            // Process each result
-            for (const [trackingId, info] of Object.entries(bulkData)) {
-                const shipment = shipmentMap.get(trackingId);
-                if (!shipment || !info?.status) continue;
-
-                try {
-                    const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(info.status, shipment);
-                    if (activityLog) {
-                        await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, info.status);
-                        updatedCount++;
-                    }
-                } catch (err) {
-                    logger.error({ err, trackingId }, '[SYNC] Failed to apply Ecotrack status update');
+            try {
+                // Build tracking → shipment lookup
+                const shipmentMap = new Map();
+                for (const s of chunk) {
+                    shipmentMap.set(s.externalTrackingId, s);
                 }
-            }
-        } catch (err) {
-            logger.error({ err, chunkSize: chunk.length }, '[SYNC] Failed bulk Ecotrack status fetch');
 
-            // Fallback: try individual tracking for this chunk
-            for (const shipment of chunk) {
-                try {
-                    const { status: currentCourierStatus } = await EcotrackAdapter.getTrackingStatus(shipment.externalTrackingId);
-                    if (currentCourierStatus) {
-                        const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(currentCourierStatus, shipment);
+                // Bulk status fetch — single API call for up to 100 trackings
+                const bulkData = await EcotrackAdapter.getBulkStatus(
+                    chunk.map(s => s.externalTrackingId),
+                    tenantId
+                );
+
+                // Process each result
+                for (const [trackingId, info] of Object.entries(bulkData)) {
+                    const shipment = shipmentMap.get(trackingId);
+                    if (!shipment || !info?.status) continue;
+
+                    try {
+                        const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(info.status, shipment);
                         if (activityLog) {
-                            await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, currentCourierStatus);
+                            await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, info.status);
                             updatedCount++;
                         }
+                    } catch (err) {
+                        logger.error({ err, trackingId }, '[SYNC] Failed to apply Ecotrack status update');
                     }
-                } catch (innerErr) {
-                    logger.error({ err: innerErr, trackingId: shipment.externalTrackingId }, '[SYNC] Failed individual Ecotrack sync');
+                }
+            } catch (err) {
+                logger.error({ err, chunkSize: chunk.length, tenantId }, '[SYNC] Failed bulk Ecotrack status fetch');
+
+                // Fallback: try individual tracking for this chunk
+                for (const shipment of chunk) {
+                    try {
+                        const { status: currentCourierStatus } = await EcotrackAdapter.getTrackingStatus(shipment.externalTrackingId, tenantId);
+                        if (currentCourierStatus) {
+                            const { newShipmentStatus, newPaymentStatus, activityLog } = mapEcotrackStatusToInternal(currentCourierStatus, shipment);
+                            if (activityLog) {
+                                await applyStatusUpdate(shipment, newShipmentStatus, newPaymentStatus, activityLog, currentCourierStatus);
+                                updatedCount++;
+                            }
+                        }
+                    } catch (innerErr) {
+                        logger.error({ err: innerErr, trackingId: shipment.externalTrackingId }, '[SYNC] Failed individual Ecotrack sync');
+                    }
                 }
             }
-        }
 
-        if (i + BULK_SIZE < ecotrackShipments.length) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            if (i + BULK_SIZE < tenantShipments.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
         }
     }
 

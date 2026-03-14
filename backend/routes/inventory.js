@@ -73,34 +73,30 @@ router.route('/pos/:id/status')
     .put(requirePermission(PERMS.PROCUREMENT_UPDATE_PO), wrap(purchaseOrderController.updatePOStatus));
 
 // /api/inventory/reorder-alerts — Reorder point automation (scoped via tenant's variants)
-router.get('/reorder-alerts', requirePermission(PERMS.INVENTORY_REORDER), async (req, res, next) => {
-    try {
-        const tenantVariantIds = await ProductVariant.find({ tenant: req.user.tenant })
-            .select('_id').lean().then(docs => docs.map(d => d._id));
-        const alerts = await ReorderAlert.find({ status: 'Open', variantId: { $in: tenantVariantIds } })
-            .populate('variantId', 'sku totalStock reservedStock reorderLevel')
-            .populate('supplierId', 'name')
-            .sort({ detectedAt: -1 })
-            .limit(200)
-            .lean();
-        res.json(alerts);
-    } catch (err) { next(err); }
-});
+router.get('/reorder-alerts', requirePermission(PERMS.INVENTORY_REORDER), wrap(async (req, res) => {
+    const tenantVariantIds = await ProductVariant.find({ tenant: req.user.tenant })
+        .select('_id').lean().then(docs => docs.map(d => d._id));
+    const alerts = await ReorderAlert.find({ status: 'Open', variantId: { $in: tenantVariantIds } })
+        .populate('variantId', 'sku totalStock reservedStock reorderLevel')
+        .populate('supplierId', 'name')
+        .sort({ detectedAt: -1 })
+        .limit(200)
+        .lean();
+    res.json(alerts);
+}));
 
-router.put('/reorder-alerts/:id/dismiss', requirePermission(PERMS.INVENTORY_REORDER), async (req, res, next) => {
-    try {
-        // Verify the alert belongs to this tenant before dismissing
-        const alert = await ReorderAlert.findById(req.params.id).populate('variantId', 'tenant').lean();
-        if (!alert) return res.status(404).json({ message: 'Alert not found' });
-        if (String(alert.variantId?.tenant) !== String(req.user.tenant))
-            return res.status(403).json({ message: 'Not authorized' });
-        const updated = await ReorderAlert.findByIdAndUpdate(
-            req.params.id,
-            { status: 'Dismissed' },
-            { new: true }
-        );
-        res.json(updated);
-    } catch (err) { next(err); }
-});
+router.put('/reorder-alerts/:id/dismiss', requirePermission(PERMS.INVENTORY_REORDER), wrap(async (req, res) => {
+    // Verify the alert belongs to this tenant before dismissing
+    const alert = await ReorderAlert.findById(req.params.id).populate('variantId', 'tenant').lean();
+    if (!alert) return res.status(404).json({ message: 'Alert not found' });
+    if (String(alert.variantId?.tenant) !== String(req.user.tenant))
+        return res.status(403).json({ message: 'Not authorized' });
+    const updated = await ReorderAlert.findByIdAndUpdate(
+        req.params.id,
+        { status: 'Dismissed' },
+        { new: true }
+    );
+    res.json(updated);
+}));
 
 module.exports = router;

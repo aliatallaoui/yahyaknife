@@ -146,7 +146,7 @@ exports.getSupplierIntelligence = async (req, res) => {
             const s = statsMap[supplier._id.toString()] || { totalPOs: 0, fulfilledPOs: 0, totalSpend: 0, leadTimeDays: 0, validLeadTimeCount: 0, onTimeCount: 0 };
 
             const averageLeadTime = s.validLeadTimeCount > 0 ? parseFloat((s.leadTimeDays / s.validLeadTimeCount).toFixed(1)) : 0;
-            const reliabilityScore = s.fulfilledPOs > 0 ? parseInt(((s.onTimeCount / s.fulfilledPOs) * 100).toFixed(0)) : 0;
+            const reliabilityScore = s.fulfilledPOs > 0 ? parseInt(((s.onTimeCount / s.fulfilledPOs) * 100).toFixed(0), 10) : 0;
 
             bulkOps.push({
                 updateOne: {
@@ -267,7 +267,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 totalOrders += status.count;
                 if (['Delivered', 'Paid'].includes(status._id)) {
                     totalRevenue += status.revenue;
-                    netProfit += status.revenue - (status.cogs || 0) - (status.courierFee || 0) - (status.fees || 0);
+                    netProfit += status.revenue - (status.cogs ?? 0) - (status.courierFee ?? 0) - (status.fees ?? 0);
                 }
 
                 if (status._id === 'New') pending += status.count;
@@ -339,7 +339,7 @@ exports.getEcommerceAnalytics = async (req, res) => {
                     date: moment(d).format('DD/MM'),
                     revenue: data ? data.revenue : 0,
                     orders: data ? data.orders : 0,
-                    profit: data ? data.revenue - (data.cogs || 0) - (data.courierFee || 0) - (data.fees || 0) : 0
+                    profit: data ? data.revenue - (data.cogs ?? 0) - (data.courierFee ?? 0) - (data.fees ?? 0) : 0
                 });
             }
 
@@ -470,9 +470,9 @@ exports.getEcommerceAnalytics = async (req, res) => {
 
             const customerData = topCustomersAgg.map(c => ({
                 id: c._id, name: c.name || 'Unknown',
-                orders: c.totalOrders || 0,
-                revenue: c.lifetimeValue || 0,
-                aov: c.averageOrderValue || 0
+                orders: c.totalOrders ?? 0,
+                revenue: c.lifetimeValue ?? 0,
+                aov: c.averageOrderValue ?? 0
             }));
 
             // 7. Stock Health

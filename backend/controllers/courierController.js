@@ -155,14 +155,14 @@ exports.settleCourierCash = async (req, res) => {
             status: 'Delivered',
             paymentStatus: { $ne: 'Paid' },
             deletedAt: null
-        }, { _id: 1, financials: 1, totalAmount: 1 }).sort({ createdAt: 1 }).lean();
+        }, { _id: 1, financials: 1, totalAmount: 1 }).sort({ createdAt: 1 }).limit(5000).lean();
 
         let remainingToSettle = amountToSettle;
         const settledOrderIds = [];
 
         for (const order of unpaidOrders) {
             if (remainingToSettle <= 0) break;
-            const orderAmount = order.financials?.codAmount || order.totalAmount;
+            const orderAmount = order.financials?.codAmount ?? order.totalAmount ?? 0;
             if (remainingToSettle >= orderAmount) {
                 settledOrderIds.push(order._id);
                 remainingToSettle -= orderAmount;

@@ -76,7 +76,7 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
     let courierError = null;
 
     try {
-        const result = await adapter.createShipment(payload);
+        const result = await adapter.createShipment(payload, tenantId);
         trackingId = result.trackingId;
     } catch (err) {
         logger.error({ err, provider: providerName }, 'Failed to dispatch to external courier API');
@@ -162,7 +162,7 @@ exports.quickDispatch = async (orderId, tenantId) => {
     let courierError = null;
 
     try {
-        const result = await adapter.createShipment(payload);
+        const result = await adapter.createShipment(payload, tenantId);
         trackingId = result.trackingId;
     } catch (err) {
         logger.error({ err, provider: providerName }, 'Failed to quick-dispatch to external courier API');
@@ -212,7 +212,7 @@ exports.validateShipment = async (shipmentId, tenantId, { askCollection = 1, use
 
     if (shipment.externalTrackingId) {
         const adapter = await resolveAdapterForShipment(shipment, tenantId);
-        await adapter.validateShipment(shipment.externalTrackingId, { askCollection });
+        await adapter.validateShipment(shipment.externalTrackingId, { askCollection, tenantId });
     }
 
     shipment.shipmentStatus = 'Validated';
@@ -239,7 +239,7 @@ exports.deleteShipment = async (shipmentId, tenantId) => {
     if (shipment.externalTrackingId) {
         try {
             const adapter = await resolveAdapterForShipment(shipment, tenantId);
-            await adapter.cancelShipment(shipment.externalTrackingId);
+            await adapter.cancelShipment(shipment.externalTrackingId, tenantId);
             courierCancelled = true;
         } catch (err) {
             logger.warn({ err, provider: shipment.courierProvider }, 'Failed to cancel from courier (deleting locally anyway)');
@@ -274,7 +274,7 @@ exports.requestReturn = async (shipmentId, tenantId, userId = null) => {
     if (shipment.externalTrackingId) {
         try {
             const adapter = await resolveAdapterForShipment(shipment, tenantId);
-            await adapter.requestReturn(shipment.externalTrackingId);
+            await adapter.requestReturn(shipment.externalTrackingId, tenantId);
         } catch (err) {
             logger.warn({ err, provider: shipment.courierProvider }, 'Failed to request return via courier API');
             // Proceed to flag internally even if courier API fails
@@ -314,7 +314,7 @@ exports.getShipmentLabel = async (shipmentId, tenantId) => {
     }
 
     const adapter = await resolveAdapterForShipment(shipment, tenantId);
-    const url = await adapter.getLabelUrl(shipment.externalTrackingId);
+    const url = await adapter.getLabelUrl(shipment.externalTrackingId, tenantId);
 
     shipment.labelUrl = url;
     await shipment.save();

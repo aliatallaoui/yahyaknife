@@ -157,7 +157,7 @@ exports.loginUser = async (req, res) => {
         }
 
         // Check for user email, importantly select password back so we can verify it
-        const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password').populate('role');
+        const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password').populate('role', 'name permissions');
 
         if (user && (await user.matchPassword(password))) {
             if (!user.isActive) {
@@ -224,7 +224,7 @@ exports.loginUser = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).populate('role').lean();
+        const user = await User.findOne({ _id: req.user._id, tenant: req.user.tenant }).populate('role', 'name permissions').lean();
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -436,7 +436,7 @@ exports.switchTenant = async (req, res) => {
             user: req.user._id,
             tenant: tenantId,
             status: 'active',
-        }).populate('role');
+        }).populate('role', 'name permissions');
 
         if (!membership) {
             return res.status(403).json({ message: 'You do not have access to this workspace.' });

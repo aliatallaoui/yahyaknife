@@ -223,7 +223,8 @@ async function executeTool(call, tenantId) {
 
         return { error: `Unknown tool: ${call.name}` };
     } catch (e) {
-        return { error: e.message };
+        logger.error({ err: e }, 'AI tool execution error');
+        return { error: e.isOperational ? e.message : 'Tool execution failed' };
     }
 }
 

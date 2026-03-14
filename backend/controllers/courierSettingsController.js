@@ -4,9 +4,11 @@ const logger = require('../shared/logger');
 
 exports.getSettings = async (req, res) => {
     try {
-        let settings = await CourierSetting.findOne({ providerName: 'ECOTRACK' });
+        const tenantId = req.user.tenant;
+        let settings = await CourierSetting.findOne({ tenant: tenantId, providerName: 'ECOTRACK' });
         if (!settings) {
             settings = await CourierSetting.create({
+                tenant: tenantId,
                 providerName: 'ECOTRACK',
                 apiUrl: 'https://api.ecotrack.dz/v1',
                 apiToken: '',
@@ -25,12 +27,13 @@ exports.getSettings = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
     try {
+        const tenantId = req.user.tenant;
         const { apiUrl, apiToken } = req.body;
 
-        let settings = await CourierSetting.findOne({ providerName: 'ECOTRACK' });
+        let settings = await CourierSetting.findOne({ tenant: tenantId, providerName: 'ECOTRACK' });
 
         if (!settings) {
-            settings = new CourierSetting({ providerName: 'ECOTRACK' });
+            settings = new CourierSetting({ tenant: tenantId, providerName: 'ECOTRACK' });
         }
 
         // Update settings object
@@ -66,7 +69,6 @@ exports.updateSettings = async (req, res) => {
                 } else if (status === 403) {
                     connectionStatus = 'Not Allowed';
                 } else if ([404, 422, 500].includes(status)) {
-                    // The server is alive and responding, so the connection is valid even if this specific ping endpoint fails
                     logger.info({ status }, '[CourierSettings] Treating as valid connection (server reachable)');
                     connectionStatus = 'Valid';
                 } else {

@@ -16,6 +16,7 @@ router.get('/', protect, requirePermission(PERMS.SHIPMENTS_VIEW), wrap(shipmentC
 router.get('/export/csv', protect, requirePermission(PERMS.SHIPMENTS_EXPORT), exportLimiter, wrap(shipmentController.exportShipments));
 router.post('/', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.createShipment));
 router.post('/quick-dispatch/:orderId', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.quickDispatch));
+router.post('/bulk-dispatch', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.bulkQuickDispatch));
 router.get('/:id', protect, requirePermission(PERMS.SHIPMENTS_VIEW), wrap(shipmentController.getShipmentById));
 router.put('/:id', protect, requirePermission(PERMS.SHIPMENTS_EDIT), wrap(shipmentController.updateShipment));
 router.delete('/:id', protect, requirePermission(PERMS.SHIPMENTS_CANCEL), wrap(shipmentController.deleteShipment));

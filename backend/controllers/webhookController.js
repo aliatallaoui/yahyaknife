@@ -132,7 +132,7 @@ exports.deleteWebhook = async (req, res) => {
         if (!webhook) return res.status(404).json({ message: 'Webhook not found' });
 
         // Clean up delivery logs
-        await WebhookDelivery.deleteMany({ webhook: id });
+        await WebhookDelivery.deleteMany({ webhook: id, tenant: tenantId });
 
         res.json({ message: 'Webhook deleted' });
     } catch (err) {
