@@ -14,6 +14,7 @@ const exportLimiter = rateLimit({
 
 router.get('/', protect, requirePermission(PERMS.SHIPMENTS_VIEW), wrap(shipmentController.getAllShipments));
 router.get('/export/csv', protect, requirePermission(PERMS.SHIPMENTS_EXPORT), exportLimiter, wrap(shipmentController.exportShipments));
+router.get('/export/manifest', protect, requirePermission(PERMS.SHIPMENTS_EXPORT), exportLimiter, wrap(shipmentController.generateManifest));
 router.post('/', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.createShipment));
 router.post('/quick-dispatch/:orderId', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.quickDispatch));
 router.post('/bulk-dispatch', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.bulkQuickDispatch));
@@ -24,8 +25,5 @@ router.delete('/:id', protect, requirePermission(PERMS.SHIPMENTS_CANCEL), wrap(s
 router.post('/:id/validate', protect, requirePermission(PERMS.SHIPMENTS_CREATE), wrap(shipmentController.validateShipment));
 router.get('/:id/label', protect, requirePermission(PERMS.SHIPMENTS_VIEW), wrap(shipmentController.getShipmentLabel));
 router.post('/:id/return', protect, requirePermission(PERMS.SHIPMENTS_CANCEL), wrap(shipmentController.requestReturn));
-
-// --- Manifest ---
-router.get('/export/manifest', protect, requirePermission(PERMS.SHIPMENTS_EXPORT), exportLimiter, wrap(shipmentController.generateManifest));
 
 module.exports = router;
