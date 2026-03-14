@@ -309,22 +309,22 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-gray-900/60 backdrop-blur-sm" {...backdropProps}>
-            <div className="bg-white md:rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[100dvh] md:h-auto md:max-h-[96vh] overflow-hidden" {...panelProps}>
+            <div className="bg-white dark:bg-gray-800 md:rounded-2xl shadow-xl w-full max-w-5xl flex flex-col h-[100dvh] md:h-auto md:max-h-[96vh] overflow-hidden" {...panelProps}>
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
+                <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="bg-blue-600 p-2 rounded-lg shadow-sm shadow-blue-600/20">
                             <Plus className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                 {isEdit ? t('orderModal.editTitle') : t('orderModal.createTitle')}
                             </h2>
-                            <p className="text-sm text-gray-500 font-medium tracking-wide">{t('orderModal.subtitle')}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wide">{t('orderModal.subtitle')}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -334,7 +334,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                     <form id="orderForm" onSubmit={e => handleSubmit(e, false)} className="space-y-8">
 
                         {formError && (
-                            <div className="p-4 bg-red-50/50 text-red-700 rounded-xl text-sm font-medium border border-red-200/50 flex items-start gap-3 shadow-sm animate-pulse-once">
+                            <div className="p-4 bg-red-50/50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium border border-red-200/50 dark:border-red-800/50 flex items-start gap-3 shadow-sm animate-pulse-once">
                                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
                                 <span>{formError}</span>
                             </div>
@@ -349,23 +349,23 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                 <CustomerIntelligencePanel data={intelligenceData} isSearching={isLookingUpPhone} />
 
                                 {/* Section B: Customer & Delivery */}
-                                <div className="bg-white border rounded-xl p-5 shadow-sm">
-                                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl p-5 shadow-sm">
+                                    <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                         <Truck className="w-4 h-4 text-blue-500" /> {t('orderModal.customerDetails')}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label htmlFor="order-phone" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.primaryPhone')} *</label>
-                                            <input id="order-phone" required autoFocus type="tel" autoComplete="tel" dir="ltr" placeholder="05/06/07..." className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerPhone} onChange={e => store.updateField('customerPhone', e.target.value)} />
+                                            <label htmlFor="order-phone" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.primaryPhone')} *</label>
+                                            <input id="order-phone" required autoFocus type="tel" autoComplete="tel" dir="ltr" placeholder="05/06/07..." className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.customerPhone} onChange={e => store.updateField('customerPhone', e.target.value)} />
                                         </div>
                                         <div>
-                                            <label htmlFor="order-name" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.fullName')} *</label>
-                                            <input id="order-name" required type="text" autoComplete="name" placeholder="John Doe" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
+                                            <label htmlFor="order-name" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.fullName')} *</label>
+                                            <input id="order-name" required type="text" autoComplete="name" placeholder="John Doe" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.customerName} onChange={e => store.updateField('customerName', e.target.value)} />
                                         </div>
 
                                         <div>
-                                            <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
-                                            <select id="order-wilaya" required className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
+                                            <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
+                                            <select id="order-wilaya" required className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
                                                 <option value="" disabled>{t('orderModal.selectWilaya')}</option>
                                                 {leblad.getWilayaList().map(w => (
                                                     <option key={w.mattricule} value={w.mattricule}>{String(w.mattricule).padStart(2, '0')} - {w.name}</option>
@@ -374,11 +374,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         </div>
 
                                         <div>
-                                            <label htmlFor="order-commune" className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between uppercase tracking-wide">
+                                            <label htmlFor="order-commune" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between uppercase tracking-wide">
                                                 <span>{t('orderModal.commune')} *</span>
-                                                {store.shippingWilayaCode && <span className="text-[10px] text-blue-600 font-medium normal-case bg-blue-50 px-1.5 rounded">{t('orderModal.communeOptions', { count: availableCommunes.length })}</span>}
+                                                {store.shippingWilayaCode && <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium normal-case bg-blue-50 dark:bg-blue-900/40 px-1.5 rounded">{t('orderModal.communeOptions', { count: availableCommunes.length })}</span>}
                                             </label>
-                                            <select id="order-commune" required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
+                                            <select id="order-commune" required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
                                                 <option value="" disabled>{store.shippingWilayaCode ? t('orderModal.selectCommune') : t('orderModal.selectWilayaFirst')}</option>
                                                 {availableCommunes.map(c => (
                                                     <option key={c.code} value={c.name}>{c.name}</option>
@@ -387,21 +387,21 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         </div>
 
                                         <div className="md:col-span-2">
-                                            <label htmlFor="order-address" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.detailedAddress')}</label>
-                                            <input id="order-address" type="text" placeholder={t('orderModal.addressPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium" value={store.shippingAddress} onChange={e => store.updateField('shippingAddress', e.target.value)} />
+                                            <label htmlFor="order-address" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.detailedAddress')}</label>
+                                            <input id="order-address" type="text" placeholder={t('orderModal.addressPlaceholder')} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all font-medium" value={store.shippingAddress} onChange={e => store.updateField('shippingAddress', e.target.value)} />
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4 md:col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <div className="grid grid-cols-2 gap-4 md:col-span-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600">
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.deliveryMode')}</label>
-                                                <div className="flex bg-white rounded-lg border border-gray-200 p-1">
-                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 0)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 0 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-50")}>{t('orderModal.deliveryHome')}</button>
-                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 1)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 1 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-50")}>{t('orderModal.deliveryStopDesk')}</button>
+                                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.deliveryMode')}</label>
+                                                <div className="flex bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-1">
+                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 0)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 0 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600")}>{t('orderModal.deliveryHome')}</button>
+                                                    <button type="button" onClick={() => store.updateField('shippingDeliveryType', 1)} className={clsx("flex-1 text-xs py-1.5 rounded-md font-bold transition-all", store.shippingDeliveryType === 1 ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600")}>{t('orderModal.deliveryStopDesk')}</button>
                                                 </div>
                                             </div>
                                             <div>
-                                                <label htmlFor="order-courier" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.courierPriority')}</label>
-                                                <select id="order-courier" className="w-full bg-white border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
+                                                <label htmlFor="order-courier" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.courierPriority')}</label>
+                                                <select id="order-courier" className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 transition-all font-medium appearance-none cursor-pointer" value={store.courierId} onChange={e => store.updateField('courierId', e.target.value)}>
                                                     <option value="">{t('orderModal.systemRecommended')}</option>
                                                     {couriers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                                 </select>
@@ -420,38 +420,38 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                             <div className="lg:col-span-5 space-y-6 flex flex-col">
 
                                 {/* Section C: Meta */}
-                                <div className="bg-white border rounded-xl p-5 shadow-sm grid grid-cols-2 gap-4">
+                                <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl p-5 shadow-sm grid grid-cols-2 gap-4">
                                      <div>
-                                        <label htmlFor="order-orderId" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.orderId')}</label>
-                                        <input id="order-orderId" required type="text" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-600" value={store.orderId} onChange={e => store.updateField('orderId', e.target.value)} />
+                                        <label htmlFor="order-orderId" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.orderId')}</label>
+                                        <input id="order-orderId" required type="text" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-600 dark:text-gray-100" value={store.orderId} onChange={e => store.updateField('orderId', e.target.value)} />
                                     </div>
                                     <div>
-                                        <label htmlFor="order-channel" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.channel')}</label>
-                                        <select id="order-channel" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
+                                        <label htmlFor="order-channel" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.channel')}</label>
+                                        <select id="order-channel" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-1.5 text-sm font-bold text-gray-800 dark:text-gray-100 appearance-none cursor-pointer" value={store.channel} onChange={e => store.updateField('channel', e.target.value)}>
                                             {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                 </div>
 
                                 {/* Section D: Products */}
-                                <div className="bg-white border rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
-                                    <div className="p-4 border-b flex justify-between items-center bg-gray-50/50">
-                                        <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm uppercase tracking-wide">
+                                <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
+                                    <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                                        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm uppercase tracking-wide">
                                             {t('orderModal.cartItems')}
                                         </h3>
-                                        <button type="button" onClick={store.addProduct} className="flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors">
+                                        <button type="button" onClick={store.addProduct} className="flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors">
                                             <Plus className="w-3 h-3" /> {t('orderModal.addItem')}
                                         </button>
                                     </div>
 
-                                    <div className="p-4 space-y-3 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/20">
+                                    <div className="p-4 space-y-3 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/20 dark:bg-gray-800/20">
                                         {store.products.map((product, index) => (
-                                            <div key={index} className="flex flex-col gap-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm relative group">
+                                            <div key={index} className="flex flex-col gap-2 bg-white dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600 shadow-sm relative group">
                                                 <div className="flex gap-2 w-full">
                                                     <div className="flex-1">
                                                         <select
                                                             required
-                                                            className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 focus:bg-white rounded px-2 py-1.5 text-sm font-semibold appearance-none cursor-pointer transition-colors"
+                                                            className="w-full bg-gray-50 dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 rounded px-2 py-1.5 text-sm dark:text-gray-100 font-semibold appearance-none cursor-pointer transition-colors"
                                                             value={product.variantId || ''}
                                                             onChange={e => {
                                                                 const selectedId = e.target.value;
@@ -479,28 +479,28 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                                 <span className={clsx("text-[10px] font-medium", product.availableStock <= 5 ? "text-red-500" : "text-green-600")}>
                                                                     {t('orderModal.inStock', { count: product.availableStock })}
                                                                 </span>
-                                                                {product.sku && <span className="text-[10px] text-gray-400 font-medium font-mono">{product.sku}</span>}
+                                                                {product.sku && <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium font-mono">{product.sku}</span>}
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2 items-center">
                                                     <div className="w-20">
-                                                        <div className="flex items-center border border-gray-200 rounded overflow-hidden">
-                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', Math.max(1, product.quantity - 1))} className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">-</button>
-                                                            <input required type="number" min="1" max={product.availableStock || undefined} className="w-full bg-white outline-none py-1 text-center text-sm font-bold appearance-none" value={product.quantity} onChange={e => store.updateProduct(index, 'quantity', Number(e.target.value))} />
-                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', product.quantity + 1)} className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">+</button>
+                                                        <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded overflow-hidden">
+                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', Math.max(1, product.quantity - 1))} className="px-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-medium">-</button>
+                                                            <input required type="number" min="1" max={product.availableStock || undefined} className="w-full bg-white dark:bg-gray-700 dark:text-gray-100 outline-none py-1 text-center text-sm font-bold appearance-none" value={product.quantity} onChange={e => store.updateProduct(index, 'quantity', Number(e.target.value))} />
+                                                            <button type="button" onClick={() => store.updateProduct(index, 'quantity', product.quantity + 1)} className="px-2 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-medium">+</button>
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 relative">
-                                                        <span className="absolute left-2 top-1.5 text-gray-400 text-xs font-bold">{t('common.dzd', 'DZD')}</span>
-                                                        <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 outline-none border border-gray-200 focus:border-blue-500 focus:bg-white py-1 pl-10 pr-2 rounded text-sm font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
+                                                        <span className="absolute left-2 top-1.5 text-gray-400 dark:text-gray-500 text-xs font-bold">{t('common.dzd', 'DZD')}</span>
+                                                        <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 dark:bg-gray-700 outline-none border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 py-1 pl-10 pr-2 rounded text-sm dark:text-gray-100 font-bold transition-colors" value={product.unitPrice} onChange={e => store.updateProduct(index, 'unitPrice', e.target.value)} />
                                                     </div>
                                                     <div className="w-24 text-right pr-2">
-                                                        <span className="text-sm font-bold text-gray-900 truncate">{(product.quantity * product.unitPrice).toFixed(2)} {t('common.dzd', 'DZD')}</span>
+                                                        <span className="text-sm font-bold text-gray-900 dark:text-white truncate">{(product.quantity * product.unitPrice).toFixed(2)} {t('common.dzd', 'DZD')}</span>
                                                     </div>
                                                 </div>
-                                                <button type="button" onClick={() => store.removeProduct(index)} disabled={store.products.length === 1} className="absolute -right-2 -top-2 p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-500 rounded-full disabled:opacity-0 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                <button type="button" onClick={() => store.removeProduct(index)} disabled={store.products.length === 1} className="absolute -right-2 -top-2 p-1.5 bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600 text-gray-400 hover:text-red-500 rounded-full disabled:opacity-0 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
@@ -552,14 +552,14 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         </div>
 
                          {/* Bottom Row (Notes & Initial Status) */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-gray-100 dark:border-gray-700">
                              <div className="md:col-span-8">
-                                <label htmlFor="order-notes" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.notesLabel')}</label>
-                                <textarea id="order-notes" rows="2" placeholder={t('orderModal.notesPlaceholder')} className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:bg-white resize-none transition-colors" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
+                                <label htmlFor="order-notes" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.notesLabel')}</label>
+                                <textarea id="order-notes" rows="2" placeholder={t('orderModal.notesPlaceholder')} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 resize-none transition-colors" value={store.notes} onChange={e => store.updateField('notes', e.target.value)}></textarea>
                             </div>
                             <div className="md:col-span-4 flex flex-col justify-end">
-                                <label htmlFor="order-status" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">{t('orderModal.saveAsStatus')}</label>
-                                <select id="order-status" className="w-full bg-gray-50 border border-gray-200 outline-none rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white transition-all font-bold text-blue-900 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
+                                <label htmlFor="order-status" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.saveAsStatus')}</label>
+                                <select id="order-status" className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-bold text-blue-900 dark:text-blue-300 appearance-none cursor-pointer" value={store.status} onChange={e => store.updateField('status', e.target.value)}>
                                     {STATUSES.map(st => <option key={st} value={st}>{getOrderStatusLabel(t, st)}</option>)}
                                 </select>
                             </div>
@@ -569,13 +569,13 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 </div>
 
                 {/* Footer Controls */}
-                <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0 safe-bottom">
-                    <button type="button" onClick={onClose} disabled={isSubmitting} className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
+                <div className="p-4 md:p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center shrink-0 safe-bottom">
+                    <button type="button" onClick={onClose} disabled={isSubmitting} className="px-5 py-2 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50">
                         {t('orderModal.discard')}
                     </button>
                     <div className="flex gap-3">
                         {!isEdit && (
-                            <button type="submit" form="orderForm" disabled={isSubmitting} onClick={(e) => handleSubmit(e, true)} className="px-5 py-2 text-sm font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-2 border border-blue-200/50">
+                            <button type="submit" form="orderForm" disabled={isSubmitting} onClick={(e) => handleSubmit(e, true)} className="px-5 py-2 text-sm font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-lg transition-colors flex items-center gap-2 border border-blue-200/50 dark:border-blue-800/50">
                                 {isSubmitting ? <div className="w-4 h-4 rounded-full border-2 border-blue-700/30 border-t-blue-700 animate-spin"></div> : <Save className="w-4 h-4 shrink-0" />}
                                 {t('orderModal.saveAndAdd')}
                             </button>
@@ -592,12 +592,12 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
              {/* Custom Warning Dialog */}
             {warningConfirmOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4 bg-amber-100">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-150">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4 bg-amber-100 dark:bg-amber-900/40">
                             <AlertTriangle className="w-5 h-5 text-amber-600" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('orderModal.warningTitle', 'تحديث حالة')}</h3>
-                        <p className="text-sm text-gray-600 mb-6 font-medium leading-relaxed">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('orderModal.warningTitle', 'تحديث حالة')}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-medium leading-relaxed">
                             {intelligenceData?.warning && t(`intelligence.${intelligenceData.warning}`)}
                             <br/><br/>
                             {t('orderModal.warningConfirm', 'هل تريد المتابعة في حفظ هذا الطلب؟')}
@@ -605,7 +605,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => { setWarningConfirmOpen(false); setPendingSubmitEvent(null); }}
-                                className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                             >
                                 {t('orderModal.cancel', 'إلغاء')}
                             </button>

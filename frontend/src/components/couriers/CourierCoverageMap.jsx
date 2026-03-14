@@ -127,39 +127,39 @@ export default function CourierCoverageMap({ courierId }) {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading...')}</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500 dark:text-gray-400">{t('common.loading', 'Loading...')}</div>;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Error / Success banners */}
             {errorMsg && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{errorMsg}</span>
-                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600 dark:hover:text-red-300">✕</button>
                 </div>
             )}
             {successMsg && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{successMsg}</span>
-                    <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600">✕</button>
+                    <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300">✕</button>
                 </div>
             )}
             {confirmDialogEl}
-            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex gap-3 text-start">
-                <HelpCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex gap-3 text-start">
+                <HelpCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                    <h4 className="text-sm font-bold text-emerald-900">{t('couriers.coverage_info', 'Dynamic Area Validation')}</h4>
-                    <p className="text-xs text-emerald-700 mt-1">
+                    <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-300">{t('couriers.coverage_info', 'Dynamic Area Validation')}</h4>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
                         {t('couriers.coverage_desc', 'During Order Creation, the user will only see the Communes configured here if they select this courier. Furthermore, if they select "Stop Desk/Office", only communes with Office delivery checked will be displayed.')}
                     </p>
                 </div>
             </div>
 
-            <div className="bg-white border text-start border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 border text-start border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-indigo-500" />
                         {t('couriers.add_region', 'Add Coverage Region')}
                     </h3>
@@ -167,35 +167,35 @@ export default function CourierCoverageMap({ courierId }) {
                     <button
                         onClick={handleSync}
                         disabled={syncing}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold rounded-lg transition-colors border border-indigo-100 text-sm disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-bold rounded-lg transition-colors border border-indigo-100 dark:border-indigo-800 text-sm disabled:opacity-50"
                     >
                         <RefreshCw className={clsx("w-4 h-4", syncing && "animate-spin")} />
                         {syncing ? t('couriers.btnSyncing', 'Syncing API...') : t('couriers.btnSyncCoverage', 'Sync API Coverage')}
                     </button>
                 </div>
                 
-                <form onSubmit={handleAdd} className="flex flex-col md:flex-row items-end gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <form onSubmit={handleAdd} className="flex flex-col md:flex-row items-end gap-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
                     <div className="w-full md:w-32">
-                        <label htmlFor="cov-wilaya" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.wilayaCode', 'Wilaya Code')}</label>
+                        <label htmlFor="cov-wilaya" className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">{t('couriers.wilayaCode', 'Wilaya Code')}</label>
                         <input
                             id="cov-wilaya"
                             type="text"
                             required
                             value={formData.wilayaCode}
                             onChange={e => setFormData({ ...formData, wilayaCode: e.target.value })}
-                            className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border"
+                            className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 shadow-sm p-2 border dark:bg-gray-700 dark:text-gray-100"
                             placeholder="16"
                         />
                     </div>
                     <div className="flex-1 w-full">
-                        <label htmlFor="cov-commune" className="block text-xs font-bold text-gray-600 mb-1">{t('couriers.commune', 'Commune')}</label>
+                        <label htmlFor="cov-commune" className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">{t('couriers.commune', 'Commune')}</label>
                         <input
                             id="cov-commune"
                             type="text"
                             required
                             value={formData.commune}
                             onChange={e => setFormData({ ...formData, commune: e.target.value })}
-                            className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border"
+                            className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 shadow-sm p-2 border dark:bg-gray-700 dark:text-gray-100"
                             placeholder="Alger Centre"
                         />
                     </div>
@@ -209,7 +209,7 @@ export default function CourierCoverageMap({ courierId }) {
                                 onChange={e => setFormData({ ...formData, homeSupported: e.target.checked })}
                                 className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                             />
-                            <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Home className="w-4 h-4 text-gray-400" /> {t('couriers.homeDelivery', 'Home')}</span>
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5"><Home className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('couriers.homeDelivery', 'Home')}</span>
                         </label>
 
                         <label htmlFor="cov-office" className="flex items-center gap-2 cursor-pointer">
@@ -220,7 +220,7 @@ export default function CourierCoverageMap({ courierId }) {
                                 onChange={e => setFormData({ ...formData, officeSupported: e.target.checked })}
                                 className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                             />
-                            <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-gray-400" /> {t('couriers.officeDelivery', 'Office (Stop Desk)')}</span>
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('couriers.officeDelivery', 'Office (Stop Desk)')}</span>
                         </label>
                     </div>
 
@@ -244,18 +244,18 @@ export default function CourierCoverageMap({ courierId }) {
                                     setSearchTerm(e.target.value);
                                     setCurrentPage(1); // Reset to first page on search
                                 }}
-                                className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2.5 bg-gray-50 border focus:bg-white transition-colors"
+                                className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 shadow-sm p-2.5 bg-gray-50 dark:bg-gray-700 border focus:bg-white dark:focus:bg-gray-600 dark:text-gray-100 transition-colors"
                             />
                         </div>
-                        <div className="text-sm text-gray-500 font-bold">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                             {filteredCoverage.length} {t('couriers.regionsFound', 'Regions')}
                         </div>
                     </div>
                 )}
 
-                <div className={clsx("border border-gray-200 rounded-lg overflow-x-auto", coverage.length === 0 ? "mt-8" : "mt-2")}>
+                <div className={clsx("border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto", coverage.length === 0 ? "mt-8" : "mt-2")}>
                     <table className="w-full text-start rtl:text-right whitespace-nowrap text-sm">
-                        <thead className="bg-gray-50/80 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
+                        <thead className="bg-gray-50/80 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                             <tr>
                                 <th className="px-4 py-3 font-bold w-20">{t('couriers.wilayaLabel', 'Wilaya')}</th>
                                 <th className="px-4 py-3 font-bold">{t('couriers.commune', 'Commune')}</th>
@@ -264,10 +264,10 @@ export default function CourierCoverageMap({ courierId }) {
                                 <th className="px-4 py-3 font-bold text-center w-16">{t('common.actions', 'Actions')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {currentCoverage.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
+                                    <td colSpan="5" className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                                         {coverage.length === 0
                                             ? t('couriers.noCoverage', 'No specific coverage configured. Default assumptions will apply depending on Courier integration level.')
                                             : t('couriers.noCoverageMatch', 'No coverage matches your search.')}
@@ -275,17 +275,17 @@ export default function CourierCoverageMap({ courierId }) {
                                 </tr>
                             ) : (
                                 currentCoverage.map(c => (
-                                    <tr key={c._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-4 py-3 font-black text-gray-900 bg-gray-50/50 text-center">{c.wilayaCode}</td>
-                                        <td className="px-4 py-3 font-bold text-gray-700">{c.commune}</td>
+                                    <tr key={c._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <td className="px-4 py-3 font-black text-gray-900 dark:text-white bg-gray-50/50 dark:bg-gray-700/50 text-center">{c.wilayaCode}</td>
+                                        <td className="px-4 py-3 font-bold text-gray-700 dark:text-gray-300">{c.commune}</td>
                                         <td className="px-4 py-3 text-center">
-                                            {c.homeSupported ? <span className="text-green-600 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300">{t('common.no', 'No')}</span>}
+                                            {c.homeSupported ? <span className="text-green-600 dark:text-green-400 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300 dark:text-gray-600">{t('common.no', 'No')}</span>}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            {c.officeSupported ? <span className="text-indigo-600 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300">{t('common.no', 'No')}</span>}
+                                            {c.officeSupported ? <span className="text-indigo-600 dark:text-indigo-400 font-bold">{t('common.yes', 'Yes')}</span> : <span className="text-gray-300 dark:text-gray-600">{t('common.no', 'No')}</span>}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            <button onClick={() => handleDelete(c._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors">
+                                            <button onClick={() => handleDelete(c._id)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </td>
@@ -298,8 +298,8 @@ export default function CourierCoverageMap({ courierId }) {
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <span className="text-sm text-gray-600 ml-2">
+                    <div className="flex items-center justify-between mt-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
                             {t('couriers.page_x_of_y', { x: currentPage, y: totalPages, defaultValue: `Page ${currentPage} of ${totalPages}` })}
                         </span>
                         
@@ -307,7 +307,7 @@ export default function CourierCoverageMap({ courierId }) {
                             <button
                                 onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 1}
-                                className="px-3 py-1.5 text-sm font-bold border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1.5 text-sm font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {t('common.prev', 'Previous')}
                             </button>
@@ -330,8 +330,8 @@ export default function CourierCoverageMap({ courierId }) {
                                             className={clsx(
                                                 "w-8 h-8 flex items-center justify-center text-sm font-bold rounded",
                                                 currentPage === pageNum 
-                                                    ? "bg-indigo-600 text-white" 
-                                                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                    ? "bg-indigo-600 text-white"
+                                                    : "bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                                             )}
                                         >
                                             {pageNum}
@@ -343,7 +343,7 @@ export default function CourierCoverageMap({ courierId }) {
                             <button
                                 onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 text-sm font-bold border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1.5 text-sm font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {t('common.next', 'Next')}
                             </button>

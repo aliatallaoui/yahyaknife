@@ -24,7 +24,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
     const { t } = useTranslation();
     const { backdropProps, panelProps } = useModalDismiss(onClose);
 
-    // Form State mapped to ECOTRACK
+    // Form State — provider-agnostic shipment fields
     const [formData, setFormData] = useState({
         orderId: '',
         customerName: '',
@@ -159,23 +159,23 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" {...panelProps}>
-                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-gray-50/50">
+            <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" {...panelProps}>
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/50">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                             <Send className="w-5 h-5 mr-2 text-blue-600" />
                             {t('dispatch.modal.title', 'Dispatch New Shipment')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">{t('dispatch.modal.subtitle', 'Map an internal order directly to the ECOTRACK courier network.')}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('dispatch.modal.subtitle', 'Map an internal order to the assigned courier for dispatch.')}</p>
                     </div>
-                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 text-red-700 flex items-start gap-3 rounded-xl border border-red-100">
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 flex items-start gap-3 rounded-xl border border-red-100 dark:border-red-800">
                             <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                             <p className="text-sm font-medium">{error}</p>
                         </div>
@@ -185,9 +185,9 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
                         {/* 1. Internal Order Selection */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">{t('dispatch.modal.step1', '1. Select Internal Order')}</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2">{t('dispatch.modal.step1', '1. Select Internal Order')}</h3>
                             <div className="relative">
-                                <label htmlFor="ship-search" className="block text-sm font-medium text-gray-700 mb-1">{t('dispatch.modal.searchLabel', 'Search Pending Orders')}</label>
+                                <label htmlFor="ship-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('dispatch.modal.searchLabel', 'Search Pending Orders')}</label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                     <input
@@ -196,29 +196,29 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         value={searchOrder}
                                         onChange={(e) => setSearchOrder(e.target.value)}
                                         placeholder={t('dispatch.modal.searchPlaceholder', 'Order ID or Customer Name...')}
-                                        className="pl-10 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        className="pl-10 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     />
                                 </div>
 
                                 {searchOrder && !formData.orderId && (
-                                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-100 max-h-48 overflow-y-auto">
+                                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-100 dark:border-gray-700 max-h-48 overflow-y-auto">
                                         {loadingOrders ? (
-                                            <div className="p-3 text-sm text-gray-500 text-center">{t('dispatch.searching', 'Searching...')}</div>
+                                            <div className="p-3 text-sm text-gray-500 dark:text-gray-400 text-center">{t('dispatch.searching', 'Searching...')}</div>
                                         ) : filteredOrders.length === 0 ? (
-                                            <div className="p-3 text-sm text-gray-500 text-center">{t('dispatch.noPendingOrders', 'No pending orders found.')}</div>
+                                            <div className="p-3 text-sm text-gray-500 dark:text-gray-400 text-center">{t('dispatch.noPendingOrders', 'No pending orders found.')}</div>
                                         ) : (
                                             filteredOrders.map(order => (
                                                 <button
                                                     key={order.id}
                                                     type="button"
                                                     onClick={() => handleOrderSelect(order)}
-                                                    className="w-full text-left p-3 hover:bg-blue-50 border-b border-gray-50 last:border-0 flex justify-between items-center group transition-colors"
+                                                    className="w-full text-left p-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-b border-gray-50 dark:border-gray-700 last:border-0 flex justify-between items-center group transition-colors"
                                                 >
                                                     <div>
-                                                        <span className="font-semibold text-gray-900 group-hover:text-blue-700">{order.displayId}</span>
-                                                        <span className="text-xs text-gray-500 ml-2">{order.customer?.name ?? order.customer}</span>
+                                                        <span className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-700">{order.displayId}</span>
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{order.customer?.name ?? order.customer}</span>
                                                     </div>
-                                                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                                                    <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded">
                                                         {order.total.toLocaleString()} {t('common.dzd', 'DZD')}
                                                     </span>
                                                 </button>
@@ -231,27 +231,27 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
 
                         {/* 2. Customer & Destination */}
                         <div className="space-y-4 opacity-100 transition-opacity" style={{ opacity: formData.orderId ? 1 : 0.4 }}>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center">
-                                <MapPin className="w-4 h-4 mr-2 text-gray-400" /> {t('dispatch.modal.step2', '2. EcoTrack Routing Details')}
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center">
+                                <MapPin className="w-4 h-4 mr-2 text-gray-400" /> {t('dispatch.modal.step2', '2. Shipping & Routing Details')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="ship-recipient" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.recipient', 'Recipient Name')} *</label>
-                                    <input id="ship-recipient" required type="text" autoComplete="name" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
+                                    <label htmlFor="ship-recipient" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.recipient', 'Recipient Name')} *</label>
+                                    <input id="ship-recipient" required type="text" autoComplete="name" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label htmlFor="ship-phone1" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.phone1', 'Primary Phone')} *</label>
-                                        <input id="ship-phone1" required type="tel" autoComplete="tel" dir="ltr" value={formData.phone1} onChange={e => setFormData({ ...formData, phone1: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
+                                        <label htmlFor="ship-phone1" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.phone1', 'Primary Phone')} *</label>
+                                        <input id="ship-phone1" required type="tel" autoComplete="tel" dir="ltr" value={formData.phone1} onChange={e => setFormData({ ...formData, phone1: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                     </div>
                                     <div>
-                                        <label htmlFor="ship-phone2" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.phone2', 'Phone 2 (Opt)')}</label>
-                                        <input id="ship-phone2" type="tel" dir="ltr" value={formData.phone2} onChange={e => setFormData({ ...formData, phone2: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
+                                        <label htmlFor="ship-phone2" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.phone2', 'Phone 2 (Opt)')}</label>
+                                        <input id="ship-phone2" type="tel" dir="ltr" value={formData.phone2} onChange={e => setFormData({ ...formData, phone2: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="ship-wilaya" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.wilaya', 'Wilaya Name')} *</label>
+                                    <label htmlFor="ship-wilaya" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.wilaya', 'Wilaya Name')} *</label>
                                     <select
                                         id="ship-wilaya"
                                         required
@@ -266,7 +266,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                                 commune: ''
                                             });
                                         }}
-                                        className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                        className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                                     >
                                         <option value="">{t('dispatch.modal.selectWilaya', 'Select Wilaya...')}</option>
                                         {leblad.getWilayaList().map(wilaya => (
@@ -277,14 +277,14 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="ship-commune" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.commune', 'Commune')} *</label>
+                                    <label htmlFor="ship-commune" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.commune', 'Commune')} *</label>
                                     <select
                                         id="ship-commune"
                                         required
                                         disabled={!formData.wilayaCode}
                                         value={formData.commune}
                                         onChange={e => setFormData({ ...formData, commune: e.target.value })}
-                                        className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                        className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                                     >
                                         <option value="">{formData.wilayaCode ? t('dispatch.modal.selectCommune', 'Select Commune...') : t('dispatch.modal.selectWilayaFirst', 'Select Wilaya first')}</option>
                                         {formData.wilayaCode && getSafeCommunesForWilaya(formData.wilayaCode).map(commune => (
@@ -296,71 +296,71 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label htmlFor="ship-address" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.address', 'Detailed Address')} *</label>
-                                    <textarea id="ship-address" required rows="2" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"></textarea>
+                                    <label htmlFor="ship-address" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.address', 'Detailed Address')} *</label>
+                                    <textarea id="ship-address" required rows="2" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"></textarea>
                                 </div>
                             </div>
                         </div>
 
                         {/* 3. Package & Financials */}
                         <div className="space-y-4 opacity-100 transition-opacity" style={{ opacity: formData.orderId ? 1 : 0.4 }}>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center">
                                 <Package className="w-4 h-4 mr-2 text-gray-400" /> {t('dispatch.modal.step3', '3. Payload & Payment')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2">
-                                    <label htmlFor="ship-product" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.desc', 'Shipping Item Description')} *</label>
-                                    <input id="ship-product" required type="text" value={formData.productName} onChange={e => setFormData({ ...formData, productName: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
+                                    <label htmlFor="ship-product" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.desc', 'Shipping Item Description')} *</label>
+                                    <input id="ship-product" required type="text" value={formData.productName} onChange={e => setFormData({ ...formData, productName: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                                 </div>
                                 <div>
-                                    <label htmlFor="ship-cod" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.cod', 'Total COD Amount (DZD)')} *</label>
-                                    <div className="relative mt-1 border border-gray-300 rounded-md shadow-sm overflow-hidden flex focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
+                                    <label htmlFor="ship-cod" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.cod', 'Total COD Amount (DZD)')} *</label>
+                                    <div className="relative mt-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm overflow-hidden flex focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                                         <div className="flex-1">
-                                            <input id="ship-cod" required type="number" min="0" value={formData.codAmount} onChange={e => setFormData({ ...formData, codAmount: Number(e.target.value) })} className="w-full border-0 focus:ring-0 text-sm font-medium py-2 px-3" />
+                                            <input id="ship-cod" required type="number" min="0" value={formData.codAmount} onChange={e => setFormData({ ...formData, codAmount: Number(e.target.value) })} className="w-full border-0 focus:ring-0 text-sm font-medium py-2 px-3 dark:bg-gray-700 dark:text-gray-100" />
                                         </div>
-                                        <div className="bg-gray-100 text-gray-500 px-3 flex items-center justify-center flex-shrink-0 text-xs font-bold border-l border-gray-300 cursor-default">{t('common.dzd', 'DZD')}</div>
+                                        <div className="bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 px-3 flex items-center justify-center flex-shrink-0 text-xs font-bold border-l border-gray-300 dark:border-gray-600 cursor-default">{t('common.dzd', 'DZD')}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
                                 <div>
-                                    <label htmlFor="ship-delType" className="block text-xs font-medium text-gray-700 mb-1">{t('dispatch.modal.deliveryType', 'Delivery Type')}</label>
-                                    <select id="ship-delType" value={formData.deliveryType} onChange={e => setFormData({ ...formData, deliveryType: Number(e.target.value) })} className="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500 py-1.5">
+                                    <label htmlFor="ship-delType" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('dispatch.modal.deliveryType', 'Delivery Type')}</label>
+                                    <select id="ship-delType" value={formData.deliveryType} onChange={e => setFormData({ ...formData, deliveryType: Number(e.target.value) })} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500 py-1.5">
                                         <option value={0}>{t('dispatch.modal.homeDelivery', 'Home Delivery (0)')}</option>
                                         <option value={1}>{t('dispatch.modal.stopDesk', 'Stop Desk / Point (1)')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="ship-weight" className="block text-xs font-medium text-gray-700 mb-1">{t('dispatch.modal.weight', 'Weight (kg)')}</label>
-                                    <input id="ship-weight" type="number" step="0.1" value={formData.weight} onChange={e => setFormData({ ...formData, weight: Number(e.target.value) })} className="w-full rounded-md border-gray-300 shadow-sm text-sm py-1.5 focus:border-blue-500 focus:ring-blue-500" />
+                                    <label htmlFor="ship-weight" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('dispatch.modal.weight', 'Weight (kg)')}</label>
+                                    <input id="ship-weight" type="number" step="0.1" value={formData.weight} onChange={e => setFormData({ ...formData, weight: Number(e.target.value) })} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm py-1.5 focus:border-blue-500 focus:ring-blue-500" />
                                 </div>
                                 <div className="flex items-center mt-6">
                                     <input type="checkbox" id="fragile" checked={formData.fragileFlag} onChange={e => setFormData({ ...formData, fragileFlag: e.target.checked })} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
-                                    <label htmlFor="fragile" className="ml-2 text-sm font-medium text-gray-700 cursor-pointer">{t('dispatch.modal.fragile', 'Fragile Package')}</label>
+                                    <label htmlFor="fragile" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">{t('dispatch.modal.fragile', 'Fragile Package')}</label>
                                 </div>
                             </div>
 
                             <div>
-                                <label htmlFor="ship-remark" className="block text-xs font-medium text-gray-700">{t('dispatch.modal.remark', 'Delivery Instructions / Remarks')}</label>
-                                <input id="ship-remark" type="text" placeholder={t('dispatch.modal.remarkPlaceholder', 'e.g. Call before delivery')} value={formData.remark} onChange={e => setFormData({ ...formData, remark: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
+                                <label htmlFor="ship-remark" className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('dispatch.modal.remark', 'Delivery Instructions / Remarks')}</label>
+                                <input id="ship-remark" type="text" placeholder={t('dispatch.modal.remarkPlaceholder', 'e.g. Call before delivery')} value={formData.remark} onChange={e => setFormData({ ...formData, remark: e.target.value })} className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
                             </div>
                         </div>
 
                     </form>
                 </div>
 
-                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3 shrink-0">
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         {t('dispatch.modal.cancel', 'Cancel')}
                     </button>
                     <button
                         type="submit"
                         form="dispatchForm"
                         disabled={!formData.orderId || submitting}
-                        className="inline-flex items-center px-6 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center px-6 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:ring-offset-gray-800 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        {submitting ? t('dispatch.modal.submitting', 'Pushing to EcoTrack...') : t('dispatch.modal.submit', 'Dispatch to Courier')}
+                        {submitting ? t('dispatch.modal.submitting', 'Dispatching...') : t('dispatch.modal.submit', 'Dispatch to Courier')}
                     </button>
                 </div>
             </div>

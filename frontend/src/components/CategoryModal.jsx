@@ -55,26 +55,26 @@ export default function CategoryModal({ isOpen, onClose, category }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-auto overflow-hidden" {...panelProps}>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm mx-auto overflow-hidden" {...panelProps}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                         {category ? t('modals.catTitleEdit', 'Edit Category') : t('modals.catTitleAdd', 'Add New Category')}
                     </h2>
-                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100">
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium border border-red-100 dark:border-red-800">
                             {error}
                         </div>
                     )}
 
                     <div className="space-y-4">
                         <div>
-                            <label htmlFor="cat-name" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.catName', 'Category Name *')}</label>
+                            <label htmlFor="cat-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.catName', 'Category Name *')}</label>
                             <input
                                 id="cat-name"
                                 type="text"
@@ -82,20 +82,20 @@ export default function CategoryModal({ isOpen, onClose, category }) {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
+                                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all dark:bg-gray-700 dark:text-gray-100"
                                 placeholder={t('modals.catNamePlaceholder', "e.g. Raw Materials")}
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="cat-desc" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.catDesc', 'Description')}</label>
+                            <label htmlFor="cat-desc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.catDesc', 'Description')}</label>
                             <textarea
                                 id="cat-desc"
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
                                 rows={3}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all resize-none"
+                                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all resize-none dark:bg-gray-700 dark:text-gray-100"
                                 placeholder={t('modals.catDescPlaceholder', "Short description...")}
                             />
                         </div>
@@ -105,7 +105,7 @@ export default function CategoryModal({ isOpen, onClose, category }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                            className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-white transition-colors"
                         >
                             {t('modals.btnCancel', 'Cancel')}
                         </button>

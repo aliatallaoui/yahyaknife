@@ -63,6 +63,7 @@ const shipmentSchema = new mongoose.Schema({
         enum: [
             'Draft',
             'Created in Courier',
+            'Dispatch Failed',
             'Validated',
             'In Transit',
             'Out for Delivery',

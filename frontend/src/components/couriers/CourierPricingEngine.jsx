@@ -123,24 +123,24 @@ export default function CourierPricingEngine({ courierId }) {
         setIsEditing(false);
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading', 'Loading...')}</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500 dark:text-gray-400">{t('common.loading', 'Loading...')}</div>;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Error banner */}
             {errorMsg && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{errorMsg}</span>
                     <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
                 </div>
             )}
             {confirmDialogEl}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 text-start">
-                <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4 flex gap-3 text-start">
+                <ShieldAlert className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                    <h4 className="text-sm font-bold text-blue-900">{t('couriers.pricing_engine', 'Advanced Priority Pricing Engine')}</h4>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300">{t('couriers.pricing_engine', 'Advanced Priority Pricing Engine')}</h4>
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
                         {t('couriers.pricing_desc', 'Rules are evaluated continuously across payloads. The engine selects the matching rule with the HIGHEST priority index. Example: A specific exception rule (Priority 10) will override a general Wilaya rule (Priority 0).')}
                     </p>
                 </div>
@@ -246,7 +246,7 @@ export default function CourierPricingEngine({ courierId }) {
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
                             <div>
-                                <label htmlFor="rule-price" className="block text-xs font-black text-gray-900 mb-1">{t('couriers.price', 'Final Cost (DZD)')}</label>
+                                <label htmlFor="rule-price" className="block text-xs font-black text-gray-900 dark:text-white mb-1">{t('couriers.price', 'Final Cost (DZD)')}</label>
                                 <input
                                     id="rule-price"
                                     type="number"
@@ -254,13 +254,13 @@ export default function CourierPricingEngine({ courierId }) {
                                     min="0"
                                     value={formData.price}
                                     onChange={e => setFormData({ ...formData, price: e.target.value })}
-                                    className="w-full text-sm rounded-lg border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-indigo-50 font-bold"
+                                    className="w-full text-sm rounded-lg border-indigo-300 dark:border-indigo-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 font-bold"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="rule-priority" className="block text-xs font-black text-gray-900 mb-1 flex items-center justify-between">
+                                <label htmlFor="rule-priority" className="block text-xs font-black text-gray-900 dark:text-white mb-1 flex items-center justify-between">
                                     {t('couriers.priorityIndex', 'Priority Index')}
-                                    <ArrowDownUp className="w-3 h-3 text-gray-400" />
+                                    <ArrowDownUp className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                                 </label>
                                 <input
                                     id="rule-priority"
@@ -269,7 +269,7 @@ export default function CourierPricingEngine({ courierId }) {
                                     min="0"
                                     value={formData.priority}
                                     onChange={e => setFormData({ ...formData, priority: e.target.value })}
-                                    className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border font-mono"
+                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border font-mono"
                                     dir="ltr"
                                 />
                             </div>
@@ -286,10 +286,10 @@ export default function CourierPricingEngine({ courierId }) {
                 </div>
 
                 {/* Rules Table */}
-                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden flex flex-col">
                     <div className="overflow-x-auto">
                         <table className="w-full text-start rtl:text-right whitespace-nowrap text-sm">
-                            <thead className="bg-gray-50/80 text-gray-500 text-[10px] uppercase tracking-wider">
+                            <thead className="bg-gray-50/80 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-[10px] uppercase tracking-wider">
                                 <tr>
                                     <th className="px-4 py-3 font-bold">{t('couriers.colPriority', 'Priority')}</th>
                                     <th className="px-4 py-3 font-bold">{t('couriers.colRuleType', 'Rule Type')}</th>
@@ -298,49 +298,49 @@ export default function CourierPricingEngine({ courierId }) {
                                     <th className="px-4 py-3 font-bold text-center">{t('common.actions', 'Actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {rules.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
+                                        <td colSpan="5" className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                                             {t('couriers.noPricingRules', 'No active pricing rules. Add a rule to calculate live delivery fees.')}
                                         </td>
                                     </tr>
                                 ) : (
                                     rules.map((rule) => (
-                                        <tr key={rule._id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={rule._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                             <td className="px-4 py-3">
                                                 <span className={clsx(
                                                     "inline-flex items-center justify-center w-6 h-6 rounded-md font-black text-xs",
-                                                    rule.priority > 5 ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-700"
+                                                    rule.priority > 5 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                                                 )}>
                                                     {rule.priority}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 font-semibold text-gray-900">
+                                            <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
                                                 {rule.ruleType}
                                                 {rule.deliveryType !== undefined && rule.deliveryType !== null && (
-                                                    <span className="ml-2 inline-block px-2 border rounded text-[10px] text-gray-500 bg-white">
+                                                    <span className="ml-2 inline-block px-2 border dark:border-gray-600 rounded text-[10px] text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700">
                                                         {rule.deliveryType === 0 ? t('couriers.homeDelivery', 'Home') : t('couriers.officeDelivery', 'Office')}
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 font-medium">
-                                                {rule.ruleType === 'Flat' && <span className="text-gray-400 italic">{t('couriers.globalFallback', 'Global Fallback')}</span>}
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">
+                                                {rule.ruleType === 'Flat' && <span className="text-gray-400 dark:text-gray-500 italic">{t('couriers.globalFallback', 'Global Fallback')}</span>}
                                                 {rule.ruleType === 'Wilaya' && <span>{t('couriers.wilayaLabel', 'Wilaya')}: {rule.wilayaCode}</span>}
                                                 {rule.ruleType === 'Wilaya+Commune' && <span>{rule.commune} ({rule.wilayaCode})</span>}
                                                 {rule.ruleType === 'Weight' && <span>{rule.minWeight || 0}kg - {rule.maxWeight || t('common.max', 'Max')}kg</span>}
                                             </td>
                                             <td className="px-4 py-3 text-end">
-                                                <span className="font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">
+                                                <span className="font-black text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md">
                                                     {rule.price} {t('common.dzd', 'DZD')}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(rule)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                                                    <button onClick={() => handleEdit(rule)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors">
                                                         <Edit3 className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => handleDelete(rule._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors">
+                                                    <button onClick={() => handleDelete(rule._id)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>

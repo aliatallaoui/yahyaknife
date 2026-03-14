@@ -1443,7 +1443,7 @@ exports.claimOrder = async (req, res) => {
         res.json(ok({ message: 'Order claimed successfully', orderId: order.orderId }));
     } catch (error) {
         logger.error({ err: error }, 'claimOrder error');
-        res.status(400).json({ message: error.message || 'Failed to claim order' });
+        res.status(400).json({ message: error.isOperational ? error.message : 'Failed to claim order' });
     }
 };
 
@@ -1470,7 +1470,7 @@ exports.reassignOrder = async (req, res) => {
         res.json(ok({ message: 'Order reassigned', orderId: order.orderId, newAgent: agentUser.name }));
     } catch (error) {
         logger.error({ err: error }, 'reassignOrder error');
-        res.status(400).json({ message: error.message || 'Failed to reassign order' });
+        res.status(400).json({ message: error.isOperational ? error.message : 'Failed to reassign order' });
     }
 };
 

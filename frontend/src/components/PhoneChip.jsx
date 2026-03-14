@@ -9,7 +9,7 @@ import { Phone, Copy, Check, MessageCircle } from 'lucide-react';
 export default function PhoneChip({ phone, className = '' }) {
     const [copied, setCopied] = useState(false);
 
-    if (!phone) return <span className={`text-gray-400 text-xs ${className}`}>—</span>;
+    if (!phone) return <span className={`text-gray-400 dark:text-gray-500 text-xs ${className}`}>—</span>;
     
     // Attempt standard formatting for Algeria, fallback to raw digits
     let waPhone = phone.replace(/\D/g, '');
@@ -29,7 +29,7 @@ export default function PhoneChip({ phone, className = '' }) {
                 type="button"
                 onClick={handleCopy}
                 title={copied ? 'Copied!' : 'Click to copy phone number'}
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-indigo-600 group transition-colors py-0.5"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 group transition-colors py-0.5"
             >
                 {copied
                     ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -45,7 +45,7 @@ export default function PhoneChip({ phone, className = '' }) {
                 target="_blank" 
                 rel="noopener noreferrer"
                 title="Message on WhatsApp"
-                className="p-1 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors ms-1"
+                className="p-1 text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded transition-colors ms-1"
             >
                 <MessageCircle className="w-3.5 h-3.5" />
             </a>

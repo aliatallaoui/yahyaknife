@@ -10,6 +10,7 @@
  */
 
 const CourierAdapter = require('./CourierAdapter');
+const AppError = require('../../shared/errors/AppError');
 const { yalidineRequest } = require('../../utils/yalidineRequest');
 
 class YalidineAdapter extends CourierAdapter {
@@ -25,6 +26,9 @@ class YalidineAdapter extends CourierAdapter {
      * Maps internal shipment fields to Yalidine's parcel payload format.
      */
     toPayload(shipment) {
+        if (!shipment.codAmount && shipment.codAmount !== 0) {
+            throw AppError.validationFailed({ codAmount: 'COD amount is required for courier dispatch' });
+        }
         return {
             order_id:           shipment.internalOrderId,
             firstname:          shipment.customerName,

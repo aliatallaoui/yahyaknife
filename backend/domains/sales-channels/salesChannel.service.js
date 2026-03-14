@@ -139,8 +139,8 @@ exports.createPage = async ({ tenantId, channelId, body }) => {
     const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null });
     if (!channel) throw AppError.notFound('Sales Channel');
 
-    // Verify product exists
-    const product = await Product.findById(productId);
+    // Verify product exists and belongs to this tenant
+    const product = await Product.findOne({ _id: productId, tenant: tenantId });
     if (!product) throw AppError.notFound('Product');
 
     const slug = slugify(title);
@@ -270,8 +270,8 @@ exports.getStorefrontPage = async ({ channelSlug, pageSlug }) => {
 
     if (!page) throw AppError.notFound('Page');
 
-    // Fetch product + variants
-    const product = await Product.findById(page.product).lean();
+    // Fetch product + variants (scoped to channel's tenant)
+    const product = await Product.findOne({ _id: page.product, tenant: channel.tenant }).lean();
     if (!product) throw AppError.notFound('Product');
 
     let variants = await ProductVariant.find({
@@ -349,7 +349,7 @@ exports.previewPage = async ({ tenantId, channelId, pageId }) => {
     const page = await LandingPage.findOne({ _id: pageId, salesChannel: channelId, deletedAt: null }).lean();
     if (!page) throw AppError.notFound('Page');
 
-    const product = await Product.findById(page.product).lean();
+    const product = await Product.findOne({ _id: page.product, tenant: channel.tenant }).lean();
     if (!product) throw AppError.notFound('Product');
 
     let variants = await ProductVariant.find({ tenant: channel.tenant, productId: product._id, status: 'Active' })
@@ -422,7 +422,7 @@ exports.getStorefrontCoverage = async ({ tenantId, wilayaCode }) => {
  */
 exports.calculateStorefrontDeliveryPrice = async ({ tenantId, channelId, wilayaCode, commune, deliveryType }) => {
     // Use channel's default courier, or find first active courier
-    const channel = await SalesChannel.findById(channelId).lean();
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId }).lean();
     let courierId = channel?.defaultCourier;
 
     if (!courierId) {
@@ -525,7 +525,7 @@ exports.submitStorefrontOrder = async ({ channelSlug, pageSlug, body, ip }) => {
 
     // ── Create Order via OrderService ───────────────────────────────────────
     const orderId = generateOrderId(channel.tenant);
-    const product = await Product.findById(page.product).select('name').lean();
+    const product = await Product.findOne({ _id: page.product, tenant: channel.tenant }).select('name').lean();
 
     const order = await createOrder({
         tenantId: channel.tenant,

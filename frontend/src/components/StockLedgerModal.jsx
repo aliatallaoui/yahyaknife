@@ -34,17 +34,17 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm" {...backdropProps}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl flex flex-col max-h-[95vh] sm:max-h-[90vh]" {...panelProps}>
+            <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl flex flex-col max-h-[95vh] sm:max-h-[90vh]" {...panelProps}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700">
                     <div>
-                        <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <FileText className="w-5 h-5 text-indigo-600" />
                             {t('modals.ledgerTitle', 'Stock Ledger')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">{t('modals.ledgerSubtitle', 'Movement history for')} {product.productName ?? product.name} ({product.sku})</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('modals.ledgerSubtitle', 'Movement history for')} {product.productName ?? product.name} ({product.sku})</p>
                     </div>
-                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -56,30 +56,30 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                         </div>
                     ) : fetchError ? (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                             <AlertTriangle className="w-4 h-4 shrink-0" />
                             <span>{fetchError}</span>
                         </div>
                     ) : ledger.length === 0 ? (
                         <div className="text-center py-12">
-                            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">{t('modals.noMovements', 'No stock movements found for this product.')}</p>
+                            <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                            <p className="text-gray-500 dark:text-gray-400">{t('modals.noMovements', 'No stock movements found for this product.')}</p>
                         </div>
                     ) : (
                         <div className="cf-table-wrap">
                             <table className="cf-table min-w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 dark:bg-gray-700/50">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colDate', 'Date')}</th>
-                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colType', 'Type')}</th>
-                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colQty', 'Quantity')}</th>
-                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('modals.colReason', 'Reference/Reason')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('modals.colDate', 'Date')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('modals.colType', 'Type')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('modals.colQty', 'Quantity')}</th>
+                                        <th scope="col" className="px-6 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('modals.colReason', 'Reference/Reason')}</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {ledger.map((movement) => (
-                                        <tr key={movement._id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <tr key={movement._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {fmtShortDateTime(movement.date)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -96,7 +96,7 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                                                     {movement.quantity > 0 ? '+' : ''}{movement.quantity}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                                                 <div>{movement.reason}</div>
                                                 {movement.referenceId && <div className="text-xs text-gray-400 mt-0.5">{t('modals.refText', 'Ref')}: {movement.referenceId}</div>}
                                             </td>
@@ -109,10 +109,10 @@ const StockLedgerModal = ({ isOpen, onClose, product }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end">
+                <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-2xl flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 shadow-sm"
                     >
                         {t('modals.btnCancel', 'Close')}
                     </button>

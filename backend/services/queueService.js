@@ -90,7 +90,7 @@ const queueService = {
         // Use a MongoDB cursor to stream data instead of loading all into RAM
         const cursor = Order.find(secureQuery)
             .populate('customer', 'name phone')
-            .populate({ path: 'products.variantId', populate: { path: 'productId' } })
+            .populate({ path: 'products.variantId', select: 'sku name price productId', populate: { path: 'productId', select: 'name' } })
             .cursor({ batchSize });
 
         let batchRecords = [];

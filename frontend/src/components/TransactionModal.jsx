@@ -153,14 +153,14 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" {...backdropProps}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" {...panelProps}>
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-900">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" {...panelProps}>
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                         {isEdit ? t('modals.trxTitleEdit') : t('modals.trxTitleAdd')}
                     </h3>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -168,20 +168,20 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {error && (
-                        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">
+                        <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm border border-red-100 dark:border-red-800">
                             {error}
                         </div>
                     )}
 
                     {/* Type Selector */}
                     {!isEdit && (
-                        <div className="grid grid-cols-2 gap-3 p-1 bg-gray-50 rounded-lg">
+                        <div className="grid grid-cols-2 gap-3 p-1 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <button
                                 type="button"
                                 onClick={() => handleTypeChange('expense')}
                                 className={clsx(
                                     "py-2 text-sm font-medium rounded-md transition-all",
-                                    type === 'expense' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                                    type === 'expense' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-600/50"
                                 )}
                             >
                                 {t('modals.trxExpense')}
@@ -191,7 +191,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                 onClick={() => handleTypeChange('revenue')}
                                 className={clsx(
                                     "py-2 text-sm font-medium rounded-md transition-all",
-                                    type === 'revenue' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                                    type === 'revenue' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-600/50"
                                 )}
                             >
                                 {t('modals.trxRevenue')}
@@ -201,11 +201,11 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Category */}
                     <div>
-                        <label htmlFor="trx-category" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxCategory')}</label>
+                        <label htmlFor="trx-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.trxCategory')}</label>
                         <select
                             id="trx-category"
                             required
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100"
                             value={category}
                             onChange={(e) => handleCategoryChange(e.target.value)}
                         >
@@ -230,17 +230,17 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Worker Selection — only when HR category */}
                     {isHR && (
-                        <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
-                            <div className="flex items-center gap-2 text-sm font-bold text-violet-800">
+                        <div className="bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700 rounded-xl p-4 space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-bold text-violet-800 dark:text-violet-300">
                                 <Users className="w-4 h-4" />
                                 {t('modals.selectEmployee', 'Select Employee to Pay')}
                             </div>
                             {payrollLoading ? (
-                                <div className="text-sm text-violet-500 flex items-center gap-2">
+                                <div className="text-sm text-violet-500 dark:text-violet-400 flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin" /> {t('modals.loadingWorkers', 'Loading workers...')}
                                 </div>
                             ) : payrollRecords.length === 0 ? (
-                                <div className="text-sm text-violet-400 italic">
+                                <div className="text-sm text-violet-400 dark:text-violet-500 italic">
                                     {t('modals.noUnpaidPayroll', 'No unpaid payroll records. You can still add a manual HR expense below.')}
                                 </div>
                             ) : (
@@ -249,7 +249,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                         id="trx-employee"
                                         value={selectedPayrollId}
                                         onChange={(e) => setSelectedPayrollId(e.target.value)}
-                                        className="w-full border border-violet-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+                                        className="w-full border border-violet-300 dark:border-violet-600 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-400 bg-white dark:bg-gray-700 dark:text-gray-100"
                                     >
                                         <option value="">{t('modals.selectWorkerOptional', '— Select a worker (optional) —')}</option>
                                         {payrollRecords.map(pr => {
@@ -266,15 +266,15 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                                     {/* Show worker payment info */}
                                     {selectedRecord && (
                                         <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="bg-white rounded-lg p-2 border border-violet-100">
-                                                <div className="text-[10px] text-gray-500 font-bold uppercase">{t('modals.workerSalary', 'Salary')}</div>
-                                                <div className="text-sm font-black text-gray-900">{selectedRecord.finalPayableSalary.toLocaleString()}</div>
+                                            <div className="bg-white dark:bg-gray-700 rounded-lg p-2 border border-violet-100 dark:border-violet-800">
+                                                <div className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">{t('modals.workerSalary', 'Salary')}</div>
+                                                <div className="text-sm font-black text-gray-900 dark:text-white">{selectedRecord.finalPayableSalary.toLocaleString()}</div>
                                             </div>
-                                            <div className="bg-white rounded-lg p-2 border border-violet-100">
+                                            <div className="bg-white dark:bg-gray-700 rounded-lg p-2 border border-violet-100 dark:border-violet-800">
                                                 <div className="text-[10px] text-emerald-600 font-bold uppercase">{t('modals.workerPaid', 'Paid')}</div>
                                                 <div className="text-sm font-black text-emerald-600">{selectedRecord.amountPaid.toLocaleString()}</div>
                                             </div>
-                                            <div className="bg-white rounded-lg p-2 border border-violet-100">
+                                            <div className="bg-white dark:bg-gray-700 rounded-lg p-2 border border-violet-100 dark:border-violet-800">
                                                 <div className="text-[10px] text-amber-600 font-bold uppercase">{t('modals.workerRemaining', 'Remaining')}</div>
                                                 <div className="text-sm font-black text-amber-600">{(selectedRecord.finalPayableSalary - selectedRecord.amountPaid).toLocaleString()}</div>
                                             </div>
@@ -287,13 +287,13 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Amount */}
                     <div>
-                        <label htmlFor="trx-amount" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxAmount')}</label>
+                        <label htmlFor="trx-amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.trxAmount')}</label>
                         <input
                             id="trx-amount"
                             type="number"
                             step="0.01"
                             required
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
                             placeholder="0.00"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
@@ -302,12 +302,12 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Date */}
                     <div>
-                        <label htmlFor="trx-date" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDate')}</label>
+                        <label htmlFor="trx-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.trxDate')}</label>
                         <input
                             id="trx-date"
                             type="date"
                             required
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                         />
@@ -315,12 +315,12 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
 
                     {/* Description */}
                     <div>
-                        <label htmlFor="trx-desc" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.trxDesc')}</label>
+                        <label htmlFor="trx-desc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.trxDesc')}</label>
                         <input
                             id="trx-desc"
                             type="text"
                             required
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
                             placeholder={t('modals.trxDescPlaceholder')}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -331,7 +331,7 @@ export default function TransactionModal({ isOpen, onClose, onSubmit, initialDat
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             {t('modals.trxBtnCancel')}
                         </button>

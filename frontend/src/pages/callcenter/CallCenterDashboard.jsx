@@ -26,13 +26,13 @@ const AssignmentBadge = ({ mode }) => {
 };
 
 const KPICard = ({ title, value, icon: Icon, colorClass, suffix = '' }) => (
-    <div className="bg-white rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
         <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${colorClass} bg-opacity-10 flex items-center justify-center mb-2 sm:mb-4`}>
             <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colorClass.replace('bg-', 'text-')}`} />
         </div>
         <div>
-            <p className="text-gray-500 text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 truncate">{title}</p>
-            <h3 className="text-xl sm:text-2xl font-black text-gray-900">{value}{suffix}</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 truncate">{title}</p>
+            <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{value}{suffix}</h3>
         </div>
     </div>
 );
@@ -372,14 +372,14 @@ export default function CallCenterDashboard() {
             {/* Header */}
             <div className="flex justify-between items-start sm:items-end shrink-0 gap-3">
                 <div className="min-w-0">
-                    <h1 className="text-xl sm:text-2xl font-black text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                    <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
                         {t('callcenter.agent_dashboard', 'Agent Workspace')}
                     </h1>
-                    <p className="text-gray-500 text-xs sm:text-sm mt-1 hidden sm:block">
+                    <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1 hidden sm:block">
                         {t('callcenter.agent_subtitle', 'Your queue · Click a row or Process to open order.')}
                     </p>
                 </div>
-                <button onClick={fetchDashboard} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0" title="Refresh">
+                <button onClick={fetchDashboard} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0" title={t('common.refresh', 'Refresh')}>
                     <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
@@ -450,7 +450,7 @@ export default function CallCenterDashboard() {
                                     onChange={e => setSearch(e.target.value)}
                                     placeholder={t('callcenter.queue.search', 'Search by name, phone, wilaya…')}
                                     className="w-full sm:w-56 ps-9 pe-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    title="Press / to focus"
+                                    title={t('common.slashToFocus', 'Press / to focus')}
                                 />
                             </div>
                             {filtered.length > 0 && !isDrawerOpen && (

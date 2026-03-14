@@ -153,7 +153,7 @@ exports.generateManifest = async (req, res) => {
             const tracking = o.trackingInfo?.trackingNumber || 'N/A';
             const customerName = o.customer?.name || o.shipping?.recipientName || 'Inconnu';
             const phone = o.customer?.phone || o.shipping?.phone1 || '';
-            const codAmt = o.financials?.codAmount || o.finalTotal || o.totalAmount || 0;
+            const codAmt = o.financials?.codAmount ?? o.finalTotal ?? o.totalAmount ?? 0;
             const productText = o.products ? o.products.map(p => `${p.name || 'Produit'} (x${p.quantity || 1})`).join('<br>') : 'N/A';
 
             return `
@@ -257,7 +257,9 @@ exports.updateShipment = async (req, res) => {
         const updated = await shipment.save();
         res.json(updated);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
+        logger.error({ err: error }, 'Error updating shipment');
+        res.status(400).json({ message: 'Failed to update shipment' });
     }
 };
 

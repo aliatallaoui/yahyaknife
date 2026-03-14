@@ -648,7 +648,7 @@ exports.generateLandingPage = async ({
     let product, variants, productImages;
 
     if (productId) {
-        product = await Product.findById(productId).lean();
+        product = await Product.findOne({ _id: productId, tenant: tenantId }).lean();
         if (!product) throw AppError.notFound('Product');
 
         variants = await ProductVariant.find({ tenant: tenantId, productId: product._id, status: 'Active' })

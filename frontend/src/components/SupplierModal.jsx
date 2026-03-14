@@ -69,26 +69,26 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" {...backdropProps}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto overflow-hidden" {...panelProps}>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-auto overflow-hidden" {...panelProps}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                         {editSupplier ? t('modals.supTitleEdit', 'Edit Supplier') : t('modals.supTitleAdd', 'Add New Supplier')}
                     </h2>
-                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100">
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium border border-red-100 dark:border-red-800">
                             {error}
                         </div>
                     )}
 
                     <div className="space-y-4">
                         <div>
-                            <label htmlFor="supmod-name" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supName', 'Company Name *')}</label>
+                            <label htmlFor="supmod-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.supName', 'Company Name *')}</label>
                             <input
                                 id="supmod-name"
                                 type="text"
@@ -96,27 +96,27 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
+                                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
                                 placeholder={t('modals.supNamePlaceholder', "e.g. Acme Corp")}
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="supmod-contact" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supContact', 'Contact Person')}</label>
+                            <label htmlFor="supmod-contact" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.supContact', 'Contact Person')}</label>
                             <input
                                 id="supmod-contact"
                                 type="text"
                                 name="contactPerson"
                                 value={formData.contactPerson}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
+                                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
                                 placeholder={t('modals.supContactPlaceholder', "e.g. John Doe")}
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="supmod-email" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supEmail', 'Email')}</label>
+                                <label htmlFor="supmod-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.supEmail', 'Email')}</label>
                                 <input
                                     id="supmod-email"
                                     type="email"
@@ -124,12 +124,12 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                                     dir="ltr"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
+                                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
                                     placeholder={t('modals.supEmailPlaceholder', "contact@company.com")}
                                 />
                             </div>
                             <div>
-                                <label htmlFor="supmod-phone" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supPhone', 'Phone')}</label>
+                                <label htmlFor="supmod-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.supPhone', 'Phone')}</label>
                                 <input
                                     id="supmod-phone"
                                     type="tel"
@@ -137,21 +137,21 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                                     dir="ltr"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
+                                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
                                     placeholder={t('modals.supPhonePlaceholder', "(555) 123-4567")}
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="supmod-address" className="block text-sm font-medium text-gray-700 mb-1">{t('modals.supAddress', 'Address')}</label>
+                            <label htmlFor="supmod-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('modals.supAddress', 'Address')}</label>
                             <input
                                 id="supmod-address"
                                 type="text"
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
+                                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all"
                                 placeholder={t('modals.supAddressPlaceholder', "123 Industrial Pkwy")}
                             />
                         </div>
@@ -161,7 +161,7 @@ export default function SupplierModal({ isOpen, onClose, supplierArray = [] }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                            className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                         >
                             {t('modals.btnCancel', 'Cancel')}
                         </button>

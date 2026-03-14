@@ -39,10 +39,10 @@ export default function InsightFeed() {
     }
 
     const getSeverityStyles = (severity, type) => {
-        if (type === 'Stock') return 'bg-amber-50 text-amber-700 border-amber-200';
-        if (severity === 'High') return 'bg-rose-50 text-rose-700 border-rose-200';
-        if (severity === 'Medium') return 'bg-amber-50 text-amber-700 border-amber-200';
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        if (type === 'Stock') return 'bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700';
+        if (severity === 'High') return 'bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700';
+        if (severity === 'Medium') return 'bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700';
+        return 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700';
     };
 
     const getIcon = (type) => {

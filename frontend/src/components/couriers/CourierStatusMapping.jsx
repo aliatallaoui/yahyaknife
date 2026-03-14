@@ -89,29 +89,29 @@ export default function CourierStatusMapping({ courier, setCourier }) {
     return (
         <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {errorMsg && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{errorMsg}</span>
-                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600 dark:hover:text-red-300">✕</button>
                 </div>
             )}
             {successMsg && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700">
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span className="flex-1">{successMsg}</span>
-                    <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600">✕</button>
+                    <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300">✕</button>
                 </div>
             )}
-            <div className="bg-white border text-start border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 border text-start border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-indigo-500" />
                     {t('couriers.status_mapping', 'Lifecycle Event Mapping')}
                 </h3>
-                <p className="text-sm text-gray-500 mb-6">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                     {t('couriers.mapping_desc', 'Map the exact status codes returned by the Courier\'s API/Webhooks into the standardized internal ERP status lifecycle.')}
                 </p>
 
-                <div className="grid grid-cols-12 gap-4 mb-4 font-bold text-xs text-gray-500 uppercase tracking-wider px-2">
+                <div className="grid grid-cols-12 gap-4 mb-4 font-bold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
                     <div className="col-span-5">{t('couriers.external_status', 'External API Status String')}</div>
                     <div className="col-span-1 text-center font-normal">→</div>
                     <div className="col-span-5">{t('couriers.internal_status', 'Internal ERP Target Stage')}</div>
@@ -120,14 +120,14 @@ export default function CourierStatusMapping({ courier, setCourier }) {
 
                 <div className="space-y-3 mb-6">
                     {Object.keys(mapping).map((extKey, idx) => (
-                        <div key={idx} className="grid grid-cols-12 gap-4 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <div key={idx} className="grid grid-cols-12 gap-4 items-center bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-100 dark:border-gray-600">
                             <div className="col-span-5 relative">
                                 <input
                                     type="text"
                                     value={extKey}
                                     onChange={(e) => handleKeyChange(extKey, e.target.value)}
                                     placeholder="e.g. dispatched_to_driver"
-                                    className="w-full text-sm rounded-lg border-gray-300 shadow-sm p-2 border font-mono text-indigo-700 bg-white"
+                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 shadow-sm p-2 border font-mono text-indigo-700 dark:text-indigo-400 bg-white dark:bg-gray-700"
                                     list="common-external"
                                 />
                                 <datalist id="common-external">
@@ -135,13 +135,13 @@ export default function CourierStatusMapping({ courier, setCourier }) {
                                 </datalist>
                             </div>
                             
-                            <div className="col-span-1 text-center text-gray-400 font-bold">→</div>
+                            <div className="col-span-1 text-center text-gray-400 dark:text-gray-500 font-bold">→</div>
                             
                             <div className="col-span-5">
                                 <select
                                     value={mapping[extKey]}
                                     onChange={(e) => handleValChange(extKey, e.target.value)}
-                                    className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-white font-bold text-gray-700"
+                                    className="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border bg-white dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-100"
                                 >
                                     {internalStatuses.map(s => (
                                         <option key={s} value={s}>{s}</option>
@@ -152,7 +152,7 @@ export default function CourierStatusMapping({ courier, setCourier }) {
                             <div className="col-span-1 text-right">
                                 <button 
                                     onClick={() => handleDelete(extKey)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded transition-colors"
+                                    className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300 rounded transition-colors"
                                     title={t('couriers.removeRule', 'Remove Rule')}
                                 >
                                     ×
@@ -162,16 +162,16 @@ export default function CourierStatusMapping({ courier, setCourier }) {
                     ))}
                     
                     {Object.keys(mapping).length === 0 && (
-                        <div className="py-6 text-center text-gray-400 border border-dashed rounded-lg">
+                        <div className="py-6 text-center text-gray-400 dark:text-gray-500 border border-dashed dark:border-gray-600 rounded-lg">
                             {t('couriers.no_mapping', 'No mappings defined. Manual updates will be required.')}
                         </div>
                     )}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
                     <button
                         onClick={handleAddPair}
-                        className="px-4 py-2 bg-white text-indigo-600 font-bold rounded-lg border border-indigo-200 hover:bg-indigo-50 transition-colors shadow-sm"
+                        className="px-4 py-2 bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 font-bold rounded-lg border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shadow-sm"
                     >
                         + {t('couriers.add_mapping_rule', 'Add Mapping Rule')}
                     </button>

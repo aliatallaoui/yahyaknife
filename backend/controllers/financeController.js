@@ -237,7 +237,7 @@ exports.settleCourierCash = async (req, res) => {
 
         let totalExpectedCash = 0;
         orders.forEach(o => {
-            totalExpectedCash += (o.financials?.codAmount || 0);
+            totalExpectedCash += (o.financials?.codAmount ?? o.totalAmount ?? 0);
         });
 
         // Prevent over-settlement: amount cannot exceed courier's pending remittance
@@ -276,7 +276,7 @@ exports.settleCourierCash = async (req, res) => {
         }
         session.endSession();
         logger.error({ err: error }, 'Courier settlement error');
-        return res.status(400).json({ message: error.message || 'Settlement failed' });
+        return res.status(400).json({ message: error.isOperational ? error.message : 'Settlement failed' });
     }
 
     // Route order status mutations through OrderService (outside transaction

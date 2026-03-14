@@ -96,15 +96,19 @@ exports.createShipment = async ({ orderId, shipmentData, tenantId }) => {
 
     // Sync order status through service to trigger inventory + audit trail
     if (tenantId) {
-        const updateStatus = trackingId ? 'Dispatched' : 'Dispatch Failed';
         const trackingInfo = trackingId
             ? { carrier: providerName, trackingNumber: trackingId }
             : { carrier: providerName, error: courierError };
 
+        // Only update order status to 'Dispatched' on success.
+        // On failure, leave order at its current status — 'Dispatch Failed' is not a valid order status.
+        const updateData = { trackingInfo };
+        if (trackingId) updateData.status = 'Dispatched';
+
         await OrderService.updateOrder({
             orderId: orderId.toString(),
             tenantId,
-            updateData: { status: updateStatus, trackingInfo },
+            updateData,
             bypassStateMachine: true
         });
     }
@@ -177,15 +181,19 @@ exports.quickDispatch = async (orderId, tenantId) => {
     const savedShipment = await newShipment.save();
 
     // Sync order status through service to trigger inventory + audit trail
-    const updateStatus = trackingId ? 'Dispatched' : 'Dispatch Failed';
     const trackingInfo = trackingId
         ? { carrier: providerName, trackingNumber: trackingId }
         : { carrier: providerName, error: courierError };
 
+    // Only update order status to 'Dispatched' on success.
+    // On failure, leave order at its current status — 'Dispatch Failed' is not a valid order status.
+    const updateData = { trackingInfo };
+    if (trackingId) updateData.status = 'Dispatched';
+
     await OrderService.updateOrder({
         orderId: orderId.toString(),
         tenantId,
-        updateData: { status: updateStatus, trackingInfo },
+        updateData,
         bypassStateMachine: true
     });
 
@@ -323,7 +331,7 @@ exports.getShipmentLabel = async (shipmentId, tenantId) => {
 async function resolveAdapterForShipment(shipment, tenantId) {
     // Try to find the courier via the linked order
     if (shipment.internalOrder) {
-        const order = await Order.findById(shipment.internalOrder).select('courier').lean();
+        const order = await Order.findOne({ _id: shipment.internalOrder, tenant: tenantId }).select('courier').lean();
         if (order?.courier) {
             const courier = await Courier.findOne({ _id: order.courier, tenant: tenantId, deletedAt: null });
             if (courier) return getAdapter(courier);

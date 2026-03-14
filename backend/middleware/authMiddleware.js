@@ -30,7 +30,7 @@ const protect = async (req, res, next) => {
             // Cache user + populated role to avoid DB hit on every request
             const cacheKey = `auth:user:${decoded.id}`;
             const user = await cacheService.getOrSet(cacheKey, async () => {
-                const u = await User.findById(decoded.id).select('-password').populate('role');
+                const u = await User.findById(decoded.id).select('-password').populate('role', 'name permissions');
                 return u ? u.toObject() : null;
             }, AUTH_CACHE_TTL);
 

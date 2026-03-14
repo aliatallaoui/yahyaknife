@@ -18,6 +18,7 @@ import PhoneChip from '../components/PhoneChip';
 const SHIPMENT_STATUS_I18N = {
     'All':                 'common.all',
     'Created in Courier':  'dispatch.statusCreatedInCourier',
+    'Dispatch Failed':     'dispatch.statusDispatchFailed',
     'Validated':           'dispatch.statusValidated',
     'In Transit':          'dispatch.statusInTransit',
     'Out for Delivery':    'dispatch.statusOutForDelivery',
@@ -143,6 +144,7 @@ export default function DispatchCenter() {
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Created in Courier': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800';
+            case 'Dispatch Failed': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800';
             case 'Validated': return 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800';
             case 'In Transit': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
             case 'Out for Delivery': return 'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800';
@@ -161,6 +163,7 @@ export default function DispatchCenter() {
             case 'In Transit':
             case 'Out for Delivery': return <ArrowRight className="w-4 h-4 mr-1.5" />;
             case 'Created in Courier': return <Clock className="w-4 h-4 mr-1.5" />;
+            case 'Dispatch Failed': return <AlertTriangle className="w-4 h-4 mr-1.5" />;
             case 'Returned':
             case 'Cancelled': return <XCircle className="w-4 h-4 mr-1.5" />;
             default: return <Clock className="w-4 h-4 mr-1.5" />;
@@ -184,7 +187,7 @@ export default function DispatchCenter() {
         <div className="space-y-6">
             <PageHeader
                 title={t('dispatch.title', 'Dispatch & Logistics Center')}
-                subtitle={t('dispatch.subtitle', 'Manage outbound ECOTRACK shipments, tracking statuses, and returns.')}
+                subtitle={t('dispatch.subtitle', 'Manage outbound shipments, tracking statuses, and returns across all courier providers.')}
                 variant="sales"
                 actions={
                     <div className="flex flex-wrap gap-3">
@@ -294,6 +297,7 @@ export default function DispatchCenter() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.tracking', 'Tracking / Ref')}</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.recipient', 'Recipient')}</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.destination', 'Destination')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.provider', 'Provider')}</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.status', 'Courier Status')}</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.cod', 'COD Amount')}</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dispatch.table.actions', 'Actions')}</th>
@@ -301,12 +305,12 @@ export default function DispatchCenter() {
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {loading ? (
-                                <tr><td colSpan="6" className="p-0">
+                                <tr><td colSpan="7" className="p-0">
                                     <TableSkeleton rows={6} cols={6} showHeader={false} />
                                 </td></tr>
                             ) : filteredShipments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                         <Archive className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
                                         <p className="text-lg font-medium text-gray-900 dark:text-white">{t('dispatch.empty.title', 'No shipments found')}</p>
                                         <p className="text-sm mt-1">{t('dispatch.empty.subtitle', 'Adjust filters or create a new dispatch order.')}</p>
@@ -330,6 +334,18 @@ export default function DispatchCenter() {
                                             <div className="text-xs text-gray-500 dark:text-gray-400">{shipment.commune}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={clsx(
+                                                "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+                                                (shipment.courierProvider || 'ECOTRACK') === 'ECOTRACK'
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                                    : (shipment.courierProvider || '').toUpperCase() === 'YALIDIN'
+                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400'
+                                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                                            )}>
+                                                {shipment.courierProvider || 'ECOTRACK'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={clsx("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border", getStatusStyle(shipment.shipmentStatus))}>
                                                 {getStatusIcon(shipment.shipmentStatus)}
                                                 {getShipmentStatusLabel(shipment.shipmentStatus, t)}
@@ -347,12 +363,12 @@ export default function DispatchCenter() {
                                             {['Created in Courier', 'Draft'].includes(shipment.shipmentStatus) && (
                                                 <>
                                                     <RequireAction permission="shipments.create">
-                                                        <button onClick={() => handleValidate(shipment._id)} title="Validate & Dispatch" className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-200 dark:bg-indigo-900/20 p-1.5 rounded-lg transition-colors">
+                                                        <button onClick={() => handleValidate(shipment._id)} title={t('dispatch.validateDispatch', 'Validate & Dispatch')} className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-200 dark:bg-indigo-900/20 p-1.5 rounded-lg transition-colors">
                                                             <CheckSquare className="w-4 h-4" />
                                                         </button>
                                                     </RequireAction>
                                                     <RequireAction permission="shipments.cancel">
-                                                        <button onClick={() => handleDelete(shipment._id)} title="Cancel/Delete" className="text-red-600 hover:text-red-900 bg-red-50 dark:text-red-400 dark:hover:text-red-200 dark:bg-red-900/20 p-1.5 rounded-lg transition-colors">
+                                                        <button onClick={() => handleDelete(shipment._id)} title={t('dispatch.cancelDelete', 'Cancel/Delete')} className="text-red-600 hover:text-red-900 bg-red-50 dark:text-red-400 dark:hover:text-red-200 dark:bg-red-900/20 p-1.5 rounded-lg transition-colors">
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </RequireAction>
@@ -362,7 +378,7 @@ export default function DispatchCenter() {
                                             {/* Post-validation Actions */}
                                             {!['Created in Courier', 'Draft', 'Cancelled'].includes(shipment.shipmentStatus) && (
                                                 <RequireAction permission="shipments.view">
-                                                    <button onClick={() => handlePrintLabel(shipment._id)} title="Print Label" className="text-gray-600 hover:text-gray-900 bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:bg-gray-700 p-1.5 rounded-lg transition-colors">
+                                                    <button onClick={() => handlePrintLabel(shipment._id)} title={t('dispatch.printLabel', 'Print Label')} className="text-gray-600 hover:text-gray-900 bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:bg-gray-700 p-1.5 rounded-lg transition-colors">
                                                         <Printer className="w-4 h-4" />
                                                     </button>
                                                 </RequireAction>

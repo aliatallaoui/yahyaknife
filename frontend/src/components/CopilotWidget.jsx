@@ -69,7 +69,7 @@ export default function CopilotWidget() {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="w-[380px] h-[550px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden mb-4 transition-all duration-300 origin-bottom-right">
+                <div className="w-[380px] h-[550px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-6rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col overflow-hidden mb-4 transition-all duration-300 origin-bottom-right">
 
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 flex items-center justify-between text-white shrink-0">
@@ -91,12 +91,12 @@ export default function CopilotWidget() {
                     </div>
 
                     {/* Chat Area */}
-                    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-gray-50/50">
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-gray-50/50 dark:bg-gray-900/50">
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ms-auto flex-row-reverse' : ''}`}>
 
                                 {/* Avatar */}
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-indigo-100 text-indigo-700' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
                                     }`}>
                                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-5 h-5" />}
                                 </div>
@@ -105,20 +105,20 @@ export default function CopilotWidget() {
                                 <div className={`p-3 rounded-2xl text-sm ${msg.role === 'user'
                                     ? 'bg-indigo-600 text-white rounded-tr-sm'
                                     : msg.isError
-                                        ? 'bg-rose-50 text-rose-700 border border-rose-100 rounded-tl-sm'
-                                        : 'bg-white text-gray-800 border border-gray-100 shadow-sm rounded-tl-sm'
+                                        ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-800 rounded-tl-sm'
+                                        : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-600 shadow-sm rounded-tl-sm'
                                     }`}>
                                     {msg.role === 'user' ? (
                                         <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                                     ) : (
-                                        <div className="prose prose-sm prose-indigo max-w-none 
-                                            prose-p:leading-relaxed prose-p:my-1 
-                                            prose-ul:my-1 prose-ul:pl-4 
-                                            prose-li:my-0.5 
-                                            prose-strong:text-indigo-900 prose-strong:font-semibold
+                                        <div className="prose prose-sm prose-indigo dark:prose-invert max-w-none
+                                            prose-p:leading-relaxed prose-p:my-1
+                                            prose-ul:my-1 prose-ul:pl-4
+                                            prose-li:my-0.5
+                                            prose-strong:text-indigo-900 dark:prose-strong:text-indigo-300 prose-strong:font-semibold
                                             prose-table:border-collapse prose-table:w-full prose-table:my-2
-                                            prose-th:border prose-th:border-gray-200 prose-th:px-2 prose-th:py-1 prose-th:bg-gray-50
-                                            prose-td:border prose-td:border-gray-200 prose-td:px-2 prose-td:py-1"
+                                            prose-th:border prose-th:border-gray-200 dark:prose-th:border-gray-600 prose-th:px-2 prose-th:py-1 prose-th:bg-gray-50 dark:prose-th:bg-gray-700
+                                            prose-td:border prose-td:border-gray-200 dark:prose-td:border-gray-600 prose-td:px-2 prose-td:py-1"
                                         >
                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                 {msg.text}
@@ -135,10 +135,10 @@ export default function CopilotWidget() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
                                     <Bot className="w-5 h-5" />
                                 </div>
-                                <div className="p-4 bg-white border border-gray-100 shadow-sm rounded-2xl rounded-tl-sm flex items-center gap-1.5 w-16">
-                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                <div className="p-4 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 shadow-sm rounded-2xl rounded-tl-sm flex items-center gap-1.5 w-16">
+                                    <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                    <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                    <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                                 </div>
                             </div>
                         )}
@@ -146,7 +146,7 @@ export default function CopilotWidget() {
                     </div>
 
                     {/* Input Area */}
-                    <div className="p-3 bg-white border-t border-gray-100 shrink-0">
+                    <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
                         <form onSubmit={handleSendMessage} className="relative flex items-center">
                             <input
                                 type="text"
@@ -154,7 +154,7 @@ export default function CopilotWidget() {
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ask Cortex AI a question..."
                                 disabled={isTyping}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-4 pr-12 text-sm focus:outline-none focus:border-indigo-400 focus:bg-white transition-all disabled:opacity-50"
+                                className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-3 pl-4 pr-12 text-sm dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:bg-white dark:focus:bg-gray-600 transition-all disabled:opacity-50"
                             />
                             <button
                                 type="submit"

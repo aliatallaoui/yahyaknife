@@ -288,22 +288,38 @@ exports.adjustStock = async (req, res) => {
         if (warehouseId && !mongoose.Types.ObjectId.isValid(warehouseId))
             return res.status(400).json({ message: "Invalid warehouseId." });
 
-        const variant = await ProductVariant.findOne({ _id: variantId, tenant: req.user.tenant });
-        if (!variant) return res.status(404).json({ message: "Variant not found." });
+        // Atomic stock adjustment — prevents lost updates from concurrent requests
+        const adjQty = Number(adjustmentQuantity);
+        const updateOps = { $inc: { totalStock: adjQty } };
 
-        // Update overall total stock
-        variant.totalStock += adjustmentQuantity;
-
-        // Update specific warehouse stock if provided
         if (warehouseId) {
-            const whLoc = variant.warehouseLocations.find(l => l.warehouseId.toString() === warehouseId);
-            if (whLoc) {
-                whLoc.stock += adjustmentQuantity;
-            } else {
-                variant.warehouseLocations.push({ warehouseId, stock: adjustmentQuantity });
+            // Try to increment existing warehouse location atomically
+            let variant = await ProductVariant.findOneAndUpdate(
+                { _id: variantId, tenant: req.user.tenant, 'warehouseLocations.warehouseId': warehouseId },
+                { $inc: { totalStock: adjQty, 'warehouseLocations.$.stock': adjQty } },
+                { new: true }
+            );
+
+            if (!variant) {
+                // Warehouse location doesn't exist yet — push it
+                variant = await ProductVariant.findOneAndUpdate(
+                    { _id: variantId, tenant: req.user.tenant },
+                    { $inc: { totalStock: adjQty }, $push: { warehouseLocations: { warehouseId, stock: adjQty } } },
+                    { new: true }
+                );
             }
+
+            if (!variant) return res.status(404).json({ message: "Variant not found." });
+            var updatedVariant = variant;
+        } else {
+            const variant = await ProductVariant.findOneAndUpdate(
+                { _id: variantId, tenant: req.user.tenant },
+                updateOps,
+                { new: true }
+            );
+            if (!variant) return res.status(404).json({ message: "Variant not found." });
+            var updatedVariant = variant;
         }
-        await variant.save();
 
         // Create immutable ledger entry
         const ledger = await StockMovementLedger.create({
@@ -324,7 +340,7 @@ exports.adjustStock = async (req, res) => {
             metadata: { variantId, adjustmentQuantity, notes, ledgerId: ledger._id }
         });
 
-        res.json({ message: "Stock adjusted successfully", variant, ledger });
+        res.json({ message: "Stock adjusted successfully", variant: updatedVariant, ledger });
     } catch (error) {
         logger.error({ err: error }, 'Error adjusting stock');
         res.status(500).json({ error: 'Server Error' });
@@ -417,7 +433,7 @@ exports.processRTO = async (req, res) => {
         await session.abortTransaction();
         session.endSession();
         logger.error({ err: error }, 'Error processing RTO');
-        res.status(400).json({ message: error.message || 'Error processing RTO' });
+        res.status(400).json({ message: error.isOperational ? error.message : 'Error processing RTO' });
     }
 };
 

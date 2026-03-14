@@ -748,7 +748,7 @@ export default function OrderControlCenter() {
                 throw err;
             }
             fetchOrders();
-            setSyncMessage({ type: 'success', text: t('ordersControl.messages.syncSuccess', { defaultValue: 'ECOTRACK sequence manually fired and completed.' }) });
+            setSyncMessage({ type: 'success', text: t('ordersControl.messages.syncSuccess', { defaultValue: 'Courier sync completed across all providers.' }) });
             setTimeout(() => setSyncMessage(null), 5000);
         } catch (err) {
             if (err.status === 429 && err.serverError) {

@@ -46,8 +46,8 @@ exports.updateSettings = async (req, res) => {
                 // If the user provided a base URL, we might need a more complex join, 
                 // but let's assume the user/default follows the /v1 pattern.
                 const pingUrl = settings.apiUrl.endsWith('/')
-                    ? `${settings.apiUrl}getWilayas`
-                    : `${settings.apiUrl}/getWilayas`;
+                    ? `${settings.apiUrl}api/v1/get/wilayas`
+                    : `${settings.apiUrl}/api/v1/get/wilayas`;
 
                 logger.info('[CourierSettings] Pinging EcoTrack for validation');
 

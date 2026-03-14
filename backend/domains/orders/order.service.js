@@ -61,7 +61,7 @@ async function fetchVariantCosts(tenantId, products) {
         throw AppError.validationFailed({ products: `Inactive product variant(s): ${inactive.map(v => v._id).join(', ')}` });
     }
     const map = {};
-    variants.forEach(v => { map[v._id.toString()] = v.cost || 0; });
+    variants.forEach(v => { map[v._id.toString()] = v.cost ?? 0; });
     return map;
 }
 
@@ -144,13 +144,13 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
         return { ...item, quantity: qty };
     });
 
-    const codAmount = financials?.codAmount || 0;
-    const discount = financials?.discount || 0;
-    const gatewayFees = financials?.gatewayFees || 0;
-    const marketplaceFees = financials?.marketplaceFees || 0;
+    const codAmount = financials?.codAmount ?? 0;
+    const discount = financials?.discount ?? 0;
+    const gatewayFees = financials?.gatewayFees ?? 0;
+    const marketplaceFees = financials?.marketplaceFees ?? 0;
 
     // Server-side Courier Fee Override
-    let courierFee = financials?.courierFee || 0;
+    let courierFee = financials?.courierFee ?? 0;
     if (courier && shipping?.wilayaCode) {
         const backendFee = await calculateCourierFee(courier, shipping.wilayaCode, shipping.commune, tenantId);
         if (backendFee !== null) courierFee = backendFee;
@@ -329,11 +329,11 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         let total = updateData.totalAmount !== undefined ? updateData.totalAmount : existingOrder.totalAmount;
         
         // If the fee changed externally (by backend override), update the totalAmount
-        if (backendFee !== null && backendFee !== (existingOrder.financials?.courierFee || 0)) {
+        if (backendFee !== null && backendFee !== (existingOrder.financials?.courierFee ?? 0)) {
             let subtotalAmt = 0;
             const prods = updateData.products || existingOrder.products;
             prods.forEach(item => { subtotalAmt += item.quantity * item.unitPrice; });
-            const discount = mergedFinancials.discount || 0;
+            const discount = mergedFinancials.discount ?? 0;
             total = subtotalAmt + backendFee - discount;
             updateData.totalAmount = total;
             updateData.finalTotal = total;
@@ -341,10 +341,10 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
             updateData.financials.codAmount = total;
         }
 
-        const cogs = mergedFinancials.cogs || 0;
-        const cFee = mergedFinancials.courierFee || 0;
-        const gFees = mergedFinancials.gatewayFees || 0;
-        const mFees = mergedFinancials.marketplaceFees || 0;
+        const cogs = mergedFinancials.cogs ?? 0;
+        const cFee = mergedFinancials.courierFee ?? 0;
+        const gFees = mergedFinancials.gatewayFees ?? 0;
+        const mFees = mergedFinancials.marketplaceFees ?? 0;
         if (!updateData.financials) updateData.financials = {};
         updateData.financials.netProfit = total - cogs - cFee - gFees - mFees;
     }
@@ -474,7 +474,7 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         .populate('customer', 'name phone email fraudProbability refusalRate totalOrders deliveredOrders totalRefusals trustScore')
         .populate('courier', 'name')
         .populate('assignedAgent', 'name')
-        .populate({ path: 'products.variantId', populate: { path: 'productId' } });
+        .populate({ path: 'products.variantId', select: 'sku name price cost productId', populate: { path: 'productId', select: 'name brand images' } });
 
     // Persist status change to audit trail
     if (updateData.status && newMainStatus !== oldMainStatus) {

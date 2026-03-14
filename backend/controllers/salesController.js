@@ -32,8 +32,8 @@ exports.triggerEcotrackSync = async (req, res) => {
 
 exports.getOrders = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 10), 100);
         let skip = (page - 1) * limit;
 
         const query = { tenant: req.user.tenant, deletedAt: null };
@@ -82,7 +82,7 @@ exports.getOrders = async (req, res) => {
 exports.getAdvancedOrders = async (req, res) => {
     try {
         const { limit = 50 } = req.query;
-        let queryLimit = Math.min(parseInt(limit) || 50, 200);
+        let queryLimit = Math.min(Math.max(1, parseInt(limit, 10) || 50), 200);
 
         const ALLOWED_SORT_FIELDS = new Set(['_id', 'totalAmount', 'createdAt', 'status', 'priority', 'date', 'updatedAt']);
         let { search, status, courier, agent, wilaya, channel, dateFrom, dateTo, sortField = 'date', sortOrder = 'desc', priority, tags, stage, cursor } = req.query;

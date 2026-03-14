@@ -101,20 +101,20 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
 
     return (
         <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" {...backdropProps}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" {...panelProps}>
-                <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" {...panelProps}>
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-700/50">
+                    <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
                         <PackageSearch className="w-5 h-5 text-indigo-600" />
                         {t('procurement.createNewPo', 'Create Purchase Order')}
                     </h2>
-                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-200 rounded-full transition-colors">
+                    <button onClick={onClose} aria-label="Close" className="p-2 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1">
                     {error && (
-                        <div className="mb-6 bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 text-sm font-bold">
+                        <div className="mb-6 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-xl border border-red-100 dark:border-red-800 text-sm font-bold">
                             {error}
                         </div>
                     )}
@@ -122,10 +122,10 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                     <form id="new-po-form" onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="npo-supplier" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.selectSupplier', 'Supplier')}</label>
+                                <label htmlFor="npo-supplier" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('procurement.selectSupplier', 'Supplier')}</label>
                                 <select
                                     id="npo-supplier"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={supplier}
                                     onChange={e => setSupplier(e.target.value)}
                                     required
@@ -137,11 +137,11 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="npo-date" className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.expectedDate', 'Expected Delivery Date')}</label>
+                                <label htmlFor="npo-date" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('procurement.expectedDate', 'Expected Delivery Date')}</label>
                                 <input
                                     id="npo-date"
                                     type="date"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 font-medium"
                                     value={expectedDeliveryDate}
                                     onChange={e => setExpectedDeliveryDate(e.target.value)}
                                 />
@@ -150,17 +150,17 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
 
                         <div>
                             <div className="flex items-center justify-between mb-4">
-                                <label className="block text-xs font-bold text-gray-500 uppercase">{t('procurement.orderItems', 'Order Items')}</label>
-                                <button type="button" onClick={handleAddItem} className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t('procurement.orderItems', 'Order Items')}</label>
+                                <button type="button" onClick={handleAddItem} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
                                     <Plus className="w-4 h-4" /> {t('procurement.addItem', 'Add Row')}
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {items.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-xl">
                                         <select
-                                            className="w-1/3 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                                            className="w-1/3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:text-gray-100"
                                             value={item.itemRef}
                                             onChange={e => updateItem(idx, 'itemRef', e.target.value)}
                                             required
@@ -175,18 +175,18 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                             type="number"
                                             min="1"
                                             placeholder={t('procurement.qty', 'Qty')}
-                                            className="w-24 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                                            className="w-24 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:text-gray-100"
                                             value={item.quantity}
                                             onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
                                             required
                                         />
                                         <div className="flex-1 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t('common.dzd', 'DZD')}</span>
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-xs">{t('common.dzd', 'DZD')}</span>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 placeholder={t('procurement.unitCost', 'Cost / Unit')}
-                                                className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm"
+                                                className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-3 py-2 text-sm dark:text-gray-100"
                                                 value={item.unitCost}
                                                 onChange={e => updateItem(idx, 'unitCost', Number(e.target.value))}
                                                 required
@@ -195,14 +195,14 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveItem(idx)}
-                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ))}
                                 {items.length === 0 && (
-                                    <div className="text-center p-6 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 rounded-xl">
+                                    <div className="text-center p-6 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl">
                                         {t('procurement.noItemsAdded', 'No items added. Click Add Row.')}
                                     </div>
                                 )}
@@ -210,9 +210,9 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('procurement.notes', 'Internal Notes')}</label>
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('procurement.notes', 'Internal Notes')}</label>
                             <textarea
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 font-medium"
+                                className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 font-medium"
                                 rows="2"
                                 value={notes}
                                 onChange={e => setNotes(e.target.value)}
@@ -222,11 +222,11 @@ export default function NewPOModal({ isOpen, onClose, suppliers, onSuccess }) {
                     </form>
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50">
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3 bg-gray-50/50 dark:bg-gray-700/50">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
+                        className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors"
                     >
                         {t('common.cancel', 'Cancel')}
                     </button>
