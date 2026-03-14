@@ -136,14 +136,18 @@ export const useOrderFormStore = create((set, get) => ({
             courierId: data.courier?._id || data.courier || '',
             
             products: data.products?.length > 0
-                ? data.products.map(p => ({
-                    variantId: p.variantId?._id || p.variantId || '',
-                    name: p.name || 'Unknown Item',
-                    sku: p.sku || '',
-                    quantity: p.quantity,
-                    unitPrice: p.unitPrice,
-                    availableStock: null
-                }))
+                ? data.products.map(p => {
+                    const vid = p.variantId?._id || p.variantId || '';
+                    return {
+                        variantId: vid,
+                        name: p.name || 'Unknown Item',
+                        sku: p.sku || '',
+                        quantity: p.quantity,
+                        unitPrice: p.unitPrice,
+                        availableStock: null,
+                        isCustom: !vid
+                    };
+                })
                 : [{ ...initialProductLine }]
         });
     }

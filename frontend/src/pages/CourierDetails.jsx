@@ -46,17 +46,14 @@ export default function CourierDetails() {
 
     const fetchCourier = async () => {
         try {
-            const res = await apiFetch('/api/couriers');
+            const res = await apiFetch(`/api/couriers/${id}`);
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.message || t('couriers.loadFailed', 'Failed to load courier data.'));
             }
             const json = await res.json();
             const data = json.data ?? json;
-            const found = data.find(c => c._id === id);
-            if (found) {
-                setCourier(found);
-            }
+            setCourier(data);
             setLoading(false);
         } catch (error) {
             setSaveToast({ type: 'error', msg: error.message || t('couriers.loadFailed', 'Failed to load courier data.') });
@@ -77,7 +74,9 @@ export default function CourierDetails() {
                 const data = json.data ?? json;
                 navigate(`/couriers/${data._id}`);
             } else {
-                const res = await apiFetch(`/api/couriers/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(courier) });
+                const payload = { ...courier };
+                delete payload._hasApiToken;
+                const res = await apiFetch(`/api/couriers/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
                     throw new Error(err.message || t('couriers.saveFailed', 'Error saving courier.'));

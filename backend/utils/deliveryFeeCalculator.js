@@ -64,7 +64,7 @@ function isMatch(rule, payload) {
             return false;
             
         case 'Wilaya+Commune':
-            if (rule.wilayaCode === wilayaCode && rule.commune === commune) {
+            if (rule.wilayaCode === wilayaCode && rule.commune?.toLowerCase() === commune?.toLowerCase()) {
                 if (rule.deliveryType !== undefined && rule.deliveryType !== null) {
                     return rule.deliveryType === deliveryType;
                 }

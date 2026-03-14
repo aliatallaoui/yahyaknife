@@ -683,6 +683,29 @@ export default function OrderControlCenter() {
         handleStatusChange(orderId, 'Dispatched');
     }, [handleStatusChange]);
 
+    const handleRecall = useCallback((orderId) => {
+        showConfirm({
+            title: t('ordersControl.recallConfirmTitle', 'Recall this order?'),
+            body: t('ordersControl.recallConfirmBody', 'This will cancel the shipment with the courier (if possible) and revert the order to Confirmed status so you can edit it.'),
+            confirmLabel: t('ordersControl.recallConfirmBtn', 'Recall Order'),
+            variant: 'warning',
+            onConfirm: async () => {
+                try {
+                    const res = await apiFetch(`/api/shipments/recall-by-order/${orderId}`, { method: 'POST' });
+                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Recall failed'); }
+                    const data = await res.json();
+                    toast.success(data.courierCancelled
+                        ? t('ordersControl.recallSuccessWithCourier', 'Order recalled and cancelled from courier')
+                        : t('ordersControl.recallSuccessLocal', 'Order recalled (courier cancellation was not possible)')
+                    );
+                    fetchOrders();
+                } catch (err) {
+                    showError(err.message);
+                }
+            }
+        });
+    }, [fetchOrders]);
+
     const handleBulkDispatch = useCallback(() => {
         if (selectedIds.size === 0) return;
         const idsSnapshot = Array.from(selectedIds);
@@ -1542,6 +1565,7 @@ export default function OrderControlCenter() {
                                             onBulkActionCourier={onBulkActionCourier}
                                             onBulkActionCancel={onBulkActionCancel}
                                             onQuickDispatch={onQuickDispatch}
+                                            onRecall={handleRecall}
                                             onEditClick={handleEditClick}
                                             onDelete={handleSingleDelete}
                                             onRestore={handleSingleRestore}
@@ -1649,9 +1673,9 @@ export default function OrderControlCenter() {
                                         <>
                                             <button onClick={() => setBulkActionType('agent')} className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.assignCsr')}</button>
                                             <button onClick={() => setBulkActionType('status')} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.changeStatus')}</button>
-                                            <button onClick={() => setBulkActionType('courier')} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.sendToCourier')}</button>
+                                            <button onClick={() => setBulkActionType('courier')} className="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm font-bold transition-colors">{t('ordersControl.bulk.sendToCourier')}</button>
                                             {hasPermission('shipments.create') && (
-                                                <button onClick={handleBulkDispatch} className="px-4 py-1.5 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5">
+                                                <button onClick={handleBulkDispatch} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5">
                                                     <Truck className="w-3.5 h-3.5" /> {t('ordersControl.bulk.dispatch', 'Dispatch')}
                                                 </button>
                                             )}

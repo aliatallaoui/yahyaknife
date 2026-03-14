@@ -2,7 +2,7 @@ import React, { useState, useContext, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { fmtShortDateTime, fmtFullDateTime, diffHours } from '../../utils/dateUtils';
-import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2, Copy } from 'lucide-react';
+import { FileText, Edit3, PhoneCall, MessageCircle, CheckCircle2, Truck, AlertTriangle, PackageOpen, Ban, X, Plus, Trash2, RotateCcw, Undo2, Copy, PackageX } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import { ORDER_STATUS_COLORS, COD_STATUSES, getOrderStatusLabel, getAllowedTransitions } from '../../constants/statusColors';
 
@@ -47,6 +47,7 @@ const OrderRow = React.memo(({
     onBulkActionCourier,
     onBulkActionCancel,
     onQuickDispatch,
+    onRecall,
     onEditClick,
     onTagUpdate,
     onPriorityChange,
@@ -139,7 +140,11 @@ const OrderRow = React.memo(({
                                 <td key={col.id} className="px-4 py-2">
                                     <div className="flex flex-col gap-1 items-start relative group/timeline">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="font-black text-gray-800 dark:text-gray-200 tracking-tight text-[13px] border-b border-dashed border-gray-400 dark:border-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-help">{order.orderId}</span>
+                                            <span className="font-black text-gray-800 dark:text-gray-200 tracking-tight text-[13px] border-b border-dashed border-gray-400 dark:border-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-help">
+                                                {activeStage === 'post-dispatch' && order.trackingInfo?.trackingNumber
+                                                    ? order.trackingInfo.trackingNumber
+                                                    : order.orderId}
+                                            </span>
                                             {['New', 'Confirmed', 'Preparing', 'Ready for Pickup'].includes(order.status) && activeStage === 'all' && (
                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500" title={t('ordersControl.orderRow.preDispatch')}></span>
                                             )}
@@ -315,8 +320,8 @@ const OrderRow = React.memo(({
                                             </button>
                                         )}
                                         {hasPermission('orders.status.change') && (
-                                            <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className="p-1.5 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors" title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })} aria-label={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
-                                                <PackageOpen className="w-4 h-4" />
+                                            <button onClick={(e) => { e.stopPropagation(); onQuickDispatch(order._id); }} className={clsx("p-1.5 rounded shadow-sm transition-all", order.status === 'Confirmed' ? "text-white bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-emerald-400 dark:border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-800 animate-pulse" : "text-emerald-500 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600")} title={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })} aria-label={t('ordersControl.actions.dispatch', { defaultValue: 'Dispatch Order' })}>
+                                                <Truck className="w-4 h-4" />
                                             </button>
                                         )}
                                         <button onClick={(e) => { e.stopPropagation(); const phone = order.customer?.phone || order.shipping?.phone1; if (phone) window.open(`tel:${phone}`); }} className={ACTION_BTN} title={t('ordersControl.actions.call', { defaultValue: 'Call' })} aria-label={t('ordersControl.actions.call', { defaultValue: 'Call' })}>
@@ -357,23 +362,15 @@ const OrderRow = React.memo(({
                                                 )}
                                             </>
                                         ) : activeStage === 'post-dispatch' ? (
-                                            // Post-dispatch: only allow recall if courier hasn't validated (no tracking number)
-                                            !order.trackingNumber ? (
-                                                hasPermission('orders.status.change') && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); onStatusChange(order._id, 'Ready for Pickup'); }}
-                                                        className="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors"
-                                                        title={t('ordersControl.orderRow.recallToPreDispatch')}
-                                                        aria-label={t('ordersControl.orderRow.recallToPreDispatch')}
-                                                    >
-                                                        <Undo2 className="w-4 h-4" />
-                                                    </button>
-                                                )
-                                            ) : (
-                                                // Locked — validated by courier, cannot recall or delete
-                                                <span className="px-1.5 py-1 text-[9px] font-black uppercase tracking-wider text-gray-300 dark:text-gray-600 border border-gray-100 dark:border-gray-700 rounded" title={t('ordersControl.orderRow.lockedTitle')}>
-                                                    {t('ordersControl.orderRow.locked')}
-                                                </span>
+                                            hasPermission('orders.status.change') && order.status !== 'Delivered' && order.status !== 'Paid' && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRecall && onRecall(order._id); }}
+                                                    className="p-1.5 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm transition-colors"
+                                                    title={t('ordersControl.orderRow.recallToPreDispatch')}
+                                                    aria-label={t('ordersControl.orderRow.recallToPreDispatch')}
+                                                >
+                                                    <PackageX className="w-4 h-4" />
+                                                </button>
                                             )
                                         ) : (
                                             hasPermission('orders.delete') && (
@@ -612,7 +609,7 @@ const OrderRow = React.memo(({
                                     <h4 className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-500 mb-2 border-b border-gray-50 dark:border-gray-700 pb-2">{t('ordersControl.expanded.deliveryTrack')}</h4>
                                     <div className="flex flex-col gap-1.5 text-xs">
                                         <div className="flex items-center justify-between"><span className="text-gray-500 dark:text-gray-400 font-medium">{t('ordersControl.expanded.provider')}</span> <span className="font-bold text-indigo-700 dark:text-indigo-400">{order.courier?.name || t('ordersControl.filters.unassigned')}</span></div>
-                                        <div className="flex items-center justify-between mt-0.5"><span className="text-gray-500 dark:text-gray-400 font-medium">{t('ordersControl.expanded.trackingCode')}</span> <span className="font-mono font-bold text-gray-800 dark:text-gray-200">{order.trackingNumber || '-'}</span></div>
+                                        <div className="flex items-center justify-between mt-0.5"><span className="text-gray-500 dark:text-gray-400 font-medium">{t('ordersControl.expanded.trackingCode')}</span> <span className="font-mono font-bold text-gray-800 dark:text-gray-200">{order.trackingInfo?.trackingNumber || '-'}</span></div>
                                         <div className="flex items-center justify-between mt-2">
                                             <span className="text-gray-500 dark:text-gray-400 font-medium">{t('ordersControl.expanded.timelineStage')}</span>
                                             <span className="font-bold text-gray-800 dark:text-gray-200 mt-0.5">{getOrderStatusLabel(t, order.status)}</span>

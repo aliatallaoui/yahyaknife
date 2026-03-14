@@ -99,22 +99,22 @@ exports.syncEcotrackCoverage = async (req, res) => {
             
             const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
             let currentPage = 1;
-            let lastPage = 1;
+            let hasMore = true;
 
-            do {
+            while (hasMore) {
                 logger.info({ page: currentPage }, '[Yalidin Sync] Fetching communes page');
                 const communesRes = await axios.get(`${baseUrl}/communes/?page=${currentPage}`, {
                     headers: {
                         'X-API-ID': courier.apiId,
                         'X-API-TOKEN': courier.apiToken,
                         'Accept': 'application/json'
-                    }
+                    },
+                    timeout: 15000
                 });
 
                 const pageData = communesRes.data;
-                // Yalidine uses Laravel pagination: { data: [...], current_page, last_page }
                 const communes = pageData?.data;
-                if (pageData?.last_page) lastPage = pageData.last_page;
+                hasMore = !!pageData?.has_more;
 
                 if (Array.isArray(communes) && communes.length > 0) {
                     for (const c of communes) {
@@ -143,8 +143,8 @@ exports.syncEcotrackCoverage = async (req, res) => {
                 }
 
                 currentPage++;
-                if (currentPage <= lastPage) await delay(250);
-            } while (currentPage <= lastPage);
+                if (hasMore) await delay(250);
+            }
 
         } else {
             // Ecotrack logic
@@ -219,7 +219,8 @@ exports.syncEcotrackCoverage = async (req, res) => {
 
         res.json({ message: `Successfully synced ${totalAddedOrUpdated} coverage combinations.`, count: totalAddedOrUpdated });
     } catch (error) {
-        logger.error({ err: error, responseData: error.response?.data, failedUrl: error.config?.url }, 'Ecotrack Sync Error');
-        res.status(500).json({ error: 'Server Error' });
+        logger.error({ err: error, responseData: error.response?.data, failedUrl: error.config?.url }, 'Coverage Sync Error');
+        const msg = error.response?.data?.message || error.message || 'Server Error';
+        res.status(500).json({ error: `Coverage sync failed: ${msg}` });
     }
 };

@@ -15,27 +15,32 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
 
         try {
             const isYalidin = courier.apiProvider === 'Yalidin';
-            
+            const hasSavedToken = courier._hasApiToken && courier._id;
+
             if (isYalidin) {
-                if (!courier.apiId || !courier.apiToken) {
+                if (!courier.apiId || (!courier.apiToken && !hasSavedToken)) {
                     throw new Error(t('couriers.yalidinValidation', 'API ID and API Token are required for Yalidin connection test.'));
                 }
             } else {
-                if (!courier.apiBaseUrl || !courier.apiToken) {
+                if (!courier.apiBaseUrl || (!courier.apiToken && !hasSavedToken)) {
                     throw new Error(t('couriers.ecotrackValidation', 'API Token and Base URL are required for Ecotrack connection test.'));
                 }
             }
 
+            // If no token in state (saved on server), send courier ID so backend uses stored credentials
+            const payload = {
+                apiProvider: courier.apiProvider || 'Ecotrack',
+                apiId: courier.apiId,
+                apiBaseUrl: courier.apiBaseUrl,
+                authType: courier.authType || 'Bearer Token',
+                apiToken: courier.apiToken || undefined
+            };
+            if (!courier.apiToken && courier._id) payload.courierId = courier._id;
+
             const res = await apiFetch('/api/couriers/test-connection', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    apiProvider: courier.apiProvider || 'Ecotrack',
-                    apiId: courier.apiId,
-                    apiBaseUrl: courier.apiBaseUrl,
-                    authType: courier.authType || 'Bearer Token',
-                    apiToken: courier.apiToken
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
@@ -137,12 +142,16 @@ export default function CourierApiSettings({ courier, setCourier, onSave, saving
                     <div className="md:col-span-2">
                         <label htmlFor="api-token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {courier.apiProvider === 'Yalidin' ? t('couriers.apiTokenYalidin', 'Yalidin API Token') : t('couriers.apiToken', 'API Token / Key')}
+                            {courier._hasApiToken && !courier.apiToken && (
+                                <span className="ml-2 text-xs text-green-600 dark:text-green-400 font-normal">{t('couriers.tokenSaved', '(saved)')}</span>
+                            )}
                         </label>
                         <input
                             id="api-token"
                             type="password"
                             value={courier.apiToken || ''}
                             onChange={e => setCourier({ ...courier, apiToken: e.target.value })}
+                            placeholder={courier._hasApiToken ? t('couriers.tokenPlaceholder', 'Token saved — leave empty to keep, or enter new token') : ''}
                             className="w-full rounded-lg text-start ltr:text-left rtl:text-left border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border font-mono text-sm"
                             dir="ltr"
                         />

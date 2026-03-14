@@ -2,35 +2,16 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X, Plus, Trash2, AlertCircle, AlertTriangle, Truck, Save, RefreshCw, CheckCircle, ChevronDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import * as leblad from '@dzcode-io/leblad';
 import { apiFetch } from '../utils/apiFetch';
 import { useOrderFormStore } from '../stores/useOrderFormStore';
 import useModalDismiss from '../hooks/useModalDismiss';
 import CustomerIntelligencePanel from './orders/CustomerIntelligencePanel';
 import { getOrderStatusLabel } from '../constants/statusColors';
+import { getWilayaList, getWilayaByCode, getCommunesForWilaya } from '../constants/algeria_communes_wilayas';
 
 const CHANNELS = ['Amazon', 'Alibaba', 'Tokopedia', 'Shopee', 'Website', 'WhatsApp', 'Facebook', 'TikTok', 'Instagram', 'Manual', 'Other'];
 const STATUSES = ['New', 'Call 1', 'Call 2', 'Call 3', 'No Answer', 'Out of Coverage', 'Postponed', 'Wrong Number', 'Confirmed'];
 const PRIORITIES = ['Normal', 'High', 'Urgent', 'VIP'];
-
-const getSafeCommunesForWilaya = (wilayaCode) => {
-    if (!wilayaCode) return [];
-    const w = leblad.getWilayaByCode(Number(wilayaCode));
-    if (!w || !w.dairats) return [];
-    const seen = new Set();
-    const communes = [];
-    w.dairats.forEach(d => {
-        if (d.baladyiats && Array.isArray(d.baladyiats)) {
-            d.baladyiats.forEach(b => {
-                if (!seen.has(b.code)) {
-                    seen.add(b.code);
-                    communes.push(b);
-                }
-            });
-        }
-    });
-    return communes.sort((a, b) => a.name.localeCompare(b.name));
-};
 
 export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inventoryProducts = [], couriers = [] }) {
     const { t } = useTranslation();
@@ -177,7 +158,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
             return;
         }
 
-        let allCommunes = getSafeCommunesForWilaya(store.shippingWilayaCode);
+        let allCommunes = getCommunesForWilaya(store.shippingWilayaCode).map(name => ({ name }));
 
         // Only filter if courier is API-connected and has coverage data
         if (isCourierApiConnected && courierCoverageCache.length > 0) {
@@ -220,36 +201,18 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
         }
     }, [store.shippingWilayaCode, store.shippingDeliveryType, isCourierApiConnected, courierCoverageCache, isOpen]);
 
-    // 3. Dynamic Courier Recommendation & Pricing Engine
+    // 3. Auto Pricing Calculation — fires when commune/courier/deliveryType changes
+    const [priceError, setPriceError] = useState('');
+
     useEffect(() => {
-        const calculatePrice = async () => {
-            if (!store.shippingWilayaCode || !store.shippingCommune) {
-                if (!store.manualPricing) store.updateField('courierFee', 0);
-                setRecommendedCourier(null);
-                return;
-            }
+        if (!store.shippingWilayaCode || !store.shippingCommune || store.manualPricing) return;
 
+        let cancelled = false;
+        const calculate = async () => {
             setIsCalculatingPrice(true);
+            setPriceError('');
             try {
-                // First get recommendation
-                const recQuery = new URLSearchParams({
-                    wilayaCode: store.shippingWilayaCode,
-                    commune: store.shippingCommune,
-                    deliveryType: String(store.shippingDeliveryType)
-                });
-                const recRes = await apiFetch(`/api/couriers/engine/recommend?${recQuery.toString()}`);
-                if (!recRes.ok) throw new Error('recommend failed');
-                const recJson = await recRes.json();
-                const recData = recJson.data ?? recJson;
-
-                if (recData.recommended) {
-                    setRecommendedCourier(recData.recommended);
-                } else {
-                    setRecommendedCourier(null);
-                }
-
-                // If courier is assigned, calculate exact price
-                if (store.courierId && !store.manualPricing) {
+                if (store.courierId) {
                     const priceRes = await apiFetch('/api/couriers/engine/calculate-price', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -262,28 +225,41 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                             productIds: store.products.map(p => p.variantId || p.baseProductId).filter(Boolean)
                         })
                     });
-                    if (!priceRes.ok) throw new Error('calculate-price failed');
+                    if (cancelled) return;
                     const priceJson = await priceRes.json();
                     const priceData = priceJson.data ?? priceJson;
-                    if (priceData && priceData.price !== undefined) {
+                    if (priceRes.ok && priceData.price !== undefined) {
                         store.updateField('courierFee', priceData.price);
+                    } else {
+                        setPriceError(priceData.message || t('orderModal.priceNotFound', 'No pricing rule found'));
                     }
-                } else if (!store.courierId && recData.recommended && !store.manualPricing) {
-                    // Auto suggest price if no courier selected but we have a recommendation
-                     store.updateField('courierFee', recData.recommended.price);
+                } else {
+                    const recQuery = new URLSearchParams({
+                        wilayaCode: store.shippingWilayaCode,
+                        commune: store.shippingCommune,
+                        deliveryType: String(store.shippingDeliveryType)
+                    });
+                    const recRes = await apiFetch(`/api/couriers/engine/recommend?${recQuery.toString()}`);
+                    if (cancelled) return;
+                    if (!recRes.ok) throw new Error('recommend failed');
+                    const recJson = await recRes.json();
+                    const recData = recJson.data ?? recJson;
+                    if (recData.recommended) {
+                        setRecommendedCourier(recData.recommended);
+                        store.updateField('courierFee', recData.recommended.price);
+                    } else {
+                        setPriceError(t('orderModal.noCourierRecommendation', 'No courier covers this area'));
+                    }
                 }
             } catch (err) {
-                // Pricing calculation is best-effort; user can set price manually
+                if (!cancelled) setPriceError(err.message || t('orderModal.calcError', 'Price calculation failed'));
             } finally {
-                setIsCalculatingPrice(false);
+                if (!cancelled) setIsCalculatingPrice(false);
             }
         };
-
-        const timer = setTimeout(() => {
-            if (isOpen) calculatePrice();
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [store.shippingWilayaCode, store.shippingCommune, store.courierId, store.shippingDeliveryType, store.manualPricing, isOpen]);
+        calculate();
+        return () => { cancelled = true; };
+    }, [store.shippingWilayaCode, store.shippingCommune, store.courierId, store.shippingDeliveryType, store.manualPricing]);
 
 
     const [warningConfirmOpen, setWarningConfirmOpen] = useState(false);
@@ -343,7 +319,11 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                 fragile: store.shippingFragile,
                 deliveryType: Number(store.shippingDeliveryType)
             },
-            products: validProducts
+            products: validProducts.map(p => {
+                const prod = { ...p };
+                if (!prod.variantId) delete prod.variantId;
+                return prod;
+            })
         };
 
         setIsSubmitting(true);
@@ -426,10 +406,10 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                         {/* Wilaya */}
                                         <div>
                                             <label htmlFor="order-wilaya" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">{t('orderModal.wilaya')} *</label>
-                                            <select id="order-wilaya" required className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = leblad.getWilayaList().find(w => w.mattricule === Number(wCode)); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
+                                            <select id="order-wilaya" required className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none cursor-pointer" value={store.shippingWilayaCode} onChange={e => { const wCode = e.target.value; const w = getWilayaByCode(wCode); store.updateField('shippingWilayaCode', wCode); store.updateField('shippingWilayaName', w ? w.name : ''); store.updateField('shippingCommune', ''); }}>
                                                 <option value="" disabled>{t('orderModal.selectWilaya')}</option>
-                                                {leblad.getWilayaList().map(w => (
-                                                    <option key={w.mattricule} value={w.mattricule}>{String(w.mattricule).padStart(2, '0')} - {w.name}</option>
+                                                {getWilayaList().map(w => (
+                                                    <option key={w.code} value={w.code}>{String(w.code).padStart(2, '0')} - {w.name}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -442,7 +422,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                             <select id="order-commune" required disabled={!store.shippingWilayaCode || availableCommunes.length === 0} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none rounded-lg px-3 py-2 text-sm dark:text-gray-100 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all font-medium appearance-none disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed cursor-pointer" value={store.shippingCommune} onChange={e => store.updateField('shippingCommune', e.target.value)}>
                                                 <option value="" disabled>{store.shippingWilayaCode ? t('orderModal.selectCommune') : t('orderModal.selectWilayaFirst')}</option>
                                                 {availableCommunes.map(c => (
-                                                    <option key={c.code} value={c.name}>{c.name}</option>
+                                                    <option key={c.name} value={c.name}>{c.name}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -583,11 +563,7 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                         title={product.isCustom ? t('orderModal.switchToInventory', 'Switch to inventory') : t('orderModal.switchToCustom', 'Custom item')}
                                                         onClick={() => store.updateProductMulti(index, {
                                                             isCustom: !product.isCustom,
-                                                            variantId: '',
-                                                            name: '',
-                                                            unitPrice: product.isCustom ? 0 : product.unitPrice,
-                                                            sku: '',
-                                                            availableStock: null
+                                                            variantId: ''
                                                         })}
                                                         className={clsx("shrink-0 px-1.5 py-1.5 rounded-lg text-[10px] font-bold border transition-colors",
                                                             product.isCustom
@@ -651,6 +627,9 @@ export default function OrderModal({ isOpen, onClose, onSubmit, initialData, inv
                                                 )}
                                             </div>
                                         </div>
+                                        {priceError && (
+                                            <div className="text-[10px] text-amber-400 px-1">{priceError}</div>
+                                        )}
                                         <div className="flex justify-between items-center">
                                             <span className="text-gray-400">{t('orderModal.discount')}</span>
                                             <input type="number" className="w-14 bg-white/10 outline-none border border-white/20 rounded px-1.5 py-0.5 text-right text-xs font-bold text-green-400" value={store.discount} onChange={e => store.updateField('discount', e.target.value)} placeholder="0" />

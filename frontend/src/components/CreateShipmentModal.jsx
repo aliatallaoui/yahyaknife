@@ -4,27 +4,7 @@ import { X, Search, MapPin, DollarSign, Package, AlertTriangle, Send } from 'luc
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import useModalDismiss from '../hooks/useModalDismiss';
-import * as leblad from '@dzcode-io/leblad';
-
-// Helper to safely extract communes, bypassing the leblad 'wilaya déléguée' bug where daira.baladyiats is undefined
-const getSafeCommunesForWilaya = (wilayaCode) => {
-    if (!wilayaCode) return [];
-    const w = leblad.getWilayaByCode(Number(wilayaCode));
-    if (!w || !w.dairats) return [];
-    const seen = new Set();
-    const communes = [];
-    w.dairats.forEach(d => {
-        if (d.baladyiats && Array.isArray(d.baladyiats)) {
-            d.baladyiats.forEach(b => {
-                if (!seen.has(b.code)) {
-                    seen.add(b.code);
-                    communes.push(b);
-                }
-            });
-        }
-    });
-    return communes.sort((a, b) => a.name.localeCompare(b.name));
-};
+import { getWilayaList, getWilayaByCode, getCommunesForWilaya } from '../constants/algeria_communes_wilayas';
 
 export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
     const { t } = useTranslation();
@@ -264,7 +244,7 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         value={formData.wilayaCode}
                                         onChange={e => {
                                             const wCode = e.target.value;
-                                            const wilayaObj = leblad.getWilayaList().find(w => w.mattricule === Number(wCode));
+                                            const wilayaObj = getWilayaByCode(wCode);
                                             setFormData({
                                                 ...formData,
                                                 wilayaCode: wCode,
@@ -275,9 +255,9 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                                     >
                                         <option value="">{t('dispatch.modal.selectWilaya', 'Select Wilaya...')}</option>
-                                        {leblad.getWilayaList().map(wilaya => (
-                                            <option key={wilaya.mattricule} value={wilaya.mattricule}>
-                                                {String(wilaya.mattricule).padStart(2, '0')} - {wilaya.name}
+                                        {getWilayaList().map(wilaya => (
+                                            <option key={wilaya.code} value={wilaya.code}>
+                                                {String(wilaya.code).padStart(2, '0')} - {wilaya.name}
                                             </option>
                                         ))}
                                     </select>
@@ -293,9 +273,9 @@ export default function CreateShipmentModal({ isOpen, onClose, onSuccess }) {
                                         className="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                                     >
                                         <option value="">{formData.wilayaCode ? t('dispatch.modal.selectCommune', 'Select Commune...') : t('dispatch.modal.selectWilayaFirst', 'Select Wilaya first')}</option>
-                                        {formData.wilayaCode && getSafeCommunesForWilaya(formData.wilayaCode).map(commune => (
-                                            <option key={commune.code} value={commune.name}>
-                                                {commune.name}
+                                        {formData.wilayaCode && getCommunesForWilaya(formData.wilayaCode).map(name => (
+                                            <option key={name} value={name}>
+                                                {name}
                                             </option>
                                         ))}
                                     </select>

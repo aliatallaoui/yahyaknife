@@ -318,6 +318,41 @@ exports.deleteShipment = async (req, res) => {
     }
 };
 
+// ─── RECALL BY ORDER ──────────────────────────────────────────────────────────
+
+exports.recallByOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        if (!validId(orderId)) return res.status(400).json({ message: 'Invalid order ID' });
+
+        const shipment = await Shipment.findOne({ internalOrder: orderId, tenant: req.user.tenant });
+
+        let courierCancelled = false;
+        if (shipment) {
+            if (shipment.shipmentStatus === 'Delivered') {
+                return res.status(400).json({ message: 'Cannot recall a delivered shipment' });
+            }
+            const result = await ShipmentService.deleteShipment(shipment._id, req.user.tenant);
+            courierCancelled = result.courierCancelled;
+        } else {
+            // No shipment — just revert order status directly
+            const OrderService = require('../domains/orders/order.service');
+            await OrderService.updateOrder({
+                orderId,
+                tenantId: req.user.tenant,
+                updateData: { status: 'Confirmed', trackingInfo: {} },
+                bypassStateMachine: true
+            });
+        }
+
+        res.json({ message: 'Order recalled successfully', courierCancelled, revertedStatus: 'Confirmed' });
+    } catch (error) {
+        if (error.isOperational) return res.status(error.statusCode || 400).json({ message: error.message });
+        logger.error({ err: error }, 'Error recalling order');
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // ─── VALIDATE ─────────────────────────────────────────────────────────────────
 
 exports.validateShipment = async (req, res) => {

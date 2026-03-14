@@ -18,6 +18,23 @@ exports.getCouriers = async (req, res) => {
     }
 };
 
+// Get a single courier by ID (includes API config fields for the detail page)
+exports.getCourierById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
+        if (!courier) return res.status(404).json({ message: 'Courier not found' });
+        // Don't expose the token — just flag whether it's set
+        courier._hasApiToken = !!courier.apiToken;
+        delete courier.apiToken;
+        res.json(courier);
+    } catch (error) {
+        logger.error({ err: error }, 'Error fetching courier');
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
 // Create a new courier
 exports.createCourier = async (req, res) => {
     try {
@@ -57,6 +74,10 @@ exports.updateCourier = async (req, res) => {
             _id, __v, createdAt, updatedAt, testConnectionStatus, lastSyncAt,
             ...safe
         } = req.body;
+        // Don't overwrite real token with empty/placeholder values
+        if (!safe.apiToken) {
+            delete safe.apiToken;
+        }
         const updated = await Courier.findOneAndUpdate(
             { _id: id, tenant: req.user.tenant, deletedAt: null },
             { $set: safe },
@@ -383,9 +404,21 @@ exports.syncCourierCash = async (courierId, amountDelta, tenantId) => {
 // Test Courier API Connection
 exports.testCourierConnection = async (req, res) => {
     try {
-        const { apiProvider, apiBaseUrl, authType, apiToken, apiId } = req.body;
+        let { apiProvider, apiBaseUrl, authType, apiToken, apiId, courierId } = req.body;
         const axios = require('axios');
-        
+
+        // If courierId provided (no token in request), load stored credentials from DB
+        if (courierId && !apiToken) {
+            if (!validId(courierId)) return res.status(400).json({ message: 'Invalid courier ID' });
+            const stored = await Courier.findOne({ _id: courierId, tenant: req.user.tenant, deletedAt: null }).select('apiProvider apiBaseUrl authType apiToken apiId');
+            if (!stored) return res.status(404).json({ message: 'Courier not found' });
+            apiToken = stored.apiToken || apiToken;
+            if (!apiId) apiId = stored.apiId;
+            if (!apiBaseUrl) apiBaseUrl = stored.apiBaseUrl;
+            if (!apiProvider) apiProvider = stored.apiProvider;
+            if (!authType) authType = stored.authType;
+        }
+
         let provider = apiProvider || 'Ecotrack';
 
         if (provider === 'Yalidin') {

@@ -8,6 +8,7 @@ const wrap = require('../shared/middleware/asyncHandler');
 router.use(protect);
 const {
     getCouriers,
+    getCourierById,
     createCourier,
     updateCourier,
     deleteCourier,
@@ -59,6 +60,7 @@ router.post('/engine/calculate-price', requirePermission(PERMS.COURIERS_VIEW), w
 router.get('/engine/recommend', requirePermission(PERMS.COURIERS_VIEW), wrap(recommendCourier));
 
 router.route('/:id')
+    .get(requirePermission(PERMS.COURIERS_VIEW), wrap(getCourierById))
     .put(requirePermission(PERMS.COURIERS_EDIT), wrap(updateCourier))
     .delete(requirePermission(PERMS.COURIERS_DELETE), wrap(deleteCourier));
 
