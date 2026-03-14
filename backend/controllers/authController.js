@@ -91,56 +91,79 @@ exports.registerUser = async (req, res) => {
                 // Fallback: try any system role with full permissions (Super Admin)
                 assignedRole = await Role.findOne({ name: 'Super Admin', isSystemRole: true });
                 if (!assignedRole) {
-                    logger.warn('No system role found for new tenant owner — user will have no permissions. Run seedRoles script.');
+                    // Auto-seed the Owner role so registration doesn't fail on fresh DB
+                    try {
+                        const { ALL_PERMISSIONS_FLAT } = require('../config/permissions');
+                        assignedRole = await Role.create({
+                            name: 'Owner / Founder',
+                            description: 'Full business access across all modules.',
+                            isSystemRole: true,
+                            permissions: ALL_PERMISSIONS_FLAT,
+                        });
+                        logger.info('Auto-seeded "Owner / Founder" role for first registration');
+                    } catch (seedErr) {
+                        logger.warn({ err: seedErr }, 'Failed to auto-seed Owner role — user will have no permissions');
+                    }
                 }
             }
         }
 
-        // Create user
-        const user = await User.create({
-            name,
-            email,
-            password,
+        // Create user — wrap in try/catch to clean up tenant on failure
+        let user;
+        try {
+            user = await User.create({
+                name,
+                email: email.trim().toLowerCase(),
+                password,
+                role: assignedRole ? assignedRole._id : null,
+                tenant: tenant._id
+            });
+        } catch (createErr) {
+            // Clean up the orphaned tenant if user creation failed
+            if (isNewTenant) {
+                await Tenant.findByIdAndDelete(tenant._id).catch(() => {});
+            }
+            // Return validation errors to the client (e.g., password too short)
+            if (createErr.name === 'ValidationError') {
+                const messages = Object.values(createErr.errors).map(e => e.message);
+                return res.status(400).json({ message: messages.join('. ') });
+            }
+            throw createErr;
+        }
+
+        // Set the first user as tenant owner
+        if (isNewTenant) {
+            await Tenant.findByIdAndUpdate(tenant._id, { owner: user._id });
+        }
+
+        // Create TenantMembership record
+        await TenantMembership.create({
+            user: user._id,
+            tenant: tenant._id,
             role: assignedRole ? assignedRole._id : null,
-            tenant: tenant._id
+            status: 'active',
+            joinedAt: new Date(),
         });
 
-        if (user) {
-            // Set the first user as tenant owner
-            if (isNewTenant) {
-                await Tenant.findByIdAndUpdate(tenant._id, { owner: user._id });
-            }
-
-            // Create TenantMembership record
-            await TenantMembership.create({
-                user: user._id,
-                tenant: tenant._id,
-                role: assignedRole ? assignedRole._id : null,
-                status: 'active',
-                joinedAt: new Date(),
-            });
-
-            const refreshToken = await issueRefreshToken(user._id);
-            res.status(201).json({
-                _id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                roleObject: assignedRole ? { _id: assignedRole._id, name: assignedRole.name } : null,
-                permissions: assignedRole ? assignedRole.permissions : [],
-                isActive: user.isActive,
-                preferences: user.preferences,
-                tenant: tenant._id,
-                subscription: tenant.subscription || null,
-                onboardingCompleted: false,
-                token: generateAccessToken(user._id, tenant._id),
-                refreshToken,
-            });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
-        }
+        const refreshToken = await issueRefreshToken(user._id);
+        res.status(201).json({
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            roleObject: assignedRole ? { _id: assignedRole._id, name: assignedRole.name } : null,
+            permissions: assignedRole ? assignedRole.permissions : [],
+            isActive: user.isActive,
+            preferences: user.preferences,
+            tenant: tenant._id,
+            tenantName: tenant.name,
+            subscription: tenant.subscription || null,
+            onboardingCompleted: false,
+            token: generateAccessToken(user._id, tenant._id),
+            refreshToken,
+        });
     } catch (error) {
-        logger.error({ err: error }, 'Auth error');
+        logger.error({ err: error }, 'Registration error');
         res.status(500).json({ message: 'Server Error' });
     }
 };
