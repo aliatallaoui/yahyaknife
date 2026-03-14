@@ -997,6 +997,13 @@ exports.testConnection = async ({ tenantId, channelId }) => {
     }
 
     const decryptedConfig = decryptSensitiveKeys(channel.config);
+
+    if (!decryptedConfig.storeUrl || !decryptedConfig.consumerKey || !decryptedConfig.consumerSecret) {
+        throw AppError.validationFailed({
+            credentials: 'Store credentials could not be decrypted. Please reconnect the store via OAuth.'
+        });
+    }
+
     const adapter = getStoreAdapter(channel, decryptedConfig);
     const result = await adapter.testConnection();
 
@@ -1088,6 +1095,14 @@ exports.syncOrders = async ({ tenantId, channelId, since }) => {
     }
 
     const decryptedConfig = decryptSensitiveKeys(channel.config);
+
+    // Validate credentials were decrypted successfully
+    if (!decryptedConfig.storeUrl || !decryptedConfig.consumerKey || !decryptedConfig.consumerSecret) {
+        throw AppError.validationFailed({
+            credentials: 'Store credentials could not be decrypted. Please reconnect the store via OAuth.'
+        });
+    }
+
     const adapter = getStoreAdapter(channel, decryptedConfig);
 
     // Default: sync orders from last 24h or last sync time
