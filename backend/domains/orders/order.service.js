@@ -419,11 +419,11 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
 
     let backendFee = null;
     if (activeCourierId && activeWilayaCode) {
-        backendFee = await calculateCourierFee(activeCourierId, activeWilayaCode, activeCommune);
+        backendFee = await calculateCourierFee(activeCourierId, activeWilayaCode, activeCommune, tenantId);
     }
 
-    // Recompute netProfit server-side if financials or totalAmount changed
-    if (updateData.financials || updateData.totalAmount !== undefined || backendFee !== null) {
+    // Always recompute netProfit server-side to prevent stale financial data
+    {
         const mergedFinancials = { ...existingOrder.financials?.toObject?.() || existingOrder.financials || {}, ...updateData.financials };
         
         if (backendFee !== null) {
@@ -538,16 +538,21 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
         }
     }
 
-    // Apply inventory deltas
+    // Apply inventory deltas atomically via bulkWrite
+    const stockOps = [];
+    const stockLogs = [];
     for (const [vId, delta] of Object.entries(variantDeltas)) {
         if (delta.reserved === 0 && delta.total === 0 && delta.sold === 0) continue;
-        await ProductVariant.findOneAndUpdate({ _id: vId, tenant: tenantId }, {
-            $inc: { reservedStock: delta.reserved, totalStock: delta.total, totalSold: delta.sold }
+        stockOps.push({
+            updateOne: {
+                filter: { _id: vId, tenant: tenantId },
+                update: { $inc: { reservedStock: delta.reserved, totalStock: delta.total, totalSold: delta.sold } }
+            }
         });
         const moveInfo = [];
         if (delta.total !== 0) moveInfo.push(`Total: ${delta.total > 0 ? '+' : ''}${delta.total}`);
         if (delta.reserved !== 0) moveInfo.push(`Rsv: ${delta.reserved > 0 ? '+' : ''}${delta.reserved}`);
-        await logStockMovement(
+        stockLogs.push(logStockMovement(
             vId,
             delta.total !== 0 ? delta.total : delta.reserved,
             'Sale',
@@ -555,7 +560,11 @@ exports.updateOrder = async ({ orderId, tenantId, userId, updateData, bypassStat
             existingOrder._id,
             'Order',
             tenantId
-        );
+        ));
+    }
+    if (stockOps.length > 0) {
+        await ProductVariant.bulkWrite(stockOps);
+        await Promise.all(stockLogs);
     }
 
     // Courier cash liability sync

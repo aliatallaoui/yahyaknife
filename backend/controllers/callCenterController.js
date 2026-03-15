@@ -180,8 +180,9 @@ exports.logCallAction = async (req, res) => {
         const order = await Order.findOne({ _id: orderId, tenant: tenantId, deletedAt: null });
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        // Agents can only act on orders assigned to them (managers are exempt)
-        if (order.assignedAgent && order.assignedAgent.toString() !== agentId.toString()) {
+        // Agents can only act on orders assigned to them (managers with assignment permission are exempt)
+        const isManager = req.user.computedPermissions?.includes('callcenter.manage_assignments');
+        if (!isManager && order.assignedAgent && order.assignedAgent.toString() !== agentId.toString()) {
             return res.status(403).json({ message: 'Order is assigned to another agent' });
         }
 
@@ -287,7 +288,7 @@ exports.assignOrders = async (req, res) => {
 
         if (mode === 'Region') {
             if (!targetAgentId || !region) return res.status(400).json({ message: 'targetAgentId and region required' });
-            const orders = await Order.find({ tenant: tenantId, wilaya: region, status: 'New', assignedAgent: null, deletedAt: null }, { _id: 1 }).limit(5000).lean();
+            const orders = await Order.find({ tenant: tenantId, wilaya: region, status: 'New', assignedAgent: null, deletedAt: null }, { _id: 1 }).limit(500).lean();
             let count = 0;
             for (const o of orders) {
                 await assignmentService.assignOrder(o._id, tenantId, targetAgentId, 'manual', changedBy, `Region assignment: ${region}`);

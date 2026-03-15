@@ -1617,12 +1617,14 @@ function injectPixels(pixels) {
   }
   if (gaId && !window.gtag) {
     const s1 = document.createElement('script');
-    s1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+    s1.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
     s1.async = true;
     document.head.appendChild(s1);
-    const s2 = document.createElement('script');
-    s2.innerHTML = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${gaId}');`;
-    document.head.appendChild(s2);
+    // Initialize gtag programmatically instead of innerHTML
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', gaId);
   }
 }
 
