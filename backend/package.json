@@ -20,6 +20,7 @@
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.71.0",
     "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "csv-writer": "^1.6.0",
     "dotenv": "^17.3.1",
