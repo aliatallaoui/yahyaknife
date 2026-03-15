@@ -78,7 +78,7 @@ exports.syncEcotrackCoverage = async (req, res) => {
     try {
         const { id } = req.params;
         if (!validId(id)) return res.status(400).json({ message: 'Invalid courier ID' });
-        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).lean();
+        const courier = await Courier.findOne({ _id: id, tenant: req.user.tenant, deletedAt: null }).select('+apiToken +apiId').lean();
 
         if (!courier) return res.status(404).json({ message: 'Courier not found' });
         if (courier.integrationType !== 'API') {

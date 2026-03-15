@@ -48,7 +48,7 @@ async function dispatch(tenantId, event, payload) {
             isActive: true,
             events: event,
             autoDisabledAt: null,
-        }).lean();
+        }).select('+secret').lean();
 
         if (webhooks.length === 0) return;
 

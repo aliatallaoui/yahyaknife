@@ -75,7 +75,7 @@ const ecotrackRequest = async (method, endpoint, data = null, tenantId = null) =
     const query = { providerName: 'ECOTRACK' };
     if (tenantId) query.tenant = tenantId;
 
-    const settings = await CourierSetting.findOne(query);
+    const settings = await CourierSetting.findOne(query).select('+apiToken');
 
     if (!settings || !settings.apiToken) {
         throw new Error('Courier API is not configured. Please go to Settings and add your courier API token.');

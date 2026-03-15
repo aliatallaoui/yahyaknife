@@ -180,7 +180,7 @@ exports.testWebhook = async (req, res) => {
             return res.status(400).json({ message: 'Invalid webhook ID' });
         }
 
-        const webhook = await Webhook.findOne({ _id: id, tenant: tenantId });
+        const webhook = await Webhook.findOne({ _id: id, tenant: tenantId }).select('+secret');
         if (!webhook) return res.status(404).json({ message: 'Webhook not found' });
 
         const body = JSON.stringify({

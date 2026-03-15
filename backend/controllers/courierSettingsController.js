@@ -5,7 +5,7 @@ const logger = require('../shared/logger');
 exports.getSettings = async (req, res) => {
     try {
         const tenantId = req.user.tenant;
-        let settings = await CourierSetting.findOne({ tenant: tenantId, providerName: 'ECOTRACK' });
+        let settings = await CourierSetting.findOne({ tenant: tenantId, providerName: 'ECOTRACK' }).select('+apiToken');
         if (!settings) {
             settings = await CourierSetting.create({
                 tenant: tenantId,
@@ -30,7 +30,7 @@ exports.updateSettings = async (req, res) => {
         const tenantId = req.user.tenant;
         const { apiUrl, apiToken } = req.body;
 
-        let settings = await CourierSetting.findOne({ tenant: tenantId, providerName: 'ECOTRACK' });
+        let settings = await CourierSetting.findOne({ tenant: tenantId, providerName: 'ECOTRACK' }).select('+apiToken');
 
         if (!settings) {
             settings = new CourierSetting({ tenant: tenantId, providerName: 'ECOTRACK' });

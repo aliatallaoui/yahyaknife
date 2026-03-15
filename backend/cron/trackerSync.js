@@ -154,7 +154,7 @@ async function syncYalidineShipments(yalidineShipments) {
             apiProvider: 'Yalidin',
             integrationType: 'API',
             deletedAt: null
-        });
+        }).select('+apiToken +apiId');
 
         if (!courier) {
             logger.warn({ tenant: tenantId, count: shipments.length }, '[SYNC] No Yalidine courier found for tenant');
