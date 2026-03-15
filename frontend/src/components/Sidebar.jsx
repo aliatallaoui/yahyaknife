@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Wallet, Box, Truck, Factory, ShoppingCart, ShoppingBag,
     Users, Settings as Gear, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen,
     Star, Clock, ChevronDown, X, Layers, UserCircle, PhoneCall, Headset, AlertTriangle,
-    ScanBarcode, BadgeDollarSign, BarChart3, FileText, Megaphone
+    ScanBarcode, BadgeDollarSign, BarChart3, FileText, Megaphone, Package
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AuthContext } from '../context/AuthContext';
