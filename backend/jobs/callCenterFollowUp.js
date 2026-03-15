@@ -32,7 +32,7 @@ async function runCallCenterFollowUp() {
         status: 'No Answer',
         deletedAt: null,
         updatedAt: { $lte: fourHoursAgo }
-    }).select('_id tenant tags').lean();
+    }).select('_id tenant tags').limit(1000).lean();
 
     for (const order of staleNoAnswer) {
         try {
@@ -71,7 +71,7 @@ async function runCallCenterFollowUp() {
         postponedUntil: { $lte: oneDayAgo },
         deletedAt: null,
         tags: { $ne: 'Overdue Callback' }
-    }).select('_id tenant tags').lean();
+    }).select('_id tenant tags').limit(1000).lean();
 
     for (const order of overduePostponed) {
         try {

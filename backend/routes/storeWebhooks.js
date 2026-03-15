@@ -212,9 +212,13 @@ router.post(
             const decryptedConfig = decryptSensitiveKeys(channel.config);
             const adapter = getStoreAdapter(channel, decryptedConfig);
 
-            // 4. Verify HMAC signature
+            // 4. Verify HMAC signature — mandatory when secret is configured
             const signature = req.headers['x-wc-webhook-signature'];
-            if (decryptedConfig.webhookSecret && signature) {
+            if (decryptedConfig.webhookSecret) {
+                if (!signature) {
+                    logger.warn({ channelId }, 'WooCommerce webhook missing signature header');
+                    return res.status(401).json({ message: 'Missing webhook signature.' });
+                }
                 const valid = adapter.verifyWebhookSignature(req.rawBody || JSON.stringify(req.body), signature);
                 if (!valid) {
                     logger.warn({ channelId }, 'WooCommerce webhook signature verification failed');

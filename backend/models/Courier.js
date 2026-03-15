@@ -42,9 +42,9 @@ const courierSchema = new mongoose.Schema({
     },
 
     // Settlement Tracking
-    cashCollected: { type: Number, default: 0 },
-    cashSettled: { type: Number, default: 0 },
-    pendingRemittance: { type: Number, default: 0 },
+    cashCollected: { type: Number, default: 0, min: 0 },
+    cashSettled: { type: Number, default: 0, min: 0 },
+    pendingRemittance: { type: Number, default: 0, min: 0 },
 
     // KPIs
     totalDeliveries: { type: Number, default: 0 },

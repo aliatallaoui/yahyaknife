@@ -238,8 +238,9 @@ const syncActiveShipments = async () => {
             shipmentStatus: {
                 $in: ['Validated', 'In Transit', 'Out for Delivery', 'Failed Attempt', 'Return Initiated']
             },
-            externalTrackingId: { $exists: true, $ne: null }
-        }).select('externalTrackingId internalOrderId internalOrder tenant shipmentStatus paymentStatus courierStatus courierProvider deliveredDate codCollectedAt codPaidAt returnReceivedAt activityHistory');
+            externalTrackingId: { $exists: true, $ne: null },
+            deletedAt: null
+        }).select('externalTrackingId internalOrderId internalOrder tenant shipmentStatus paymentStatus courierStatus courierProvider deliveredDate codCollectedAt codPaidAt returnReceivedAt activityHistory').limit(10000);
 
         if (activeShipments.length === 0) {
             logger.info('[SYNC] No active shipments to sync');

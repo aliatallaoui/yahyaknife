@@ -557,8 +557,7 @@ exports.getStorefrontPage = async ({ channelSlug, pageSlug }) => {
             images: page.productOverrides?.images?.length ? page.productOverrides.images : product.images
         },
         variants,
-        pixels,
-        tenant: channel.tenant
+        pixels
     };
 
     cacheService.set(cacheKey, result, 60); // 1 min cache

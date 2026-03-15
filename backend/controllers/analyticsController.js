@@ -438,10 +438,8 @@ exports.getEcommerceAnalytics = async (req, res) => {
                         revenue: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, '$totalAmount', 0] } }
                     }
                 },
-                { $lookup: { from: 'saleschannels', localField: '_id', foreignField: '_id', as: 'ch' } },
+                { $lookup: { from: 'saleschannels', localField: '_id', foreignField: '_id', as: 'ch', pipeline: [{ $match: { tenant: new mongoose.Types.ObjectId(tenantId) } }] } },
                 { $unwind: { path: '$ch', preserveNullAndEmptyArrays: true } },
-                // Defense-in-depth: only include channels belonging to this tenant
-                { $match: { $or: [{ 'ch.tenant': new mongoose.Types.ObjectId(tenantId) }, { ch: { $exists: false } }] } },
                 { $sort: { count: -1 } },
                 { $limit: 50 }
             ]);
@@ -534,11 +532,10 @@ exports.getEcommerceAnalytics = async (req, res) => {
                 {
                     $lookup: {
                         from: 'customers', localField: '_id', foreignField: '_id',
-                        as: 'cust', pipeline: [{ $project: { name: 1, tenant: 1 } }]
+                        as: 'cust', pipeline: [{ $match: { tenant: new mongoose.Types.ObjectId(tenantId) } }, { $project: { name: 1 } }]
                     }
                 },
-                { $unwind: { path: '$cust', preserveNullAndEmptyArrays: true } },
-                { $match: { $or: [{ 'cust.tenant': new mongoose.Types.ObjectId(tenantId) }, { cust: { $exists: false } }] } }
+                { $unwind: { path: '$cust', preserveNullAndEmptyArrays: true } }
             ]);
 
             const customerData = topCustomersAgg.map(c => ({

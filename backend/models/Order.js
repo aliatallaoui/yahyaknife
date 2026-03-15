@@ -108,14 +108,14 @@ const orderSchema = new mongoose.Schema({
         default: 'Pending'
     },
     financials: {
-        deposit: { type: Number, default: 0 },
-        cogs: { type: Number, default: 0 },
-        marketplaceFees: { type: Number, default: 0 },
-        gatewayFees: { type: Number, default: 0 },
-        shippingCosts: { type: Number, default: 0 },
-        courierFee: { type: Number, default: 0 }, // Specific explicit fee per COD delivery
-        codAmount: { type: Number, default: 0 },  // Cash expected to be collected
-        netProfit: { type: Number, default: 0 }
+        deposit: { type: Number, default: 0, min: 0 },
+        cogs: { type: Number, default: 0, min: 0 },
+        marketplaceFees: { type: Number, default: 0, min: 0 },
+        gatewayFees: { type: Number, default: 0, min: 0 },
+        shippingCosts: { type: Number, default: 0, min: 0 },
+        courierFee: { type: Number, default: 0, min: 0 },
+        codAmount: { type: Number, default: 0, min: 0 },
+        netProfit: { type: Number, default: 0 } // Can be negative (loss)
     },
     trackingInfo: {
         carrier: { type: String },
