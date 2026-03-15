@@ -186,26 +186,27 @@ exports.logCallAction = async (req, res) => {
         }
 
         const statusBefore = order.status;
-
-        // Apply state transition if the action maps to a status change
         const newStatus = ACTION_STATUS_MAP[actionType];
+
+        // Build updateData for OrderService
+        const updateData = {};
         if (newStatus && newStatus !== order.status) {
-            assertTransition(order.status, newStatus);
-            order.status = newStatus;
+            updateData.status = newStatus;
             if (newStatus === 'Confirmed') {
-                order.verificationStatus = 'Phone Confirmed';
-                order.confirmedBy = agentId;
+                updateData.verificationStatus = 'Phone Confirmed';
+                updateData.confirmedBy = agentId;
             }
             if (newStatus === 'Postponed') {
                 if (!postponedUntil) return res.status(400).json({ message: 'postponedUntil is required when postponing' });
-                const postponedDate = new Date(postponedUntil);
-                if (isNaN(postponedDate.getTime()) || postponedDate <= new Date()) {
-                    return res.status(400).json({ message: 'postponedUntil must be a valid future date' });
-                }
-                order.postponedUntil = postponedDate;
-            } else {
-                order.postponedUntil = null;
+                updateData.postponedUntil = postponedUntil;
             }
+        }
+
+        // Address correction
+        if (actionType === 'Address_Updated') {
+            if (newAddress) updateData['shipping.address'] = newAddress;
+            if (newWilaya) updateData.wilaya = newWilaya;
+            if (newCommune) updateData.commune = newCommune;
         }
 
         // Count how many call attempts have been made on this order (tenant-scoped via order reference)
@@ -219,18 +220,19 @@ exports.logCallAction = async (req, res) => {
             note: note || '',
             callDurationSeconds: req.body.callDurationSeconds || 0,
             statusBefore,
-            statusAfter: order.status,
+            statusAfter: newStatus || statusBefore,
             callAttemptNumber: prevAttempts + 1
         });
 
-        // Address correction (no status change involved)
-        if (actionType === 'Address_Updated') {
-            if (newAddress && order.shipping) order.shipping.address = newAddress;
-            if (newWilaya) order.wilaya = newWilaya;
-            if (newCommune) order.commune = newCommune;
+        // Route all mutations through OrderService (state machine, inventory, financials)
+        if (Object.keys(updateData).length > 0) {
+            await OrderService.updateOrder({
+                orderId: order._id,
+                tenantId,
+                userId: agentId,
+                updateData
+            });
         }
-
-        await order.save();
 
         // Invalidate relevant caches
         cacheService.del(`tenant:${tenantId}:agent:${agentId}:dashboard`);
@@ -249,22 +251,7 @@ exports.logCallAction = async (req, res) => {
             }));
         }
 
-        // Post-save side effects for status changes
-        if (newStatus && newStatus !== statusBefore) {
-            // Restore reserved stock when order is cancelled via call center
-            if (['Cancelled', 'Cancelled by Customer'].includes(newStatus) &&
-                !['Cancelled', 'Cancelled by Customer', 'Returned', 'Refused'].includes(statusBefore)) {
-                for (const item of order.products) {
-                    if (!item.variantId) continue;
-                    fireAndRetry('restoreStock:callCenter', () => ProductVariant.findOneAndUpdate(
-                        { _id: item.variantId, tenant: tenantId },
-                        { $inc: { reservedStock: -item.quantity, totalSold: -item.quantity } }
-                    ));
-                }
-            }
-            // Update customer metrics on any status change
-            if (order.customer) fireAndRetry('updateCustomerMetrics:callCenter', () => updateCustomerMetrics(order.customer));
-        }
+        // Note: inventory deltas and customer metrics are now handled by OrderService.updateOrder
 
         res.status(200).json({ message: 'Call logged successfully', order });
     } catch (error) {
@@ -875,12 +862,13 @@ exports.bulkUpdateOrders = async (req, res) => {
             const errors = [];
             for (const { _id } of ordersToCancelIds) {
                 try {
-                    await OrderService.updateOrder(
-                        _id,
-                        { status: 'Cancelled by Customer' },
-                        req.user._id,
-                        { bypassStateMachine: true }
-                    );
+                    await OrderService.updateOrder({
+                        orderId: _id,
+                        tenantId,
+                        userId: req.user._id,
+                        updateData: { status: 'Cancelled by Customer' },
+                        bypassStateMachine: true
+                    });
                     successCount++;
                 } catch (err) {
                     logger.error({ err, orderId: _id }, 'Bulk cancel: failed to cancel order');

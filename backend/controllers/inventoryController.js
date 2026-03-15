@@ -371,23 +371,21 @@ exports.getStockLedger = async (req, res) => {
 
 // --- RTO (Return to Origin) Processing ---
 const Order = require('../models/Order');
+const OrderService = require('../domains/orders/order.service');
 
 exports.processRTO = async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
         const tenantId = req.user.tenant;
-        const { searchKey } = req.body; // Can be Order ID or Tracking ID
+        const { searchKey } = req.body;
         const userId = req.user._id;
 
         if (!searchKey) throw new Error('Tracking ID or Order ID required');
 
-        // Find the order by internal orderId or tracking number
         const order = await Order.findOne({
             tenant: tenantId,
             deletedAt: null,
             $or: [{ orderId: searchKey }, { 'trackingInfo.trackingNumber': searchKey }]
-        }).session(session);
+        }).lean();
 
         if (!order) throw new Error('Order/Shipment not found for the given tracking or order ID');
 
@@ -395,45 +393,23 @@ exports.processRTO = async (req, res) => {
             throw new Error('This order has already been processed and restocked.');
         }
 
-        // Increment stock for each item
-        for (const item of order.products) {
-            if (!item.variantId) continue;
-            
-            const variant = await ProductVariant.findOne({ _id: item.variantId, tenant: tenantId }).session(session);
-            if (variant) {
-                variant.totalStock += item.quantity;
-                await variant.save({ session });
+        // Route through OrderService — handles state machine, inventory deltas,
+        // courier cash sync, customer lifetime value, and delivery timestamps
+        const updatedOrder = await OrderService.updateOrder({
+            orderId: order._id,
+            tenantId,
+            userId,
+            updateData: {
+                status: 'Returned',
+                fulfillmentStatus: 'Returned',
+                paymentStatus: 'No_COD'
+            },
+            bypassStateMachine: true // system-initiated RTO transition
+        });
 
-                // Log movement
-                await StockMovementLedger.create([{
-                    tenant: tenantId,
-                    variantId: variant._id,
-                    type: 'RESTOCK_RTO',
-                    quantity: item.quantity,
-                    referenceId: order.orderId,
-                    referenceModel: 'Order',
-                    notes: `RTO Restock for Order ${order.orderId}`
-                }], { session });
-            }
-        }
+        res.json({ message: 'RTO Processed & Restocked', orderId: updatedOrder.orderId, items: updatedOrder.products });
 
-        // Update Order
-        order.status = 'Returned';
-        order.fulfillmentStatus = 'Returned';
-        order.paymentStatus = 'No_COD';
-        order.deliveryStatus = order.deliveryStatus || {};
-        order.deliveryStatus.returnedAt = new Date();
-        await order.save({ session });
-
-        await session.commitTransaction();
-        session.endSession();
-
-        // Let the client know the restock details
-        res.json({ message: 'RTO Processed & Restocked', orderId: order.orderId, items: order.products });
-        
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
         logger.error({ err: error }, 'Error processing RTO');
         res.status(400).json({ message: error.isOperational ? error.message : 'Error processing RTO' });
     }

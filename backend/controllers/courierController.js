@@ -177,6 +177,8 @@ exports.settleCourierCash = async (req, res) => {
             return res.status(400).json({ message: 'Settlement amount exceeds pending remittance' });
         }
 
+        // courier holds the state BEFORE the atomic update (for audit trail)
+        // Double-settle is prevented by the $gte guard above — retries will fail with 400
         const previousPendingRemittance = courier.pendingRemittance;
 
         // CRITICAL DATA COHERENCE: Map the bulk cash back to specific individual Orders

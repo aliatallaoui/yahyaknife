@@ -384,6 +384,18 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
+// @desc    Logout — invalidate refresh token server-side
+// @route   POST /api/auth/logout
+// @access  Private
+exports.logout = async (req, res) => {
+    await User.findByIdAndUpdate(req.user._id, {
+        $unset: { refreshToken: 1, refreshTokenExpiresAt: 1 }
+    });
+    cacheService.del(`auth:user:${req.user._id}`);
+    logger.info({ userId: req.user._id }, 'User logged out');
+    res.json({ message: 'Logged out successfully' });
+};
+
 // @desc    Refresh access token using refresh token
 // @route   POST /api/auth/refresh
 // @access  Public

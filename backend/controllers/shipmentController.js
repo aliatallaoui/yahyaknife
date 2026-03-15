@@ -193,20 +193,23 @@ exports.generateManifest = async (req, res) => {
 
         const printDate = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
         
+        // HTML-escape to prevent XSS from user-controlled data
+        const esc = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
         // Generate a clean HTML table for printing
         let rowsHtml = orders.map((o, index) => {
-            const tracking = o.trackingInfo?.trackingNumber || 'N/A';
-            const customerName = o.customer?.name || o.shipping?.recipientName || 'Inconnu';
-            const phone = o.customer?.phone || o.shipping?.phone1 || '';
-            const codAmt = o.financials?.codAmount ?? o.finalTotal ?? o.totalAmount ?? 0;
-            const productText = o.products ? o.products.map(p => `${p.name || 'Produit'} (x${p.quantity || 1})`).join('<br>') : 'N/A';
+            const tracking = esc(o.trackingInfo?.trackingNumber || 'N/A');
+            const customerName = esc(o.customer?.name || o.shipping?.recipientName || 'Inconnu');
+            const phone = esc(o.customer?.phone || o.shipping?.phone1 || '');
+            const codAmt = Number(o.financials?.codAmount ?? o.finalTotal ?? o.totalAmount ?? 0);
+            const productText = o.products ? o.products.map(p => `${esc(p.name || 'Produit')} (x${Number(p.quantity) || 1})`).join('<br>') : 'N/A';
 
             return `
             <tr>
                 <td>${index + 1}</td>
                 <td><strong>${tracking}</strong><br><small>${o.orderId}</small></td>
                 <td>${customerName}<br><small>${phone}</small></td>
-                <td>${o.wilaya || ''} - ${o.commune || ''}<br><small>${o.shipping?.address || ''}</small></td>
+                <td>${esc(o.wilaya || '')} - ${esc(o.commune || '')}<br><small>${esc(o.shipping?.address || '')}</small></td>
                 <td>${productText}</td>
                 <td><strong>${codAmt} DZD</strong></td>
                 <td></td>

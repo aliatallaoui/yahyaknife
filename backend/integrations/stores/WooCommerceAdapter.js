@@ -174,7 +174,10 @@ class WooCommerceAdapter extends StoreAdapter {
     // ─── Webhook Verification ─────────────────────────────────────────────────
 
     verifyWebhookSignature(rawBody, signature) {
-        if (!this.webhookSecret) return true; // No secret configured, skip verification
+        if (!this.webhookSecret) {
+            this.logger.warn('Webhook signature check skipped — no webhookSecret configured. Rejecting.');
+            return false;
+        }
         const computed = crypto
             .createHmac('sha256', this.webhookSecret)
             .update(rawBody, 'utf8')

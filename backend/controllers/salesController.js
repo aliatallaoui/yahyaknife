@@ -521,18 +521,8 @@ exports.restoreOrders = async (req, res) => {
 };
 
 exports.purgeOrders = async (req, res) => {
-    try {
-        const { orderIds } = req.body;
-        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
-            return res.status(400).json({ message: 'orderIds array is required' });
-        }
-
-        // Only allow permanently deleting already-trashed orders
-        const result = await Order.deleteMany({ _id: { $in: orderIds }, tenant: req.user.tenant, deletedAt: { $ne: null } });
-        res.json({ message: `${result.deletedCount} order(s) permanently deleted`, deletedCount: result.deletedCount });
-    } catch (error) {
-        logger.error({ err: error }, 'Error purging orders');
-        res.status(500).json({ message: 'Failed to purge orders' });
-    }
+    // Hard-delete disabled — orders must be retained for financial audit trail.
+    // Soft-deleted orders are already hidden from normal queries.
+    return res.status(403).json({ message: 'Permanent deletion of orders is disabled. Soft-deleted orders are retained for audit and compliance.' });
 };
 

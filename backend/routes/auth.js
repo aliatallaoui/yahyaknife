@@ -5,6 +5,7 @@ const {
     registerUser,
     loginUser,
     getMe,
+    logout,
     refreshAccessToken,
     forgotPassword,
     resetPassword,
@@ -28,6 +29,7 @@ router.post('/login', authLimiter, wrap(loginUser));
 router.post('/refresh', authLimiter, wrap(refreshAccessToken));
 router.post('/forgot-password', authLimiter, wrap(forgotPassword));
 router.put('/reset-password/:token', authLimiter, wrap(resetPassword));
+router.post('/logout', protect, wrap(logout));
 router.get('/me', protect, wrap(getMe));
 router.get('/tenants', protect, wrap(listUserTenants));
 router.post('/switch-tenant', protect, wrap(switchTenant));

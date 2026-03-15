@@ -71,8 +71,8 @@ async function fetchVariantCosts(tenantId, products) {
 async function calculateCourierFee(courierId, wilayaCode, commune, tenantId) {
     if (!courierId) return null;
 
-    const query = { courierId };
-    if (tenantId) query.tenant = tenantId;
+    if (!tenantId) return null; // tenant context required
+    const query = { courierId, tenant: tenantId };
     const pricingRules = await CourierPricing.find(query).sort({ priority: -1 }).limit(500).lean();
     if (!pricingRules.length) return null;
 

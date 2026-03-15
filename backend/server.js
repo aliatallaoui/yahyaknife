@@ -8,7 +8,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const pinoHttp = require('pino-http');
 const dashboardRoutes = require('./routes/dashboard');
@@ -46,7 +45,7 @@ const requestId = require('./shared/middleware/requestId');
 
 // ─── Startup Env Validation ──────────────────────────────────────────────────
 
-const REQUIRED_ENV = ['MONGO_URI', 'JWT_SECRET'];
+const REQUIRED_ENV = ['MONGO_URI', 'JWT_SECRET', 'CREDENTIAL_ENCRYPTION_KEY'];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length > 0) {
     logger.fatal({ missing }, 'Missing required environment variables');
@@ -66,7 +65,7 @@ const MONGO_URI = process.env.MONGO_URI || process.env.PROD_MONGO_URI || process
 
 // ─── Security ────────────────────────────────────────────────────────────────
 
-// Trust first proxy (Render reverse proxy) so rate-limiter keys on real client IP
+// Trust Nginx reverse proxy so rate-limiter keys on real client IP
 app.set('trust proxy', 1);
 
 // Remove server fingerprint header
@@ -77,8 +76,11 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow static /exports to be fetched cross-origin
 }));
 
-// Gzip/Brotli response compression
-app.use(compression());
+// Compression handled by Nginx in production — only use in dev
+if (!IS_PRODUCTION) {
+    const compression = require('compression');
+    app.use(compression());
+}
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 
@@ -166,16 +168,18 @@ app.get('/health', (_req, res) => {
     const dbReady = mongoose.connection.readyState === 1; // 1 = connected
     const { ecotrackBreaker } = require('./utils/ecotrackRequest');
     const circuitStatus = ecotrackBreaker.status();
+    const workerId = process.env.NODE_APP_INSTANCE || 'single';
 
     if (dbReady) {
         res.status(200).json({
             status: 'ok',
             db: 'connected',
             uptime: process.uptime(),
+            worker: workerId,
             circuits: { ecotrack: circuitStatus }
         });
     } else {
-        res.status(503).json({ status: 'degraded', db: 'disconnected', circuits: { ecotrack: circuitStatus } });
+        res.status(503).json({ status: 'degraded', db: 'disconnected', worker: workerId, circuits: { ecotrack: circuitStatus } });
     }
 });
 
@@ -208,6 +212,9 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/s', storefrontRoutes);  // Public storefront — no auth
 app.use('/api/logistics', logisticsRoutes);
 app.use('/api/integrations/webhooks', storeWebhookRoutes);  // Inbound store webhooks — no auth, HMAC verified
+
+// Static files — in production, Nginx serves these directly (faster)
+// Keep Express fallback for dev and non-Nginx setups
 app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -228,7 +235,12 @@ mongoose.connect(MONGO_URI, {
 })
     .then(() => {
         logger.info('Connected to MongoDB');
-        initJobs(); // Start background workers
+        initJobs(); // Start background workers (only on primary worker in cluster mode)
+
+        // Start BullMQ export worker
+        const queueService = require('./services/queueService');
+        queueService.startWorker();
+
         // Register webhook event listeners
         const { registerWebhookListeners } = require('./listeners/webhookListener');
         registerWebhookListeners();
@@ -250,7 +262,7 @@ mongoose.connection.on('reconnected', () => {
 });
 
 server = app.listen(PORT, () => {
-    logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Server started');
+    logger.info({ port: PORT, env: process.env.NODE_ENV || 'development', worker: process.env.NODE_APP_INSTANCE || 'single' }, 'Server started');
 });
 
 // ─── Graceful Shutdown ───────────────────────────────────────────────────────
@@ -258,12 +270,23 @@ server = app.listen(PORT, () => {
 function gracefulShutdown(signal) {
     logger.info({ signal }, 'Shutting down gracefully');
     if (server) {
-        server.close(() => {
+        server.close(async () => {
             logger.info('HTTP server closed');
-            mongoose.connection.close(false).then(() => {
+            try {
+                // Close Redis connection
+                const redis = require('./services/redisClient');
+                await redis.quit();
+                logger.info('Redis connection closed');
+            } catch (e) {
+                // Redis may not be initialized yet
+            }
+            try {
+                await mongoose.connection.close(false);
                 logger.info('MongoDB connection closed');
-                process.exit(0);
-            });
+            } catch (e) {
+                // ignore
+            }
+            process.exit(0);
         });
     }
     // Force exit after 10s if graceful shutdown stalls

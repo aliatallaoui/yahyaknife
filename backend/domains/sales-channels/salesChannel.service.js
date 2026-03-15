@@ -162,6 +162,7 @@ exports.listChannels = async ({ tenantId, channelType }) => {
     if (channelType) filter.channelType = channelType;
 
     const channels = await SalesChannel.find(filter)
+        .select('-config')
         .sort({ createdAt: -1 })
         .limit(200)
         .lean();
@@ -181,7 +182,9 @@ exports.listChannels = async ({ tenantId, channelType }) => {
 };
 
 exports.getChannel = async ({ tenantId, channelId }) => {
-    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null }).lean();
+    const channel = await SalesChannel.findOne({ _id: channelId, tenant: tenantId, deletedAt: null })
+        .select('-config')
+        .lean();
     if (!channel) throw AppError.notFound('Sales Channel');
 
     // Overlay real stats
