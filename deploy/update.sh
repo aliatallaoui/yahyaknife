@@ -16,7 +16,7 @@ cd "$APP_DIR/backend" && npm ci --production
 echo "Building frontend..."
 cd "$APP_DIR/frontend" && npm ci && npm run build
 
-echo "Restarting backend..."
-pm2 restart codflow-api
+echo "Reloading backend (zero-downtime)..."
+cd "$APP_DIR/backend" && pm2 reload yahya-api
 
-echo "Done! Check: pm2 logs codflow-api --lines 20"
+echo "Done! Check: pm2 logs yahya-api --lines 20"

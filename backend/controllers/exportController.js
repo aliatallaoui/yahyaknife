@@ -75,7 +75,7 @@ exports.enqueueOrderExport = async (req, res) => {
 exports.getExportJobStatus = async (req, res) => {
     try {
         const { jobId } = req.params;
-        const jobStatus = queueService.getJobStatus(jobId);
+        const jobStatus = await queueService.getJobStatus(jobId);
 
         if (!jobStatus) {
             return res.status(404).json({ message: 'Export Job not found or expired.' });

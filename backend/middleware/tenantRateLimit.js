@@ -1,15 +1,11 @@
 const logger = require('../shared/logger');
+const redis = require('../services/redisClient');
 
 /**
- * Per-tenant rate limiter.
+ * Per-tenant rate limiter backed by Redis.
  *
- * Tracks request counts per tenant in-memory using a sliding window.
- * Limits are derived from the tenant's plan tier.
- *
- * In production at scale, replace the in-memory store with Redis
- * (e.g. ioredis + sliding window script).
- *
- * Must be placed AFTER `protect` middleware (needs req.user.tenant).
+ * Uses a sliding window counter per tenant with atomic Redis operations.
+ * Works correctly across PM2 cluster workers.
  */
 
 // Plan tier → requests per minute
@@ -20,71 +16,59 @@ const PLAN_RATE_LIMITS = {
     Enterprise: 1000,
 };
 
-// In-memory sliding window store: tenantId → { timestamps[] }
-const windows = new Map();
+// Window size in seconds
+const WINDOW_SEC = 60;
 
-// Window size in ms (1 minute)
-const WINDOW_MS = 60 * 1000;
-
-// Cleanup stale entries every 5 minutes
-setInterval(() => {
-    const cutoff = Date.now() - WINDOW_MS * 2;
-    for (const [key, entry] of windows) {
-        // Remove entries with no recent activity
-        if (entry.timestamps.length === 0 || entry.timestamps[entry.timestamps.length - 1] < cutoff) {
-            windows.delete(key);
-        }
-    }
-}, 5 * 60 * 1000);
-
-function tenantRateLimit(req, res, next) {
+async function tenantRateLimit(req, res, next) {
     // Only apply after auth populates req.user
     if (!req.user || !req.user.tenant) {
         return next();
     }
 
     const tenantId = req.user.tenant.toString();
-    const now = Date.now();
-    const windowStart = now - WINDOW_MS;
-
-    // Get or create window entry
-    let entry = windows.get(tenantId);
-    if (!entry) {
-        entry = { timestamps: [], planTier: null };
-        windows.set(tenantId, entry);
-    }
-
-    // Prune expired timestamps (before window start)
-    entry.timestamps = entry.timestamps.filter(ts => ts > windowStart);
-
-    // Determine limit from cached tenant plan or role data
-    // The plan tier is attached by the subscription gate in authMiddleware
-    // We cache it per-tenant to avoid repeated lookups
-    const planTier = req.tenantPlanTier || entry.planTier || 'Free';
-    entry.planTier = planTier;
-
+    const planTier = req.tenantPlanTier || 'Free';
     const limit = PLAN_RATE_LIMITS[planTier] || PLAN_RATE_LIMITS.Free;
-    const remaining = Math.max(0, limit - entry.timestamps.length);
+    const key = `rl:tenant:${tenantId}`;
 
-    // Set standard rate-limit headers
-    res.setHeader('X-RateLimit-Limit', limit);
-    res.setHeader('X-RateLimit-Remaining', remaining);
-    res.setHeader('X-RateLimit-Reset', Math.ceil((windowStart + WINDOW_MS) / 1000));
+    try {
+        // Atomic increment + TTL in one pipeline
+        const results = await redis.pipeline()
+            .incr(key)
+            .ttl(key)
+            .exec();
 
-    if (entry.timestamps.length >= limit) {
-        const retryAfter = Math.ceil((entry.timestamps[0] + WINDOW_MS - now) / 1000);
-        res.setHeader('Retry-After', retryAfter);
+        const count = results[0][1];   // Current request count
+        const ttl = results[1][1];     // Remaining TTL
 
-        logger.warn({ tenantId, limit, planTier }, 'Tenant rate limit exceeded');
+        // Set expiry on first request in window
+        if (ttl === -1) {
+            await redis.expire(key, WINDOW_SEC);
+        }
 
-        return res.status(429).json({
-            message: 'Rate limit exceeded for your workspace. Please try again shortly.',
-            code: 'TENANT_RATE_LIMITED',
-            retryAfter,
-        });
+        const remaining = Math.max(0, limit - count);
+
+        // Standard rate-limit headers
+        res.setHeader('X-RateLimit-Limit', limit);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', Math.ceil(Date.now() / 1000) + (ttl > 0 ? ttl : WINDOW_SEC));
+
+        if (count > limit) {
+            const retryAfter = ttl > 0 ? ttl : WINDOW_SEC;
+            res.setHeader('Retry-After', retryAfter);
+
+            logger.warn({ tenantId, limit, planTier, count }, 'Tenant rate limit exceeded');
+
+            return res.status(429).json({
+                message: 'Rate limit exceeded for your workspace. Please try again shortly.',
+                code: 'TENANT_RATE_LIMITED',
+                retryAfter,
+            });
+        }
+    } catch (err) {
+        // Redis failure — fail open (allow request through)
+        logger.error({ err, tenantId }, 'Tenant rate limiter Redis error — failing open');
     }
 
-    entry.timestamps.push(now);
     next();
 }
 

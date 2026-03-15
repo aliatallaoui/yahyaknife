@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # ─── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: yahya-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-yahya_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-changeme_strong_password}
+      MONGO_INITDB_DATABASE: saas-dashboard
+    command: mongod --wiredTigerCacheSizeGB 1 --replSet rs0
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Initialize replica set (needed for change streams / transactions)
+  mongo-init:
+    image: mongo:7
+    container_name: yahya-mongo-init
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: >
+      mongosh --host mongo -u ${MONGO_USER:-yahya_admin} -p ${MONGO_PASS:-changeme_strong_password} --authenticationDatabase admin --eval '
+        try { rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongo:27017" }] }); print("Replica set initiated"); }
+        catch(e) { if (e.codeName === "AlreadyInitialized") print("Already initialized"); else throw e; }
+      '
+
+  # ─── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: yahya-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mongo_data:
+  mongo_config:
+  redis_data:

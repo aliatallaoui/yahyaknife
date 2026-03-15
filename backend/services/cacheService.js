@@ -1,8 +1,5 @@
 const logger = require('../shared/logger');
-const NodeCache = require('node-cache');
-
-// Standard TTL: 5 minutes (300 seconds) for KPI dashboards
-const cache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
+const redis = require('./redisClient');
 
 // Stampede protection: in-flight promises keyed by cache key
 const inFlight = new Map();
@@ -14,9 +11,13 @@ const cacheService = {
      * only one fetch runs — the rest wait on the same promise.
      */
     async getOrSet(key, fetchFunction, ttl = 300) {
-        const cachedData = cache.get(key);
-        if (cachedData !== undefined) {
-            return cachedData;
+        try {
+            const cached = await redis.get(key);
+            if (cached !== null) {
+                return JSON.parse(cached);
+            }
+        } catch (err) {
+            logger.error({ err, cacheKey: key }, 'Redis get error — falling through to fetch');
         }
 
         // Stampede guard: reuse in-flight fetch if one already started
@@ -27,7 +28,10 @@ const cacheService = {
         const promise = (async () => {
             try {
                 const freshData = await fetchFunction();
-                cache.set(key, freshData, ttl);
+                // Fire-and-forget set to Redis
+                redis.setex(key, ttl, JSON.stringify(freshData)).catch(err => {
+                    logger.error({ err, cacheKey: key }, 'Redis set error');
+                });
                 return freshData;
             } catch (error) {
                 logger.error({ err: error, cacheKey: key }, 'Cache Service Error');
@@ -44,40 +48,66 @@ const cacheService = {
     /**
      * Direct get — returns undefined on miss.
      */
-    get(key) {
-        return cache.get(key);
+    async get(key) {
+        try {
+            const val = await redis.get(key);
+            return val !== null ? JSON.parse(val) : undefined;
+        } catch (err) {
+            logger.error({ err, cacheKey: key }, 'Redis get error');
+            return undefined;
+        }
     },
 
     /**
      * Direct set.
      */
     set(key, value, ttl = 300) {
-        cache.set(key, value, ttl);
+        redis.setex(key, ttl, JSON.stringify(value)).catch(err => {
+            logger.error({ err, cacheKey: key }, 'Redis set error');
+        });
     },
 
     /**
      * Delete a specific cache key. Call this when data mutates.
      */
     del(key) {
-        cache.del(key);
+        redis.del(key).catch(err => {
+            logger.error({ err, cacheKey: key }, 'Redis del error');
+        });
     },
 
     /**
      * Flush all keys matching a specific prefix (e.g., flush all tenant KPIs).
+     * Uses SCAN to avoid blocking Redis with KEYS command.
      */
-    flushByPrefix(prefix) {
-        const keys = cache.keys();
-        const keysToDelete = keys.filter(key => key.startsWith(prefix));
-        if (keysToDelete.length > 0) {
-            cache.del(keysToDelete);
+    async flushByPrefix(prefix) {
+        try {
+            const stream = redis.scanStream({ match: `${prefix}*`, count: 100 });
+            const pipeline = redis.pipeline();
+            let count = 0;
+
+            for await (const keys of stream) {
+                if (keys.length > 0) {
+                    keys.forEach(k => pipeline.del(k));
+                    count += keys.length;
+                }
+            }
+
+            if (count > 0) {
+                await pipeline.exec();
+            }
+        } catch (err) {
+            logger.error({ err, prefix }, 'Redis flushByPrefix error');
         }
     },
 
     /**
-     * Flush the entire cache.
+     * Flush the entire cache (all keys in current DB).
      */
     flushAll() {
-        cache.flushAll();
+        redis.flushdb().catch(err => {
+            logger.error({ err }, 'Redis flushAll error');
+        });
     }
 };
 

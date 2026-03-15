@@ -1,3 +1,4 @@
+const cluster = require('cluster');
 const cron = require('node-cron');
 const Customer = require('../models/Customer');
 const Tenant = require('../models/Tenant');
@@ -16,8 +17,34 @@ async function withMutex(name, fn) {
     try { await fn(); } finally { running[name] = false; }
 }
 
+/**
+ * Check if this process should run cron jobs.
+ * In PM2 cluster mode, only worker 0 runs crons to avoid duplicate execution.
+ * In single-process mode (no PM2 or non-cluster), always run.
+ */
+function isPrimaryWorker() {
+    // PM2 sets NODE_APP_INSTANCE for cluster workers
+    const instanceId = process.env.NODE_APP_INSTANCE;
+    if (instanceId !== undefined) {
+        return instanceId === '0';
+    }
+    // Node cluster module
+    if (cluster.isWorker) {
+        return cluster.worker.id === 1;
+    }
+    // Single process — always primary
+    return true;
+}
+
 // Background Worker Scheduler
 const initJobs = () => {
+    if (!isPrimaryWorker()) {
+        logger.info('[CRON] Not primary worker — skipping cron registration');
+        return;
+    }
+
+    logger.info('[CRON] Primary worker — registering cron jobs');
+
     // 1. Daily Reorder Point Check (Runs every day at Midnight)
     cron.schedule('0 0 * * *', async () => {
         logger.info("[CRON] Running Daily Reorder Point Check...");
@@ -120,7 +147,7 @@ const initJobs = () => {
     // Run the KPI generator immediately on boot to pre-warm the dashboard
     generateKPISnapshots().catch(err => logger.error({ err }, '[CRON] Error (KPI boot pre-warm)'));
 
-    logger.info("✅ Background Worker Scheduler Initialized.");
+    logger.info("Background Worker Scheduler Initialized.");
 };
 
 module.exports = { initJobs };
