@@ -7,6 +7,7 @@ initSentry(); // Must run before importing Express
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const pinoHttp = require('pino-http');
@@ -71,9 +72,29 @@ app.set('trust proxy', 1);
 // Remove server fingerprint header
 app.disable('x-powered-by');
 
+// ─── Diagnostics Page (served before helmet — self-contained, auth via API) ─
+app.get('/diagnostics', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'diagnostics.html'));
+});
+
 // Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.)
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow static /exports to be fetched cross-origin
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],          // No inline scripts — manifest uses no JS
+            styleSrc: ["'self'", "'unsafe-inline'"], // Manifest uses inline styles
+            imgSrc: ["'self'", "data:"],
+            fontSrc: ["'self'"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'none'"],      // Replaces X-Frame-Options
+        },
+    },
 }));
 
 // Compression handled by Nginx in production — only use in dev
@@ -94,6 +115,12 @@ const corsOrigin = process.env.CORS_ORIGIN
     : ['http://localhost:3000', 'http://localhost:5173']; // dev-only whitelist
 
 app.use(cors({ origin: corsOrigin, credentials: true }));
+app.use(cookieParser());
+
+// ─── Request Metrics (diagnostics) ──────────────────────────────────────────
+
+const { requestMetricsMiddleware } = require('./controllers/diagnosticsController');
+app.use(requestMetricsMiddleware);
 
 // ─── Request Correlation ID ──────────────────────────────────────────────────
 

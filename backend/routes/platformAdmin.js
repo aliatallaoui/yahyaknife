@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const { requirePlatformAdmin } = require('../middleware/platformAdmin');
 const ctrl = require('../controllers/platformAdminController');
+const { getDiagnostics } = require('../controllers/diagnosticsController');
 
 const wrap = require('../shared/middleware/asyncHandler');
 
@@ -25,5 +26,8 @@ router.post('/impersonate/:tenantId', wrap(ctrl.impersonateTenant));
 // Platform analytics
 router.get('/analytics', wrap(ctrl.getPlatformAnalytics));
 router.get('/analytics/detailed', wrap(ctrl.getDetailedAnalytics));
+
+// Server diagnostics
+router.get('/diagnostics', wrap(getDiagnostics));
 
 module.exports = router;

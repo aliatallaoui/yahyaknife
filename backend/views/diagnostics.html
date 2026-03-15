@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Diagnostics — CodFlow</title>
+    <style>
+        :root {
+            --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+            --border: #475569; --text: #f1f5f9; --text2: #94a3b8;
+            --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+            --blue: #3b82f6; --purple: #a855f7; --cyan: #06b6d4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; background: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .header .controls { display: flex; gap: 12px; align-items: center; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+        .status-dot.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .status-dot.red { background: var(--red); box-shadow: 0 0 8px var(--red); }
+        .status-dot.yellow { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .card h2 .icon { font-size: 16px; }
+        .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(71,85,105,0.3); }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: var(--text2); font-size: 12px; }
+        .metric-value { font-size: 13px; font-weight: 600; text-align: right; }
+        .metric-value.green { color: var(--green); }
+        .metric-value.red { color: var(--red); }
+        .metric-value.yellow { color: var(--yellow); }
+        .metric-value.blue { color: var(--blue); }
+        .metric-value.cyan { color: var(--cyan); }
+        .metric-value.purple { color: var(--purple); }
+        .bar-container { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+        .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+        .bar-fill.green { background: var(--green); }
+        .bar-fill.yellow { background: var(--yellow); }
+        .bar-fill.red { background: var(--red); }
+        .bar-fill.blue { background: var(--blue); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge.green { background: rgba(34,197,94,0.15); color: var(--green); }
+        .badge.red { background: rgba(239,68,68,0.15); color: var(--red); }
+        .badge.yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
+        .badge.blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+        .badge.purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+        .slow-list { max-height: 200px; overflow-y: auto; }
+        .slow-item { font-size: 11px; padding: 6px 8px; background: var(--surface2); border-radius: 6px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .slow-method { font-weight: 700; color: var(--yellow); }
+        .slow-time { color: var(--red); font-weight: 600; }
+        .login-form { max-width: 400px; margin: 100px auto; }
+        .login-form input { width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; margin-bottom: 12px; outline: none; }
+        .login-form input:focus { border-color: var(--blue); }
+        .login-form button, .header button { padding: 8px 20px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; }
+        .login-form button:hover, .header button:hover { opacity: 0.9; }
+        .error-msg { color: var(--red); font-size: 13px; margin-top: 8px; }
+        .refresh-text { font-size: 12px; color: var(--text2); }
+        .status-codes { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+        .status-code-item { text-align: center; }
+        .status-code-num { font-size: 22px; font-weight: 700; }
+        .status-code-label { font-size: 10px; color: var(--text2); }
+        .full-width { grid-column: 1 / -1; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } .two-col { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="login" style="display:none">
+        <div class="login-form">
+            <h1 style="margin-bottom:24px; text-align:center;">Server Diagnostics</h1>
+            <input type="email" id="email" placeholder="Email" autocomplete="email">
+            <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+            <button onclick="doLogin()" style="width:100%">Login</button>
+            <div id="loginError" class="error-msg"></div>
+        </div>
+    </div>
+
+    <div id="dashboard" style="display:none">
+        <div class="header">
+            <h1><span class="status-dot" id="mainDot"></span> CodFlow Server Diagnostics</h1>
+            <div class="controls">
+                <span class="refresh-text" id="lastRefresh"></span>
+                <select id="refreshInterval" onchange="setRefreshInterval()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-family:inherit;font-size:12px;">
+                    <option value="5">5s</option>
+                    <option value="10" selected>10s</option>
+                    <option value="30">30s</option>
+                    <option value="60">60s</option>
+                </select>
+                <button onclick="fetchDiagnostics()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- System -->
+            <div class="card">
+                <h2><span class="icon">&#9881;</span> System</h2>
+                <div id="systemMetrics"></div>
+            </div>
+
+            <!-- Process -->
+            <div class="card">
+                <h2><span class="icon">&#9654;</span> Node.js Process</h2>
+                <div id="processMetrics"></div>
+            </div>
+
+            <!-- MongoDB -->
+            <div class="card">
+                <h2><span class="icon">&#128450;</span> MongoDB</h2>
+                <div id="mongoMetrics"></div>
+            </div>
+
+            <!-- Redis -->
+            <div class="card">
+                <h2><span class="icon">&#9889;</span> Redis</h2>
+                <div id="redisMetrics"></div>
+            </div>
+
+            <!-- Request Metrics -->
+            <div class="card">
+                <h2><span class="icon">&#128200;</span> Request Metrics</h2>
+                <div id="requestMetrics"></div>
+            </div>
+
+            <!-- Queues & Circuits -->
+            <div class="card">
+                <h2><span class="icon">&#128279;</span> Queues & Circuits</h2>
+                <div id="queueMetrics"></div>
+            </div>
+
+            <!-- Activity -->
+            <div class="card">
+                <h2><span class="icon">&#128202;</span> Business Activity (24h)</h2>
+                <div id="activityMetrics"></div>
+            </div>
+
+            <!-- Environment -->
+            <div class="card">
+                <h2><span class="icon">&#128736;</span> Environment</h2>
+                <div id="envMetrics"></div>
+            </div>
+
+            <!-- Slow Requests -->
+            <div class="card full-width">
+                <h2><span class="icon">&#128034;</span> Slow Requests (&gt;1s)</h2>
+                <div id="slowRequests" class="slow-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        let refreshTimer = null;
+        const API = window.location.origin;
+
+        // Check auth state
+        if (token) { showDashboard(); } else { document.getElementById('login').style.display = 'block'; }
+
+        async function doLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            document.getElementById('loginError').textContent = '';
+            try {
+                const res = await fetch(`${API}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Login failed');
+                token = data.token || data.data?.token;
+                if (!token) throw new Error('No token received');
+                localStorage.setItem('token', token);
+                showDashboard();
+            } catch (e) {
+                document.getElementById('loginError').textContent = e.message;
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            fetchDiagnostics();
+            setRefreshInterval();
+        }
+
+        function setRefreshInterval() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            const sec = parseInt(document.getElementById('refreshInterval').value);
+            refreshTimer = setInterval(fetchDiagnostics, sec * 1000);
+        }
+
+        async function fetchDiagnostics() {
+            try {
+                const res = await fetch(`${API}/api/platform/diagnostics`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('token');
+                    token = null;
+                    document.getElementById('dashboard').style.display = 'none';
+                    document.getElementById('login').style.display = 'block';
+                    return;
+                }
+                const d = await res.json();
+                renderDashboard(d);
+                document.getElementById('lastRefresh').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+            } catch (e) {
+                document.getElementById('mainDot').className = 'status-dot red';
+                console.error('Fetch error:', e);
+            }
+        }
+
+        function renderDashboard(d) {
+            const dot = document.getElementById('mainDot');
+            dot.className = 'status-dot ' + (d.mongodb.status === 'connected' ? 'green' : 'red');
+
+            // System
+            const memPct = d.system.usedMemoryPct;
+            const memColor = memPct > 90 ? 'red' : memPct > 70 ? 'yellow' : 'green';
+            const loadColor = d.system.loadAvg[0] > d.system.cpus ? 'red' : d.system.loadAvg[0] > d.system.cpus * 0.7 ? 'yellow' : 'green';
+            document.getElementById('systemMetrics').innerHTML = `
+                ${row('Hostname', d.system.hostname)}
+                ${row('Platform', `${d.system.platform} ${d.system.arch}`)}
+                ${row('Node.js', d.system.nodeVersion, 'blue')}
+                ${row('CPUs', d.system.cpus)}
+                ${row('Load Average', d.system.loadAvg.join(' / '), loadColor)}
+                ${row('System Uptime', d.system.uptimeHours + 'h')}
+                ${row('Memory', `${d.system.totalMemoryMB - d.system.freeMemoryMB} / ${d.system.totalMemoryMB} MB (${memPct}%)`, memColor)}
+                ${bar(memPct, memColor)}
+            `;
+
+            // Process
+            const heapPct = d.process.heapUsedPct;
+            const heapColor = heapPct > 85 ? 'red' : heapPct > 60 ? 'yellow' : 'green';
+            document.getElementById('processMetrics').innerHTML = `
+                ${row('PID', d.process.pid)}
+                ${row('Worker', d.process.worker, 'purple')}
+                ${row('Uptime', d.process.uptimeFormatted, 'cyan')}
+                ${row('RSS', d.process.rssMB + ' MB')}
+                ${row('Heap', `${d.process.heapUsedMB} / ${d.process.heapTotalMB} MB (${heapPct}%)`, heapColor)}
+                ${bar(heapPct, heapColor)}
+                ${row('External', d.process.externalMB + ' MB')}
+            `;
+
+            // MongoDB
+            const mongoColor = d.mongodb.status === 'connected' ? 'green' : 'red';
+            let mongoHtml = `
+                ${row('Status', badge(d.mongodb.status, mongoColor))}
+                ${row('Pool Size', d.mongodb.poolSize)}
+            `;
+            if (d.mongodb.dbStats && !d.mongodb.dbStats.error) {
+                const db = d.mongodb.dbStats;
+                mongoHtml += `
+                    ${row('Database', db.dbName)}
+                    ${row('Collections', db.collections)}
+                    ${row('Documents', num(db.documents))}
+                    ${row('Data Size', db.dataSize)}
+                    ${row('Storage', db.storageSize)}
+                    ${row('Indexes', `${db.indexes} (${db.indexSize})`)}
+                `;
+            }
+            if (d.mongodb.serverStats?.connections) {
+                const c = d.mongodb.serverStats.connections;
+                mongoHtml += `${row('Connections', `${c.current} current / ${c.available} available`, c.current > c.available * 0.8 ? 'red' : 'green')}`;
+            }
+            if (d.mongodb.serverStats?.opcounters) {
+                const op = d.mongodb.serverStats.opcounters;
+                mongoHtml += `${row('Ops', `I:${num(op.insert)} Q:${num(op.query)} U:${num(op.update)} D:${num(op.delete)}`, 'cyan')}`;
+            }
+            document.getElementById('mongoMetrics').innerHTML = mongoHtml;
+
+            // Redis
+            let redisHtml = '';
+            if (d.redis.available) {
+                redisHtml = `
+                    ${row('Status', badge('Connected', 'green'))}
+                    ${row('Keys', num(d.redis.keys))}
+                    ${row('Memory', d.redis.memory || 'N/A', 'blue')}
+                    ${row('Peak Memory', d.redis.peakMemory || 'N/A')}
+                    ${row('Clients', d.redis.connectedClients || 'N/A')}
+                    ${row('Blocked', d.redis.blockedClients || '0')}
+                `;
+            } else {
+                redisHtml = `${row('Status', badge(d.redis.mode === 'disabled' ? 'Disabled' : 'Error', d.redis.mode === 'disabled' ? 'yellow' : 'red'))}`;
+                if (d.redis.error) redisHtml += `${row('Error', d.redis.error, 'red')}`;
+            }
+            document.getElementById('redisMetrics').innerHTML = redisHtml;
+
+            // Request Metrics
+            const rm = d.requestMetrics;
+            const errRateNum = parseFloat(rm.errorRate);
+            const errColor = errRateNum > 10 ? 'red' : errRateNum > 5 ? 'yellow' : 'green';
+            let reqHtml = `
+                ${row('Total Requests', num(rm.totalRequests), 'blue')}
+                ${row('Total Errors', num(rm.totalErrors), rm.totalErrors > 0 ? 'red' : 'green')}
+                ${row('Error Rate', rm.errorRate, errColor)}
+                ${row('Avg Response', rm.avgResponseTimeMs + ' ms', rm.avgResponseTimeMs > 500 ? 'red' : rm.avgResponseTimeMs > 200 ? 'yellow' : 'green')}
+                ${row('Throughput', d.throughput, 'cyan')}
+            `;
+            if (rm.statusDistribution) {
+                reqHtml += '<div class="status-codes">';
+                for (const [code, count] of Object.entries(rm.statusDistribution)) {
+                    const c = code === '2xx' ? 'green' : code === '3xx' ? 'blue' : code === '4xx' ? 'yellow' : 'red';
+                    reqHtml += `<div class="status-code-item"><div class="status-code-num" style="color:var(--${c})">${num(count)}</div><div class="status-code-label">${code}</div></div>`;
+                }
+                reqHtml += '</div>';
+            }
+            document.getElementById('requestMetrics').innerHTML = reqHtml;
+
+            // Queues & Circuits
+            let qcHtml = '';
+            if (d.queues && !d.queues.error) {
+                const q = d.queues;
+                qcHtml += `
+                    <div style="margin-bottom:12px;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">Export Queue ${q.mode ? `(${q.mode})` : ''}</div>
+                    ${row('Waiting', q.waiting, q.waiting > 10 ? 'yellow' : 'green')}
+                    ${row('Active', q.active, q.active > 0 ? 'blue' : 'green')}
+                    ${row('Completed', num(q.completed), 'green')}
+                    ${row('Failed', num(q.failed), q.failed > 0 ? 'red' : 'green')}
+                `;
+            }
+            if (d.circuits) {
+                for (const [name, cb] of Object.entries(d.circuits)) {
+                    const cbColor = cb.state === 'CLOSED' ? 'green' : cb.state === 'OPEN' ? 'red' : 'yellow';
+                    qcHtml += `
+                        <div style="margin-top:16px;margin-bottom:8px;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">Circuit: ${name}</div>
+                        ${row('State', badge(cb.state, cbColor))}
+                        ${row('Failures', cb.failureCount, cb.failureCount > 0 ? 'yellow' : 'green')}
+                        ${row('Last Failure', cb.lastFailureTime ? new Date(cb.lastFailureTime).toLocaleTimeString() : 'Never')}
+                    `;
+                }
+            }
+            document.getElementById('queueMetrics').innerHTML = qcHtml;
+
+            // Activity
+            if (d.recentActivity && !d.recentActivity.error) {
+                const a = d.recentActivity;
+                document.getElementById('activityMetrics').innerHTML = `
+                    ${row('Orders (24h)', num(a.ordersLast24h), 'blue')}
+                    ${row('Active Tenants (24h)', a.activeTenantsLast24h, 'cyan')}
+                    ${row('Total Active Tenants', a.totalActiveTenants, 'purple')}
+                `;
+            }
+
+            // Environment
+            const e = d.environment;
+            document.getElementById('envMetrics').innerHTML = `
+                ${row('Environment', badge(e.nodeEnv, e.nodeEnv === 'production' ? 'green' : 'yellow'))}
+                ${row('Port', e.port)}
+                ${row('PM2 Cluster', badge(e.pm2 ? 'Yes' : 'No', e.pm2 ? 'green' : 'yellow'))}
+                ${row('Redis', badge(e.redisConfigured ? 'Configured' : 'Disabled', e.redisConfigured ? 'green' : 'yellow'))}
+                ${row('Sentry', badge(e.sentryEnabled ? 'Enabled' : 'Disabled', e.sentryEnabled ? 'green' : 'yellow'))}
+                ${row('CORS', e.corsOrigin)}
+            `;
+
+            // Slow Requests
+            const slowEl = document.getElementById('slowRequests');
+            if (rm.slowRequests && rm.slowRequests.length > 0) {
+                slowEl.innerHTML = rm.slowRequests.map(r => `
+                    <div class="slow-item">
+                        <span><span class="slow-method">${r.method}</span> ${r.url}</span>
+                        <span><span class="slow-time">${r.duration}ms</span> <span class="badge ${r.status >= 500 ? 'red' : r.status >= 400 ? 'yellow' : 'green'}">${r.status}</span> ${r.timestamp.split('T')[1]?.slice(0,8) || ''}</span>
+                    </div>
+                `).join('');
+            } else {
+                slowEl.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">No slow requests detected</div>';
+            }
+        }
+
+        // Helpers
+        function row(label, value, color) {
+            const valClass = color ? ` class="metric-value ${color}"` : ' class="metric-value"';
+            return `<div class="metric-row"><span class="metric-label">${label}</span><span${valClass}>${value}</span></div>`;
+        }
+        function bar(pct, color) {
+            return `<div class="bar-container"><div class="bar-fill ${color}" style="width:${pct}%"></div></div>`;
+        }
+        function badge(text, color) {
+            return `<span class="badge ${color}">${text}</span>`;
+        }
+        function num(n) {
+            return n != null ? Number(n).toLocaleString() : '0';
+        }
+
+        // Enter key login
+        document.getElementById('password')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    </script>
+</body>
+</html>
