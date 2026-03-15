@@ -3,12 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const { Queue, Worker } = require('bullmq');
 const redis = require('./redisClient');
+const { createBullMQConnection } = require('./redisClient');
 const { createObjectCsvWriter } = require('csv-writer');
 const Order = require('../models/Order');
 const usageTracker = require('./usageTracker');
 
-// BullMQ connection (reuse the ioredis instance)
-const connection = redis;
+// BullMQ needs maxRetriesPerRequest: null — use dedicated connection
+const connection = createBullMQConnection();
 
 // Priority mapping — BullMQ: lower number = higher priority (1 = highest)
 const PLAN_PRIORITY = {
@@ -43,6 +44,7 @@ let exportWorker = null;
 function startExportWorker() {
     if (exportWorker) return;
 
+    const workerConnection = createBullMQConnection();
     exportWorker = new Worker('exports', async (job) => {
         const { tenantId, query, filePath, fileName } = job.data;
 
@@ -125,7 +127,7 @@ function startExportWorker() {
             totalRecords: processed,
         };
     }, {
-        connection,
+        connection: workerConnection,
         concurrency: 2,
         limiter: { max: 5, duration: 60000 }, // Max 5 exports per minute across all tenants
     });
