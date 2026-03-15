@@ -11,7 +11,7 @@ const employeeSchema = new mongoose.Schema({
         required: true,
         enum: ['Operations', 'Warehouse', 'Dispatch', 'Customer Support', 'Engineering', 'Finance', 'Sales', 'Marketing', 'HR', 'Design']
     },
-    salary: { type: Number, required: true },
+    salary: { type: Number, required: true, min: 0 },
     performanceScore: { type: Number, default: 100, min: 0, max: 100 },
     leaveBalance: { type: Number, default: 21 }, // Standard 21 days
     joinDate: { type: Date, default: Date.now },
@@ -24,7 +24,7 @@ const employeeSchema = new mongoose.Schema({
 
     // Contract Settings for Payroll & Attendance
     contractSettings: {
-        monthlySalary: { type: Number, required: true, default: 0 },
+        monthlySalary: { type: Number, required: true, default: 0, min: 0 },
         dailyRequiredMinutes: { type: Number, default: 480 }, // 8 hours
         schedule: {
             morningStart: { type: String, default: '08:00' },

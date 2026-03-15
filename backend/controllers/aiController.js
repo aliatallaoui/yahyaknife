@@ -111,7 +111,7 @@ const Category = require('../models/Category');
 async function executeTool(call, tenantId) {
     try {
         if (call.name === 'get_financial_summary') {
-            const tenantFilter = { tenant: tenantId };
+            const tenantFilter = { tenant: tenantId, deletedAt: null };
             const expenses = await Expense.aggregate([{ $match: tenantFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
             const revenues = await Revenue.aggregate([{ $match: tenantFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
             const manualExpenses = expenses.length > 0 ? expenses[0].total : 0;

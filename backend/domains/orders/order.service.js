@@ -330,7 +330,9 @@ exports.createOrder = async ({ tenantId, userId, body }) => {
     }
 
     // Track usage for billing
-    usageTracker.increment(tenantId, 'orders').catch(() => {});
+    usageTracker.increment(tenantId, 'orders').catch(err => {
+        logger.error({ err, tenantId }, 'Failed to increment order usage counter');
+    });
 
     // Emit domain event for webhook + other listeners
     eventBus.emit(EVENTS.ORDER_CREATED, {

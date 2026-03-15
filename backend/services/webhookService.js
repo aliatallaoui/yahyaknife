@@ -173,7 +173,9 @@ async function deliverWithRetry(webhook, tenantId, event, payload, attempt) {
             const delay = RETRY_DELAYS_MS[attempt - 1] || 30000;
             logger.info({ webhookId: webhook._id, attempt, nextIn: delay }, 'Scheduling webhook retry');
             setTimeout(() => {
-                deliverWithRetry(webhook, tenantId, event, payload, attempt + 1).catch(() => {});
+                deliverWithRetry(webhook, tenantId, event, payload, attempt + 1).catch(retryErr => {
+                    logger.error({ err: retryErr, webhookId: webhook._id, attempt: attempt + 1 }, 'Webhook retry failed');
+                });
             }, delay);
         }
     }

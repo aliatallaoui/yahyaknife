@@ -216,6 +216,8 @@ orderSchema.index({ tenant: 1, status: 1, createdAt: -1 }); // Status-filtered d
 orderSchema.index({ tenant: 1, customer: 1 }); // Customer order history
 orderSchema.index({ deletedAt: 1, tenant: 1, status: 1 }); // Soft-delete filtering (most queries add deletedAt: null)
 orderSchema.index({ tenant: 1, 'logistics.resolutionStatus': 1, deletedAt: 1 }); // Logistics review queue
+orderSchema.index({ status: 1, deletedAt: 1, updatedAt: 1 }); // Cron: callCenterFollowUp stale No Answer
+orderSchema.index({ status: 1, deletedAt: 1, postponedUntil: 1 }); // Cron: callCenterFollowUp overdue postponed
 
 // Text Search Index (Replaces slow Regex collection scans)
 // Weighted so Order ID matches rank higher than random tracking numbers

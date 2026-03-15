@@ -53,9 +53,9 @@ const shipmentSchema = new mongoose.Schema({
     fragileFlag: { type: Boolean, default: false },
 
     // Financial (COD Tracking)
-    codAmount: { type: Number, required: true, default: 0 },
-    courierFee: { type: Number, default: 0 },
-    returnFee: { type: Number, default: 0 },
+    codAmount: { type: Number, required: true, default: 0, min: 0 },
+    courierFee: { type: Number, default: 0, min: 0 },
+    returnFee: { type: Number, default: 0, min: 0 },
 
     // Core Statuses
     shipmentStatus: {

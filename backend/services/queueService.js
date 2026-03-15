@@ -132,7 +132,9 @@ async function runExportInProcess(jobId, data) {
         jobState.status = 'completed';
         jobState.result = { status: 'completed', fileName, downloadUrl: `/exports/${fileName}`, totalRecords: processed };
 
-        usageTracker.increment(tenantId, 'exports').catch(() => {});
+        usageTracker.increment(tenantId, 'exports').catch(err => {
+            logger.error({ err, tenantId }, 'Failed to increment export usage counter');
+        });
 
         // Auto-cleanup file after 24 hours
         setTimeout(() => {
@@ -234,7 +236,9 @@ function startExportWorker() {
         await job.updateProgress(100);
 
         // Track usage
-        usageTracker.increment(tenantId, 'exports').catch(() => {});
+        usageTracker.increment(tenantId, 'exports').catch(err => {
+            logger.error({ err, tenantId }, 'Failed to increment export usage counter');
+        });
 
         return {
             status: 'completed',

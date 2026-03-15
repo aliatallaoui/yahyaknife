@@ -67,7 +67,7 @@ const initJobs = () => {
             for (const tenant of tenants) {
                 try {
                     // A. Fraud Sweep: Flag customers with refusal rate 30–50%, Blacklist > 50%
-                    const [flagged, blacklisted] = await Promise.all([
+                    const [flaggedResult, blacklistedResult] = await Promise.allSettled([
                         Customer.updateMany(
                             { tenant: tenant._id, refusalRate: { $gt: 30, $lte: 50 }, totalRefusals: { $gte: 2 } },
                             { $set: { requiresDeliveryVerification: true } }
@@ -77,8 +77,10 @@ const initJobs = () => {
                             { $set: { blacklisted: true, status: 'At Risk' } }
                         )
                     ]);
-                    totalFlagged += flagged.modifiedCount;
-                    totalBlacklisted += blacklisted.modifiedCount;
+                    if (flaggedResult.status === 'fulfilled') totalFlagged += flaggedResult.value.modifiedCount;
+                    else logger.error({ err: flaggedResult.reason, tenantId: tenant._id }, '[CRON] Fraud flag failed');
+                    if (blacklistedResult.status === 'fulfilled') totalBlacklisted += blacklistedResult.value.modifiedCount;
+                    else logger.error({ err: blacklistedResult.reason, tenantId: tenant._id }, '[CRON] Fraud blacklist failed');
                 } catch (tenantErr) {
                     logger.error({ err: tenantErr, tenantId: tenant._id }, '[CRON] Fraud sweep error for tenant');
                 }

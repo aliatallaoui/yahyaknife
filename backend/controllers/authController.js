@@ -121,7 +121,9 @@ exports.registerUser = async (req, res) => {
         } catch (createErr) {
             // Clean up the orphaned tenant if user creation failed
             if (isNewTenant) {
-                await Tenant.findByIdAndDelete(tenant._id).catch(() => {});
+                await Tenant.findByIdAndDelete(tenant._id).catch(cleanupErr => {
+                    logger.error({ err: cleanupErr, tenantId: tenant._id }, 'Failed to cleanup orphaned tenant after user creation failure');
+                });
             }
             // Return validation errors to the client (e.g., password too short)
             if (createErr.name === 'ValidationError') {
