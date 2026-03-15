@@ -61,7 +61,7 @@ async function resolveAdapter(order, tenantId) {
     let courier = null;
     const courierId = order.courier?._id || order.courier;
     if (courierId) {
-        courier = await Courier.findOne({ _id: courierId, tenant: tenantId, deletedAt: null });
+        courier = await Courier.findOne({ _id: courierId, tenant: tenantId, deletedAt: null }).select('+apiToken +apiId');
     }
     const adapter = getAdapter(courier);
     const providerName = getProviderName(courier);

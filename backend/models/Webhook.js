@@ -32,6 +32,7 @@ const webhookSchema = new mongoose.Schema({
     secret: {
         type: String,
         default: null,   // HMAC signing secret for payload verification
+        select: false,
     },
     isActive: {
         type: Boolean,

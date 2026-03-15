@@ -81,6 +81,11 @@ exports.getExportJobStatus = async (req, res) => {
             return res.status(404).json({ message: 'Export Job not found or expired.' });
         }
 
+        // Verify the job belongs to the requesting tenant
+        if (jobStatus.tenantId && jobStatus.tenantId !== req.user.tenant.toString()) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+
         res.json(jobStatus);
     } catch (error) {
         logger.error({ err: error }, 'Error fetching export job status');

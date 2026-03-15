@@ -12,8 +12,8 @@ const courierSchema = new mongoose.Schema({
     apiProvider: { type: String, enum: ['Ecotrack', 'Yalidin', 'Other'], default: 'Ecotrack' },
     apiBaseUrl: { type: String },
     authType: { type: String, enum: ['Bearer Token', 'API Key', 'None'], default: 'Bearer Token' },
-    apiId: { type: String }, // Used for Yalidin X-API-ID
-    apiToken: { type: String },
+    apiId: { type: String, select: false }, // Used for Yalidin X-API-ID
+    apiToken: { type: String, select: false },
     accountReference: { type: String },
     testConnectionStatus: { type: String, enum: ['Untested', 'Success', 'Failed'], default: 'Untested' },
     lastSyncAt: { type: Date },

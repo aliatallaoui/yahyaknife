@@ -421,7 +421,7 @@ exports.testCourierConnection = async (req, res) => {
         // If courierId provided (no token in request), load stored credentials from DB
         if (courierId && !apiToken) {
             if (!validId(courierId)) return res.status(400).json({ message: 'Invalid courier ID' });
-            const stored = await Courier.findOne({ _id: courierId, tenant: req.user.tenant, deletedAt: null }).select('apiProvider apiBaseUrl authType apiToken apiId');
+            const stored = await Courier.findOne({ _id: courierId, tenant: req.user.tenant, deletedAt: null }).select('+apiToken +apiId apiProvider apiBaseUrl authType');
             if (!stored) return res.status(404).json({ message: 'Courier not found' });
             apiToken = stored.apiToken || apiToken;
             if (!apiId) apiId = stored.apiId;

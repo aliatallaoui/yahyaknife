@@ -81,9 +81,8 @@ exports.getDashboardData = async (req, res) => {
                     { $group: { _id: '$assignedAgent', totalOrders: { $sum: 1 }, delivered: { $sum: { $cond: [{ $in: ['$status', ['Delivered', 'Paid']] }, 1, 0] } } } },
                     { $sort: { totalOrders: -1 } },
                     { $limit: 10 },
-                    { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'agent' } },
+                    { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'agent', pipeline: [{ $match: { tenant: new mongoose.Types.ObjectId(tenantId) } }, { $project: { firstName: 1, lastName: 1, tenant: 1 } }] } },
                     { $unwind: { path: '$agent', preserveNullAndEmptyArrays: true } },
-                    { $match: { $or: [{ agent: { $exists: false } }, { 'agent.tenant': new mongoose.Types.ObjectId(tenantId) }] } },
                     { $project: { _id: 1, totalOrders: 1, delivered: 1, agentName: { $concat: [{ $ifNull: ['$agent.firstName', ''] }, ' ', { $ifNull: ['$agent.lastName', ''] }] } } }
                 ])
             ]);

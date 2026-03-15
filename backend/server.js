@@ -214,8 +214,18 @@ app.use('/api/logistics', logisticsRoutes);
 app.use('/api/integrations/webhooks', storeWebhookRoutes);  // Inbound store webhooks — no auth, HMAC verified
 
 // Static files — in production, Nginx serves these directly (faster)
-// Keep Express fallback for dev and non-Nginx setups
-app.use('/exports', express.static(path.join(__dirname, 'public', 'exports')));
+// /exports requires auth — contains tenant business data (CSV exports, GDPR data)
+const { protect: staticProtect } = require('./middleware/authMiddleware');
+app.use('/exports', staticProtect, (req, res, next) => {
+    // Only allow downloading files that belong to the requesting tenant
+    const fileName = req.path.replace(/^\//, '');
+    const tenantId = req.user?.tenant?.toString();
+    if (tenantId && !fileName.includes(tenantId)) {
+        return res.status(403).json({ message: 'Access denied' });
+    }
+    next();
+}, express.static(path.join(__dirname, 'public', 'exports')));
+// /uploads is public — product images displayed on storefront
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Global error handler — must be last
