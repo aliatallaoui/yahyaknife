@@ -392,7 +392,7 @@ async function resolveAdapterForShipment(shipment, tenantId) {
     if (shipment.internalOrder) {
         const order = await Order.findOne({ _id: shipment.internalOrder, tenant: tenantId }).select('courier').lean();
         if (order?.courier) {
-            const courier = await Courier.findOne({ _id: order.courier, tenant: tenantId, deletedAt: null });
+            const courier = await Courier.findOne({ _id: order.courier, tenant: tenantId, deletedAt: null }).select('+apiToken +apiId');
             if (courier) return getAdapter(courier);
         }
     }
@@ -410,7 +410,7 @@ async function resolveAdapterForShipment(shipment, tenantId) {
         apiProvider: shipment.courierProvider === 'YALIDIN' ? 'Yalidin' : shipment.courierProvider,
         integrationType: 'API',
         deletedAt: null
-    });
+    }).select('+apiToken +apiId');
     if (courier) return getAdapter(courier);
 
     // Last resort: Ecotrack fallback
